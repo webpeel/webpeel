@@ -141,8 +141,12 @@ export function extractLinks(html: string, baseUrl: string): string[] {
         return;
       }
 
-      // Skip anchor links
-      if (absoluteUrl.hash && absoluteUrl.href === baseUrl + absoluteUrl.hash) {
+      // Skip anchor-only links (e.g., href="#section")
+      const baseNormalized = new URL(baseUrl);
+      if (absoluteUrl.hash && 
+          absoluteUrl.origin === baseNormalized.origin && 
+          absoluteUrl.pathname === baseNormalized.pathname &&
+          absoluteUrl.search === baseNormalized.search) {
         return;
       }
 

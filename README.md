@@ -39,8 +39,10 @@ npx webpeel https://news.ycombinator.com
 | **Anti-bot handling** | ✅ Stealth mode | ✅ Yes | ⚠️ Limited | ❌ No |
 | **MCP Server** | ✅ Built-in | ✅ Separate repo | ❌ No | ✅ Yes |
 | **Zero config** | ✅ `npx webpeel` | ❌ API key required | ❌ API key required | ✅ Yes |
-| **Free tier** | ∞ Unlimited local | 500 pages/month | 1000 req/month | ∞ Local only |
-| **Hosted API** | Coming soon | $16/mo (Starter) | $200/mo (Starter) | N/A |
+| **Free tier** | ∞ Unlimited local | 500 pages (one-time) | 1000 req/month | ∞ Local only |
+| **Hosted API** | $9/mo (5K pages) | $16/mo (3K pages) | $200/mo (Starter) | N/A |
+| **Credit rollover** | ✅ Up to 1 month | ❌ Expire monthly | ❌ N/A | ❌ N/A |
+| **Soft limits** | ✅ Never blocked | ❌ Hard cut-off | ❌ Rate limited | ❌ N/A |
 | **Markdown output** | ✅ Optimized for AI | ✅ Yes | ✅ Yes | ⚠️ Basic |
 
 **WebPeel gives you Firecrawl's power without the price tag.** Run locally for free, or use our hosted API when you need scale.
@@ -244,14 +246,40 @@ await cleanup();  // Close browser instances
 
 Run WebPeel locally for free, or use our hosted API for scale:
 
-| Plan | Price | Requests/Month | Features |
-|------|------:|---------------:|----------|
-| **Free** | $0 | Unlimited local | CLI, library, MCP server |
-| **Hosted Free** | $0 | 1,000 | API access, no credit card |
-| **Pro** | $9 | 50,000 | Priority queue, 99.9% SLA |
-| **Scale** | $29 | 250,000 | Dedicated instances, webhook support |
+### Two-Track Pricing
 
-**Compare:** Firecrawl Starter is $16/mo for 3,000 requests. Our Pro tier gives you 50,000 for $9/mo.
+**Track 1: Subscription Plans**
+
+| Plan | Price | Fetches/Month | JS Rendering | Key Features |
+|------|------:|---------------:|:------------:|----------|
+| **Local CLI** | $0 | ∞ Unlimited | ✅ | Full power, your machine |
+| **Cloud Free** | $0 | 500 | ❌ | Try the cloud API (HTTP only) |
+| **Cloud Pro** | $9/mo | 5,000 | ✅ | **Credit rollover, soft limits** |
+| **Cloud Max** | $29/mo | 25,000 | ✅ | Priority queue, team features |
+
+**Track 2: Pay-per-use API** (No monthly minimum)
+
+| Operation | Price per 1,000 |
+|-----------|----------------:|
+| Simple Fetch (HTTP) | $0.50 |
+| Browser Render (JS) | $2.50 |
+| Search (DuckDuckGo) | $1.00 |
+
+### Why WebPeel Pro Beats Firecrawl
+
+| Feature | WebPeel Local | WebPeel Pro | Firecrawl Hobby |
+|---------|:-------------:|:-----------:|:---------------:|
+| **Price** | $0 | $9/mo | $16/mo |
+| **Monthly Fetches** | ∞ | 5,000 | 3,000 |
+| **Credit Rollover** | N/A | ✅ 1 month | ❌ Expire monthly |
+| **Soft Limits** | N/A | ✅ Never locked out | ❌ Hard cut-off |
+| **Overflow Pricing** | N/A | $2.50/1K (browser) | $9/1K |
+| **Self-Host** | ✅ MIT | N/A | ❌ AGPL |
+
+**Key differentiators:**
+- **Credits roll over** — Unused fetches carry forward for 1 month (Firecrawl expires monthly)
+- **Soft limits** — When you hit your limit, degrade to HTTP-only or overflow to pay-per-use. Never fully blocked.
+- **CLI is always free** — No vendor lock-in. Run unlimited locally forever.
 
 Join the waitlist at [webpeel.dev](https://webpeel.dev)
 

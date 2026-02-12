@@ -12,7 +12,8 @@ describe('integration tests', () => {
       timeout: 10000,
     });
 
-    expect(result.url).toBe('https://example.com/');
+    // URL may or may not have trailing slash depending on server response
+    expect(result.url).toMatch(/^https:\/\/example\.com\/?$/);
     expect(result.title).toBeTruthy();
     expect(result.content).toBeTruthy();
     expect(result.method).toBe('simple');

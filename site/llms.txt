@@ -1,0 +1,60 @@
+# WebPeel
+
+> Fetch any web page as clean, AI-ready markdown.
+
+WebPeel is an open-source web fetcher designed for AI agents. It converts web pages to clean markdown with smart escalation: tries simple HTTP first (~200ms), automatically escalates to a headless browser when blocked.
+
+## Quick Start
+
+```bash
+# CLI (zero install)
+npx webpeel https://example.com
+
+# Library
+import { peel } from 'webpeel';
+const result = await peel('https://example.com');
+
+# MCP Server (Claude Desktop / Cursor / VS Code)
+npx webpeel mcp
+```
+
+## MCP Tools
+
+- `webpeel_fetch` — Fetch a URL, return clean markdown. Params: url (required), render (boolean), wait (ms), format (markdown|text|html)
+- `webpeel_search` — Search the web via DuckDuckGo. Params: query (required), count (1-10)
+
+## MCP Configuration
+
+```json
+{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "mcp"]
+    }
+  }
+}
+```
+
+## Key Features
+
+- Smart escalation: HTTP → Playwright headless browser (only when needed)
+- Anti-bot bypass: handles Cloudflare challenges, JavaScript walls, 403s
+- Token-optimized: strips navigation, ads, scripts, cookie banners
+- Metadata extraction: title, description, author, published date, links
+- Search: built-in DuckDuckGo integration
+- Local-first: runs on your machine, no API key required
+
+## Hosted API
+
+```bash
+curl "https://api.webpeel.dev/v1/fetch?url=https://example.com"
+curl "https://api.webpeel.dev/v1/search?q=your+query"
+```
+
+## Links
+
+- Website: https://webpeel.dev
+- GitHub: https://github.com/JakeLiuMe/webpeel
+- npm: https://www.npmjs.com/package/webpeel
+- API Docs: https://webpeel.dev/docs
