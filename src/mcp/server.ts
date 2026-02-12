@@ -94,6 +94,13 @@ const tools: Tool[] = [
   {
     name: 'webpeel_fetch',
     description: 'Fetch a URL and return clean, AI-ready markdown content. Handles JavaScript rendering and anti-bot protections automatically. Use this when you need to read the content of a web page.',
+    annotations: {
+      title: 'Fetch Web Page',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -124,6 +131,13 @@ const tools: Tool[] = [
   {
     name: 'webpeel_search',
     description: 'Search the web using DuckDuckGo and return results with titles, URLs, and snippets. Use this to find relevant web pages before fetching them.',
+    annotations: {
+      title: 'Search the Web',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {

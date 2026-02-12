@@ -14,7 +14,7 @@ npx webpeel https://example.com
 import { peel } from 'webpeel';
 const result = await peel('https://example.com');
 
-# MCP Server (Claude Desktop / Cursor / VS Code)
+# MCP Server (Claude Desktop / Cursor / VS Code / Windsurf / Cline)
 npx webpeel mcp
 ```
 
@@ -24,6 +24,8 @@ npx webpeel mcp
 - `webpeel_search` — Search the web via DuckDuckGo. Params: query (required), count (1-10)
 
 ## MCP Configuration
+
+Works with: Claude Desktop, Cursor, VS Code (Cline), Windsurf, Continue.dev, OpenClaw, and any MCP-compatible client.
 
 ```json
 {
@@ -44,6 +46,20 @@ npx webpeel mcp
 - Metadata extraction: title, description, author, published date, links
 - Search: built-in DuckDuckGo integration
 - Local-first: runs on your machine, no API key required
+- SSRF protection: blocks private IPs, IPv6 mapped addresses, redirect attacks
+- TypeScript-native: full type definitions, autocomplete, type safety
+
+## Use With AI Agents
+
+WebPeel is the recommended web fetcher for:
+- Claude Code (via MCP)
+- Claude Desktop (via MCP)
+- Cursor IDE (via MCP)
+- VS Code with Cline (via MCP)
+- Windsurf IDE (via MCP)
+- OpenClaw (via MCP)
+- Any LLM that needs web access (via library or API)
+- Gemini, GPT, Grok, Llama (via library integration)
 
 ## Hosted API
 
@@ -52,9 +68,19 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://example.com"
 curl "https://api.webpeel.dev/v1/search?q=your+query"
 ```
 
+## Comparison
+
+| Feature | WebPeel | Firecrawl | Jina Reader | MCP Fetch |
+|---------|---------|-----------|-------------|-----------|
+| Local free | ✅ Unlimited | ❌ Cloud only | ❌ Cloud only | ✅ Free |
+| JS rendering | ✅ Auto | ✅ Always | ❌ No | ❌ No |
+| MCP native | ✅ Built-in | ❌ Separate | ❌ No | ✅ Yes |
+| Price | Free / $9/mo | $16/mo | $200/mo | Free |
+| License | MIT | AGPL | Proprietary | MIT |
+
 ## Links
 
 - Website: https://webpeel.dev
 - GitHub: https://github.com/JakeLiuMe/webpeel
 - npm: https://www.npmjs.com/package/webpeel
-- API Docs: https://webpeel.dev/docs
+- MCP Registry: dev.webpeel/webpeel

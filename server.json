@@ -3,7 +3,7 @@
   "name": "dev.webpeel/webpeel",
   "title": "WebPeel",
   "description": "Fetch any web page as clean, AI-ready markdown. Smart escalation from HTTP to headless browser. Handles JavaScript rendering, Cloudflare, and anti-bot protections automatically.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "websiteUrl": "https://webpeel.dev",
   "repository": {
     "url": "https://github.com/JakeLiuMe/webpeel",
@@ -18,6 +18,30 @@
       },
       "arguments": ["mcp"],
       "environmentVariables": []
+    }
+  ],
+  "tools": [
+    {
+      "name": "webpeel_fetch",
+      "description": "Fetch a URL and return clean, AI-ready markdown content. Handles JavaScript rendering and anti-bot protections automatically.",
+      "annotations": {
+        "title": "Fetch Web Page",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "webpeel_search",
+      "description": "Search the web using DuckDuckGo and return results with titles, URLs, and snippets.",
+      "annotations": {
+        "title": "Search the Web",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
     }
   ]
 }

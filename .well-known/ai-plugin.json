@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "WebPeel",
+  "name_for_model": "webpeel",
+  "description_for_human": "Turn any web page into clean markdown. Smart web fetcher for AI agents with auto-escalation from HTTP to headless browser.",
+  "description_for_model": "WebPeel fetches web pages and converts them to clean, AI-ready markdown. It uses smart escalation: tries fast HTTP first (~200ms), automatically escalates to a headless browser for JavaScript-heavy sites (~2s). Supports search via DuckDuckGo. Use webpeel_fetch to read web page content and webpeel_search to find relevant pages.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "mcp",
+    "url": "npx webpeel mcp"
+  },
+  "logo_url": "https://webpeel.dev/logo.png",
+  "contact_email": "jake@webpeel.dev",
+  "legal_info_url": "https://github.com/JakeLiuMe/webpeel/blob/main/LICENSE"
+}
