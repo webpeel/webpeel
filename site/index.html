@@ -378,7 +378,7 @@
       font-family:'JetBrains Mono',monospace; color:var(--accent-l); font-size:13px;
       position:relative;
     }
-    .pricing-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; max-width:640px; margin:0 auto; }
+    .pricing-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; max-width:900px; margin:0 auto; }
     .pricing-card {
       background:var(--card); border:1px solid var(--border); border-radius:20px;
       padding:32px 28px; position:relative; overflow:hidden;
@@ -462,7 +462,7 @@
       nav{display:none} .menu-btn{display:block}
       .hero{padding:120px 0 60px} section{padding:80px 0}
       .steps-grid,.features-grid{grid-template-columns:1fr;max-width:400px;margin:0 auto}
-      .pricing-grid{grid-template-columns:1fr;max-width:380px}
+      .pricing-grid{grid-template-columns:1fr}
       .footer-grid{grid-template-columns:1fr 1fr;gap:32px}
       .hero-ctas{flex-direction:column} .hero-ctas .btn{justify-content:center}
       .trust-logos{gap:20px} .stats-grid{grid-template-columns:repeat(2,1fr)}
@@ -709,6 +709,18 @@
           <code>npx webpeel &lt;url&gt;</code>
         </div>
         <div class="pricing-grid">
+          <div class="pricing-card reveal rd1">
+            <div class="plan-name">Free</div>
+            <div class="plan-price">$0<span>/mo</span></div>
+            <div class="plan-desc">500 pages/month</div>
+            <ul class="plan-features">
+              <li>500 cloud API fetches</li>
+              <li>HTTP only (no JS rendering)</li>
+              <li>API access</li>
+              <li>No credit card required</li>
+            </ul>
+            <a href="https://github.com/JakeLiuMe/webpeel#quick-start" class="plan-cta">Get Started Free</a>
+          </div>
           <div class="pricing-card featured reveal rd1">
             <div class="popular-tag">Popular</div>
             <div class="plan-name">Pro</div>
