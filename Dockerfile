@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies
-RUN npm ci --omit=dev
+# Install production + optional dependencies (server needs pg, bcrypt, stripe, etc.)
+RUN npm ci --omit=dev --include=optional
 
 # Copy built files
 COPY dist/ ./dist/

@@ -1,0 +1,28 @@
+# Server code — not needed for CLI/library/MCP users
+# Use the Docker image or clone the repo for self-hosting
+dist/server/
+dist/tests/
+
+# Internal docs
+.internal/
+
+# Environment files
+.env
+.env.*
+
+# Site
+site/
+
+# Scripts
+scripts/
+
+# GitHub config
+.github/
+
+# Dev files
+.well-known/
+render.yaml
+Dockerfile
+.dockerignore
+tsconfig.json
+vitest.config.ts

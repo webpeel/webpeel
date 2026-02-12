@@ -3,7 +3,7 @@
   "name": "dev.webpeel/webpeel",
   "title": "WebPeel",
   "description": "Fetch any web page as clean, AI-ready markdown. Smart escalation from HTTP to headless browser. Handles JavaScript rendering, Cloudflare, and anti-bot protections automatically.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "websiteUrl": "https://webpeel.dev",
   "repository": {
     "url": "https://github.com/JakeLiuMe/webpeel",

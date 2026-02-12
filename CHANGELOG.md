@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-02-12
+
+### Changed
+- npm package slimmed down: server code excluded (216KB removed), server deps moved to optional
+- GitHub Actions keepalive workflow to prevent Render cold starts
+
+### Fixed
+- README "Hosted API" section updated (was "Coming Soon", now has live URL and curl examples)
+- Pricing synced between README and landing page (removed pay-per-use track from README)
+
 ## [0.1.1] - 2026-02-12
 
 ### Added

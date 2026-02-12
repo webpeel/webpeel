@@ -1,0 +1,20 @@
+name: Keep API Alive
+
+on:
+  schedule:
+    # Every 10 minutes - prevents Render free tier from sleeping
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://webpeel-api.onrender.com/health)
+          echo "Status: $response"
+          if [ "$response" != "200" ]; then
+            echo "::warning::API returned $response"
+            exit 1
+          fi
