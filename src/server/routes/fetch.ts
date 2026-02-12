@@ -78,11 +78,19 @@ export function createFetchRouter(authStore: AuthStore): Router {
       }
 
       // Parse options
+      const isSoftLimited = req.auth?.softLimited === true;
       const options: PeelOptions = {
-        render: render === 'true',
-        wait: wait ? parseInt(wait as string, 10) : undefined,
+        // SOFT LIMIT: When over quota, force HTTP-only (no browser rendering)
+        // Users can still fetch — they just don't get JS rendering
+        render: isSoftLimited ? false : render === 'true',
+        wait: isSoftLimited ? 0 : (wait ? parseInt(wait as string, 10) : undefined),
         format: (format as 'markdown' | 'text' | 'html') || 'markdown',
       };
+
+      // Inform the user if their request was degraded
+      if (isSoftLimited && render === 'true') {
+        res.setHeader('X-Degraded', 'render=true downgraded to HTTP-only (quota exceeded)');
+      }
 
       // Validate wait parameter
       if (options.wait !== undefined && (isNaN(options.wait) || options.wait < 0 || options.wait > 60000)) {

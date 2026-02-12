@@ -1,5 +1,9 @@
 /**
- * API key authentication middleware with usage enforcement
+ * API key authentication middleware with SOFT LIMIT enforcement
+ * 
+ * Philosophy: Never fully block users. When limits are exceeded,
+ * degrade to HTTP-only mode instead of returning 429.
+ * This applies to ALL tiers including free.
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -13,6 +17,7 @@ declare global {
         keyInfo: ApiKeyInfo | null;
         tier: 'free' | 'starter' | 'pro' | 'enterprise' | 'max';
         rateLimit: number;
+        softLimited: boolean;  // true when over quota — degrade, don't block
       };
     }
   }
@@ -36,7 +41,7 @@ export function createAuthMiddleware(authStore: AuthStore) {
         req.path === '/v1/usage';
 
       if (isPublicEndpoint) {
-        req.auth = { keyInfo: null, tier: 'free', rateLimit: 10 };
+        req.auth = { keyInfo: null, tier: 'free', rateLimit: 10, softLimited: false };
         return next();
       }
 
@@ -58,6 +63,8 @@ export function createAuthMiddleware(authStore: AuthStore) {
 
       // Validate API key if provided
       let keyInfo: ApiKeyInfo | null = null;
+      let softLimited = false;
+
       if (apiKey) {
         keyInfo = await authStore.validateKey(apiKey);
         if (!keyInfo) {
@@ -72,29 +79,25 @@ export function createAuthMiddleware(authStore: AuthStore) {
         if (authStore instanceof PostgresAuthStore) {
           const { allowed, usage } = await authStore.checkLimit(apiKey);
           
+          // SOFT LIMITS: Don't block — degrade instead
+          // When over quota, set softLimited flag. The fetch route
+          // will force HTTP-only mode and still serve the request.
           if (!allowed && usage) {
-            res.status(429).json({
-              error: 'limit_exceeded',
-              message: `Monthly limit exceeded. Used ${usage.totalUsed}/${usage.totalAvailable} credits.`,
-              upgrade_url: 'https://webpeel.dev/pricing',
-              usage: {
-                used: usage.totalUsed,
-                limit: usage.totalAvailable,
-                period: usage.period,
-              },
-            });
-            return;
+            softLimited = true;
+            res.setHeader('X-Soft-Limited', 'true');
+            res.setHeader('X-Soft-Limit-Reason', 'Monthly quota exceeded. Requests degraded to HTTP-only mode.');
+            res.setHeader('X-Upgrade-URL', 'https://webpeel.dev/pricing');
           }
 
           // Add usage headers
           if (usage) {
             res.setHeader('X-Monthly-Limit', usage.totalAvailable.toString());
             res.setHeader('X-Monthly-Used', usage.totalUsed.toString());
-            res.setHeader('X-Monthly-Remaining', usage.remaining.toString());
+            res.setHeader('X-Monthly-Remaining', Math.max(0, usage.remaining).toString());
 
             // Warn if over 80% usage
             const usagePercent = (usage.totalUsed / usage.totalAvailable) * 100;
-            if (usagePercent >= 80) {
+            if (usagePercent >= 80 && !softLimited) {
               res.setHeader(
                 'X-Usage-Warning',
                 `You've used ${usagePercent.toFixed(0)}% of your monthly quota. Consider upgrading at https://webpeel.dev/pricing`
@@ -109,6 +112,7 @@ export function createAuthMiddleware(authStore: AuthStore) {
         keyInfo,
         tier: keyInfo?.tier || 'free',
         rateLimit: keyInfo?.rateLimit || 10,
+        softLimited,
       };
 
       next();
