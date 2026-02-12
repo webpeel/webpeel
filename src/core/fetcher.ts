@@ -260,6 +260,7 @@ export interface FetchResult {
 /**
  * Simple HTTP fetch using native fetch + Cheerio
  * Fast and lightweight, but can be blocked by Cloudflare/bot detection
+ * SECURITY: Manual redirect handling with SSRF re-validation
  */
 export async function simpleFetch(
   url: string,
@@ -272,75 +273,136 @@ export async function simpleFetch(
   // Validate user agent if provided
   const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const MAX_REDIRECTS = 10;
+  let redirectCount = 0;
+  let currentUrl = url;
+  const seenUrls = new Set<string>();
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': validatedUserAgent,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-      },
-      signal: controller.signal,
-      redirect: 'follow',
-    });
+  while (redirectCount <= MAX_REDIRECTS) {
+    // Detect redirect loops
+    if (seenUrls.has(currentUrl)) {
+      throw new WebPeelError('Redirect loop detected');
+    }
+    seenUrls.add(currentUrl);
 
-    clearTimeout(timer);
+    // Re-validate on each redirect
+    validateUrl(currentUrl);
 
-    if (!response.ok) {
-      if (response.status === 403 || response.status === 503) {
-        throw new BlockedError(
-          `HTTP ${response.status}: Site may be blocking requests. Try --render for browser mode.`
-        );
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(currentUrl, {
+        headers: {
+          'User-Agent': validatedUserAgent,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'DNT': '1',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+        },
+        signal: controller.signal,
+        redirect: 'manual', // SECURITY: Manual redirect handling
+      });
+
+      clearTimeout(timer);
+
+      // Handle redirects manually
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (!location) {
+          throw new NetworkError('Redirect response missing Location header');
+        }
+
+        // Resolve relative URLs
+        currentUrl = new URL(location, currentUrl).href;
+        redirectCount++;
+        continue;
       }
-      throw new NetworkError(`HTTP ${response.status}: ${response.statusText}`);
+
+      if (!response.ok) {
+        if (response.status === 403 || response.status === 503) {
+          throw new BlockedError(
+            `HTTP ${response.status}: Site may be blocking requests. Try --render for browser mode.`
+          );
+        }
+        throw new NetworkError(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // SECURITY: Validate Content-Type
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+        throw new WebPeelError('Unsupported content type. Only HTML is supported.');
+      }
+
+      // SECURITY: Stream response with size limit (prevent memory exhaustion)
+      const chunks: Uint8Array[] = [];
+      let totalSize = 0;
+      const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new NetworkError('Response body is not readable');
+      }
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          totalSize += value.length;
+          if (totalSize > MAX_SIZE) {
+            reader.cancel();
+            throw new WebPeelError('Response too large (max 10MB)');
+          }
+
+          chunks.push(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      // Combine chunks
+      const combined = new Uint8Array(totalSize);
+      let offset = 0;
+      for (const chunk of chunks) {
+        combined.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      const html = new TextDecoder().decode(combined);
+
+      if (!html || html.length < 100) {
+        throw new BlockedError('Empty or suspiciously small response. Site may require JavaScript.');
+      }
+
+      // Check for Cloudflare challenge
+      if (html.includes('cf-browser-verification') || html.includes('Just a moment...')) {
+        throw new BlockedError('Cloudflare challenge detected. Try --render for browser mode.');
+      }
+
+      return {
+        html,
+        url: currentUrl,
+        statusCode: response.status,
+      };
+    } catch (error) {
+      clearTimeout(timer);
+
+      if (error instanceof BlockedError || error instanceof NetworkError || error instanceof WebPeelError) {
+        throw error;
+      }
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new TimeoutError(`Request timed out after ${timeoutMs}ms`);
+      }
+
+      throw new NetworkError(`Failed to fetch: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    // SECURITY: Validate Content-Type
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-      throw new WebPeelError(`Unsupported content type: ${contentType}. Only HTML is supported.`);
-    }
-
-    const html = await response.text();
-
-    // SECURITY: Limit HTML size
-    if (html.length > 10 * 1024 * 1024) { // 10MB limit
-      throw new WebPeelError('Response too large (max 10MB)');
-    }
-
-    if (!html || html.length < 100) {
-      throw new BlockedError('Empty or suspiciously small response. Site may require JavaScript.');
-    }
-
-    // Check for Cloudflare challenge
-    if (html.includes('cf-browser-verification') || html.includes('Just a moment...')) {
-      throw new BlockedError('Cloudflare challenge detected. Try --render for browser mode.');
-    }
-
-    return {
-      html,
-      url: response.url,
-      statusCode: response.status,
-    };
-  } catch (error) {
-    clearTimeout(timer);
-
-    if (error instanceof BlockedError || error instanceof NetworkError || error instanceof WebPeelError) {
-      throw error;
-    }
-
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new TimeoutError(`Request timed out after ${timeoutMs}ms`);
-    }
-
-    throw new NetworkError(`Failed to fetch: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+
+  throw new WebPeelError(`Too many redirects (max ${MAX_REDIRECTS})`);
 }
 
 let sharedBrowser: Browser | null = null;
@@ -389,8 +451,14 @@ export async function browserFetch(
     throw new WebPeelError('Wait time must be between 0 and 60000ms');
   }
 
-  // SECURITY: Limit concurrent browser pages
+  // SECURITY: Limit concurrent browser pages with timeout
+  const queueStartTime = Date.now();
+  const QUEUE_TIMEOUT_MS = 30000; // 30 second max wait
+
   while (activePagesCount >= MAX_CONCURRENT_PAGES) {
+    if (Date.now() - queueStartTime > QUEUE_TIMEOUT_MS) {
+      throw new TimeoutError('Browser page queue timeout - too many concurrent requests');
+    }
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 

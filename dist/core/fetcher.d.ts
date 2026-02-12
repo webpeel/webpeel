@@ -9,6 +9,7 @@ export interface FetchResult {
 /**
  * Simple HTTP fetch using native fetch + Cheerio
  * Fast and lightweight, but can be blocked by Cloudflare/bot detection
+ * SECURITY: Manual redirect handling with SSRF re-validation
  */
 export declare function simpleFetch(url: string, userAgent?: string, timeoutMs?: number): Promise<FetchResult>;
 /**
