@@ -408,7 +408,7 @@ A: WebPeel runs locally for free (Firecrawl is cloud-only). We also have smart e
 A: Yes! Run `npm run serve` to start the API server. See [docs/self-hosting.md](docs/self-hosting.md) (coming soon).
 
 **Q: Does this violate websites' Terms of Service?**  
-A: WebPeel respects `robots.txt` by default. Always check a site's ToS before scraping at scale.
+A: WebPeel is a tool — how you use it is up to you. Always check a site's ToS before fetching at scale. We recommend respecting `robots.txt` in your own workflows.
 
 **Q: What about CAPTCHA and Cloudflare?**  
 A: WebPeel handles most Cloudflare challenges automatically. For CAPTCHAs, you'll need a solving service (not included).
