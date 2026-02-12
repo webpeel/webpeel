@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.DS_Store
+.env
+.env.local
+coverage/
+.vitest/
+playwright-report/
+test-results/

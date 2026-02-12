@@ -1,0 +1,85 @@
+/**
+ * Sliding window rate limiting middleware
+ */
+export class RateLimiter {
+    store = new Map();
+    windowMs;
+    constructor(windowMs = 60000) {
+        this.windowMs = windowMs;
+    }
+    /**
+     * Check if request is allowed under rate limit
+     */
+    checkLimit(identifier, limit) {
+        const now = Date.now();
+        const windowStart = now - this.windowMs;
+        // Get or create entry
+        let entry = this.store.get(identifier);
+        if (!entry) {
+            entry = { timestamps: [] };
+            this.store.set(identifier, entry);
+        }
+        // Remove timestamps outside the window
+        entry.timestamps = entry.timestamps.filter(ts => ts > windowStart);
+        // Check if limit exceeded
+        if (entry.timestamps.length >= limit) {
+            const oldestTimestamp = entry.timestamps[0];
+            const retryAfter = Math.ceil((oldestTimestamp + this.windowMs - now) / 1000);
+            return {
+                allowed: false,
+                remaining: 0,
+                retryAfter,
+            };
+        }
+        // Add current timestamp
+        entry.timestamps.push(now);
+        return {
+            allowed: true,
+            remaining: limit - entry.timestamps.length,
+        };
+    }
+    /**
+     * Clean up old entries (call periodically)
+     */
+    cleanup() {
+        const now = Date.now();
+        const windowStart = now - this.windowMs;
+        for (const [identifier, entry] of this.store.entries()) {
+            entry.timestamps = entry.timestamps.filter(ts => ts > windowStart);
+            if (entry.timestamps.length === 0) {
+                this.store.delete(identifier);
+            }
+        }
+    }
+}
+export function createRateLimitMiddleware(limiter) {
+    return (req, res, next) => {
+        try {
+            // Use API key or IP address as identifier
+            const identifier = req.auth?.keyInfo?.key || req.ip || 'unknown';
+            const limit = req.auth?.rateLimit || 10;
+            const result = limiter.checkLimit(identifier, limit);
+            // Set rate limit headers
+            res.setHeader('X-RateLimit-Limit', limit.toString());
+            res.setHeader('X-RateLimit-Remaining', result.remaining.toString());
+            if (!result.allowed) {
+                res.setHeader('Retry-After', result.retryAfter.toString());
+                res.status(429).json({
+                    error: 'rate_limited',
+                    message: 'Rate limit exceeded',
+                    retryAfter: result.retryAfter,
+                });
+                return;
+            }
+            next();
+        }
+        catch (error) {
+            const err = error;
+            res.status(500).json({
+                error: 'rate_limit_error',
+                message: err.message || 'Rate limiting failed',
+            });
+        }
+    };
+}
+//# sourceMappingURL=rate-limit.js.map

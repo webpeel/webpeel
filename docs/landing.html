@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebPeel — Peel the web down to what AI needs</title>
+  <meta name="description" content="A web fetcher built for AI agents. Give it any URL, get back clean markdown. Open source, local-first, free forever.">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0a0a;
+      --text: #ffffff;
+      --text-dim: #a3a3a3;
+      --accent: #22c55e;
+      --accent-hover: #16a34a;
+      --border: #262626;
+      --card-bg: #121212;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    header {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      margin-left: 32px;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: var(--text);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 120px 0 80px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    .tagline {
+      font-size: 24px;
+      color: var(--text-dim);
+      margin-bottom: 48px;
+    }
+
+    .code-block {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 600px;
+      margin: 0 auto 32px;
+      text-align: left;
+      font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .code-block .prompt {
+      color: var(--accent);
+    }
+
+    .code-block .comment {
+      color: var(--text-dim);
+    }
+
+    .cta {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--bg);
+      padding: 14px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+
+    .cta:hover {
+      background: var(--accent-hover);
+    }
+
+    .cta-secondary {
+      display: inline-block;
+      color: var(--text);
+      padding: 14px 32px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+      margin-left: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .cta-secondary:hover {
+      border-color: var(--text-dim);
+    }
+
+    /* Sections */
+    section {
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    h2 {
+      font-size: 40px;
+      font-weight: 700;
+      margin-bottom: 48px;
+      text-align: center;
+      letter-spacing: -0.01em;
+    }
+
+    /* How it works */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .step {
+      text-align: center;
+    }
+
+    .step-number {
+      display: inline-block;
+      width: 48px;
+      height: 48px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      line-height: 48px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--accent);
+    }
+
+    .step h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .step p {
+      color: var(--text-dim);
+      font-size: 15px;
+    }
+
+    /* Comparison */
+    .comparison-table {
+      max-width: 900px;
+      margin: 0 auto;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-dim);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      font-size: 15px;
+    }
+
+    td:first-child {
+      color: var(--text-dim);
+    }
+
+    .check {
+      color: var(--accent);
+    }
+
+    .cross {
+      color: #ef4444;
+    }
+
+    /* Pricing */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+
+    .pricing-card:hover {
+      border-color: var(--accent);
+    }
+
+    .pricing-card.featured {
+      border-color: var(--accent);
+      position: relative;
+    }
+
+    .pricing-card.featured::before {
+      content: "Popular";
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: var(--bg);
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .plan-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .plan-price {
+      font-size: 40px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .plan-price span {
+      font-size: 16px;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    .plan-desc {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .plan-features {
+      list-style: none;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .plan-features li {
+      padding: 8px 0;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .plan-features li::before {
+      content: "✓";
+      color: var(--accent);
+      margin-right: 8px;
+      font-weight: 600;
+    }
+
+    .plan-cta {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+
+    .plan-cta:hover {
+      background: var(--accent-hover);
+    }
+
+    .plan-cta.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .plan-cta.secondary:hover {
+      border-color: var(--text-dim);
+    }
+
+    /* Footer */
+    footer {
+      padding: 48px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    footer a {
+      color: var(--text);
+      text-decoration: none;
+      margin: 0 16px;
+    }
+
+    footer a:hover {
+      color: var(--accent);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 40px;
+      }
+
+      .tagline {
+        font-size: 18px;
+      }
+
+      .code-block {
+        font-size: 12px;
+        padding: 24px;
+      }
+
+      .cta, .cta-secondary {
+        display: block;
+        margin: 8px auto;
+        max-width: 300px;
+      }
+
+      h2 {
+        font-size: 32px;
+      }
+
+      nav {
+        display: none;
+      }
+
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <a href="#" class="logo">web<span>peel</span></a>
+        <nav>
+          <a href="#how">How it works</a>
+          <a href="#pricing">Pricing</a>
+          <a href="https://github.com/JakeLiuMe/webpeel">GitHub</a>
+          <a href="https://github.com/JakeLiuMe/webpeel#readme">Docs</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Peel the web down to<br>what AI needs</h1>
+        <p class="tagline">A web fetcher built for AI agents. Give it any URL, get back clean markdown.</p>
+        
+        <div class="code-block">
+          <div><span class="prompt">$</span> npx webpeel https://x.com/steipete</div>
+          <div><span class="comment"># Returns clean markdown, ready for your AI</span></div>
+        </div>
+
+        <a href="https://github.com/JakeLiuMe/webpeel" class="cta">Get Started</a>
+        <a href="https://github.com/JakeLiuMe/webpeel#readme" class="cta-secondary">Read Docs</a>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="container">
+        <h2>How it works</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3>Simple Fetch</h3>
+            <p>Fast HTTP request (~100ms). Works for 90% of sites. No browser overhead.</p>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3>Browser Mode</h3>
+            <p>Headless Playwright (~2-5s). Handles JavaScript rendering and dynamic content.</p>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3>Stealth Mode</h3>
+            <p>Full anti-detection (~5-10s). Bypasses Cloudflare and most protections.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="comparison">
+      <div class="container">
+        <h2>Why WebPeel?</h2>
+        <div class="comparison-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>WebPeel</th>
+                <th>Firecrawl</th>
+                <th>Jina Reader</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Free tier</td>
+                <td>Unlimited (self-hosted)</td>
+                <td>500 credits (one-time)</td>
+                <td>Rate limited</td>
+              </tr>
+              <tr>
+                <td>Local-first</td>
+                <td class="check">✓</td>
+                <td class="cross">✗</td>
+                <td class="cross">✗</td>
+              </tr>
+              <tr>
+                <td>Open source</td>
+                <td class="check">✓ MIT</td>
+                <td>AGPL-3.0</td>
+                <td class="cross">✗</td>
+              </tr>
+              <tr>
+                <td>MCP server</td>
+                <td class="check">✓ Built-in</td>
+                <td class="cross">✗</td>
+                <td class="cross">✗</td>
+              </tr>
+              <tr>
+                <td>Search included</td>
+                <td class="check">✓ DuckDuckGo</td>
+                <td>Google (paid)</td>
+                <td class="cross">✗</td>
+              </tr>
+              <tr>
+                <td>Cloudflare bypass</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="container">
+        <h2>Pricing</h2>
+        <div class="pricing-grid">
+          <div class="pricing-card">
+            <div class="plan-name">Open Source</div>
+            <div class="plan-price">Free</div>
+            <div class="plan-desc">Self-hosted, unlimited</div>
+            <ul class="plan-features">
+              <li>Unlimited pages</li>
+              <li>All features</li>
+              <li>MIT license</li>
+              <li>Community support</li>
+            </ul>
+            <a href="https://github.com/JakeLiuMe/webpeel" class="plan-cta secondary">Get Started</a>
+          </div>
+
+          <div class="pricing-card featured">
+            <div class="plan-name">Free Cloud</div>
+            <div class="plan-price">$0<span>/mo</span></div>
+            <div class="plan-desc">1,000 pages/month</div>
+            <ul class="plan-features">
+              <li>1K pages/month</li>
+              <li>All features</li>
+              <li>Email support</li>
+              <li>No credit card</li>
+            </ul>
+            <a href="https://webpeel.dev" class="plan-cta">Coming Soon</a>
+          </div>
+
+          <div class="pricing-card">
+            <div class="plan-name">Pro</div>
+            <div class="plan-price">$9<span>/mo</span></div>
+            <div class="plan-desc">25,000 pages/month</div>
+            <ul class="plan-features">
+              <li>25K pages/month</li>
+              <li>Priority support</li>
+              <li>99.9% uptime SLA</li>
+              <li>API access</li>
+            </ul>
+            <a href="https://webpeel.dev" class="plan-cta secondary">Coming Soon</a>
+          </div>
+
+          <div class="pricing-card">
+            <div class="plan-name">Scale</div>
+            <div class="plan-price">$29<span>/mo</span></div>
+            <div class="plan-desc">100,000 pages/month</div>
+            <ul class="plan-features">
+              <li>100K pages/month</li>
+              <li>Dedicated Slack</li>
+              <li>Custom integrations</li>
+              <li>Volume discounts</li>
+            </ul>
+            <a href="https://webpeel.dev" class="plan-cta secondary">Coming Soon</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container" style="text-align: center;">
+        <h2>Get started in seconds</h2>
+        <div class="code-block" style="max-width: 500px;">
+          <div><span class="prompt">$</span> npx webpeel https://example.com</div>
+        </div>
+        <p class="tagline" style="margin-bottom: 32px;">No configuration. No API keys. Just works.</p>
+        <a href="https://github.com/JakeLiuMe/webpeel#readme" class="cta">Read the Docs</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>
+        <a href="https://github.com/JakeLiuMe/webpeel">GitHub</a>
+        <a href="https://github.com/JakeLiuMe/webpeel#readme">Documentation</a>
+        <a href="https://github.com/JakeLiuMe/webpeel/blob/main/LICENSE">License</a>
+        <a href="https://twitter.com/JakeLiuMe">Twitter</a>
+      </p>
+      <p style="margin-top: 16px;">&copy; 2026 WebPeel. Open source under MIT license.</p>
+    </div>
+  </footer>
+</body>
+</html>
