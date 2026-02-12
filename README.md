@@ -242,28 +242,29 @@ await cleanup();  // Close browser instances
 
 ---
 
-## Hosted API (Coming Soon)
+## Hosted API
 
-Run WebPeel locally for free, or use our hosted API for scale:
+Live at `https://webpeel-api.onrender.com` — or use the CLI locally for free.
 
-### Two-Track Pricing
+```bash
+# Register and get your API key
+curl -X POST https://webpeel-api.onrender.com/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","password":"your-password"}'
 
-**Track 1: Subscription Plans**
+# Fetch a page
+curl "https://webpeel-api.onrender.com/v1/fetch?url=https://example.com" \
+  -H "Authorization: Bearer wp_live_your_api_key"
+```
+
+### Pricing
 
 | Plan | Price | Fetches/Month | JS Rendering | Key Features |
 |------|------:|---------------:|:------------:|----------|
 | **Local CLI** | $0 | ∞ Unlimited | ✅ | Full power, your machine |
-| **Cloud Free** | $0 | 500 | ❌ | Try the cloud API (HTTP only) |
-| **Cloud Pro** | $9/mo | 5,000 | ✅ | **Credit rollover, soft limits** |
-| **Cloud Max** | $29/mo | 25,000 | ✅ | Priority queue, team features |
-
-**Track 2: Pay-per-use API** (No monthly minimum)
-
-| Operation | Price per 1,000 |
-|-----------|----------------:|
-| Simple Fetch (HTTP) | $0.50 |
-| Browser Render (JS) | $2.50 |
-| Search (DuckDuckGo) | $1.00 |
+| **Cloud Free** | $0 | 500 | ❌ | Soft limits — never blocked |
+| **Cloud Pro** | $9/mo | 5,000 | ✅ | Credit rollover, soft limits |
+| **Cloud Max** | $29/mo | 25,000 | ✅ | Priority queue, credit rollover |
 
 ### Why WebPeel Pro Beats Firecrawl
 
@@ -272,16 +273,15 @@ Run WebPeel locally for free, or use our hosted API for scale:
 | **Price** | $0 | $9/mo | $16/mo |
 | **Monthly Fetches** | ∞ | 5,000 | 3,000 |
 | **Credit Rollover** | N/A | ✅ 1 month | ❌ Expire monthly |
-| **Soft Limits** | N/A | ✅ Never locked out | ❌ Hard cut-off |
-| **Overflow Pricing** | N/A | $2.50/1K (browser) | $9/1K |
+| **Soft Limits** | ✅ Always | ✅ Never locked out | ❌ Hard cut-off |
 | **Self-Host** | ✅ MIT | N/A | ❌ AGPL |
 
 **Key differentiators:**
+- **Soft limits on every tier** — When you hit your limit, we degrade to HTTP-only instead of blocking you. Even free users are never locked out.
 - **Credits roll over** — Unused fetches carry forward for 1 month (Firecrawl expires monthly)
-- **Soft limits** — When you hit your limit, degrade to HTTP-only or overflow to pay-per-use. Never fully blocked.
 - **CLI is always free** — No vendor lock-in. Run unlimited locally forever.
 
-Join the waitlist at [webpeel.dev](https://webpeel.dev)
+See pricing at [webpeel.dev](https://webpeel.dev/#pricing)
 
 ---
 
