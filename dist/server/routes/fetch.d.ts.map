@@ -1,1 +1,1 @@
-{"version":3,"file":"fetch.d.ts","sourceRoot":"","sources":["../../../src/server/routes/fetch.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,OAAO,EAAE,MAAM,EAAqB,MAAM,SAAS,CAAC;AAIpD,OAAO,EAAE,SAAS,EAAE,MAAM,kBAAkB,CAAC;AAO7C,wBAAgB,iBAAiB,CAAC,SAAS,EAAE,SAAS,GAAG,MAAM,CAgH9D"}
+{"version":3,"file":"fetch.d.ts","sourceRoot":"","sources":["../../../src/server/routes/fetch.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,OAAO,EAAE,MAAM,EAAqB,MAAM,SAAS,CAAC;AAIpD,OAAO,EAAE,SAAS,EAAE,MAAM,kBAAkB,CAAC;AAO7C,wBAAgB,iBAAiB,CAAC,SAAS,EAAE,SAAS,GAAG,MAAM,CAmI9D"}

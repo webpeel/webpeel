@@ -46,6 +46,11 @@ program
     }
     const spinner = options.silent ? null : ora('Fetching...').start();
     try {
+        // Validate options
+        if (options.wait && (options.wait < 0 || options.wait > 60000)) {
+            console.error('Error: Wait time must be between 0 and 60000ms');
+            process.exit(1);
+        }
         // Build peel options
         const peelOptions = {
             render: options.render || false,

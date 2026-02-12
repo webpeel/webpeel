@@ -172,11 +172,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       const result = await peel(url, options);
 
+      // SECURITY: Handle JSON serialization errors
+      let resultText: string;
+      try {
+        resultText = JSON.stringify(result, null, 2);
+      } catch (jsonError) {
+        resultText = JSON.stringify({
+          error: 'serialization_error',
+          message: 'Failed to serialize result',
+        });
+      }
+
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(result, null, 2),
+            text: resultText,
           },
         ],
       };
@@ -195,11 +206,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const resultCount = Math.min(Math.max(count || 5, 1), 10);
       const results = await searchWeb(query, resultCount);
 
+      // SECURITY: Handle JSON serialization errors
+      let resultText: string;
+      try {
+        resultText = JSON.stringify(results, null, 2);
+      } catch (jsonError) {
+        resultText = JSON.stringify({
+          error: 'serialization_error',
+          message: 'Failed to serialize results',
+        });
+      }
+
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(results, null, 2),
+            text: resultText,
           },
         ],
       };

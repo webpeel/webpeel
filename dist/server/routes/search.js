@@ -7,10 +7,14 @@ import { load } from 'cheerio';
 import { LRUCache } from 'lru-cache';
 export function createSearchRouter(authStore) {
     const router = Router();
-    // LRU cache: 15 minute TTL, max 500 entries
+    // LRU cache: 15 minute TTL, max 500 entries, 50MB total size
     const cache = new LRUCache({
         max: 500,
         ttl: 15 * 60 * 1000, // 15 minutes
+        maxSize: 50 * 1024 * 1024, // 50MB
+        sizeCalculation: (entry) => {
+            return JSON.stringify(entry).length;
+        },
     });
     router.get('/v1/search', async (req, res) => {
         try {
@@ -64,12 +68,26 @@ export function createSearchRouter(authStore) {
                 if (results.length >= resultCount)
                     return;
                 const $result = $(elem);
-                const title = $result.find('.result__title').text().trim();
-                const url = $result.find('.result__url').attr('href') || '';
-                const snippet = $result.find('.result__snippet').text().trim();
-                if (title && url) {
-                    results.push({ title, url, snippet });
+                let title = $result.find('.result__title').text().trim();
+                let url = $result.find('.result__url').attr('href') || '';
+                let snippet = $result.find('.result__snippet').text().trim();
+                // SECURITY: Validate and sanitize results
+                if (!title || !url)
+                    return;
+                // Only allow HTTP/HTTPS URLs
+                try {
+                    const parsed = new URL(url);
+                    if (!['http:', 'https:'].includes(parsed.protocol)) {
+                        return;
+                    }
                 }
+                catch {
+                    return;
+                }
+                // Limit text lengths to prevent bloat
+                title = title.slice(0, 200);
+                snippet = snippet.slice(0, 500);
+                results.push({ title, url, snippet });
             });
             const elapsed = Date.now() - startTime;
             // Track usage (1 credit per search)

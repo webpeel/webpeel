@@ -14,6 +14,15 @@ export function createAuthMiddleware(authStore) {
             else if (apiKeyHeader && typeof apiKeyHeader === 'string') {
                 apiKey = apiKeyHeader;
             }
+            // SECURITY: Require API key for all non-health endpoints
+            const isHealthEndpoint = req.path === '/health';
+            if (!apiKey && !isHealthEndpoint) {
+                res.status(401).json({
+                    error: 'missing_key',
+                    message: 'API key is required. Provide via Authorization: Bearer <key> or X-API-Key header.',
+                });
+                return;
+            }
             // Validate API key if provided
             let keyInfo = null;
             if (apiKey) {
@@ -30,7 +39,7 @@ export function createAuthMiddleware(authStore) {
             req.auth = {
                 keyInfo,
                 tier: keyInfo?.tier || 'free',
-                rateLimit: keyInfo?.rateLimit || 10, // Free tier: 10 req/min
+                rateLimit: keyInfo?.rateLimit || 10,
             };
             next();
         }

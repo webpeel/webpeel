@@ -13,9 +13,12 @@ import { createSearchRouter } from './routes/search.js';
 export function createApp(config = {}) {
     const app = express();
     // Middleware
-    app.use(express.json());
+    // SECURITY: Limit request body size to prevent DoS
+    app.use(express.json({ limit: '1mb' }));
+    // SECURITY: Restrict CORS - require explicit origin whitelist
+    const corsOrigins = config.corsOrigins || [];
     app.use(cors({
-        origin: config.corsOrigins || '*',
+        origin: corsOrigins.length > 0 ? corsOrigins : false,
         credentials: true,
     }));
     // Trust proxy (for rate limiting by IP in production)

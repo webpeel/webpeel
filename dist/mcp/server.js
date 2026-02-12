@@ -38,12 +38,26 @@ async function searchWeb(query, count = 5) {
             if (results.length >= count)
                 return;
             const $result = $(elem);
-            const title = $result.find('.result__title').text().trim();
-            const url = $result.find('.result__url').attr('href') || '';
-            const snippet = $result.find('.result__snippet').text().trim();
-            if (title && url) {
-                results.push({ title, url, snippet });
+            let title = $result.find('.result__title').text().trim();
+            let url = $result.find('.result__url').attr('href') || '';
+            let snippet = $result.find('.result__snippet').text().trim();
+            // SECURITY: Validate and sanitize results
+            if (!title || !url)
+                return;
+            // Only allow HTTP/HTTPS URLs
+            try {
+                const parsed = new URL(url);
+                if (!['http:', 'https:'].includes(parsed.protocol)) {
+                    return;
+                }
             }
+            catch {
+                return;
+            }
+            // Limit text lengths to prevent bloat
+            title = title.slice(0, 200);
+            snippet = snippet.slice(0, 500);
+            results.push({ title, url, snippet });
         });
         return results;
     }
@@ -122,11 +136,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 format: format || 'markdown',
             };
             const result = await peel(url, options);
+            // SECURITY: Handle JSON serialization errors
+            let resultText;
+            try {
+                resultText = JSON.stringify(result, null, 2);
+            }
+            catch (jsonError) {
+                resultText = JSON.stringify({
+                    error: 'serialization_error',
+                    message: 'Failed to serialize result',
+                });
+            }
             return {
                 content: [
                     {
                         type: 'text',
-                        text: JSON.stringify(result, null, 2),
+                        text: resultText,
                     },
                 ],
             };
@@ -138,11 +163,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             const resultCount = Math.min(Math.max(count || 5, 1), 10);
             const results = await searchWeb(query, resultCount);
+            // SECURITY: Handle JSON serialization errors
+            let resultText;
+            try {
+                resultText = JSON.stringify(results, null, 2);
+            }
+            catch (jsonError) {
+                resultText = JSON.stringify({
+                    error: 'serialization_error',
+                    message: 'Failed to serialize results',
+                });
+            }
             return {
                 content: [
                     {
                         type: 'text',
-                        text: JSON.stringify(results, null, 2),
+                        text: resultText,
                     },
                 ],
             };
