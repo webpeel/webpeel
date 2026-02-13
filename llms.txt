@@ -45,7 +45,9 @@ Works with: Claude Desktop, Cursor, VS Code (Cline), Windsurf, Continue.dev, Ope
 - Token-optimized: strips navigation, ads, scripts, cookie banners
 - Metadata extraction: title, description, author, published date, links
 - Search: built-in DuckDuckGo integration
-- Local-first: runs on your machine, no API key required
+- Usage model: Free tier (125 fetches/week), Pro (1,250/week), Max (6,250/week)
+- First 25 fetches: No account needed — try instantly
+- Local-first: runs on your machine, MIT licensed, can self-host
 - SSRF protection: blocks private IPs, IPv6 mapped addresses, redirect attacks
 - TypeScript-native: full type definitions, autocomplete, type safety
 

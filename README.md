@@ -41,7 +41,7 @@ npx webpeel https://news.ycombinator.com
 | **Crawl mode** | ✅ Built-in | ✅ Yes | ❌ No | ❌ No |
 | **MCP Server** | ✅ Built-in | ✅ Separate repo | ❌ No | ✅ Yes |
 | **Zero config** | ✅ `npx webpeel` | ❌ API key required | ❌ API key required | ✅ Yes |
-| **Free tier** | ∞ Unlimited local | 500 pages (one-time) | 1000 req/month | ∞ Local only |
+| **Free tier** | 125/week | 500 pages (one-time) | 1000 req/month | ∞ Unlimited |
 | **Hosted API** | $9/mo (1,250/wk) | $16/mo (3K/mo) | $200/mo (Starter) | N/A |
 | **Weekly reset** | N/A | ❌ Monthly only | ❌ Monthly only | ❌ N/A |
 | **Extra usage** | N/A | ✅ Pay-as-you-go | ❌ Upgrade only | N/A |
@@ -49,13 +49,26 @@ npx webpeel https://news.ycombinator.com
 | **Soft limits** | ✅ Never blocked | ❌ Hard cut-off | ❌ Rate limited | ❌ N/A |
 | **Markdown output** | ✅ Optimized for AI | ✅ Yes | ✅ Yes | ⚠️ Basic |
 
-**WebPeel gives you Firecrawl's power without the price tag.** Run locally for free, or use our hosted API when you need scale.
+**WebPeel gives you Firecrawl's power with a generous free tier.** Like Claude Code — pay only when you need more.
+
+### Usage Model
+
+WebPeel uses a **weekly usage budget** for all users (CLI and API):
+
+- **First 25 fetches**: No account needed — try it instantly
+- **Free tier**: 125 fetches/week (resets every Monday)
+- **Pro tier**: 1,250 fetches/week ($9/mo)
+- **Max tier**: 6,250 fetches/week ($29/mo)
+
+**Credit costs**: Basic fetch = 1 credit, Stealth mode = 5 credits, Search = 1 credit, Crawl = 1 credit/page
+
+**Open source**: The CLI is MIT licensed — you can self-host if needed. But the hosted API requires authentication after 25 fetches.
 
 ### Highlights
 
 1. **🎭 Stealth Mode** — Bypass bot detection with playwright-extra stealth plugin. Works on sites that block regular scrapers.
 2. **🕷️ Crawl Mode** — Follow links and extract entire sites. Respects robots.txt and rate limits automatically.
-3. **💰 Actually Free** — Run unlimited requests locally. No API keys, no credit cards, no surprises. Open source MIT.
+3. **💰 Generous Free Tier** — Like Claude Code: 125 free fetches every week. First 25 work instantly, no signup. Open source MIT.
 
 ---
 
@@ -64,8 +77,14 @@ npx webpeel https://news.ycombinator.com
 ### CLI (Zero Install)
 
 ```bash
-# Basic usage
+# First 25 fetches work instantly, no signup
 npx webpeel https://example.com
+
+# After 25 fetches, sign up for free (125/week)
+webpeel login
+
+# Check your usage
+webpeel usage
 
 # Stealth mode (bypass bot detection)
 npx webpeel https://protected-site.com --stealth
@@ -304,7 +323,7 @@ await cleanup();  // Close browser instances
 
 ## Hosted API
 
-Live at `https://webpeel-api.onrender.com` — or use the CLI locally for free.
+Live at `https://webpeel-api.onrender.com` — authentication required after first 25 fetches.
 
 ```bash
 # Register and get your API key
@@ -323,10 +342,9 @@ Usage resets every **Monday at 00:00 UTC**, just like Claude Code.
 
 | Plan | Price | Weekly Fetches | Burst Limit | Stealth Mode | Extra Usage |
 |------|------:|---------------:|:-----------:|:------------:|:-----------:|
-| **Local CLI** | $0 | ∞ Unlimited | N/A | ✅ | N/A |
-| **Cloud Free** | $0 | 125/wk (~500/mo) | 25/hr | ❌ | ❌ |
-| **Cloud Pro** | $9/mo | 1,250/wk (~5K/mo) | 100/hr | ✅ | ✅ |
-| **Cloud Max** | $29/mo | 6,250/wk (~25K/mo) | 500/hr | ✅ | ✅ |
+| **Free** | $0 | 125/wk (~500/mo) | 25/hr | ❌ | ❌ |
+| **Pro** | $9/mo | 1,250/wk (~5K/mo) | 100/hr | ✅ | ✅ |
+| **Max** | $29/mo | 6,250/wk (~25K/mo) | 500/hr | ✅ | ✅ |
 
 **Three layers of usage control:**
 1. **Burst limit** — Per-hour cap (25/hr free, 100/hr Pro, 500/hr Max) prevents hammering
@@ -342,21 +360,22 @@ Usage resets every **Monday at 00:00 UTC**, just like Claude Code.
 
 ### Why WebPeel Beats Firecrawl
 
-| Feature | WebPeel Local | WebPeel Pro | Firecrawl Hobby |
+| Feature | WebPeel Free | WebPeel Pro | Firecrawl Hobby |
 |---------|:-------------:|:-----------:|:---------------:|
 | **Price** | $0 | $9/mo | $16/mo |
-| **Weekly Fetches** | ∞ | 1,250/wk | ~750/wk |
-| **Rollover** | N/A | ✅ 1 week | ❌ Expire monthly |
-| **Soft Limits** | ✅ Always | ✅ Never locked out | ❌ Hard cut-off |
-| **Extra Usage** | N/A | ✅ Pay-as-you-go | ❌ Upgrade only |
-| **Self-Host** | ✅ MIT | N/A | ❌ AGPL |
+| **Weekly Fetches** | 125/wk | 1,250/wk | ~750/wk |
+| **Rollover** | ❌ | ✅ 1 week | ❌ Expire monthly |
+| **Soft Limits** | ✅ Degrades | ✅ Never locked out | ❌ Hard cut-off |
+| **Extra Usage** | ❌ | ✅ Pay-as-you-go | ❌ Upgrade only |
+| **Self-Host** | ✅ MIT | ✅ MIT | ❌ AGPL |
 
 **Key differentiators:**
+- **Like Claude Code** — Generous free tier (125/week), pay when you need more
 - **Weekly resets** — Your usage refreshes every Monday, not once a month
-- **Soft limits on every tier** — At 100%, we degrade to HTTP-only instead of blocking you
+- **Soft limits on every tier** — At 100%, we degrade gracefully instead of blocking you
 - **Extra usage** — Pro/Max users can toggle on pay-as-you-go with spending caps (no surprise bills)
-- **Rollover** — Unused fetches carry forward 1 week
-- **CLI is always free** — No vendor lock-in. Run unlimited locally forever
+- **First 25 free** — Try it instantly, no signup required
+- **Open source** — MIT licensed, self-host if you want full control
 
 See pricing at [webpeel.dev](https://webpeel.dev/#pricing)
 
@@ -486,7 +505,7 @@ Vote on features and roadmap at [GitHub Discussions](https://github.com/JakeLiuM
 ## FAQ
 
 **Q: How is this different from Firecrawl?**  
-A: WebPeel runs locally for free (Firecrawl is cloud-only). We also have smart escalation to avoid burning resources on simple pages.
+A: WebPeel has a more generous free tier (125/week vs Firecrawl's 500 one-time credits) and uses weekly resets like Claude Code. We also have smart escalation to avoid burning resources on simple pages.
 
 **Q: Can I self-host the API server?**  
 A: Yes! Run `npm run serve` to start the API server. See [docs/self-hosting.md](docs/self-hosting.md) (coming soon).
