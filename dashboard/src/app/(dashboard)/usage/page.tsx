@@ -22,14 +22,8 @@ export default function UsagePage() {
     { refreshInterval: 30000 }
   );
 
-  // Mock daily history data
-  const dailyHistory = [
-    { date: '2026-02-12', fetches: 150, captcha: 5, search: 20 },
-    { date: '2026-02-11', fetches: 230, captcha: 8, search: 35 },
-    { date: '2026-02-10', fetches: 180, captcha: 3, search: 15 },
-    { date: '2026-02-09', fetches: 210, captcha: 6, search: 25 },
-    { date: '2026-02-08', fetches: 190, captcha: 4, search: 18 },
-  ];
+  // TODO: Replace with real API data from /v1/usage/history endpoint
+  const dailyHistory: Array<{ date: string; fetches: number; captcha: number; search: number }> = [];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
@@ -54,12 +48,12 @@ export default function UsagePage() {
               <CardDescription className="text-sm">Your usage in the current session</CardDescription>
             </CardHeader>
             <CardContent>
-              {usage?.current_session ? (
+              {usage?.session ? (
                 <UsageBar
                   label="Session usage"
-                  used={usage.current_session.used}
-                  limit={usage.current_session.limit}
-                  resetInfo={`Resets in ${usage.current_session.resets_in}`}
+                  used={usage.session.burstUsed}
+                  limit={usage.session.burstLimit}
+                  resetInfo={`Resets in ${usage.session.resetsIn}`}
                 />
               ) : (
                 <div className="h-24 animate-pulse rounded-lg bg-zinc-100" />
@@ -72,7 +66,7 @@ export default function UsagePage() {
             <CardHeader>
               <CardTitle className="text-lg md:text-xl">Weekly Limits</CardTitle>
               <CardDescription className="text-sm">
-                {usage?.weekly ? `Resets ${new Date(usage.weekly.resets_at).toLocaleDateString()}` : 'Loading...'}
+                {usage?.weekly ? `Resets ${new Date(usage.weekly.resetsAt).toLocaleDateString()}` : 'Loading...'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -80,14 +74,13 @@ export default function UsagePage() {
                 <>
                   <UsageBar
                     label="All fetches"
-                    used={usage.weekly.all_fetches.used}
-                    limit={usage.weekly.all_fetches.limit}
+                    used={usage.weekly.totalUsed}
+                    limit={usage.weekly.totalAvailable}
                   />
                   <UsageBar
-                    label="CAPTCHA solves"
-                    used={usage.weekly.captcha_solves.used}
-                    limit={usage.weekly.captcha_solves.limit}
-                    showTooltip
+                    label="Stealth fetches"
+                    used={usage.weekly.stealthUsed}
+                    limit={usage.weekly.totalAvailable}
                   />
                 </>
               ) : (
@@ -100,19 +93,19 @@ export default function UsagePage() {
           </Card>
 
           {/* Extra Usage */}
-          {usage?.extra_usage && (
+          {usage?.extraUsage && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg md:text-xl">Extra Usage</CardTitle>
                 <CardDescription className="text-sm">
-                  Spending: ${usage.extra_usage.spent.toFixed(2)} / ${usage.extra_usage.limit.toFixed(2)}
+                  Spending: ${usage.extraUsage.spent.toFixed(2)} / ${usage.extraUsage.spendingLimit.toFixed(2)}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <UsageBar
                   label="Monthly spending"
-                  used={usage.extra_usage.spent}
-                  limit={usage.extra_usage.limit}
+                  used={usage.extraUsage.spent}
+                  limit={usage.extraUsage.spendingLimit}
                 />
               </CardContent>
             </Card>
@@ -127,27 +120,34 @@ export default function UsagePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 md:space-y-4">
-                {dailyHistory.map((day) => (
-                  <div key={day.date} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 md:p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm">
-                        {new Date(day.date).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </p>
-                      <div className="flex flex-wrap gap-2 md:gap-4 text-xs sm:text-sm text-muted-foreground">
-                        <span>{day.fetches} fetches</span>
-                        <span>{day.captcha} CAPTCHA</span>
-                        <span>{day.search} searches</span>
+                {dailyHistory.length > 0 ? (
+                  dailyHistory.map((day) => (
+                    <div key={day.date} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 md:p-4 border rounded-lg">
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm">
+                          {new Date(day.date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                        <div className="flex flex-wrap gap-2 md:gap-4 text-xs sm:text-sm text-muted-foreground">
+                          <span>{day.fetches} fetches</span>
+                          <span>{day.captcha} CAPTCHA</span>
+                          <span>{day.search} searches</span>
+                        </div>
                       </div>
+                      <Badge variant="secondary" className="text-xs w-fit">
+                        {day.fetches + day.captcha + day.search} total
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className="text-xs w-fit">
-                      {day.fetches + day.captcha + day.search} total
-                    </Badge>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No history data available yet.</p>
+                    <p className="text-sm mt-2">Daily usage history will appear here once implemented.</p>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>

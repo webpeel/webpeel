@@ -22,22 +22,38 @@ export async function apiClient<T>(
 
 // Type definitions for API responses
 export interface Usage {
-  current_session: {
-    used: number;
-    limit: number;
-    resets_in: string;
+  plan: {
+    tier: string;
+    weeklyLimit: number;
+    burstLimit: number;
+  };
+  session: {
+    burstUsed: number;
+    burstLimit: number;
+    resetsIn: string;
+    percentUsed: number;
   };
   weekly: {
-    all_fetches: { used: number; limit: number };
-    captcha_solves: { used: number; limit: number };
-    resets_at: string;
+    week: string;
+    basicUsed: number;
+    stealthUsed: number;
+    captchaUsed: number;
+    searchUsed: number;
+    totalUsed: number;
+    totalAvailable: number;
+    rolloverCredits: number;
+    remaining: number;
+    percentUsed: number;
+    resetsAt: string;
   };
-  extra_usage: {
+  extraUsage: {
     enabled: boolean;
     spent: number;
-    limit: number;
+    spendingLimit: number;
     balance: number;
-    auto_reload: boolean;
+    autoReload: boolean;
+    percentUsed: number;
+    resetsAt: string;
   };
 }
 
@@ -45,9 +61,9 @@ export interface ApiKey {
   id: string;
   name: string;
   prefix: string;
-  created_at: string;
-  last_used?: string;
-  status: 'active' | 'revoked';
+  isActive: boolean;
+  createdAt: string;
+  lastUsedAt?: string;
 }
 
 export interface User {

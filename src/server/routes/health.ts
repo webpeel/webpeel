@@ -14,7 +14,7 @@ export function createHealthRouter(): Router {
     
     res.json({
       status: 'healthy',
-      version: process.env.npm_package_version || '1.0.0',
+      version: '0.3.0',
       uptime,
       timestamp: new Date().toISOString(),
     });

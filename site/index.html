@@ -254,7 +254,7 @@
   <!-- HERO -->
   <section class="hero">
     <div class="container">
-      <div class="hero-badge fade-up"><span class="dot"></span> v0.2.0 — Now with search & screenshots</div>
+      <div class="hero-badge fade-up"><span class="dot"></span> v0.3.0 — Now with stealth, crawl & search</div>
       <h1 class="fade-up delay-1">Fetch the web,<br><em>read what matters.</em></h1>
       <p class="fade-up delay-2">Smart web fetcher that auto-escalates from HTTP to headless browser. MCP server for Claude, Cursor & VS Code. Free and open source.</p>
       <div class="hero-actions fade-up delay-3">
@@ -292,7 +292,7 @@
   <div class="container">
     <div class="stats">
       <div class="stat"><div class="stat-num">~118ms</div><div class="stat-label">Average response time</div></div>
-      <div class="stat"><div class="stat-num">5 modes</div><div class="stat-label">HTTP → Browser → Stealth → Crawl → CAPTCHA</div></div>
+      <div class="stat"><div class="stat-num">3 modes</div><div class="stat-label">HTTP → Browser → Stealth</div></div>
       <div class="stat"><div class="stat-num">125/wk</div><div class="stat-label">Free tier included</div></div>
     </div>
   </div>
@@ -336,12 +336,12 @@
       </div>
       <div class="code-section">
         <div class="code-tabs">
-          <div class="code-tab active">CLI</div>
-          <div class="code-tab">MCP Config</div>
-          <div class="code-tab">TypeScript</div>
+          <div class="code-tab active" data-tab="cli">CLI</div>
+          <div class="code-tab" data-tab="mcp">MCP Config</div>
+          <div class="code-tab" data-tab="typescript">TypeScript</div>
         </div>
         <div class="code-body">
-          <pre><span class="hl-cm"># Install globally</span>
+          <pre id="code-content"><span class="hl-cm"># Install globally</span>
 <span class="hl-kw">npm</span> install -g webpeel
 
 <span class="hl-cm"># Fetch any page</span>
@@ -432,7 +432,7 @@
             <li>1,250 fetches per week</li>
             <li>100/hr burst limit</li>
             <li>Stealth mode included</li>
-            <li>CAPTCHA solving</li>
+            <li>Anti-bot stealth mode</li>
             <li>Priority support</li>
             <li>Extra usage available</li>
           </ul>
@@ -498,6 +498,51 @@
       if (menu.style.display === 'flex' && !menu.contains(event.target) && !hamburger.contains(event.target)) {
         menu.style.display = 'none';
       }
+    });
+
+    // Code tab switching
+    const codeTabs = document.querySelectorAll('.code-tab');
+    const codeContent = document.getElementById('code-content');
+    
+    const codeExamples = {
+      cli: `<span class="hl-cm"># Install globally</span>
+<span class="hl-kw">npm</span> install -g webpeel
+
+<span class="hl-cm"># Fetch any page</span>
+<span class="hl-kw">webpeel</span> <span class="hl-str">"https://example.com"</span>
+
+<span class="hl-cm"># Search the web</span>
+<span class="hl-kw">webpeel</span> search <span class="hl-str">"latest AI news"</span>`,
+      mcp: `<span class="hl-cm">// Add to your MCP settings.json (Claude/Cursor)</span>
+{
+  <span class="hl-str">"mcpServers"</span>: {
+    <span class="hl-str">"webpeel"</span>: {
+      <span class="hl-str">"command"</span>: <span class="hl-str">"npx"</span>,
+      <span class="hl-str">"args"</span>: [<span class="hl-str">"-y"</span>, <span class="hl-str">"webpeel"</span>, <span class="hl-str">"mcp"</span>]
+    }
+  }
+}`,
+      typescript: `<span class="hl-kw">import</span> { <span class="hl-fn">peel</span> } <span class="hl-kw">from</span> <span class="hl-str">'webpeel'</span>;
+
+<span class="hl-cm">// Fetch and parse any page</span>
+<span class="hl-kw">const</span> result = <span class="hl-kw">await</span> <span class="hl-fn">peel</span>(<span class="hl-str">'https://example.com'</span>);
+
+<span class="hl-cm">// Returns clean markdown</span>
+console.<span class="hl-fn">log</span>(result.markdown);`
+    };
+
+    codeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs
+        codeTabs.forEach(t => t.classList.remove('active'));
+        // Add active class to clicked tab
+        tab.classList.add('active');
+        // Update content
+        const tabName = tab.getAttribute('data-tab');
+        if (tabName && codeExamples[tabName]) {
+          codeContent.innerHTML = codeExamples[tabName];
+        }
+      });
     });
   </script>
 

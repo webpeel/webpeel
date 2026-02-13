@@ -665,7 +665,15 @@ export function createUserRouter(): Router {
    * POST /v1/extra-usage/buy
    * Add to extra usage balance (future: Stripe checkout)
    */
-  router.post('/v1/extra-usage/buy', jwtAuth, async (req: Request, res: Response) => {
+  router.post('/v1/extra-usage/buy', jwtAuth, async (_req: Request, res: Response) => {
+    // DISABLED: Stripe integration in progress
+    res.status(501).json({
+      error: 'not_implemented',
+      message: 'Coming soon — Stripe checkout integration in progress',
+    });
+    return;
+
+    /* TODO: Implement Stripe checkout
     try {
       const { userId } = (req as any).user as JwtPayload;
       const { amount } = req.body;
@@ -702,6 +710,201 @@ export function createUserRouter(): Router {
         error: 'purchase_failed',
         message: 'Failed to purchase extra usage',
       });
+    }
+    */
+  });
+
+  /**
+   * PATCH /v1/user/profile
+   * Update user profile (name, avatar)
+   */
+  router.patch('/v1/user/profile', jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = (req as any).user as JwtPayload;
+      const { name, avatarUrl } = req.body;
+
+      // Validate inputs
+      if (name && typeof name !== 'string') {
+        res.status(400).json({ error: 'invalid_name', message: 'Name must be a string' });
+        return;
+      }
+      if (name && name.length > 100) {
+        res.status(400).json({ error: 'invalid_name', message: 'Name too long (max 100 characters)' });
+        return;
+      }
+      if (avatarUrl && typeof avatarUrl !== 'string') {
+        res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL must be a string' });
+        return;
+      }
+      if (avatarUrl && avatarUrl.length > 500) {
+        res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL too long (max 500 characters)' });
+        return;
+      }
+
+      // Build update query dynamically
+      const updates: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
+
+      if (name !== undefined) {
+        updates.push(`name = $${paramIndex++}`);
+        values.push(name);
+      }
+      if (avatarUrl !== undefined) {
+        updates.push(`avatar_url = $${paramIndex++}`);
+        values.push(avatarUrl);
+      }
+
+      if (updates.length === 0) {
+        res.status(400).json({ error: 'no_updates', message: 'No fields to update' });
+        return;
+      }
+
+      updates.push(`updated_at = now()`);
+      values.push(userId);
+
+      const result = await pool.query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, email, name, avatar_url`,
+        values
+      );
+
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        user: {
+          id: result.rows[0].id,
+          email: result.rows[0].email,
+          name: result.rows[0].name,
+          avatar: result.rows[0].avatar_url,
+        },
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({ error: 'update_failed', message: 'Failed to update profile' });
+    }
+  });
+
+  /**
+   * PATCH /v1/user/password
+   * Change password (verify current, hash new)
+   */
+  router.patch('/v1/user/password', jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = (req as any).user as JwtPayload;
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        res.status(400).json({ error: 'missing_fields', message: 'Current and new passwords are required' });
+        return;
+      }
+
+      if (!isValidPassword(newPassword)) {
+        res.status(400).json({ error: 'weak_password', message: 'Password must be at least 8 characters' });
+        return;
+      }
+
+      // Get current password hash
+      const userResult = await pool.query(
+        'SELECT password_hash FROM users WHERE id = $1',
+        [userId]
+      );
+
+      if (userResult.rows.length === 0) {
+        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        return;
+      }
+
+      // OAuth users don't have passwords
+      if (!userResult.rows[0].password_hash) {
+        res.status(400).json({ 
+          error: 'oauth_user', 
+          message: 'OAuth users cannot set passwords. Please use your OAuth provider to manage your account.' 
+        });
+        return;
+      }
+
+      // Verify current password
+      const passwordValid = await bcrypt.compare(currentPassword, userResult.rows[0].password_hash);
+      if (!passwordValid) {
+        res.status(401).json({ error: 'invalid_password', message: 'Current password is incorrect' });
+        return;
+      }
+
+      // Hash new password
+      const newPasswordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+
+      // Update password
+      await pool.query(
+        'UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2',
+        [newPasswordHash, userId]
+      );
+
+      res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({ error: 'update_failed', message: 'Failed to change password' });
+    }
+  });
+
+  /**
+   * DELETE /v1/user/account
+   * Delete account + cascade to api_keys, oauth_accounts
+   */
+  router.delete('/v1/user/account', jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = (req as any).user as JwtPayload;
+      const { password, confirmEmail } = req.body;
+
+      // Get user info
+      const userResult = await pool.query(
+        'SELECT email, password_hash FROM users WHERE id = $1',
+        [userId]
+      );
+
+      if (userResult.rows.length === 0) {
+        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        return;
+      }
+
+      const user = userResult.rows[0];
+
+      // Verify email confirmation
+      if (confirmEmail !== user.email) {
+        res.status(400).json({ 
+          error: 'email_mismatch', 
+          message: 'Email confirmation does not match account email' 
+        });
+        return;
+      }
+
+      // Verify password (if user has one - OAuth users might not)
+      if (user.password_hash) {
+        if (!password) {
+          res.status(400).json({ error: 'missing_password', message: 'Password is required' });
+          return;
+        }
+
+        const passwordValid = await bcrypt.compare(password, user.password_hash);
+        if (!passwordValid) {
+          res.status(401).json({ error: 'invalid_password', message: 'Password is incorrect' });
+          return;
+        }
+      }
+
+      // Delete user (cascades to api_keys, oauth_accounts, etc.)
+      await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+
+      res.json({ 
+        success: true, 
+        message: 'Account deleted successfully. We\'re sorry to see you go!' 
+      });
+    } catch (error) {
+      console.error('Delete account error:', error);
+      res.status(500).json({ error: 'delete_failed', message: 'Failed to delete account' });
     }
   });
 

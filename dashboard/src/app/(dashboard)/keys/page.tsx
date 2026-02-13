@@ -203,18 +203,18 @@ export default function ApiKeysPage() {
                         <p className="font-medium text-sm truncate">{key.name}</p>
                         <code className="text-xs text-muted-foreground">{key.prefix}...</code>
                       </div>
-                      <Badge variant={key.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                        {key.status}
+                      <Badge variant={key.isActive ? 'default' : 'secondary'} className="text-xs">
+                        {key.isActive ? 'active' : 'revoked'}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       <div>
                         <span className="block text-zinc-400">Created</span>
-                        {new Date(key.created_at).toLocaleDateString()}
+                        {new Date(key.createdAt).toLocaleDateString()}
                       </div>
                       <div>
                         <span className="block text-zinc-400">Last Used</span>
-                        {key.last_used ? new Date(key.last_used).toLocaleDateString() : 'Never'}
+                        {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : 'Never'}
                       </div>
                     </div>
                     <Dialog open={deleteId === key.id} onOpenChange={(open) => !open && setDeleteId(null)}>
@@ -276,14 +276,14 @@ export default function ApiKeysPage() {
                           <code className="text-sm">{key.prefix}...</code>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(key.created_at).toLocaleDateString()}
+                          {new Date(key.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {key.last_used ? new Date(key.last_used).toLocaleDateString() : 'Never'}
+                          {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : 'Never'}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={key.status === 'active' ? 'default' : 'secondary'}>
-                            {key.status}
+                          <Badge variant={key.isActive ? 'default' : 'secondary'}>
+                            {key.isActive ? 'active' : 'revoked'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">

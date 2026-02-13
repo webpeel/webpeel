@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service — WebPeel</title>
+  <meta name="description" content="WebPeel terms of service. Rules for using our web fetching API and tools.">
+  <link rel="canonical" href="https://webpeel.dev/terms">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#FAFAF8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root { --bg:#FAFAF8; --text:#09090B; --text-2:#52525B; --text-3:#71717A; --border:#E4E4E7; --accent:#8B5CF6; --border-light:#F4F4F5; }
+    body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; -webkit-font-smoothing:antialiased; }
+    a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+    .container { max-width:720px; margin:0 auto; padding:0 24px; }
+    nav { position:sticky; top:0; z-index:100; background:rgba(250,250,248,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border-light); }
+    .nav-inner { display:flex; align-items:center; justify-content:space-between; height:56px; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .nav-logo { display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; color:var(--text); text-decoration:none; }
+    .nav-logo svg { width:24px; height:24px; }
+    .nav-links { display:flex; align-items:center; gap:24px; }
+    .nav-links a { font-size:14px; color:var(--text-3); text-decoration:none; } .nav-links a:hover { color:var(--text); }
+    main { padding:80px 0; }
+    h1 { font-family:'Instrument Serif',serif; font-size:42px; font-weight:400; margin-bottom:8px; }
+    .updated { font-size:14px; color:var(--text-3); margin-bottom:48px; }
+    h2 { font-size:20px; font-weight:600; margin:36px 0 12px; }
+    p, li { font-size:15px; color:var(--text-2); margin-bottom:12px; }
+    ul { padding-left:20px; margin-bottom:16px; }
+    footer { border-top:1px solid var(--border); padding:40px 0; }
+    .footer-inner { display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .footer-left { font-size:13px; color:#A1A1AA; }
+    .footer-links { display:flex; gap:20px; }
+    .footer-links a { font-size:13px; color:var(--text-3); text-decoration:none; } .footer-links a:hover { color:var(--text); }
+    @media(max-width:768px) { h1 { font-size:32px; } main { padding:48px 0; } .footer-inner { flex-direction:column; gap:16px; text-align:center; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/privacy">Privacy</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h1>Terms of Service</h1>
+      <p class="updated">Last updated: February 12, 2026</p>
+
+      <h2>1. Acceptance</h2>
+      <p>By using WebPeel (the "Service"), you agree to these terms. If you don't agree, don't use the Service.</p>
+
+      <h2>2. The Service</h2>
+      <p>WebPeel provides web fetching tools including a CLI, API, and MCP server. The open-source components are licensed under the <a href="https://github.com/JakeLiuMe/webpeel/blob/main/LICENSE">MIT License</a>. The hosted API is a separate commercial service.</p>
+
+      <h2>3. Acceptable Use</h2>
+      <p>You agree not to:</p>
+      <ul>
+        <li>Use the Service to scrape websites that explicitly prohibit scraping in their terms of service or robots.txt</li>
+        <li>Use the Service for spam, harassment, or any illegal activity</li>
+        <li>Attempt to bypass rate limits or authentication</li>
+        <li>Resell API access without permission</li>
+        <li>Use the Service to attack, overload, or disrupt other websites</li>
+        <li>Fetch content that violates applicable laws (e.g., CSAM, classified material)</li>
+      </ul>
+
+      <h2>4. Accounts & API Keys</h2>
+      <ul>
+        <li>You are responsible for keeping your API keys secure</li>
+        <li>One account per person or organization</li>
+        <li>We may suspend accounts that violate these terms</li>
+        <li>You can delete your account at any time via Settings</li>
+      </ul>
+
+      <h2>5. Usage Limits</h2>
+      <p>Each plan has weekly and hourly limits. Exceeding soft limits degrades service (HTTP-only mode) rather than blocking requests. Exceeding hard limits (hourly burst) returns 429 errors. See our <a href="/#pricing">pricing page</a> for current limits.</p>
+
+      <h2>6. Payments & Refunds</h2>
+      <ul>
+        <li>Paid plans are billed monthly or annually via Stripe</li>
+        <li>You can cancel anytime — access continues until the end of the billing period</li>
+        <li>Refunds are handled on a case-by-case basis — contact support@webpeel.dev</li>
+        <li>Extra usage charges are billed per-request at published rates</li>
+      </ul>
+
+      <h2>7. Service Availability</h2>
+      <p>We aim for high availability but don't guarantee specific uptime. The Service is provided "as is" without warranties of any kind. We may modify or discontinue features with reasonable notice.</p>
+
+      <h2>8. Limitation of Liability</h2>
+      <p>To the maximum extent permitted by law, WebPeel and its creators shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service. Our total liability shall not exceed the amount you paid us in the 12 months preceding the claim.</p>
+
+      <h2>9. Content Responsibility</h2>
+      <p>WebPeel fetches content from third-party websites. We are not responsible for the content of those websites. You are responsible for ensuring your use of fetched content complies with applicable laws and the source website's terms.</p>
+
+      <h2>10. Changes to Terms</h2>
+      <p>We may update these terms. Material changes will be communicated via email or dashboard notification. Continued use after changes constitutes acceptance.</p>
+
+      <h2>11. Contact</h2>
+      <p>Questions? Email <a href="mailto:support@webpeel.dev">support@webpeel.dev</a></p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. Open source under MIT.</div>
+      <div class="footer-links">
+        <a href="https://github.com/JakeLiuMe/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

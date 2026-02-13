@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — WebPeel</title>
+  <meta name="description" content="WebPeel privacy policy. Learn how we collect, use, and protect your data.">
+  <link rel="canonical" href="https://webpeel.dev/privacy">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#FAFAF8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root { --bg:#FAFAF8; --text:#09090B; --text-2:#52525B; --text-3:#71717A; --border:#E4E4E7; --accent:#8B5CF6; --border-light:#F4F4F5; }
+    body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; -webkit-font-smoothing:antialiased; }
+    a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+    .container { max-width:720px; margin:0 auto; padding:0 24px; }
+    nav { position:sticky; top:0; z-index:100; background:rgba(250,250,248,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border-light); }
+    .nav-inner { display:flex; align-items:center; justify-content:space-between; height:56px; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .nav-logo { display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; color:var(--text); text-decoration:none; }
+    .nav-logo svg { width:24px; height:24px; }
+    .nav-links { display:flex; align-items:center; gap:24px; }
+    .nav-links a { font-size:14px; color:var(--text-3); text-decoration:none; } .nav-links a:hover { color:var(--text); }
+    main { padding:80px 0; }
+    h1 { font-family:'Instrument Serif',serif; font-size:42px; font-weight:400; margin-bottom:8px; }
+    .updated { font-size:14px; color:var(--text-3); margin-bottom:48px; }
+    h2 { font-size:20px; font-weight:600; margin:36px 0 12px; }
+    p, li { font-size:15px; color:var(--text-2); margin-bottom:12px; }
+    ul { padding-left:20px; margin-bottom:16px; }
+    footer { border-top:1px solid var(--border); padding:40px 0; }
+    .footer-inner { display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .footer-left { font-size:13px; color:#A1A1AA; }
+    .footer-links { display:flex; gap:20px; }
+    .footer-links a { font-size:13px; color:var(--text-3); text-decoration:none; } .footer-links a:hover { color:var(--text); }
+    @media(max-width:768px) { h1 { font-size:32px; } main { padding:48px 0; } .footer-inner { flex-direction:column; gap:16px; text-align:center; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated: February 12, 2026</p>
+
+      <h2>What We Collect</h2>
+      <ul>
+        <li><strong>Account info:</strong> Email address, name, and avatar (from OAuth providers like GitHub/Google)</li>
+        <li><strong>Usage data:</strong> URLs fetched, request timestamps, response times, and fetch method used</li>
+        <li><strong>Payment info:</strong> Processed securely by <a href="https://stripe.com/privacy">Stripe</a>. We never store card numbers.</li>
+        <li><strong>Technical data:</strong> IP address, user agent, and API key hashes for rate limiting and security</li>
+      </ul>
+
+      <h2>How We Use Your Data</h2>
+      <ul>
+        <li>Providing and operating the WebPeel service</li>
+        <li>Tracking usage against your plan limits</li>
+        <li>Preventing abuse and enforcing rate limits</li>
+        <li>Improving our service and fixing bugs</li>
+        <li>Sending account-related communications (no marketing emails)</li>
+      </ul>
+
+      <h2>Data Retention</h2>
+      <ul>
+        <li><strong>Usage logs:</strong> Retained for 90 days, then aggregated/deleted</li>
+        <li><strong>Account data:</strong> Kept until you delete your account</li>
+        <li><strong>API keys:</strong> Key hashes stored while active; deleted with account</li>
+      </ul>
+
+      <h2>Data Sharing</h2>
+      <p>We do not sell your data. We share data only with:</p>
+      <ul>
+        <li><strong>Stripe</strong> — for payment processing</li>
+        <li><strong>Neon</strong> — our database provider (PostgreSQL hosting)</li>
+        <li><strong>Render</strong> — our API hosting provider</li>
+        <li><strong>Vercel</strong> — our website hosting provider</li>
+      </ul>
+
+      <h2>Your Rights</h2>
+      <ul>
+        <li><strong>Access:</strong> View your data via the dashboard API</li>
+        <li><strong>Delete:</strong> Delete your account via Settings → Delete Account</li>
+        <li><strong>Export:</strong> Request a data export by contacting us</li>
+        <li><strong>Correct:</strong> Update your profile in Settings</li>
+      </ul>
+
+      <h2>Security</h2>
+      <p>We use industry-standard security practices: TLS encryption in transit, hashed API keys, parameterized SQL queries, and SSRF protection. Our code is <a href="https://github.com/JakeLiuMe/webpeel">open source</a> for transparency.</p>
+
+      <h2>Cookies</h2>
+      <p>We use essential session cookies for authentication. No tracking cookies or third-party analytics.</p>
+
+      <h2>Contact</h2>
+      <p>Questions about this policy? Email <a href="mailto:privacy@webpeel.dev">privacy@webpeel.dev</a></p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. Open source under MIT.</div>
+      <div class="footer-links">
+        <a href="https://github.com/JakeLiuMe/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

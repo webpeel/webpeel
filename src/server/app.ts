@@ -37,12 +37,15 @@ export function createApp(config: ServerConfig = {}): Express {
   // SECURITY: Limit request body size to prevent DoS
   app.use(express.json({ limit: '1mb' }));
   
-  // SECURITY: Restrict CORS - require explicit origin whitelist
+  // CORS configuration - Allow public API access with default origins
   const corsOrigins = config.corsOrigins || 
-    (process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []);
+    (process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
+      'https://app.webpeel.dev',
+      'https://webpeel.dev'
+    ]);
   
   app.use(cors({
-    origin: corsOrigins.length > 0 ? corsOrigins : false,
+    origin: corsOrigins.length > 0 ? corsOrigins : true, // Default to true for public API
     credentials: true,
   }));
 
@@ -83,13 +86,13 @@ export function createApp(config: ServerConfig = {}): Express {
     });
   });
 
-  // Error handler
+  // Error handler - SECURITY: Do not expose internal error details
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('Unhandled error:', err);
+    console.error('Unhandled error:', err); // Log full error server-side
     res.status(500).json({
       error: 'internal_error',
-      message: err.message || 'An unexpected error occurred',
+      message: 'An unexpected error occurred', // Generic message only
     });
   });
 

@@ -74,12 +74,12 @@ export default function DashboardPage() {
             {/* Current Session */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">Current Session</h3>
-              {usage?.current_session ? (
+              {usage?.session ? (
                 <UsageBar
                   label="Session usage"
-                  used={usage.current_session.used}
-                  limit={usage.current_session.limit}
-                  resetInfo={`Resets in ${usage.current_session.resets_in}`}
+                  used={usage.session.burstUsed}
+                  limit={usage.session.burstLimit}
+                  resetInfo={`Resets in ${usage.session.resetsIn}`}
                 />
               ) : (
                 <div className="h-20 animate-pulse rounded-lg bg-zinc-100" />
@@ -107,15 +107,14 @@ export default function DashboardPage() {
                 <>
                   <UsageBar
                     label="All fetches"
-                    used={usage.weekly.all_fetches.used}
-                    limit={usage.weekly.all_fetches.limit}
-                    resetInfo={`Resets ${new Date(usage.weekly.resets_at).toLocaleDateString()}`}
+                    used={usage.weekly.totalUsed}
+                    limit={usage.weekly.totalAvailable}
+                    resetInfo={`Resets ${new Date(usage.weekly.resetsAt).toLocaleDateString()}`}
                   />
                   <UsageBar
-                    label="CAPTCHA solves"
-                    used={usage.weekly.captcha_solves.used}
-                    limit={usage.weekly.captcha_solves.limit}
-                    showTooltip
+                    label="Stealth fetches"
+                    used={usage.weekly.stealthUsed}
+                    limit={usage.weekly.totalAvailable}
                   />
                 </>
               ) : (
@@ -133,7 +132,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Extra Usage */}
-            {usage?.extra_usage && (
+            {usage?.extraUsage && (
               <>
                 <Separator />
                 <div className="space-y-4">
@@ -144,36 +143,40 @@ export default function DashboardPage() {
                         Keep fetching if you hit a limit
                       </p>
                     </div>
-                    <Switch checked={usage.extra_usage.enabled} />
+                    <Switch checked={usage.extraUsage.enabled} />
                   </div>
 
                   <UsageBar
                     label="Spending this month"
-                    used={usage.extra_usage.spent}
-                    limit={usage.extra_usage.limit}
-                    resetInfo="Resets Mar 1"
+                    used={usage.extraUsage.spent}
+                    limit={usage.extraUsage.spendingLimit}
+                    resetInfo={`Resets ${new Date(usage.extraUsage.resetsAt).toLocaleDateString()}`}
                   />
 
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-xl md:text-2xl font-bold">
-                        ${usage.extra_usage.limit.toFixed(2)}
+                        ${usage.extraUsage.spendingLimit.toFixed(2)}
                       </span>
                       <span className="text-muted-foreground text-xs md:text-sm">Monthly spending limit</span>
                     </div>
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto">Adjust limit</Button>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+                      <a href="/billing">Adjust limit</a>
+                    </Button>
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
                     <div>
                       <span className="text-lg md:text-xl font-bold">
-                        ${usage.extra_usage.balance.toFixed(2)}
+                        ${usage.extraUsage.balance.toFixed(2)}
                       </span>
                       <span className="text-muted-foreground ml-2 text-xs md:text-sm">
-                        Current balance · auto-reload {usage.extra_usage.auto_reload ? 'on' : 'off'}
+                        Current balance · auto-reload {usage.extraUsage.autoReload ? 'on' : 'off'}
                       </span>
                     </div>
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto">Buy more</Button>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+                      <a href="/billing">Buy more</a>
+                    </Button>
                   </div>
                 </div>
               </>
