@@ -11,6 +11,8 @@ interface CLIConfig {
     apiKey?: string;
     anonymousUsage: number;
     lastReset: string;
+    planTier?: string;
+    planCachedAt?: string;
 }
 interface UsageCheckResult {
     allowed: boolean;
@@ -38,6 +40,22 @@ export declare function deleteConfig(): void;
  * Check usage quota before making a request
  */
 export declare function checkUsage(): Promise<UsageCheckResult>;
+export type PremiumFeature = 'stealth' | 'crawl' | 'batch';
+/**
+ * Check if user has access to a premium feature.
+ * Returns { allowed: true } for paid users, or a helpful upgrade message.
+ *
+ * Priority:
+ * 1. No API key → blocked (must sign up)
+ * 2. Has API key + cached plan → check plan tier
+ * 3. Has API key + no cache → check API, then cache
+ * 4. API unreachable + cached plan within 7 days → use cache
+ * 5. API unreachable + stale cache → allow gracefully (trust the user)
+ */
+export declare function checkFeatureAccess(feature: PremiumFeature): Promise<{
+    allowed: boolean;
+    message?: string;
+}>;
 /**
  * Show usage footer after successful fetch (for free/anonymous users only)
  */

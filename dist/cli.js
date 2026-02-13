@@ -16,7 +16,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { writeFileSync } from 'fs';
 import { peel, peelBatch, cleanup } from './index.js';
-import { checkUsage, showUsageFooter, handleLogin, handleLogout, handleUsage } from './cli-auth.js';
+import { checkUsage, checkFeatureAccess, showUsageFooter, handleLogin, handleLogout, handleUsage } from './cli-auth.js';
 const program = new Command();
 program
     .name('webpeel')
@@ -68,8 +68,16 @@ program
         console.error(`Error: Invalid URL format: ${url}`);
         process.exit(1);
     }
-    // Check usage quota
+    // Check premium feature access (stealth requires Pro plan)
     const useStealth = options.stealth || false;
+    if (useStealth) {
+        const featureCheck = await checkFeatureAccess('stealth');
+        if (!featureCheck.allowed) {
+            console.error(featureCheck.message);
+            process.exit(1);
+        }
+    }
+    // Check usage quota
     const usageCheck = await checkUsage();
     if (!usageCheck.allowed) {
         console.error(usageCheck.message);
@@ -301,7 +309,7 @@ program
 // Batch command
 program
     .command('batch <file>')
-    .description('Fetch multiple URLs')
+    .description('Fetch multiple URLs (Pro feature)')
     .option('-c, --concurrency <n>', 'Max concurrent fetches (default: 3)', '3')
     .option('-o, --output <dir>', 'Output directory (one file per URL)')
     .option('--json', 'Output as JSON array')
@@ -313,6 +321,12 @@ program
     const isSilent = options.silent;
     const shouldRender = options.render;
     const selector = options.selector;
+    // Check premium feature access (batch requires Pro plan)
+    const featureCheck = await checkFeatureAccess('batch');
+    if (!featureCheck.allowed) {
+        console.error(featureCheck.message);
+        process.exit(1);
+    }
     // Check usage quota
     const usageCheck = await checkUsage();
     if (!usageCheck.allowed) {
@@ -416,7 +430,7 @@ program
 });
 program
     .command('crawl <url>')
-    .description('Crawl a website starting from a URL')
+    .description('Crawl a website starting from a URL (Pro feature)')
     .option('--max-pages <number>', 'Maximum number of pages to crawl (default: 10, max: 100)', parseInt, 10)
     .option('--max-depth <number>', 'Maximum depth to crawl (default: 2, max: 5)', parseInt, 2)
     .option('--allowed-domains <domains...>', 'Only crawl these domains (default: same as starting URL)')
@@ -428,6 +442,12 @@ program
     .option('-s, --silent', 'Silent mode (no spinner)')
     .option('--json', 'Output as JSON')
     .action(async (url, options) => {
+    // Check premium feature access (crawl requires Pro plan)
+    const featureCheck = await checkFeatureAccess('crawl');
+    if (!featureCheck.allowed) {
+        console.error(featureCheck.message);
+        process.exit(1);
+    }
     // Check usage quota
     const usageCheck = await checkUsage();
     if (!usageCheck.allowed) {

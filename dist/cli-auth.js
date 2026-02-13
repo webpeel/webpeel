@@ -159,6 +159,11 @@ export async function checkUsage() {
                 message: `Weekly limit reached (${data.weekly.totalUsed}/${data.weekly.totalAvailable}).\nResets: ${data.weekly.resetsAt}\nEnable extra usage or upgrade: https://app.webpeel.dev/billing`,
             };
         }
+        // Cache plan tier for offline feature gating
+        const planName = (data.plan?.name || 'free').toLowerCase();
+        config.planTier = planName;
+        config.planCachedAt = new Date().toISOString();
+        saveConfig(config);
         return {
             allowed: true,
             isAnonymous: false,
@@ -173,6 +178,82 @@ export async function checkUsage() {
         // If API is unreachable, allow the request (graceful degradation)
         return { allowed: true };
     }
+}
+const FEATURE_LABELS = {
+    stealth: 'Stealth mode (anti-bot bypass)',
+    crawl: 'Crawl mode (multi-page)',
+    batch: 'Batch mode (bulk URLs)',
+};
+/**
+ * Check if user has access to a premium feature.
+ * Returns { allowed: true } for paid users, or a helpful upgrade message.
+ *
+ * Priority:
+ * 1. No API key → blocked (must sign up)
+ * 2. Has API key + cached plan → check plan tier
+ * 3. Has API key + no cache → check API, then cache
+ * 4. API unreachable + cached plan within 7 days → use cache
+ * 5. API unreachable + stale cache → allow gracefully (trust the user)
+ */
+export async function checkFeatureAccess(feature) {
+    const config = loadConfig();
+    // No API key → must sign up and subscribe
+    if (!config.apiKey) {
+        return {
+            allowed: false,
+            message: `⚡ ${FEATURE_LABELS[feature]} requires a Pro plan ($9/mo).\n\n` +
+                `  Basic fetch is free — stealth, crawl, and batch are Pro features.\n\n` +
+                `  Sign up:  https://app.webpeel.dev/signup\n` +
+                `  Pricing:  https://webpeel.dev/#pricing\n` +
+                `  Login:    webpeel login\n`,
+        };
+    }
+    // Try to get fresh plan info from API
+    try {
+        const response = await fetch(`${API_BASE_URL}/v1/usage`, {
+            headers: { 'Authorization': `Bearer ${config.apiKey}` },
+            signal: AbortSignal.timeout(5000),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const planName = (data.plan?.name || 'free').toLowerCase();
+            // Cache for offline use
+            config.planTier = planName;
+            config.planCachedAt = new Date().toISOString();
+            saveConfig(config);
+            if (planName === 'free') {
+                return {
+                    allowed: false,
+                    message: `⚡ ${FEATURE_LABELS[feature]} requires a Pro plan ($9/mo).\n\n` +
+                        `  You're on the Free plan. Upgrade to unlock stealth, crawl, and batch.\n\n` +
+                        `  Upgrade:  https://app.webpeel.dev/billing\n` +
+                        `  Pricing:  https://webpeel.dev/#pricing\n`,
+                };
+            }
+            // Pro or Max — allowed
+            return { allowed: true };
+        }
+    }
+    catch {
+        // API unreachable — fall through to cache check
+    }
+    // API unreachable — use cached plan if recent (within 7 days)
+    if (config.planTier && config.planCachedAt) {
+        const cacheAge = Date.now() - new Date(config.planCachedAt).getTime();
+        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        if (cacheAge < SEVEN_DAYS) {
+            if (config.planTier === 'free') {
+                return {
+                    allowed: false,
+                    message: `⚡ ${FEATURE_LABELS[feature]} requires a Pro plan ($9/mo).\n\n` +
+                        `  Upgrade:  https://app.webpeel.dev/billing\n`,
+                };
+            }
+            return { allowed: true };
+        }
+    }
+    // Stale cache or no cache, API unreachable — allow gracefully (trust paying users)
+    return { allowed: true };
 }
 /**
  * Show usage footer after successful fetch (for free/anonymous users only)
