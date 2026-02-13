@@ -12,7 +12,7 @@ async function fetchRobotsTxt(domain) {
     try {
         const response = await undiciFetch(robotsUrl, {
             headers: {
-                'User-Agent': 'WebPeel/0.3.0 (+https://webpeel.dev)',
+                'User-Agent': 'WebPeel/0.3.1 (+https://webpeel.dev)',
             },
             signal: AbortSignal.timeout(5000), // 5 second timeout
         });

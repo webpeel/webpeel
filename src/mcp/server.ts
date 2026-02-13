@@ -20,7 +20,7 @@ import { load } from 'cheerio';
 const server = new Server(
   {
     name: 'webpeel',
-    version: '0.3.0',
+    version: '0.3.1',
   },
   {
     capabilities: {

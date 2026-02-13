@@ -3,7 +3,7 @@
   "name": "io.github.JakeLiuMe/webpeel",
   "title": "WebPeel",
   "description": "Fetch any web page as clean, AI-ready markdown with smart HTTP-to-browser escalation.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "websiteUrl": "https://webpeel.dev",
   "repository": {
     "url": "https://github.com/JakeLiuMe/webpeel",
@@ -13,7 +13,7 @@
     {
       "registryType": "npm",
       "identifier": "webpeel",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "transport": {
         "type": "stdio"
       },

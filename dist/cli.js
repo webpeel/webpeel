@@ -21,7 +21,7 @@ const program = new Command();
 program
     .name('webpeel')
     .description('Fast web fetcher for AI agents')
-    .version('0.3.0')
+    .version('0.3.1')
     .enablePositionalOptions();
 program
     .argument('[url]', 'URL to fetch')

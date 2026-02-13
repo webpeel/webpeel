@@ -9,7 +9,7 @@ export function createHealthRouter() {
         const uptime = Math.floor((Date.now() - startTime) / 1000);
         res.json({
             status: 'healthy',
-            version: '0.3.0',
+            version: '0.3.1',
             uptime,
             timestamp: new Date().toISOString(),
         });
