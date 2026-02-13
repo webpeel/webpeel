@@ -77,14 +77,15 @@ export function createApp(config: ServerConfig = {}): Express {
     rateLimiter.cleanup();
   }, 5 * 60 * 1000);
 
+  // Health check MUST be before auth/rate-limit middleware
+  // Render hits /health every ~30s; rate-limiting it causes 429 → service marked as failed
+  app.use(createHealthRouter());
+
   // Apply auth middleware globally
   app.use(createAuthMiddleware(authStore));
 
   // Apply rate limiting middleware globally
   app.use(createRateLimitMiddleware(rateLimiter));
-
-  // Routes
-  app.use(createHealthRouter());
   app.use(createFetchRouter(authStore));
   app.use(createSearchRouter(authStore));
   app.use(createUserRouter());
