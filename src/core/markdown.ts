@@ -6,28 +6,37 @@ import TurndownService from 'turndown';
 import * as cheerio from 'cheerio';
 
 const JUNK_SELECTORS = [
-  'script',
-  'style',
-  'nav',
-  'footer',
-  'header.site-header',
-  'aside',
-  '.sidebar',
-  '.advertisement',
-  '.ad',
-  '.cookie-banner',
-  '.cookie-notice',
-  '.newsletter-signup',
-  '.social-share',
-  '.related-posts',
-  '.comments',
-  '#comments',
-  '.cookie-consent',
-  '[class*="cookie"]',
-  '[id*="cookie"]',
-  '[class*="banner"]',
-  '[class*="popup"]',
-  '[class*="modal"]',
+  // Scripts, styles, metadata
+  'script', 'style', 'noscript', 'iframe', 'link[rel="stylesheet"]',
+  // Navigation & structure
+  'nav', 'header', 'footer', 'aside',
+  '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]',
+  '[role="complementary"]', '[role="search"]',
+  '.sidebar', '.topbar', '.top-bar', '.site-nav', '.main-nav',
+  '.breadcrumb', '.breadcrumbs', '[class*="breadcrumb"]',
+  '.pagination', '[class*="pagination"]',
+  // Ads & tracking
+  '.advertisement', '.ad', '[class*="ad-"]', '[id*="ad-"]',
+  '[class*="advert"]', '[class*="sponsor"]', '[class*="promo"]',
+  // Cookie & consent
+  '.cookie-banner', '.cookie-notice', '.cookie-consent',
+  '[class*="cookie"]', '[id*="cookie"]',
+  '[class*="consent"]', '[class*="gdpr"]',
+  // Popups, modals, banners
+  '[class*="banner"]', '[class*="popup"]', '[class*="modal"]',
+  '[class*="overlay"]', '[class*="notification-bar"]',
+  // Social & sharing
+  '.social-share', '[class*="share"]', '[class*="social"]',
+  // Newsletter & CTA
+  '.newsletter-signup', '[class*="newsletter"]', '[class*="subscribe"]',
+  '[class*="cta"]', '[class*="call-to-action"]', '[class*="signup"]',
+  // Related content
+  '.related-posts', '[class*="related"]', '[class*="recommended"]',
+  '[class*="you-may-also"]', '[class*="more-stories"]',
+  // Comments
+  '.comments', '#comments', '[class*="comment"]',
+  // SVG decorations (icons, decorative elements)
+  'svg:not(img svg)',
 ];
 
 /**
