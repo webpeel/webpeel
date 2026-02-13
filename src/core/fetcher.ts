@@ -425,7 +425,12 @@ export async function simpleFetch(
         throw new TimeoutError(`Request timed out after ${timeoutMs}ms`);
       }
 
-      throw new NetworkError(`Failed to fetch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Include cause for better debugging (undici wraps real errors in a generic "fetch failed")
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      const cause = error instanceof Error && (error as any).cause 
+        ? ` (cause: ${(error as any).cause.message || (error as any).cause})`
+        : '';
+      throw new NetworkError(`Failed to fetch: ${msg}${cause}`);
     }
   }
 

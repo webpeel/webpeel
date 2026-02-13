@@ -353,7 +353,12 @@ export async function simpleFetch(url, userAgent, timeoutMs = 30000, customHeade
             if (error instanceof Error && error.name === 'AbortError') {
                 throw new TimeoutError(`Request timed out after ${timeoutMs}ms`);
             }
-            throw new NetworkError(`Failed to fetch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            // Include cause for better debugging (undici wraps real errors in a generic "fetch failed")
+            const msg = error instanceof Error ? error.message : 'Unknown error';
+            const cause = error instanceof Error && error.cause
+                ? ` (cause: ${error.cause.message || error.cause})`
+                : '';
+            throw new NetworkError(`Failed to fetch: ${msg}${cause}`);
         }
     }
     throw new WebPeelError(`Too many redirects (max ${MAX_REDIRECTS})`);
