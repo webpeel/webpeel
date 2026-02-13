@@ -33,8 +33,7 @@ const plans = {
     features: [
       '1,250 fetches per week',
       '100/hr burst limit',
-      'Stealth mode included',
-      'CAPTCHA solving',
+      'Anti-bot stealth mode',
       'Priority support',
       'Extra usage available',
     ],
@@ -105,20 +104,14 @@ export default function BillingPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm md:text-base font-semibold mb-2">Manage Subscription</h3>
-                  <Button variant="outline" className="w-full text-sm" asChild>
-                    <a
-                      href="https://billing.stripe.com/p/login/test_xxx"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="gap-2"
-                    >
-                      Stripe Customer Portal
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
+                  {/* TODO: Replace with real Stripe Customer Portal URL from API */}
+                  <Button variant="outline" className="w-full text-sm gap-2" disabled>
+                    Stripe Customer Portal
+                    <ExternalLink className="h-4 w-4" />
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Manage your payment methods, view invoices, and cancel your subscription
+                  Subscription management coming soon. Contact support@webpeel.dev for changes.
                 </p>
               </div>
             )}

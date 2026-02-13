@@ -90,6 +90,7 @@ export function createApp(config: ServerConfig = {}): Express {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error('Unhandled error:', err); // Log full error server-side
+    if (res.headersSent) return; // Avoid double-send crash
     res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred', // Generic message only

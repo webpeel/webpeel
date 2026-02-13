@@ -27,6 +27,7 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const token = (session as any)?.apiToken;
@@ -67,8 +68,8 @@ export default function SettingsPage() {
       await apiClient('/v1/user/password', {
         method: 'PATCH',
         body: JSON.stringify({
-          current_password: currentPassword,
-          new_password: newPassword,
+          currentPassword,
+          newPassword,
         }),
         token,
       });
@@ -93,6 +94,10 @@ export default function SettingsPage() {
     try {
       await apiClient('/v1/user/account', {
         method: 'DELETE',
+        body: JSON.stringify({
+          confirmEmail: session?.user?.email,
+          ...(deletePassword ? { password: deletePassword } : {}),
+        }),
         token,
       });
       toast.success('Account deleted successfully');
@@ -227,6 +232,18 @@ export default function SettingsPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
+                  {!isOAuthUser && (
+                    <div className="space-y-2">
+                      <Label htmlFor="delete-password">Your password</Label>
+                      <Input
+                        id="delete-password"
+                        type="password"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        placeholder="Enter your password"
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="delete-confirm">
                       Type <strong>DELETE</strong> to confirm
@@ -240,7 +257,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <DialogFooter className="flex-col sm:flex-row gap-2">
-                  <Button variant="outline" onClick={() => setDeleteConfirm('')} className="w-full sm:w-auto">
+                  <Button variant="outline" onClick={() => { setDeleteConfirm(''); setDeletePassword(''); }} className="w-full sm:w-auto">
                     Cancel
                   </Button>
                   <Button

@@ -740,6 +740,18 @@ export function createUserRouter(): Router {
         res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL too long (max 500 characters)' });
         return;
       }
+      if (avatarUrl) {
+        try {
+          const parsed = new URL(avatarUrl);
+          if (!['http:', 'https:'].includes(parsed.protocol)) {
+            res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL must use http or https protocol' });
+            return;
+          }
+        } catch {
+          res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL must be a valid URL' });
+          return;
+        }
+      }
 
       // Build update query dynamically
       const updates: string[] = [];
@@ -895,8 +907,20 @@ export function createUserRouter(): Router {
         }
       }
 
-      // Delete user (cascades to api_keys, oauth_accounts, etc.)
-      await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+      // Delete user and all related data in a transaction
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query('DELETE FROM api_keys WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM oauth_accounts WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM users WHERE id = $1', [userId]);
+        await client.query('COMMIT');
+      } catch (txError) {
+        await client.query('ROLLBACK');
+        throw txError;
+      } finally {
+        client.release();
+      }
 
       res.json({ 
         success: true, 

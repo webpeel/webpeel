@@ -23,7 +23,7 @@ export default function UsagePage() {
   );
 
   // TODO: Replace with real API data from /v1/usage/history endpoint
-  const dailyHistory: Array<{ date: string; fetches: number; captcha: number; search: number }> = [];
+  const dailyHistory: Array<{ date: string; fetches: number; stealth: number; search: number }> = [];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
@@ -133,12 +133,12 @@ export default function UsagePage() {
                         </p>
                         <div className="flex flex-wrap gap-2 md:gap-4 text-xs sm:text-sm text-muted-foreground">
                           <span>{day.fetches} fetches</span>
-                          <span>{day.captcha} CAPTCHA</span>
+                          <span>{day.stealth} stealth</span>
                           <span>{day.search} searches</span>
                         </div>
                       </div>
                       <Badge variant="secondary" className="text-xs w-fit">
-                        {day.fetches + day.captcha + day.search} total
+                        {day.fetches + day.stealth + day.search} total
                       </Badge>
                     </div>
                   ))
@@ -160,35 +160,34 @@ export default function UsagePage() {
                 <CardTitle className="text-lg md:text-xl">By Request Type</CardTitle>
                 <CardDescription className="text-sm">Distribution of your requests</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 md:space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Basic Fetch</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">65%</Badge>
-                    <span className="text-xs sm:text-sm text-muted-foreground">520 requests</span>
+              <CardContent>
+                {usage?.weekly && usage.weekly.totalUsed > 0 ? (
+                  <div className="space-y-3 md:space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Basic Fetch</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground">{usage.weekly.basicUsed} requests</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Stealth Mode</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground">{usage.weekly.stealthUsed} requests</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Search API</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground">{usage.weekly.searchUsed} requests</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Stealth Mode</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">25%</Badge>
-                    <span className="text-xs sm:text-sm text-muted-foreground">200 requests</span>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm">No usage data yet this week.</p>
+                    <p className="text-xs mt-2">Make some API requests to see your breakdown.</p>
                   </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">CAPTCHA Solving</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">5%</Badge>
-                    <span className="text-xs sm:text-sm text-muted-foreground">40 requests</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Search API</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">5%</Badge>
-                    <span className="text-xs sm:text-sm text-muted-foreground">40 requests</span>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -197,22 +196,10 @@ export default function UsagePage() {
                 <CardTitle className="text-lg md:text-xl">Response Times</CardTitle>
                 <CardDescription className="text-sm">Average response times by type</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 md:space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Basic Fetch</span>
-                  <span className="text-sm font-medium">1.2s</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Stealth Mode</span>
-                  <span className="text-sm font-medium">3.5s</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">CAPTCHA Solving</span>
-                  <span className="text-sm font-medium">12.8s</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Search API</span>
-                  <span className="text-sm font-medium">2.1s</span>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Response time analytics coming soon.</p>
+                  <p className="text-xs mt-2">We&apos;re building detailed performance tracking.</p>
                 </div>
               </CardContent>
             </Card>
