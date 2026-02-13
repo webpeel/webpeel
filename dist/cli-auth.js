@@ -309,10 +309,43 @@ export async function handleLogin() {
     if (!apiKey.startsWith('wp_')) {
         console.error('Warning: API key should start with "wp_". Make sure you entered it correctly.');
     }
-    // Save to config
-    config.apiKey = apiKey;
-    saveConfig(config);
-    console.log('\n✓ Successfully logged in!');
+    // Validate API key against server before saving
+    console.log('\nVerifying API key...');
+    try {
+        const response = await fetch(`${API_BASE_URL}/v1/cli/usage`, {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+            signal: AbortSignal.timeout(5000),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const tierLabel = data.plan.tier.charAt(0).toUpperCase() + data.plan.tier.slice(1);
+            // Save to config with plan info
+            config.apiKey = apiKey;
+            config.planTier = data.plan.tier;
+            config.planCachedAt = new Date().toISOString();
+            saveConfig(config);
+            console.log(`\n✅ Successfully logged in!`);
+            console.log(`Plan: ${tierLabel} (${data.weekly.limit} fetches/week)`);
+            console.log(`Usage this week: ${data.weekly.used}/${data.weekly.limit}`);
+        }
+        else if (response.status === 401) {
+            console.error('\n❌ Invalid API key. Please check and try again.');
+            console.error('Get your API key at https://app.webpeel.dev/keys');
+            process.exit(1);
+        }
+        else {
+            // Server returned non-401 error — save key anyway (might be temporary)
+            config.apiKey = apiKey;
+            saveConfig(config);
+            console.log('\n✓ API key saved (could not verify — server may be temporarily unavailable).');
+        }
+    }
+    catch {
+        // Network error — save key anyway (graceful)
+        config.apiKey = apiKey;
+        saveConfig(config);
+        console.log('\n✓ API key saved (could not reach server to verify).');
+    }
     console.log('Run `webpeel usage` to check your quota.');
 }
 /**

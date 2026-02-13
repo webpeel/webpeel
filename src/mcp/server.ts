@@ -16,11 +16,22 @@ import { peel, peelBatch } from '../index.js';
 import type { PeelOptions } from '../types.js';
 import { fetch as undiciFetch } from 'undici';
 import { load } from 'cheerio';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Read version from package.json
+let pkgVersion = '0.3.1';
+try {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const pkg = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
+  pkgVersion = pkg.version;
+} catch { /* fallback */ }
 
 const server = new Server(
   {
     name: 'webpeel',
-    version: '0.3.1',
+    version: pkgVersion,
   },
   {
     capabilities: {
