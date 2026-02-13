@@ -14,6 +14,7 @@ import { createFetchRouter } from './routes/fetch.js';
 import { createSearchRouter } from './routes/search.js';
 import { createUserRouter } from './routes/users.js';
 import { createStripeRouter } from './routes/stripe.js';
+import { createOAuthRouter } from './routes/oauth.js';
 
 export interface ServerConfig {
   port?: number;
@@ -72,6 +73,7 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createFetchRouter(authStore));
   app.use(createSearchRouter(authStore));
   app.use(createUserRouter());
+  app.use(createOAuthRouter());
 
   // 404 handler
   app.use((req: Request, res: Response) => {

@@ -168,8 +168,54 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
       </div>
 
       {/* Tablet: Collapsed sidebar (icon-only) */}
-      <div className="hidden md:flex lg:hidden h-full w-[72px] flex-col border-r border-zinc-200 bg-white">
-        {sidebarContent}
+      <div className="hidden md:flex lg:hidden h-full w-[60px] flex-col border-r border-zinc-200 bg-white">
+        {/* Logo icon only */}
+        <div className="flex h-14 items-center justify-center border-b border-zinc-100">
+          <Link href="/dashboard">
+            <svg width="24" height="24" viewBox="0 0 32 32">
+              <rect width="32" height="32" fill="#8B5CF6" rx="7"/>
+              <path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFFFFF" fillOpacity="0.95"/>
+              <path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/>
+              <path d="M8 16h10" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M8 21h14" stroke="#A78BFA" strokeWidth="2.5" strokeLinecap="round"/>
+            </svg>
+          </Link>
+        </div>
+        {/* Icon-only nav */}
+        <nav className="flex-1 px-2 py-4 space-y-1">
+          {navigation.map((item) => {
+            const isActive = item.href === '/dashboard' 
+              ? pathname === '/dashboard' 
+              : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'flex items-center justify-center rounded-lg p-2.5 transition-colors',
+                  isActive
+                    ? 'bg-zinc-100 text-zinc-900'
+                    : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
+                )}
+                title={item.name}
+              >
+                <item.icon className="h-4 w-4" />
+              </Link>
+            );
+          })}
+        </nav>
+        {/* Icon-only footer */}
+        <div className="border-t border-zinc-100 px-2 py-3">
+          <a
+            href="https://webpeel.dev/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center rounded-lg p-2.5 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600"
+            title="Documentation"
+          >
+            <BookOpen className="h-4 w-4" />
+          </a>
+        </div>
       </div>
 
       {/* Desktop: Full sidebar */}

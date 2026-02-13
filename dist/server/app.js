@@ -13,6 +13,7 @@ import { createFetchRouter } from './routes/fetch.js';
 import { createSearchRouter } from './routes/search.js';
 import { createUserRouter } from './routes/users.js';
 import { createStripeRouter } from './routes/stripe.js';
+import { createOAuthRouter } from './routes/oauth.js';
 export function createApp(config = {}) {
     const app = express();
     // SECURITY: Trust proxy for Render/production (HTTPS only)
@@ -51,6 +52,7 @@ export function createApp(config = {}) {
     app.use(createFetchRouter(authStore));
     app.use(createSearchRouter(authStore));
     app.use(createUserRouter());
+    app.use(createOAuthRouter());
     // 404 handler
     app.use((req, res) => {
         res.status(404).json({
