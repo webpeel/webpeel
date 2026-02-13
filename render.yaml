@@ -15,5 +15,5 @@ services:
       - key: NODE_ENV
         value: production
       - key: CORS_ORIGINS
-        value: https://webpeel.dev
+        value: https://webpeel.dev,https://app.webpeel.dev
     healthCheckPath: /health
