@@ -18,7 +18,7 @@ const CONFIG_DIR = join(homedir(), '.webpeel');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
 // API base URL (configurable via env var)
-const API_BASE_URL = process.env.WEBPEEL_API_URL || 'https://webpeel-api.onrender.com';
+const API_BASE_URL = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
 
 interface CLIConfig {
   apiKey?: string;
@@ -40,23 +40,25 @@ interface UsageCheckResult {
 }
 
 interface APIUsageResponse {
-  session: {
-    burstUsed: number;
+  plan: {
+    tier: string;
+    weeklyLimit: number;
     burstLimit: number;
-    resetsIn?: string;
   };
   weekly: {
-    totalUsed: number;
-    totalAvailable: number;
+    used: number;
+    limit: number;
     remaining: number;
     resetsAt: string;
+    percentUsed: number;
   };
-  extraUsage?: {
-    enabled: boolean;
+  burst: {
+    used: number;
+    limit: number;
+    resetsIn: string;
   };
-  plan?: {
-    name: string;
-  };
+  canFetch: boolean;
+  upgradeUrl: string;
 }
 
 /**
@@ -183,10 +185,11 @@ export async function checkUsage(): Promise<UsageCheckResult> {
 
   // Authenticated user - check with API
   try {
-    const response = await fetch(`${API_BASE_URL}/v1/usage`, {
+    const response = await fetch(`${API_BASE_URL}/v1/cli/usage`, {
       headers: {
         'Authorization': `Bearer ${config.apiKey}`,
       },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) {
@@ -203,24 +206,23 @@ export async function checkUsage(): Promise<UsageCheckResult> {
     const data = await response.json() as APIUsageResponse;
 
     // Check burst limit
-    if (data.session.burstUsed >= data.session.burstLimit) {
-      const resetsIn = data.session.resetsIn || 'soon';
+    if (data.burst.used >= data.burst.limit) {
       return {
         allowed: false,
-        message: `Burst limit reached (${data.session.burstUsed}/${data.session.burstLimit}). Resets in ${resetsIn}.\nUpgrade: https://webpeel.dev/#pricing`,
+        message: `Burst limit reached (${data.burst.used}/${data.burst.limit}). Resets in ${data.burst.resetsIn}.\nUpgrade: ${data.upgradeUrl}`,
       };
     }
 
-    // Check weekly limit
-    if (data.weekly.remaining <= 0 && !data.extraUsage?.enabled) {
+    // Quick canFetch check from API
+    if (!data.canFetch) {
       return {
         allowed: false,
-        message: `Weekly limit reached (${data.weekly.totalUsed}/${data.weekly.totalAvailable}).\nResets: ${data.weekly.resetsAt}\nEnable extra usage or upgrade: https://app.webpeel.dev/billing`,
+        message: `Weekly limit reached (${data.weekly.used}/${data.weekly.limit}).\nResets: ${data.weekly.resetsAt}\nUpgrade: ${data.upgradeUrl}`,
       };
     }
 
     // Cache plan tier for offline feature gating
-    const planName = (data.plan?.name || 'free').toLowerCase();
+    const planName = (data.plan?.tier || 'free').toLowerCase();
     config.planTier = planName;
     config.planCachedAt = new Date().toISOString();
     saveConfig(config);
@@ -229,8 +231,8 @@ export async function checkUsage(): Promise<UsageCheckResult> {
       allowed: true,
       isAnonymous: false,
       usageInfo: {
-        used: data.weekly.totalUsed,
-        limit: data.weekly.totalAvailable,
+        used: data.weekly.used,
+        limit: data.weekly.limit,
         remaining: data.weekly.remaining,
       },
     };
@@ -277,14 +279,14 @@ export async function checkFeatureAccess(feature: PremiumFeature): Promise<{ all
 
   // Try to get fresh plan info from API
   try {
-    const response = await fetch(`${API_BASE_URL}/v1/usage`, {
+    const response = await fetch(`${API_BASE_URL}/v1/cli/usage`, {
       headers: { 'Authorization': `Bearer ${config.apiKey}` },
       signal: AbortSignal.timeout(5000),
     });
 
     if (response.ok) {
       const data = await response.json() as APIUsageResponse;
-      const planName = (data.plan?.name || 'free').toLowerCase();
+      const planName = (data.plan?.tier || 'free').toLowerCase();
       
       // Cache for offline use
       config.planTier = planName;
@@ -452,10 +454,11 @@ export async function handleUsage(): Promise<void> {
 
   // Authenticated user - fetch from API
   try {
-    const response = await fetch(`${API_BASE_URL}/v1/usage`, {
+    const response = await fetch(`${API_BASE_URL}/v1/cli/usage`, {
       headers: {
         'Authorization': `Bearer ${config.apiKey}`,
       },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) {
@@ -468,17 +471,18 @@ export async function handleUsage(): Promise<void> {
     }
 
     const data = await response.json() as APIUsageResponse;
+    const tierLabel = data.plan.tier.charAt(0).toUpperCase() + data.plan.tier.slice(1);
 
     console.log('\nWebPeel Usage');
     console.log('=============\n');
-    console.log(`Plan: ${data.plan?.name || 'Free'} (${data.weekly.totalAvailable}/week)`);
-    console.log(`Used this week: ${data.weekly.totalUsed}/${data.weekly.totalAvailable}`);
+    console.log(`Plan: ${tierLabel} (${data.weekly.limit}/week)`);
+    console.log(`Used this week: ${data.weekly.used}/${data.weekly.limit} (${data.weekly.percentUsed}%)`);
     console.log(`Remaining: ${data.weekly.remaining}`);
-    console.log(`Burst: ${data.session.burstUsed}/${data.session.burstLimit} (resets ${data.session.resetsIn || 'soon'})`);
-    console.log(`Resets: ${data.weekly.resetsAt}`);
+    console.log(`Burst: ${data.burst.used}/${data.burst.limit} this hour (resets in ${data.burst.resetsIn})`);
+    console.log(`Weekly reset: ${new Date(data.weekly.resetsAt).toUTCString()}`);
     
-    if (data.weekly.remaining <= 10 && !data.extraUsage?.enabled) {
-      console.log('\n⚠️  Running low on credits. Upgrade at https://webpeel.dev/#pricing');
+    if (data.weekly.remaining <= 10) {
+      console.log(`\n⚠️  Running low on credits. Upgrade at ${data.upgradeUrl}`);
     }
 
     console.log();

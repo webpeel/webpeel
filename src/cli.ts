@@ -121,8 +121,10 @@ program
       }
 
       // Build peel options
+      // --stealth auto-enables --render (stealth requires browser)
+      const useRender = options.render || options.stealth || false;
       const peelOptions: PeelOptions = {
-        render: options.render || false,
+        render: useRender,
         stealth: options.stealth || false,
         wait: options.wait || 0,
         timeout: options.timeout,
@@ -564,6 +566,31 @@ program
   .action(async () => {
     try {
       await handleLogin();
+      process.exit(0);
+    } catch (error) {
+      console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('whoami')
+  .description('Show your current authentication status')
+  .action(async () => {
+    try {
+      const { loadConfig } = await import('./cli-auth.js');
+      const config = loadConfig();
+      if (!config.apiKey) {
+        console.log('Not logged in. Run `webpeel login` to authenticate.');
+      } else {
+        const masked = config.apiKey.slice(0, 7) + '...' + config.apiKey.slice(-4);
+        console.log(`Logged in with API key: ${masked}`);
+        if (config.planTier) {
+          const tierLabel = config.planTier.charAt(0).toUpperCase() + config.planTier.slice(1);
+          console.log(`Plan: ${tierLabel}`);
+        }
+        console.log(`Config: ~/.webpeel/config.json`);
+      }
       process.exit(0);
     } catch (error) {
       console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
