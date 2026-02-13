@@ -3,6 +3,11 @@
  * Express-based REST API for hosted deployments
  */
 
+// Force IPv4-first DNS resolution to prevent IPv6 failures in containers
+// (Render's Docker containers can't do IPv6 outbound, causing IANA/Cloudflare sites to fail)
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
+
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { InMemoryAuthStore } from './auth-store.js';

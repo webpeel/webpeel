@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebPeel — Turn any web page into clean markdown. Zero config. Free forever.</title>
+  <title>WebPeel — Turn any web page into clean markdown for AI agents. Free to start.</title>
   <meta name="description" content="Smart web fetcher for AI agents. Auto-escalates from HTTP to headless browser. MCP server for Claude/Cursor. Local-first, open source, MIT licensed.">
   <link rel="canonical" href="https://webpeel.dev">
   
@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://webpeel.dev">
   <meta property="og:title" content="WebPeel — Turn any web page into clean markdown">
-  <meta property="og:description" content="Smart web fetcher for AI agents. Free forever.">
+  <meta property="og:description" content="Smart web fetcher for AI agents. HTTP to headless browser. Free to start.">
   <meta property="og:image" content="https://webpeel.dev/og-image.png">
   
   <meta name="twitter:card" content="summary_large_image">
@@ -529,7 +529,7 @@
     <section class="hero">
       <div class="container">
         <h1>Turn any web page into<br>clean markdown</h1>
-        <p class="tagline">Smart web fetcher for AI agents. Auto-escalates from HTTP to headless browser. Zero config. Free forever.</p>
+        <p class="tagline">Smart web fetcher for AI agents. Auto-escalates from HTTP to headless browser. Free to start, Pro to unlock stealth.</p>
         
         <div class="code-block">
           <div><span class="prompt">$</span> npx webpeel https://news.ycombinator.com</div>
@@ -550,8 +550,8 @@
       <div class="container">
         <div class="stats">
           <div>
-            <div class="stat-number">∞</div>
-            <div class="stat-label">Free local requests</div>
+            <div class="stat-number">125</div>
+            <div class="stat-label">Free fetches/week</div>
           </div>
           <div>
             <div class="stat-number">~200ms</div>
@@ -615,7 +615,7 @@
             <tbody>
               <tr>
                 <td>Local execution</td>
-                <td class="check">✓ Free forever</td>
+                <td class="check">✓ Free to start</td>
                 <td class="cross">✗ Cloud only</td>
                 <td class="cross">✗ Cloud only</td>
                 <td class="check">✓ Free</td>
@@ -650,10 +650,10 @@
               </tr>
               <tr>
                 <td>Free tier</td>
-                <td class="check">∞ Unlimited local</td>
+                <td class="check">✓ Free tier (125/wk)</td>
                 <td>500 pages (one-time)</td>
                 <td>1000 req/month</td>
-                <td class="check">∞ Local only</td>
+                <td class="check">✓ Free tier included</td>
               </tr>
               <tr>
                 <td>Hosted API price</td>
@@ -730,8 +730,8 @@
         
         <!-- Prominent CLI Callout -->
         <div style="max-width: 700px; margin: 0 auto 48px; padding: 24px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%); border: 2px solid var(--accent); border-radius: 12px; text-align: center;">
-          <h3 style="font-size: 24px; margin-bottom: 12px; color: var(--accent);">🎉 CLI is always free. No limits. Run locally forever.</h3>
-          <p style="color: var(--text-dim); font-size: 15px; margin-bottom: 16px;">Full power on your machine. No API key, no credit card, no tracking. Just <code style="background: var(--card-bg); padding: 2px 8px; border-radius: 4px; color: var(--text);">npx webpeel &lt;url&gt;</code></p>
+          <h3 style="font-size: 24px; margin-bottom: 12px; color: var(--accent);">🎉 Basic fetch is free. Locally and in the cloud.</h3>
+          <p style="color: var(--text-dim); font-size: 15px; margin-bottom: 16px;">Fetch any page as markdown with <code style="background: var(--card-bg); padding: 2px 8px; border-radius: 4px; color: var(--text);">npx webpeel &lt;url&gt;</code> — stealth, crawl, and batch unlock with Pro.</p>
           <a href="https://github.com/JakeLiuMe/webpeel#readme" class="cta" style="font-size: 14px; padding: 10px 24px;">Get Started →</a>
         </div>
 
@@ -746,14 +746,14 @@
         <!-- Track 1: Subscription Plans -->
         <div id="pricing-subscription" class="pricing-grid">
           <div class="pricing-card">
-            <div class="plan-name">Local CLI</div>
+            <div class="plan-name">Free</div>
             <div class="plan-price">$0</div>
-            <div class="plan-desc">Unlimited forever</div>
+            <div class="plan-desc">25 fetches/week (CLI) · 125/week (registered)</div>
             <ul class="plan-features">
-              <li>∞ Unlimited pages</li>
-              <li>JS rendering included</li>
+              <li>Basic HTTP fetch</li>
+              <li>JS rendering (--render)</li>
               <li>CLI + Library + MCP</li>
-              <li>MIT open source</li>
+              <li>Weekly reset (Monday UTC)</li>
               <li>Community support</li>
             </ul>
             <a href="https://github.com/JakeLiuMe/webpeel#readme" class="plan-cta secondary">Get Started</a>
@@ -762,40 +762,40 @@
           <div class="pricing-card">
             <div class="plan-name">Cloud Free</div>
             <div class="plan-price">$0<span>/mo</span></div>
-            <div class="plan-desc">500 pages/month</div>
+            <div class="plan-desc">125 fetches/week</div>
             <ul class="plan-features">
-              <li>500 fetches/month</li>
-              <li>HTTP only (no JS)</li>
+              <li>125 fetches/week (~500/mo)</li>
+              <li>Basic HTTP + JS rendering</li>
               <li>API access</li>
-              <li>No credit card</li>
+              <li>No credit card needed</li>
               <li>Community support</li>
             </ul>
-            <a href="https://webpeel.dev" class="plan-cta secondary">Join Waitlist</a>
+            <a href="https://app.webpeel.dev/signup" class="plan-cta secondary">Sign Up Free</a>
           </div>
 
           <div class="pricing-card featured">
-            <div class="plan-name">Cloud Pro</div>
+            <div class="plan-name">Pro</div>
             <div class="plan-price">$9<span>/mo</span></div>
-            <div class="plan-desc">5,000 pages/month</div>
+            <div class="plan-desc">1,250 fetches/week · Stealth + Crawl + Batch</div>
             <ul class="plan-features">
-              <li>5K fetches/month</li>
-              <li>JS rendering enabled</li>
-              <li>Credits roll over 1 month</li>
-              <li>Soft limits (never blocked)</li>
-              <li>Email support (24hr)</li>
+              <li>1,250 fetches/week (~5K/mo)</li>
+              <li>✨ Stealth mode (anti-bot bypass)</li>
+              <li>✨ Crawl mode (multi-page)</li>
+              <li>✨ Batch mode (bulk URLs)</li>
+              <li>Extra usage available</li>
             </ul>
             <a href="https://buy.stripe.com/test_5kQeVcb800BGgx7gMn3AY00" class="plan-cta">Subscribe — $9/mo</a>
             <p style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--text-dim);"><a href="https://buy.stripe.com/test_28E14mekcdosa8Jbs33AY01" style="color: var(--accent); text-decoration: none;">Save 17% — $90/year →</a></p>
           </div>
 
           <div class="pricing-card">
-            <div class="plan-name">Cloud Max</div>
+            <div class="plan-name">Max</div>
             <div class="plan-price">$29<span>/mo</span></div>
-            <div class="plan-desc">25,000 pages/month</div>
+            <div class="plan-desc">6,250 fetches/week · Everything in Pro + more</div>
             <ul class="plan-features">
-              <li>25K fetches/month</li>
-              <li>JS rendering enabled</li>
-              <li>Credits roll over 1 month</li>
+              <li>6,250 fetches/week (~25K/mo)</li>
+              <li>Everything in Pro</li>
+              <li>CAPTCHA solving (250/week)</li>
               <li>Priority queue</li>
               <li>Priority support (4hr)</li>
             </ul>
