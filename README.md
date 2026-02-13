@@ -107,9 +107,9 @@ const result = await peel('https://example.com', {
 });
 ```
 
-### MCP Server (Claude Desktop, Cursor, VS Code)
+### MCP Server (Claude Desktop, Cursor, VS Code, Windsurf)
 
-WebPeel provides two MCP tools: `webpeel_fetch` (fetch a URL) and `webpeel_search` (DuckDuckGo search + fetch results).
+WebPeel provides four MCP tools: `webpeel_fetch` (fetch a URL), `webpeel_search` (search the web), `webpeel_batch` (fetch multiple URLs), and `webpeel_crawl` (crawl a site).
 
 #### Claude Desktop
 
@@ -160,6 +160,50 @@ Or install with one click:
 
 [![Install in Claude Desktop](https://img.shields.io/badge/Install-Claude%20Desktop-5B3FFF?style=for-the-badge&logo=anthropic)](https://mcp.so/install/webpeel?for=claude)
 [![Install in VS Code](https://img.shields.io/badge/Install-VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode)](https://mcp.so/install/webpeel?for=vscode)
+
+#### Windsurf
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "mcp"]
+    }
+  }
+}
+```
+
+---
+
+## Use with Claude Code
+
+One command to add WebPeel to Claude Code:
+
+```bash
+claude mcp add webpeel -- npx -y webpeel mcp
+```
+
+Or add to your project's `.mcp.json` for team sharing:
+
+```json
+{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "mcp"]
+    }
+  }
+}
+```
+
+This gives Claude Code access to:
+- **webpeel_fetch** — Fetch any URL as clean markdown (with stealth mode for protected sites)
+- **webpeel_search** — Search the web via DuckDuckGo
+- **webpeel_batch** — Fetch multiple URLs concurrently
+- **webpeel_crawl** — Crawl websites following links
 
 ---
 

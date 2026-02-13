@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "mcp"]
+    }
+  }
+}

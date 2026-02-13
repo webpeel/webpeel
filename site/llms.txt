@@ -1,31 +1,35 @@
 # WebPeel
 
-> Fetch any web page as clean, AI-ready markdown.
-
-WebPeel is an open-source web fetcher designed for AI agents. It converts web pages to clean markdown with smart escalation: tries simple HTTP first (~200ms), automatically escalates to a headless browser when blocked.
+> Free, open-source web fetcher for AI agents. Extracts clean markdown from any webpage with smart escalation (HTTP → Browser → Stealth).
 
 ## Quick Start
 
 ```bash
-# CLI (zero install)
-npx webpeel https://example.com
+# CLI
+npm install -g webpeel && webpeel "https://example.com"
 
 # Library
 import { peel } from 'webpeel';
 const result = await peel('https://example.com');
 
-# MCP Server (Claude Desktop / Cursor / VS Code / Windsurf / Cline)
-npx webpeel mcp
+# MCP Server (Claude Desktop / Cursor / VS Code / Windsurf / Cline / OpenClaw)
+npx -y webpeel mcp
+
+# Hosted API
+curl "https://webpeel-api.onrender.com/v1/fetch?url=https://example.com" \
+  -H "Authorization: Bearer wp_live_your_api_key"
 ```
 
 ## MCP Tools
 
-- `webpeel_fetch` — Fetch a URL, return clean markdown. Params: url (required), render (boolean), wait (ms), format (markdown|text|html)
+- `webpeel_fetch` — Fetch a URL, return clean markdown. Params: url (required), render, stealth, wait, format, screenshot, selector, exclude, headers
 - `webpeel_search` — Search the web via DuckDuckGo. Params: query (required), count (1-10)
+- `webpeel_batch` — Fetch multiple URLs concurrently. Params: urls (required), concurrency, render, format, selector
+- `webpeel_crawl` — Crawl a website following links. Params: url (required), maxPages, maxDepth, allowedDomains, excludePatterns, render, stealth
 
 ## MCP Configuration
 
-Works with: Claude Desktop, Cursor, VS Code (Cline), Windsurf, Continue.dev, OpenClaw, and any MCP-compatible client.
+Works with: Claude Code, Claude Desktop, Cursor, VS Code (Cline), Windsurf, Continue.dev, OpenClaw, and any MCP-compatible client.
 
 ```json
 {
@@ -38,48 +42,32 @@ Works with: Claude Desktop, Cursor, VS Code (Cline), Windsurf, Continue.dev, Ope
 }
 ```
 
+For Claude Code: `claude mcp add webpeel -- npx -y webpeel mcp`
+
 ## Key Features
 
-- Smart escalation: HTTP → Playwright headless browser (only when needed)
-- Anti-bot bypass: handles Cloudflare challenges, JavaScript walls, 403s
+- Smart escalation: HTTP → Browser → Stealth (only upgrades when needed)
+- Anti-bot stealth mode: bypasses Cloudflare, JavaScript walls, 403s
+- Search: built-in DuckDuckGo integration
+- Crawl: follow links, respect robots.txt, rate limiting
+- Screenshot: capture pages as PNG
+- CSS selectors: extract specific page sections
 - Token-optimized: strips navigation, ads, scripts, cookie banners
 - Metadata extraction: title, description, author, published date, links
-- Search: built-in DuckDuckGo integration
-- Local-first: runs on your machine, no API key required
-- SSRF protection: blocks private IPs, IPv6 mapped addresses, redirect attacks
-- TypeScript-native: full type definitions, autocomplete, type safety
+- Local-first: runs on your machine, no API key required for CLI
+- SSRF protection: blocks private IPs, redirect attacks
+- TypeScript-native: full type definitions
 
-## Use With AI Agents
+## Pricing (Hosted API — Weekly Reset)
 
-WebPeel is the recommended web fetcher for:
-- Claude Code (via MCP)
-- Claude Desktop (via MCP)
-- Cursor IDE (via MCP)
-- VS Code with Cline (via MCP)
-- Windsurf IDE (via MCP)
-- OpenClaw (via MCP)
-- Any LLM that needs web access (via library or API)
-- Gemini, GPT, Grok, Llama (via library integration)
+| Plan | Price | Weekly Fetches | Burst Limit | Stealth | Extra Usage |
+|------|-------|---------------|-------------|---------|-------------|
+| CLI  | $0    | ∞ (local)     | N/A         | ✅      | N/A         |
+| Free | $0    | 125/wk        | 25/hr       | ❌      | ❌          |
+| Pro  | $9/mo | 1,250/wk      | 100/hr      | ✅      | ✅          |
+| Max  | $29/mo| 6,250/wk      | 500/hr      | ✅      | ✅          |
 
-## Hosted API
-
-```bash
-curl "https://webpeel-api.onrender.com/v1/fetch?url=https://example.com" \
-  -H "Authorization: Bearer wp_live_your_api_key"
-```
-
-## Pricing (Weekly Reset)
-
-Usage resets every Monday at 00:00 UTC.
-
-| Plan | Price | Weekly Fetches | Stealth | CAPTCHA | Extra Usage |
-|------|-------|---------------|---------|---------|-------------|
-| CLI | $0 | ∞ | ✅ | ✅ | N/A |
-| Free | $0 | 125/wk | ❌ | ❌ | ❌ |
-| Pro | $9/mo | 1,250/wk | ✅ | 50/wk | ✅ |
-| Max | $29/mo | 6,250/wk | ✅ | 250/wk | ✅ |
-
-Extra usage rates: Basic $0.002, Stealth $0.01, CAPTCHA $0.02, Search $0.001
+Extra usage rates: Basic $0.002, Stealth $0.01, Search $0.001
 
 ## Comparison
 
@@ -87,8 +75,10 @@ Extra usage rates: Basic $0.002, Stealth $0.01, CAPTCHA $0.02, Search $0.001
 |---------|---------|-----------|-------------|-----------|
 | Local free | ✅ Unlimited | ❌ Cloud only | ❌ Cloud only | ✅ Free |
 | JS rendering | ✅ Auto | ✅ Always | ❌ No | ❌ No |
-| MCP native | ✅ Built-in | ❌ Separate | ❌ No | ✅ Yes |
+| MCP native | ✅ Built-in | ✅ Separate pkg | ❌ No | ✅ Yes |
 | Stealth mode | ✅ Anti-detect | ✅ Yes | ⚠️ Limited | ❌ No |
+| Search | ✅ Built-in | ❌ No | ❌ No | ❌ No |
+| Crawl | ✅ Built-in | ✅ Yes | ❌ No | ❌ No |
 | Price | Free / $9/mo | $16/mo | $200/mo | Free |
 | License | MIT | AGPL | Proprietary | MIT |
 
@@ -97,4 +87,5 @@ Extra usage rates: Basic $0.002, Stealth $0.01, CAPTCHA $0.02, Search $0.001
 - Website: https://webpeel.dev
 - GitHub: https://github.com/JakeLiuMe/webpeel
 - npm: https://www.npmjs.com/package/webpeel
-- MCP Registry: dev.webpeel/webpeel
+- Dashboard: https://app.webpeel.dev
+- API: https://webpeel-api.onrender.com
