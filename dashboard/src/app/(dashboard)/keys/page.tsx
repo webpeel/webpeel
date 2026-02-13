@@ -154,7 +154,7 @@ export default function ApiKeysPage() {
                   <Button variant="outline" onClick={() => setCreateOpen(false)} className="w-full sm:w-auto">
                     Cancel
                   </Button>
-                  <Button onClick={handleCreate} disabled={creating} className="w-full sm:w-auto">
+                  <Button onClick={handleCreate} disabled={creating} className="w-full sm:w-auto bg-violet-600 hover:bg-violet-700 text-white">
                     {creating ? 'Creating...' : 'Create Key'}
                   </Button>
                 </>
@@ -197,7 +197,7 @@ export default function ApiKeysPage() {
               {/* Mobile: Card view */}
               <div className="space-y-3 md:hidden">
                 {data.keys.map((key) => (
-                  <div key={key.id} className="border rounded-lg p-4 space-y-3">
+                  <div key={key.id} className={`border rounded-lg p-4 space-y-3 ${key.isActive ? 'border-l-4 border-l-violet-500' : ''}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{key.name}</p>
@@ -327,9 +327,16 @@ export default function ApiKeysPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4 text-sm">No API keys yet</p>
-              <Button onClick={() => setCreateOpen(true)} variant="outline" className="w-full sm:w-auto">
+            <div className="flex flex-col items-center justify-center py-12 px-4">
+              <div className="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center mb-4">
+                <Plus className="h-8 w-8 text-violet-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-900 mb-2">No API keys yet</h3>
+              <p className="text-sm text-zinc-500 text-center mb-4 max-w-md">
+                Create your first API key to start making requests to the WebPeel API
+              </p>
+              <Button onClick={() => setCreateOpen(true)} className="bg-violet-600 hover:bg-violet-700 w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
                 Create your first key
               </Button>
             </div>

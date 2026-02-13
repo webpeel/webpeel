@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UsageBar } from '@/components/usage-bar';
 import { Badge } from '@/components/ui/badge';
+import { BarChart3, TrendingUp, Clock } from 'lucide-react';
 import { apiClient, Usage } from '@/lib/api';
 
 const fetcher = async <T,>(url: string, token: string): Promise<T> => {
@@ -41,8 +42,38 @@ export default function UsagePage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4 md:space-y-6">
+          {/* Weekly Usage Trend Chart */}
+          <Card className="border-zinc-200">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-violet-600" />
+                Usage Trend
+              </CardTitle>
+              <CardDescription>Your API usage over the past 7 days</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Simple SVG trend chart placeholder */}
+              <div className="h-48 flex items-end justify-between gap-2 px-4">
+                {[40, 55, 45, 70, 60, 80, 75].map((height, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                    <div 
+                      className="w-full bg-gradient-to-t from-violet-500 to-violet-400 rounded-t-lg transition-all hover:from-violet-600 hover:to-violet-500"
+                      style={{ height: `${height}%` }}
+                    />
+                    <span className="text-[10px] text-zinc-400">
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-zinc-500 text-center mt-4">
+                Live usage data will appear when you start making API requests
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Current Session */}
-          <Card>
+          <Card className="border-zinc-200">
             <CardHeader>
               <CardTitle className="text-lg md:text-xl">Current Session</CardTitle>
               <CardDescription className="text-sm">Your usage in the current session</CardDescription>
@@ -143,9 +174,19 @@ export default function UsagePage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>No history data available yet.</p>
-                    <p className="text-sm mt-2">Daily usage history will appear here once implemented.</p>
+                  <div className="flex flex-col items-center justify-center py-12 px-4">
+                    <div className="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center mb-4">
+                      <BarChart3 className="h-8 w-8 text-violet-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-zinc-900 mb-2">No data yet</h3>
+                    <p className="text-sm text-zinc-500 text-center max-w-md">
+                      Daily usage history will appear here once you start making API requests.
+                      Check out the{' '}
+                      <a href="https://github.com/JakeLiuMe/webpeel#readme" className="text-violet-600 hover:underline">
+                        documentation
+                      </a>{' '}
+                      to get started.
+                    </p>
                   </div>
                 )}
               </div>
@@ -183,9 +224,12 @@ export default function UsagePage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm">No usage data yet this week.</p>
-                    <p className="text-xs mt-2">Make some API requests to see your breakdown.</p>
+                  <div className="flex flex-col items-center justify-center py-8 px-4">
+                    <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center mb-3">
+                      <BarChart3 className="h-6 w-6 text-violet-600" />
+                    </div>
+                    <p className="text-sm text-zinc-500 text-center">No usage data yet this week</p>
+                    <p className="text-xs text-zinc-400 mt-1">Make API requests to see your breakdown</p>
                   </div>
                 )}
               </CardContent>
@@ -197,9 +241,12 @@ export default function UsagePage() {
                 <CardDescription className="text-sm">Average response times by type</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">Response time analytics coming soon.</p>
-                  <p className="text-xs mt-2">We&apos;re building detailed performance tracking.</p>
+                <div className="flex flex-col items-center justify-center py-8 px-4">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
+                    <Clock className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <p className="text-sm text-zinc-500 text-center">Response time analytics coming soon</p>
+                  <p className="text-xs text-zinc-400 mt-1">We're building detailed performance tracking</p>
                 </div>
               </CardContent>
             </Card>

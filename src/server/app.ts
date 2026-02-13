@@ -37,15 +37,19 @@ export function createApp(config: ServerConfig = {}): Express {
   // SECURITY: Limit request body size to prevent DoS
   app.use(express.json({ limit: '1mb' }));
   
-  // CORS configuration - Allow public API access with default origins
-  const corsOrigins = config.corsOrigins || 
-    (process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
-      'https://app.webpeel.dev',
-      'https://webpeel.dev'
-    ]);
+  // CORS configuration
+  // Always allow our own domains + any env-configured origins
+  const envOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : [];
+  const defaultOrigins = [
+    'https://app.webpeel.dev',
+    'https://webpeel.dev',
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ];
+  const corsOrigins = config.corsOrigins || [...new Set([...defaultOrigins, ...envOrigins])];
   
   app.use(cors({
-    origin: corsOrigins.length > 0 ? corsOrigins : true, // Default to true for public API
+    origin: corsOrigins,
     credentials: true,
   }));
 

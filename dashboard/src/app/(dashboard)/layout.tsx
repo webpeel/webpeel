@@ -26,15 +26,19 @@ export default function DashboardLayout({
     redirect('/login');
   }
 
+  const tier = (session as any)?.tier || 'free';
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
+        tier={tier}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar 
           user={session.user} 
+          tier={tier}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-6" style={{ backgroundColor: '#FAFAF8' }}>

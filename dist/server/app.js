@@ -24,11 +24,18 @@ export function createApp(config = {}) {
     // Middleware
     // SECURITY: Limit request body size to prevent DoS
     app.use(express.json({ limit: '1mb' }));
-    // SECURITY: Restrict CORS - require explicit origin whitelist
-    const corsOrigins = config.corsOrigins ||
-        (process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []);
+    // CORS configuration
+    // Always allow our own domains + any env-configured origins
+    const envOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : [];
+    const defaultOrigins = [
+        'https://app.webpeel.dev',
+        'https://webpeel.dev',
+        'http://localhost:3000',
+        'http://localhost:3001',
+    ];
+    const corsOrigins = config.corsOrigins || [...new Set([...defaultOrigins, ...envOrigins])];
     app.use(cors({
-        origin: corsOrigins.length > 0 ? corsOrigins : false,
+        origin: corsOrigins,
         credentials: true,
     }));
     // Auth store - Use PostgreSQL if DATABASE_URL is set, otherwise in-memory
@@ -60,13 +67,15 @@ export function createApp(config = {}) {
             message: `Route not found: ${req.method} ${req.path}`,
         });
     });
-    // Error handler
+    // Error handler - SECURITY: Do not expose internal error details
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     app.use((err, _req, res, _next) => {
-        console.error('Unhandled error:', err);
+        console.error('Unhandled error:', err); // Log full error server-side
+        if (res.headersSent)
+            return; // Avoid double-send crash
         res.status(500).json({
             error: 'internal_error',
-            message: err.message || 'An unexpected error occurred',
+            message: 'An unexpected error occurred', // Generic message only
         });
     });
     return app;

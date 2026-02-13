@@ -69,17 +69,29 @@ export function createSearchRouter(authStore) {
                     return;
                 const $result = $(elem);
                 let title = $result.find('.result__title').text().trim();
-                let url = $result.find('.result__url').attr('href') || '';
+                const rawUrl = $result.find('.result__a').attr('href') || '';
                 let snippet = $result.find('.result__snippet').text().trim();
-                // SECURITY: Validate and sanitize results
-                if (!title || !url)
+                if (!title || !rawUrl)
                     return;
-                // Only allow HTTP/HTTPS URLs
+                // Extract actual URL from DuckDuckGo redirect
+                let url = rawUrl;
+                try {
+                    const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
+                    const uddg = ddgUrl.searchParams.get('uddg');
+                    if (uddg) {
+                        url = decodeURIComponent(uddg);
+                    }
+                }
+                catch {
+                    // Use raw URL if parsing fails
+                }
+                // SECURITY: Validate and sanitize results — only allow HTTP/HTTPS URLs
                 try {
                     const parsed = new URL(url);
                     if (!['http:', 'https:'].includes(parsed.protocol)) {
                         return;
                     }
+                    url = parsed.href;
                 }
                 catch {
                     return;

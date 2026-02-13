@@ -118,36 +118,59 @@ export default function SettingsPage() {
       </div>
 
       {/* Profile */}
-      <Card>
+      <Card className="border-zinc-200">
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl">Profile</CardTitle>
-          <CardDescription className="text-sm">Update your personal information</CardDescription>
+          <CardTitle className="text-xl">Profile</CardTitle>
+          <CardDescription>Update your personal information</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleUpdateProfile} className="space-y-4">
+          <form onSubmit={handleUpdateProfile} className="space-y-6">
+            {/* Avatar Display */}
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl font-semibold text-violet-700">
+                  {(session?.user?.name || session?.user?.email || 'U')
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-zinc-900">{session?.user?.name || 'User'}</p>
+                <p className="text-xs text-zinc-500">{session?.user?.email}</p>
+              </div>
+            </div>
+
+            <Separator />
+
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-zinc-900">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={session?.user?.email || ''}
                 disabled
-                className="bg-zinc-50"
+                className="bg-zinc-50 border-zinc-200"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-zinc-500">
                 {isOAuthUser ? 'Email cannot be changed for OAuth accounts' : 'Email cannot be changed'}
               </p>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name" className="text-sm font-medium text-zinc-900">Name</Label>
               <Input
                 id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
+                className="focus:ring-2 focus:ring-violet-100 focus:border-violet-300"
               />
             </div>
+
             <Button type="submit" disabled={loading} className="bg-violet-600 hover:bg-violet-700">
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>
@@ -157,44 +180,48 @@ export default function SettingsPage() {
 
       {/* Password */}
       {!isOAuthUser && (
-        <Card>
+        <Card className="border-zinc-200">
           <CardHeader>
-            <CardTitle className="text-lg md:text-xl">Password</CardTitle>
-            <CardDescription className="text-sm">Change your password</CardDescription>
+            <CardTitle className="text-xl">Password</CardTitle>
+            <CardDescription>Change your password</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
+                <Label htmlFor="current-password" className="text-sm font-medium text-zinc-900">Current Password</Label>
                 <Input
                   id="current-password"
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
+                  className="focus:ring-2 focus:ring-violet-100 focus:border-violet-300"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
+                <Label htmlFor="new-password" className="text-sm font-medium text-zinc-900">New Password</Label>
                 <Input
                   id="new-password"
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
+                  className="focus:ring-2 focus:ring-violet-100 focus:border-violet-300"
                 />
+                <p className="text-xs text-zinc-500">Must be at least 8 characters</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <Label htmlFor="confirm-password" className="text-sm font-medium text-zinc-900">Confirm New Password</Label>
                 <Input
                   id="confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  className="focus:ring-2 focus:ring-violet-100 focus:border-violet-300"
                 />
               </div>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="bg-violet-600 hover:bg-violet-700">
                 {loading ? 'Changing...' : 'Change Password'}
               </Button>
             </form>
@@ -203,17 +230,20 @@ export default function SettingsPage() {
       )}
 
       {/* Danger Zone */}
-      <Card className="border-red-200">
+      <Card className="border-l-4 border-l-red-500 border-t border-r border-b border-red-200 bg-red-50/30">
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl text-red-600">Danger Zone</CardTitle>
-          <CardDescription className="text-sm">Irreversible actions</CardDescription>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <CardTitle className="text-xl text-red-600">Danger Zone</CardTitle>
+          </div>
+          <CardDescription>Irreversible and permanent actions</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Separator />
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-sm md:text-base font-medium">Delete Account</p>
-              <p className="text-xs sm:text-sm text-muted-foreground">
+          <Separator className="bg-red-200" />
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="space-y-1 flex-1">
+              <p className="font-medium text-zinc-900">Delete Account</p>
+              <p className="text-sm text-zinc-600">
                 Permanently delete your account and all associated data. This action cannot be undone.
               </p>
             </div>

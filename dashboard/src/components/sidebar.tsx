@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Key, BarChart3, CreditCard, Settings, ExternalLink, BookOpen, X } from 'lucide-react';
+import { LayoutDashboard, Key, BarChart3, CreditCard, Settings, ExternalLink, BookOpen, X, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -17,10 +17,12 @@ interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
   collapsed?: boolean;
+  tier?: string;
 }
 
-export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarProps) {
+export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'free' }: SidebarProps) {
   const pathname = usePathname();
+  const showUpgrade = tier === 'free';
 
   const sidebarContent = (
     <>
@@ -50,14 +52,18 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
               href={item.href}
               onClick={onClose}
               className={cn(
-                'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
+                'relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all group',
                 isActive
                   ? 'bg-zinc-100 text-zinc-900'
-                  : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700',
+                  : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 hover:translate-x-0.5',
                 collapsed && 'justify-center'
               )}
               title={collapsed ? item.name : undefined}
             >
+              {/* Vercel-style active indicator */}
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-600 rounded-r" />
+              )}
               <item.icon className="h-4 w-4 flex-shrink-0" />
               {!collapsed && item.name}
             </Link>
@@ -66,13 +72,24 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-zinc-100 px-3 py-3 space-y-0.5">
+      <div className="border-t border-zinc-100 px-3 py-3 space-y-1">
+        {/* Upgrade CTA - only shown for free tier */}
+        {showUpgrade && !collapsed && (
+          <Link
+            href="/billing"
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 mb-2 bg-gradient-to-r from-violet-500 to-violet-600 text-white text-[13px] font-medium transition-all hover:from-violet-600 hover:to-violet-700 hover:shadow-md group"
+          >
+            <Zap className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+            Upgrade to Pro
+          </Link>
+        )}
+        
         <a
-          href="https://webpeel.dev/docs"
+          href="https://github.com/JakeLiuMe/webpeel#readme"
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600",
+            "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-400 transition-all hover:bg-zinc-50 hover:text-zinc-600 hover:translate-x-0.5",
             collapsed && 'justify-center'
           )}
           title={collapsed ? 'Documentation' : undefined}
@@ -138,12 +155,15 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
                   href={item.href}
                   onClick={onClose}
                   className={cn(
-                    'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
+                    'relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all',
                     isActive
                       ? 'bg-zinc-100 text-zinc-900'
-                      : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
+                      : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 hover:translate-x-0.5'
                   )}
                 >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-600 rounded-r" />
+                  )}
                   <item.icon className="h-4 w-4" />
                   {item.name}
                 </Link>
@@ -152,9 +172,20 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-zinc-100 px-3 py-3 space-y-0.5">
+          <div className="border-t border-zinc-100 px-3 py-3 space-y-1">
+            {showUpgrade && (
+              <Link
+                href="/billing"
+                onClick={onClose}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 mb-2 bg-gradient-to-r from-violet-500 to-violet-600 text-white text-[13px] font-medium transition-all hover:from-violet-600 hover:to-violet-700 hover:shadow-md"
+              >
+                <Zap className="h-4 w-4" />
+                Upgrade to Pro
+              </Link>
+            )}
+            
             <a
-              href="https://webpeel.dev/docs"
+              href="https://github.com/JakeLiuMe/webpeel#readme"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600"
@@ -192,22 +223,34 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'flex items-center justify-center rounded-lg p-2.5 transition-colors',
+                  'relative flex items-center justify-center rounded-lg p-2.5 transition-colors',
                   isActive
                     ? 'bg-zinc-100 text-zinc-900'
                     : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
                 )}
                 title={item.name}
               >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-600 rounded-r" />
+                )}
                 <item.icon className="h-4 w-4" />
               </Link>
             );
           })}
         </nav>
         {/* Icon-only footer */}
-        <div className="border-t border-zinc-100 px-2 py-3">
+        <div className="border-t border-zinc-100 px-2 py-3 space-y-1">
+          {showUpgrade && (
+            <Link
+              href="/billing"
+              className="flex items-center justify-center rounded-lg p-2.5 bg-violet-600 text-white transition-colors hover:bg-violet-700"
+              title="Upgrade to Pro"
+            >
+              <Zap className="h-4 w-4" />
+            </Link>
+          )}
           <a
-            href="https://webpeel.dev/docs"
+            href="https://github.com/JakeLiuMe/webpeel#readme"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center rounded-lg p-2.5 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600"
