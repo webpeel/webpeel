@@ -393,7 +393,7 @@ program
 // Batch command
 program
     .command('batch [file]')
-    .description('Fetch multiple URLs from file or stdin pipe (Pro feature)')
+    .description('Fetch multiple URLs from file or stdin pipe')
     .option('-c, --concurrency <n>', 'Max concurrent fetches (default: 3)', '3')
     .option('-o, --output <dir>', 'Output directory (one file per URL)')
     .option('--json', 'Output as JSON array')
@@ -524,7 +524,7 @@ program
 });
 program
     .command('crawl <url>')
-    .description('Crawl a website starting from a URL (Pro feature)')
+    .description('Crawl a website starting from a URL')
     .option('--max-pages <number>', 'Maximum number of pages to crawl (default: 10, max: 100)', parseInt, 10)
     .option('--max-depth <number>', 'Maximum depth to crawl (default: 2, max: 5)', parseInt, 2)
     .option('--allowed-domains <domains...>', 'Only crawl these domains (default: same as starting URL)')
