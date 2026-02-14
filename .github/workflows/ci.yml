@@ -38,3 +38,18 @@ jobs:
       - name: Lint
         run: npm run lint
         if: runner.os == 'Linux'
+
+  notify-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: failure()
+    steps:
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_CI }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{\"content\": \"⚠️ **WebPeel CI failed** on \`${{ github.ref_name }}\` — ${{ github.event.head_commit.message || 'PR update' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>\"}" \
+            "$DISCORD_WEBHOOK"
+        if: env.DISCORD_WEBHOOK != ''
