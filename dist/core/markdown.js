@@ -268,54 +268,28 @@ export function truncateToTokenBudget(content, maxTokens) {
     }
     // Split into lines
     const lines = content.split('\n');
-    // Keep first heading and first paragraph
+    // Build truncated content
     const result = [];
-    let foundFirstHeading = false;
-    let foundFirstParagraph = false;
     let currentTokenCount = 0;
-    const targetChars = maxTokens * 4; // Rough char estimate
-    // First pass: collect all headings and structure
-    const headings = [];
+    let foundFirstHeading = false;
     for (const line of lines) {
-        if (/^#{1,6}\s/.test(line)) {
-            headings.push(line);
-        }
-    }
-    // Second pass: build truncated content
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
         const lineTokens = estimateTokens(line);
-        // Always keep first heading
-        if (!foundFirstHeading && /^#{1,6}\s/.test(line)) {
+        const isHeading = /^#{1,6}\s/.test(line);
+        // Always include the first heading
+        if (!foundFirstHeading && isHeading) {
             result.push(line);
             currentTokenCount += lineTokens;
             foundFirstHeading = true;
             continue;
         }
-        // Always keep first substantial paragraph
-        if (!foundFirstParagraph && line.trim().length > 50 && !/^#{1,6}\s/.test(line)) {
-            result.push(line);
-            currentTokenCount += lineTokens;
-            foundFirstParagraph = true;
-            continue;
-        }
-        // Keep all headings to preserve structure
-        if (/^#{1,6}\s/.test(line)) {
-            if (currentTokenCount + lineTokens < targetChars * 0.9) {
-                result.push(line);
-                currentTokenCount += lineTokens;
-                continue;
-            }
-        }
-        // Add content until we reach budget
-        if (currentTokenCount + lineTokens < targetChars * 0.9) {
-            result.push(line);
-            currentTokenCount += lineTokens;
-        }
-        else {
-            // Budget exceeded, stop here
+        // Check if adding this line would exceed budget
+        if (currentTokenCount + lineTokens > maxTokens) {
+            // Stop here
             break;
         }
+        // Add the line
+        result.push(line);
+        currentTokenCount += lineTokens;
     }
     // Add truncation notice
     result.push('');

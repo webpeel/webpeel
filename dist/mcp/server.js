@@ -92,7 +92,7 @@ async function searchWeb(query, count = 5) {
 const tools = [
     {
         name: 'webpeel_fetch',
-        description: 'Fetch a URL and return clean, AI-ready markdown content. Handles JavaScript rendering and anti-bot protections automatically. Use this when you need to read the content of a web page. For protected sites, use stealth=true to bypass bot detection.',
+        description: 'Fetch a URL and return clean, AI-ready markdown content. Handles JavaScript rendering and anti-bot protections automatically. Supports page actions (click, scroll, type), structured extraction, and token budgets. Use stealth=true for protected sites.',
         annotations: {
             title: 'Fetch Web Page',
             readOnlyHint: true,
@@ -152,6 +152,21 @@ const tools = [
                 headers: {
                     type: 'object',
                     description: 'Custom HTTP headers to send',
+                },
+                actions: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                    },
+                    description: 'Page actions to execute before extraction (e.g., [{type: "click", selector: ".btn"}, {type: "wait", ms: 2000}])',
+                },
+                maxTokens: {
+                    type: 'number',
+                    description: 'Maximum token count for output (truncates if exceeded)',
+                },
+                extract: {
+                    type: 'object',
+                    description: 'Structured data extraction options: {selectors: {field: "css"}} or {schema: {...}}',
                 },
             },
             required: ['url'],
@@ -233,7 +248,7 @@ const tools = [
     },
     {
         name: 'webpeel_crawl',
-        description: 'Crawl a website starting from a URL, following links and extracting content. Respects robots.txt and rate limits. Perfect for gathering documentation or site content.',
+        description: 'Crawl a website starting from a URL, following links and extracting content. Supports sitemap-first discovery, BFS/DFS strategies, and content deduplication. Respects robots.txt and rate limits. Perfect for gathering documentation or site content.',
         annotations: {
             title: 'Crawl Website',
             readOnlyHint: true,
@@ -287,6 +302,11 @@ const tools = [
                     default: 1000,
                     minimum: 100,
                 },
+                sitemapFirst: {
+                    type: 'boolean',
+                    description: 'Discover URLs via sitemap.xml before crawling (default: false)',
+                    default: false,
+                },
                 render: {
                     type: 'boolean',
                     description: 'Use browser rendering for all pages',
@@ -301,6 +321,82 @@ const tools = [
             required: ['url'],
         },
     },
+    {
+        name: 'webpeel_map',
+        description: 'Discover all URLs on a domain using sitemap.xml and link crawling. Returns a comprehensive list of URLs without fetching their content. Perfect for understanding site structure or planning a crawl.',
+        annotations: {
+            title: 'Map Website URLs',
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: true,
+        },
+        inputSchema: {
+            type: 'object',
+            properties: {
+                url: {
+                    type: 'string',
+                    description: 'Starting URL or domain to map',
+                },
+                maxUrls: {
+                    type: 'number',
+                    description: 'Maximum URLs to discover (default: 5000, max: 10000)',
+                    default: 5000,
+                    minimum: 1,
+                    maximum: 10000,
+                },
+                includePatterns: {
+                    type: 'array',
+                    items: {
+                        type: 'string',
+                    },
+                    description: 'Only include URLs matching these patterns (regex)',
+                },
+                excludePatterns: {
+                    type: 'array',
+                    items: {
+                        type: 'string',
+                    },
+                    description: 'Exclude URLs matching these patterns (regex)',
+                },
+            },
+            required: ['url'],
+        },
+    },
+    {
+        name: 'webpeel_extract',
+        description: 'Extract structured data from a webpage using CSS selectors or JSON schema validation. Perfect for scraping product data, article metadata, or any structured content.',
+        annotations: {
+            title: 'Extract Structured Data',
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: true,
+        },
+        inputSchema: {
+            type: 'object',
+            properties: {
+                url: {
+                    type: 'string',
+                    description: 'URL to extract from',
+                },
+                selectors: {
+                    type: 'object',
+                    description: 'Map of field names to CSS selectors, e.g., {"title": "h1", "price": ".price"}',
+                },
+                schema: {
+                    type: 'object',
+                    description: 'JSON schema describing expected output structure',
+                },
+                render: {
+                    type: 'boolean',
+                    description: 'Use browser rendering',
+                    default: false,
+                },
+            },
+            required: ['url'],
+        },
+    },
 ];
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools,
@@ -309,7 +405,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
     try {
         if (name === 'webpeel_fetch') {
-            const { url, render, stealth, wait, format, screenshot, screenshotFullPage, selector, exclude, headers } = args;
+            const { url, render, stealth, wait, format, screenshot, screenshotFullPage, selector, exclude, headers, actions, maxTokens, extract } = args;
             // SECURITY: Validate input parameters
             if (!url || typeof url !== 'string') {
                 throw new Error('Invalid URL parameter');
@@ -334,6 +430,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             if (headers !== undefined && typeof headers !== 'object') {
                 throw new Error('Invalid headers parameter: must be an object');
             }
+            if (actions !== undefined && !Array.isArray(actions)) {
+                throw new Error('Invalid actions parameter: must be an array');
+            }
+            if (maxTokens !== undefined) {
+                if (typeof maxTokens !== 'number' || isNaN(maxTokens) || maxTokens < 100) {
+                    throw new Error('Invalid maxTokens parameter: must be at least 100');
+                }
+            }
+            if (extract !== undefined && typeof extract !== 'object') {
+                throw new Error('Invalid extract parameter: must be an object');
+            }
             const options = {
                 render: render || false,
                 stealth: stealth || false,
@@ -344,6 +451,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 selector,
                 exclude,
                 headers,
+                actions,
+                maxTokens,
+                extract,
             };
             // SECURITY: Wrap in timeout (60 seconds max)
             const timeoutPromise = new Promise((_, reject) => {
@@ -477,7 +587,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         if (name === 'webpeel_crawl') {
             const { crawl } = await import('../core/crawler.js');
-            const { url, maxPages, maxDepth, allowedDomains, excludePatterns, respectRobotsTxt, rateLimitMs, render, stealth, } = args;
+            const { url, maxPages, maxDepth, allowedDomains, excludePatterns, respectRobotsTxt, rateLimitMs, sitemapFirst, render, stealth, } = args;
             // SECURITY: Validate input parameters
             if (!url || typeof url !== 'string') {
                 throw new Error('Invalid URL parameter');
@@ -518,6 +628,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     excludePatterns,
                     respectRobotsTxt,
                     rateLimitMs,
+                    sitemapFirst,
                     render,
                     stealth,
                 }),
@@ -532,6 +643,112 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 resultText = JSON.stringify({
                     error: 'serialization_error',
                     message: 'Failed to serialize crawl results',
+                });
+            }
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: resultText,
+                    },
+                ],
+            };
+        }
+        if (name === 'webpeel_map') {
+            const { mapDomain } = await import('../core/map.js');
+            const { url, maxUrls, includePatterns, excludePatterns, } = args;
+            // SECURITY: Validate input parameters
+            if (!url || typeof url !== 'string') {
+                throw new Error('Invalid URL parameter');
+            }
+            if (url.length > 2048) {
+                throw new Error('URL too long (max 2048 characters)');
+            }
+            if (maxUrls !== undefined) {
+                if (typeof maxUrls !== 'number' || isNaN(maxUrls) || maxUrls < 1 || maxUrls > 10000) {
+                    throw new Error('Invalid maxUrls parameter: must be between 1 and 10000');
+                }
+            }
+            if (includePatterns !== undefined && !Array.isArray(includePatterns)) {
+                throw new Error('Invalid includePatterns parameter: must be an array');
+            }
+            if (excludePatterns !== undefined && !Array.isArray(excludePatterns)) {
+                throw new Error('Invalid excludePatterns parameter: must be an array');
+            }
+            // SECURITY: Wrap in timeout (10 minutes max for mapping)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Map operation timed out after 10 minutes')), 600000);
+            });
+            const results = await Promise.race([
+                mapDomain(url, {
+                    maxUrls,
+                    includePatterns,
+                    excludePatterns,
+                }),
+                timeoutPromise,
+            ]);
+            // SECURITY: Handle JSON serialization errors
+            let resultText;
+            try {
+                resultText = JSON.stringify(results, null, 2);
+            }
+            catch (jsonError) {
+                resultText = JSON.stringify({
+                    error: 'serialization_error',
+                    message: 'Failed to serialize map results',
+                });
+            }
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: resultText,
+                    },
+                ],
+            };
+        }
+        if (name === 'webpeel_extract') {
+            const { url, selectors, schema, render, } = args;
+            // SECURITY: Validate input parameters
+            if (!url || typeof url !== 'string') {
+                throw new Error('Invalid URL parameter');
+            }
+            if (url.length > 2048) {
+                throw new Error('URL too long (max 2048 characters)');
+            }
+            if (selectors !== undefined && typeof selectors !== 'object') {
+                throw new Error('Invalid selectors parameter: must be an object');
+            }
+            if (schema !== undefined && typeof schema !== 'object') {
+                throw new Error('Invalid schema parameter: must be an object');
+            }
+            if (!selectors && !schema) {
+                throw new Error('Either selectors or schema must be provided');
+            }
+            const options = {
+                render: render || false,
+                extract: {
+                    selectors,
+                    schema,
+                },
+            };
+            // SECURITY: Wrap in timeout (60 seconds max)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Extract operation timed out after 60s')), 60000);
+            });
+            const result = await Promise.race([
+                peel(url, options),
+                timeoutPromise,
+            ]);
+            // SECURITY: Handle JSON serialization errors
+            let resultText;
+            try {
+                resultText = JSON.stringify(result, null, 2);
+            }
+            catch (jsonError) {
+                resultText = JSON.stringify({
+                    error: 'serialization_error',
+                    message: 'Failed to serialize extract result',
                 });
             }
             return {

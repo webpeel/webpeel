@@ -35,6 +35,40 @@ program
     .description('Fast web fetcher for AI agents')
     .version(cliVersion)
     .enablePositionalOptions();
+/**
+ * Parse action strings into PageAction array
+ * Format: "type:value" where type is wait|click|scroll|type|fill|press|hover|waitFor
+ */
+function parseActions(actionStrings) {
+    return actionStrings.map(str => {
+        const [type, ...rest] = str.split(':');
+        const value = rest.join(':');
+        switch (type) {
+            case 'wait':
+                return { type: 'wait', ms: parseInt(value) || 1000 };
+            case 'click':
+                return { type: 'click', selector: value };
+            case 'scroll':
+                return { type: 'scroll', to: value === 'top' ? 'top' : value === 'bottom' ? 'bottom' : parseInt(value) };
+            case 'type': {
+                const [sel, ...text] = value.split('=');
+                return { type: 'type', selector: sel, value: text.join('=') };
+            }
+            case 'fill': {
+                const [sel, ...text] = value.split('=');
+                return { type: 'fill', selector: sel, value: text.join('=') };
+            }
+            case 'press':
+                return { type: 'press', key: value };
+            case 'hover':
+                return { type: 'hover', selector: value };
+            case 'waitFor':
+                return { type: 'waitForSelector', selector: value };
+            default:
+                throw new Error(`Unknown action type: ${type}`);
+        }
+    });
+}
 program
     .argument('[url]', 'URL to fetch')
     .option('-r, --render', 'Use headless browser (for JS-heavy sites)')
@@ -56,6 +90,9 @@ program
     .option('--links', 'Output only the links found on the page')
     .option('--meta', 'Output only the page metadata (title, description, author, etc.)')
     .option('--raw', 'Return full page without smart content extraction')
+    .option('--action <actions...>', 'Page actions before scraping (e.g., "click:.btn" "wait:2000" "scroll:bottom")')
+    .option('--extract <json>', 'Extract structured data using CSS selectors (JSON object of field:selector pairs)')
+    .option('--max-tokens <n>', 'Maximum token count for output (truncate if exceeded)', parseInt)
     .action(async (url, options) => {
     if (!url) {
         console.error('Error: URL is required\n');
@@ -133,9 +170,39 @@ program
                 headers[key] = value;
             }
         }
+        // Parse actions
+        let actions;
+        if (options.action && options.action.length > 0) {
+            try {
+                actions = parseActions(options.action);
+            }
+            catch (e) {
+                console.error(`Error: ${e.message}`);
+                process.exit(1);
+            }
+        }
+        // Parse extract
+        let extract;
+        if (options.extract) {
+            try {
+                extract = { selectors: JSON.parse(options.extract) };
+            }
+            catch {
+                console.error('Error: --extract must be valid JSON (e.g., \'{"title": "h1", "price": ".price"}\')');
+                process.exit(1);
+            }
+        }
+        // Validate maxTokens
+        if (options.maxTokens !== undefined) {
+            if (isNaN(options.maxTokens) || options.maxTokens < 100) {
+                console.error('Error: --max-tokens must be at least 100');
+                process.exit(1);
+            }
+        }
         // Build peel options
         // --stealth auto-enables --render (stealth requires browser)
-        const useRender = options.render || options.stealth || false;
+        // --action auto-enables --render (actions require browser)
+        const useRender = options.render || options.stealth || (actions && actions.length > 0) || false;
         const peelOptions = {
             render: useRender,
             stealth: options.stealth || false,
@@ -149,6 +216,9 @@ program
             headers,
             cookies: options.cookie,
             raw: options.raw || false,
+            actions,
+            maxTokens: options.maxTokens,
+            extract,
         };
         // Determine format
         if (options.html) {

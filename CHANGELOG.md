@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-02-14
+
+### Added
+- **Page Actions**: Execute browser actions before scraping (`click`, `scroll`, `type`, `fill`, `select`, `press`, `hover`, `waitForSelector`)
+  - CLI: `--action "click:.cookie-accept" --action "wait:2000" --action "scroll:bottom"`
+  - Library: `peel(url, { actions: [{ type: 'click', selector: '.btn' }] })`
+  - Actions auto-enable browser rendering
+- **Structured Data Extraction**: Extract structured data using CSS selectors or JSON schema validation
+  - CLI: `--extract '{"title": "h1", "price": ".price"}'`
+  - Library: `peel(url, { extract: { selectors: { title: 'h1' } } })`
+- **PDF Extraction**: Automatic PDF detection and text extraction with metadata
+  - Works automatically for `.pdf` URLs
+  - Extracts title, author, pages, creation date, and full text content
+- **Map/Sitemap Discovery**: Discover all URLs on a domain (`webpeel map`)
+  - Parses sitemap.xml, sitemap index files, and robots.txt
+  - Combines with homepage link crawling for comprehensive URL discovery
+  - CLI: `webpeel map https://example.com --max-urls 5000`
+  - MCP: `webpeel_map` tool
+- **Token Budget**: Intelligently truncate output to a maximum token count
+  - CLI: `--max-tokens 2000`
+  - Library: `peel(url, { maxTokens: 2000 })`
+  - Uses tiktoken to estimate tokens and truncates content while preserving structure
+- **Advanced Crawl Features**:
+  - `--sitemap-first`: Discover URLs via sitemap before crawling (faster, more comprehensive)
+  - Content fingerprint deduplication (skip duplicate pages)
+  - BFS/DFS crawl strategy support
+  - Include/exclude URL pattern matching
+- **Rate Limit Headers**: Standard `X-RateLimit-*` headers on all API responses
+- **New MCP Tools**: `webpeel_map` and `webpeel_extract`
+
+### Changed
+- **Usage-Gating Model**: All features (stealth, crawl, batch, actions, extraction) now available on all tiers including free. Only usage limits differentiate plans.
+- All plan-specific feature restrictions removed from CLI, API, and documentation
+- Updated landing page, README, and llms.txt to reflect new usage-gating model
+- Pricing page emphasizes "All features on all plans"
+- `webpeel_fetch` MCP tool now includes `actions`, `maxTokens`, and `extract` parameters
+- `webpeel_crawl` MCP tool now supports `sitemapFirst` parameter
+
+### Removed
+- `checkFeatureAccess()` function from `cli-auth.ts` (feature-gating no longer needed)
+- All references to "Pro plan required" or feature-tier restrictions
+
 ## [0.3.4] - 2026-02-13
 
 ### Added
