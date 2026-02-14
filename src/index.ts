@@ -200,7 +200,14 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     // Extract structured data if requested
     let extracted: Record<string, any> | undefined;
     if (extract && isHTML) {
-      extracted = extractStructured(fetchResult.html, extract);
+      if (extract.llmApiKey && (extract.prompt || extract.schema)) {
+        // LLM-powered extraction
+        const { extractWithLLM } = await import('./core/extract.js');
+        extracted = await extractWithLLM(content, extract);
+      } else if (extract.selectors || extract.schema) {
+        // CSS-based extraction (existing)
+        extracted = extractStructured(fetchResult.html, extract);
+      }
     }
 
     // Truncate to token budget if requested

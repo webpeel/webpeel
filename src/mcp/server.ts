@@ -389,7 +389,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_extract',
-    description: 'Extract structured data from a webpage using CSS selectors or JSON schema validation. Perfect for scraping product data, article metadata, or any structured content.',
+    description: 'Extract structured data from a webpage using CSS selectors, JSON schema validation, or AI-powered extraction with natural language prompts. Perfect for scraping product data, article metadata, or any structured content.',
     annotations: {
       title: 'Extract Structured Data',
       readOnlyHint: true,
@@ -411,6 +411,24 @@ const tools: Tool[] = [
         schema: {
           type: 'object',
           description: 'JSON schema describing expected output structure',
+        },
+        prompt: {
+          type: 'string',
+          description: 'Natural language prompt for AI-powered extraction (requires llmApiKey)',
+        },
+        llmApiKey: {
+          type: 'string',
+          description: 'API key for LLM-powered extraction (OpenAI-compatible)',
+        },
+        llmModel: {
+          type: 'string',
+          description: 'LLM model to use (default: gpt-4o-mini)',
+          default: 'gpt-4o-mini',
+        },
+        llmBaseUrl: {
+          type: 'string',
+          description: 'LLM API base URL (default: https://api.openai.com/v1)',
+          default: 'https://api.openai.com/v1',
         },
         render: {
           type: 'boolean',
@@ -863,11 +881,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         url,
         selectors,
         schema,
+        prompt,
+        llmApiKey,
+        llmModel,
+        llmBaseUrl,
         render,
       } = args as {
         url: string;
         selectors?: Record<string, string>;
         schema?: any;
+        prompt?: string;
+        llmApiKey?: string;
+        llmModel?: string;
+        llmBaseUrl?: string;
         render?: boolean;
       };
 
@@ -888,8 +914,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error('Invalid schema parameter: must be an object');
       }
 
-      if (!selectors && !schema) {
-        throw new Error('Either selectors or schema must be provided');
+      if (prompt !== undefined && typeof prompt !== 'string') {
+        throw new Error('Invalid prompt parameter: must be a string');
+      }
+
+      if (llmApiKey !== undefined && typeof llmApiKey !== 'string') {
+        throw new Error('Invalid llmApiKey parameter: must be a string');
+      }
+
+      if (llmModel !== undefined && typeof llmModel !== 'string') {
+        throw new Error('Invalid llmModel parameter: must be a string');
+      }
+
+      if (llmBaseUrl !== undefined && typeof llmBaseUrl !== 'string') {
+        throw new Error('Invalid llmBaseUrl parameter: must be a string');
+      }
+
+      if (!selectors && !schema && !prompt) {
+        throw new Error('Either selectors, schema, or prompt must be provided');
       }
 
       const options: PeelOptions = {
@@ -897,6 +939,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         extract: {
           selectors,
           schema,
+          prompt,
+          llmApiKey,
+          llmModel,
+          llmBaseUrl,
         },
       };
 

@@ -168,7 +168,15 @@ export async function peel(url, options = {}) {
         // Extract structured data if requested
         let extracted;
         if (extract && isHTML) {
-            extracted = extractStructured(fetchResult.html, extract);
+            if (extract.llmApiKey && (extract.prompt || extract.schema)) {
+                // LLM-powered extraction
+                const { extractWithLLM } = await import('./core/extract.js');
+                extracted = await extractWithLLM(content, extract);
+            }
+            else if (extract.selectors || extract.schema) {
+                // CSS-based extraction (existing)
+                extracted = extractStructured(fetchResult.html, extract);
+            }
         }
         // Truncate to token budget if requested
         if (maxTokens && maxTokens > 0) {

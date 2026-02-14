@@ -13,6 +13,13 @@ const fetcher = async <T,>(url: string, token: string): Promise<T> => {
   return apiClient<T>(url, { token });
 };
 
+interface DailyUsage {
+  date: string;
+  fetches: number;
+  stealth: number;
+  search: number;
+}
+
 export default function UsagePage() {
   const { data: session } = useSession();
   const token = (session as any)?.apiToken;
@@ -23,8 +30,13 @@ export default function UsagePage() {
     { refreshInterval: 30000 }
   );
 
-  // TODO: Replace with real API data from /v1/usage/history endpoint
-  const dailyHistory: Array<{ date: string; fetches: number; stealth: number; search: number }> = [];
+  const { data: history } = useSWR<{ history: DailyUsage[] }>(
+    token ? ['/v1/usage/history?days=7', token] : null,
+    ([url, token]: [string, string]) => fetcher<{ history: DailyUsage[] }>(url, token),
+    { refreshInterval: 60000 }
+  );
+
+  const dailyHistory = history?.history || [];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
@@ -52,23 +64,54 @@ export default function UsagePage() {
               <CardDescription>Your API usage over the past 7 days</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Simple SVG trend chart placeholder */}
-              <div className="h-48 flex items-end justify-between gap-2 px-4">
-                {[40, 55, 45, 70, 60, 80, 75].map((height, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                    <div 
-                      className="w-full bg-gradient-to-t from-violet-500 to-violet-400 rounded-t-lg transition-all hover:from-violet-600 hover:to-violet-500"
-                      style={{ height: `${height}%` }}
-                    />
-                    <span className="text-[10px] text-zinc-400">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
-                    </span>
+              {dailyHistory.length > 0 ? (
+                <>
+                  {/* CSS-only bar chart */}
+                  <div className="h-48 flex items-end justify-between gap-2 px-4">
+                    {dailyHistory.map((day, i) => {
+                      const total = day.fetches + day.stealth + day.search;
+                      const maxValue = Math.max(...dailyHistory.map(d => d.fetches + d.stealth + d.search), 1);
+                      const height = maxValue > 0 ? (total / maxValue) * 100 : 0;
+                      const dayName = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' });
+                      
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                          <div className="relative w-full">
+                            <div 
+                              className="w-full bg-gradient-to-t from-violet-500 to-violet-400 rounded-t-lg transition-all hover:from-violet-600 hover:to-violet-500 cursor-pointer"
+                              style={{ height: height > 0 ? `${Math.max(height, 8)}px` : '2px' }}
+                              title={`${total} requests`}
+                            />
+                            {/* Tooltip on hover */}
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                              <div className="bg-zinc-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                                {total} requests
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-zinc-400">{dayName}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-              <p className="text-xs text-zinc-500 text-center mt-4">
-                Live usage data will appear when you start making API requests
-              </p>
+                  <div className="mt-4 flex items-center justify-center gap-4 text-xs text-zinc-500">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-violet-500" />
+                      <span>Total requests</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="h-48 flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart3 className="h-12 w-12 text-zinc-300 mx-auto mb-3" />
+                    <p className="text-sm text-zinc-500">No usage data yet</p>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      Live usage data will appear when you start making API requests
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -100,6 +100,7 @@ program
   .option('--raw', 'Return full page without smart content extraction')
   .option('--action <actions...>', 'Page actions before scraping (e.g., "click:.btn" "wait:2000" "scroll:bottom")')
   .option('--extract <json>', 'Extract structured data using CSS selectors (JSON object of field:selector pairs)')
+  .option('--llm-extract <prompt>', 'AI-powered extraction using LLM (requires OPENAI_API_KEY env var)')
   .option('--max-tokens <n>', 'Maximum token count for output (truncate if exceeded)', parseInt)
   .action(async (url: string | undefined, options) => {
     if (!url) {
@@ -200,7 +201,20 @@ program
 
       // Parse extract
       let extract: any;
-      if (options.extract) {
+      if (options.llmExtract) {
+        // LLM-based extraction
+        extract = {
+          prompt: options.llmExtract,
+          llmApiKey: process.env.OPENAI_API_KEY,
+          llmModel: process.env.WEBPEEL_LLM_MODEL || 'gpt-4o-mini',
+          llmBaseUrl: process.env.WEBPEEL_LLM_BASE_URL || 'https://api.openai.com/v1',
+        };
+        if (!extract.llmApiKey) {
+          console.error('Error: --llm-extract requires OPENAI_API_KEY environment variable');
+          process.exit(1);
+        }
+      } else if (options.extract) {
+        // CSS-based extraction
         try {
           extract = { selectors: JSON.parse(options.extract) };
         } catch {

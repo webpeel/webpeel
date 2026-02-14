@@ -19,6 +19,12 @@ export interface ExtractOptions {
   selectors?: Record<string, string>;
   /** Natural language prompt describing what to extract */
   prompt?: string;
+  /** API key for LLM-powered extraction (OpenAI-compatible) */
+  llmApiKey?: string;
+  /** LLM model to use (default: gpt-4o-mini) */
+  llmModel?: string;
+  /** LLM API base URL (default: https://api.openai.com/v1) */
+  llmBaseUrl?: string;
 }
 
 export interface PeelOptions {

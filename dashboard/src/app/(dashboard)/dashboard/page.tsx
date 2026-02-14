@@ -11,6 +11,7 @@ import { UsageBar } from '@/components/usage-bar';
 import { StatCard } from '@/components/stat-card';
 import { ActivityTable } from '@/components/activity-table';
 import { CopyButton } from '@/components/copy-button';
+import { OnboardingModal } from '@/components/onboarding-modal';
 import { RefreshCw, ExternalLink, Activity, Clock, CheckCircle2, Zap, Copy } from 'lucide-react';
 import { apiClient, Usage, ApiKey } from '@/lib/api';
 
@@ -101,6 +102,9 @@ data = response.json()`
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
+      {/* Onboarding Modal */}
+      <OnboardingModal apiKey={apiKey} />
+      
       {/* Hero Section */}
       <div>
         <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-2">
