@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Scraping for AI Agents: The Complete Guide (2026)</title>
+  <meta name="description" content="Learn how to build AI agents that can scrape the web efficiently. Token optimization, stealth mode, dynamic content, structured extraction, and best practices.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://webpeel.dev/blog/web-scraping-for-ai-agents.html">
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://webpeel.dev/blog/web-scraping-for-ai-agents.html">
+  <meta property="og:title" content="Web Scraping for AI Agents: The Complete Guide (2026)">
+  <meta property="og:description" content="Complete guide to web scraping for AI agents. Token efficiency, stealth mode, dynamic content, and best practices.">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@JakeLiuMe">
+  
+  <!-- Keywords -->
+  <meta name="keywords" content="web scraping ai agents, llm web fetch, ai web scraper, token efficient scraping, web scraping best practices">
+  
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Web Scraping for AI Agents: The Complete Guide (2026)",
+    "description": "Learn how to build AI agents that can scrape the web efficiently. Token optimization, stealth mode, and best practices.",
+    "author": {
+      "@type": "Person",
+      "name": "Jake Liu",
+      "url": "https://twitter.com/JakeLiuMe"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "WebPeel",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://webpeel.dev/favicon.svg"
+      }
+    },
+    "datePublished": "2026-02-14",
+    "dateModified": "2026-02-14",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://webpeel.dev/blog/web-scraping-for-ai-agents.html"
+    },
+    "keywords": ["web scraping", "ai agents", "llm", "web fetch", "token optimization"]
+  }
+  </script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg: #FAFAF8;
+      --surface: #FFFFFF;
+      --text: #09090B;
+      --text-2: #52525B;
+      --text-3: #71717A;
+      --text-4: #A1A1AA;
+      --accent: #8B5CF6;
+      --accent-light: #EDE9FE;
+      --border: #E4E4E7;
+      --border-light: #F4F4F5;
+      --green: #16A34A;
+      --radius: 12px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    ::selection { background: rgba(139,92,246,0.15); }
+    .serif { font-family: 'Instrument Serif', Georgia, serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(250,250,248,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-light); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--text); text-decoration: none; }
+    .nav-logo svg { width: 24px; height: 24px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; }
+    .nav-links a { font-size: 14px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    .article-header { padding: 60px 0 40px; text-align: center; border-bottom: 1px solid var(--border-light); }
+    .article-meta { display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 14px; color: var(--text-3); margin-bottom: 20px; }
+    .article-meta a { color: var(--accent); text-decoration: none; }
+    h1 { font-family: 'Instrument Serif', serif; font-size: clamp(32px, 5vw, 48px); line-height: 1.15; font-weight: 400; letter-spacing: -0.02em; color: var(--text); margin-bottom: 16px; }
+    .article-description { font-size: 18px; color: var(--text-2); max-width: 600px; margin: 0 auto; line-height: 1.6; }
+
+    article { padding: 60px 0; }
+    article h2 { font-family: 'Instrument Serif', serif; font-size: 32px; font-weight: 400; margin: 48px 0 16px; letter-spacing: -0.01em; }
+    article h3 { font-size: 22px; font-weight: 600; margin: 36px 0 12px; }
+    article p { font-size: 17px; line-height: 1.7; color: var(--text-2); margin-bottom: 20px; }
+    article ul, article ol { margin: 20px 0 20px 24px; }
+    article li { font-size: 17px; line-height: 1.7; color: var(--text-2); margin-bottom: 8px; }
+    article strong { color: var(--text); font-weight: 600; }
+    article code { font-family: 'JetBrains Mono', monospace; font-size: 14px; background: var(--border-light); padding: 2px 6px; border-radius: 4px; color: var(--accent); }
+    article pre { background: #18181B; color: #D4D4D8; padding: 20px; border-radius: var(--radius); overflow-x: auto; margin: 24px 0; font-size: 14px; line-height: 1.6; }
+    article pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+    
+    .callout { background: linear-gradient(135deg, rgba(139,92,246,0.05) 0%, white 100%); border: 2px solid var(--accent-light); border-radius: var(--radius); padding: 24px; margin: 32px 0; }
+    .callout h3 { margin-top: 0; font-size: 18px; color: var(--accent); }
+    .callout p { margin-bottom: 12px; font-size: 16px; }
+
+    .warning { background: linear-gradient(135deg, rgba(239,68,68,0.05) 0%, white 100%); border: 2px solid rgba(239,68,68,0.2); border-radius: var(--radius); padding: 24px; margin: 32px 0; }
+    .warning h3 { margin-top: 0; font-size: 18px; color: #DC2626; }
+
+    footer { border-top: 1px solid var(--border); padding: 40px 0; margin-top: 60px; }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .footer-left { font-size: 13px; color: var(--text-4); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 16px; }
+      .nav-inner { padding: 0 16px; }
+      .nav-links { display: none; }
+      .article-header { padding: 40px 0 30px; }
+      h1 { font-size: 32px; }
+      article { padding: 40px 0; }
+      article h2 { font-size: 26px; }
+      article h3 { font-size: 20px; }
+      article p, article li { font-size: 16px; }
+      .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+      .footer-links { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="https://github.com/JakeLiuMe/webpeel#readme">Docs</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="article-header">
+    <div class="container">
+      <div class="article-meta">
+        <span>February 14, 2026</span>
+        <span>•</span>
+        <span>10 min read</span>
+        <span>•</span>
+        <a href="/blog/">← Back to Blog</a>
+      </div>
+      <h1>Web Scraping for AI Agents: The Complete Guide (2026)</h1>
+      <p class="article-description">Everything you need to know about building AI agents that can fetch, extract, and process web content efficiently.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <article>
+      
+      <p>AI agents are only as good as the data they can access. In 2026, <strong>web scraping is the #1 capability</strong> that separates useful agents from toy demos.</p>
+
+      <p>This guide covers everything you need to build AI agents that can scrape the web <em>efficiently, reliably, and ethically</em>.</p>
+
+      <h2>Why AI Agents Need Web Scraping</h2>
+
+      <p>Unlike humans, AI models can't browse the web naturally. They need:</p>
+
+      <ul>
+        <li><strong>Real-time information</strong> — Training data goes stale. Web scraping keeps AI current.</li>
+        <li><strong>Domain-specific knowledge</strong> — API docs, research papers, product specs.</li>
+        <li><strong>Context from multiple sources</strong> — Combining data from 5+ pages to answer one question.</li>
+        <li><strong>Structured extraction</strong> — Turning messy HTML into clean JSON.</li>
+      </ul>
+
+      <p>Without web scraping, your AI agent is limited to what it was trained on. With it, the entire internet becomes its knowledge base.</p>
+
+      <h2>The Token Efficiency Problem</h2>
+
+      <p>Here's the challenge: <strong>web pages are huge</strong>.</p>
+
+      <div class="callout">
+        <h3>📊 Typical Token Counts</h3>
+        <ul>
+          <li><strong>Raw HTML:</strong> 50,000+ tokens</li>
+          <li><strong>After extraction:</strong> 2,000-5,000 tokens</li>
+          <li><strong>With smart extraction:</strong> 500-1,500 tokens</li>
+        </ul>
+        <p style="margin-top: 16px;"><strong>That's a 96% reduction.</strong> Smart extraction is the difference between $0.50/page and $0.02/page.</p>
+      </div>
+
+      <p>WebPeel automatically handles this by:</p>
+      <ol>
+        <li><strong>Article detection</strong> — Finds the main content, removes navigation/ads/footers.</li>
+        <li><strong>Markdown conversion</strong> — Clean, structured output (not bloated HTML).</li>
+        <li><strong>Token budgeting</strong> — <code>--max-tokens 2000</code> caps output at your limit.</li>
+        <li><strong>Quality scoring</strong> — Detects low-quality extractions and retries with browser rendering.</li>
+      </ol>
+
+      <h2>Smart Escalation: Fast First, Powerful When Needed</h2>
+
+      <p>Not all pages need a full browser. WebPeel uses a <strong>3-tier escalation system</strong>:</p>
+
+      <h3>Tier 1: HTTP Fetch (~118ms)</h3>
+      <p>Fast HTTP request with smart headers and content extraction. Works for 80% of pages.</p>
+      <pre><code>webpeel "https://example.com"
+// Returns markdown in 118ms avg</code></pre>
+
+      <h3>Tier 2: Browser Mode (~2s)</h3>
+      <p>Playwright-powered rendering for JavaScript-heavy sites (React, Vue, Angular SPAs).</p>
+      <pre><code>webpeel "https://example.com" --render
+// Auto-escalates if HTTP fails</code></pre>
+
+      <h3>Tier 3: Stealth Mode (~5s)</h3>
+      <p>Full anti-detection for Cloudflare, bot detection, and heavily protected sites.</p>
+      <pre><code>webpeel "https://example.com" --stealth
+// Bypasses DataDome, PerimeterX, etc.</code></pre>
+
+      <p><strong>The key:</strong> WebPeel tries HTTP first, escalates automatically. You never overpay for browser rendering on simple pages.</p>
+
+      <h2>Handling Dynamic Content</h2>
+
+      <p>Modern web apps load content dynamically. You need <strong>page actions</strong> to interact with them.</p>
+
+      <h3>Example: Clicking "Load More"</h3>
+      <pre><code>import { webpeel } from 'webpeel';
+
+const result = await webpeel.fetch('https://example.com/blog', {
+  render: true,
+  actions: [
+    { type: 'click', selector: 'button.load-more' },
+    { type: 'wait', duration: 2000 }
+  ]
+});
+
+// Now you have all blog posts, not just the first page</code></pre>
+
+      <h3>Example: Filling a Search Form</h3>
+      <pre><code>const result = await webpeel.fetch('https://example.com', {
+  render: true,
+  actions: [
+    { type: 'fill', selector: 'input[name="search"]', value: 'AI agents' },
+    { type: 'press', key: 'Enter' },
+    { type: 'wait', selector: '.results' }
+  ]
+});</code></pre>
+
+      <p>Page actions let your AI agent <em>interact</em> with pages, not just read them.</p>
+
+      <h2>Structured Extraction</h2>
+
+      <p>Sometimes you don't want markdown — you want <strong>structured JSON</strong>.</p>
+
+      <h3>Example: Extracting Product Data</h3>
+      <pre><code>const result = await webpeel.extract('https://example.com/product', {
+  schema: {
+    name: '.product-title',
+    price: '.price',
+    inStock: '.stock-status'
+  }
+});
+
+console.log(result);
+// {
+//   name: "Wireless Headphones",
+//   price: "$99.99",
+//   inStock: "In Stock"
+// }</code></pre>
+
+      <p>This is <strong>faster and cheaper</strong> than LLM-based extraction (no GPT-4 call needed).</p>
+
+      <h2>Best Practices</h2>
+
+      <h3>1. Respect robots.txt</h3>
+      <p>WebPeel checks <code>robots.txt</code> by default. If a site blocks bots, don't scrape it (or get permission).</p>
+
+      <h3>2. Rate Limiting</h3>
+      <p>Don't hammer servers. Use delays between requests:</p>
+      <pre><code>const pages = ['page1', 'page2', 'page3'];
+
+for (const url of pages) {
+  await webpeel.fetch(url);
+  await sleep(1000); // 1 second delay
+}</code></pre>
+
+      <h3>3. Cache Results</h3>
+      <p>Web pages don't change every second. Cache fetched content:</p>
+      <pre><code>// WebPeel includes content fingerprinting
+const result = await webpeel.fetch(url, { cache: true });
+
+// If content hasn't changed, returns cached version</code></pre>
+
+      <h3>4. Use Stealth Only When Needed</h3>
+      <p>Stealth mode is slower and uses more resources. Enable it only for protected sites.</p>
+
+      <h3>5. Handle Errors Gracefully</h3>
+      <pre><code>try {
+  const result = await webpeel.fetch(url);
+} catch (error) {
+  if (error.code === 'RATE_LIMITED') {
+    // Wait and retry
+  } else if (error.code === 'BLOCKED') {
+    // Try stealth mode
+  } else {
+    // Log and skip
+  }
+}</code></pre>
+
+      <h2>Real-World Use Cases</h2>
+
+      <h3>1. AI Research Assistant</h3>
+      <p>Fetches documentation, GitHub READMEs, and Stack Overflow answers to help developers.</p>
+      <pre><code>// Fetch Next.js docs
+const docs = await webpeel.fetch('https://nextjs.org/docs');
+
+// Search for solutions
+const results = await webpeel.search('Next.js API routes error handling');
+
+// Fetch top 3 results
+for (const result of results.slice(0, 3)) {
+  const page = await webpeel.fetch(result.url);
+  // Summarize with LLM
+}</code></pre>
+
+      <h3>2. Competitive Intelligence</h3>
+      <p>Monitors competitor pricing, feature announcements, and blog posts.</p>
+      <pre><code>// Crawl competitor blog
+const posts = await webpeel.crawl('https://competitor.com/blog', {
+  limit: 10
+});
+
+// Extract key themes
+const themes = await llm.analyze(posts);</code></pre>
+
+      <h3>3. Content Aggregation</h3>
+      <p>Builds newsletters, summaries, or curated lists from multiple sources.</p>
+      <pre><code>// Fetch top HN stories
+const hn = await webpeel.fetch('https://news.ycombinator.com');
+
+// Extract links and summaries
+const stories = await webpeel.extract(hn, {
+  list: '.athing',
+  schema: {
+    title: '.titleline a',
+    url: '.titleline a@href',
+    points: '.score'
+  }
+});</code></pre>
+
+      <div class="warning">
+        <h3>⚠️ Legal & Ethical Considerations</h3>
+        <p><strong>Just because you can scrape it doesn't mean you should.</strong></p>
+        <ul>
+          <li>Respect robots.txt and Terms of Service</li>
+          <li>Don't scrape personal data without consent (GDPR/CCPA)</li>
+          <li>Rate-limit your requests (don't DDoS)</li>
+          <li>Give attribution when republishing content</li>
+          <li>If a site offers an API, use it instead</li>
+        </ul>
+        <p style="margin-top: 16px;">When in doubt, ask for permission. Most companies are happy to help if you explain your use case.</p>
+      </div>
+
+      <h2>Code Example: Complete AI Agent</h2>
+
+      <p>Here's a full example of an AI agent that researches a topic:</p>
+
+      <pre><code>import { webpeel } from 'webpeel';
+import { openai } from 'openai';
+
+async function researchTopic(topic) {
+  // Step 1: Search for the topic
+  const searchResults = await webpeel.search(topic);
+  
+  // Step 2: Fetch top 5 results
+  const pages = await Promise.all(
+    searchResults.slice(0, 5).map(r => 
+      webpeel.fetch(r.url, { maxTokens: 2000 })
+    )
+  );
+  
+  // Step 3: Combine content
+  const combinedContent = pages
+    .map(p => p.content)
+    .join('\n\n---\n\n');
+  
+  // Step 4: Ask LLM to summarize
+  const summary = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [{
+      role: 'user',
+      content: `Summarize the key points about "${topic}" from these sources:\n\n${combinedContent}`
+    }]
+  });
+  
+  return summary.choices[0].message.content;
+}
+
+// Usage
+const report = await researchTopic('Next.js App Router best practices');
+console.log(report);</code></pre>
+
+      <h2>The Future: Agentic Web Interaction</h2>
+
+      <p>We're moving beyond static scraping. The future is <strong>interactive agents</strong> that can:</p>
+
+      <ul>
+        <li>Fill forms and submit data</li>
+        <li>Navigate multi-step workflows</li>
+        <li>Handle authentication (OAuth, cookies)</li>
+        <li>Extract data from infinite scroll pages</li>
+        <li>Solve CAPTCHAs (with human-in-the-loop)</li>
+      </ul>
+
+      <p>WebPeel's page actions are a step in this direction. Expect more agentic features in 2026.</p>
+
+      <hr style="margin: 48px 0; border: none; border-top: 1px solid var(--border);">
+
+      <p style="text-align: center;">
+        <strong>Ready to build?</strong><br>
+        <a href="https://webpeel.dev" style="font-size: 18px; font-weight: 600;">Get started with WebPeel →</a>
+      </p>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. MIT Licensed.</div>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://github.com/JakeLiuMe/webpeel">GitHub</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
