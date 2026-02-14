@@ -123,24 +123,7 @@ export default function UsagePage() {
             </CardContent>
           </Card>
 
-          {/* Extra Usage */}
-          {usage?.extraUsage && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Extra Usage</CardTitle>
-                <CardDescription className="text-sm">
-                  Spending: ${usage.extraUsage.spent.toFixed(2)} / ${usage.extraUsage.spendingLimit.toFixed(2)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <UsageBar
-                  label="Monthly spending"
-                  used={usage.extraUsage.spent}
-                  limit={usage.extraUsage.spendingLimit}
-                />
-              </CardContent>
-            </Card>
-          )}
+          {/* Extra Usage - coming soon */}
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4 md:space-y-6">

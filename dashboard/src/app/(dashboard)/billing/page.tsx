@@ -6,7 +6,6 @@ import useSWR from 'swr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Check, ExternalLink, Sparkles, Zap, Crown } from 'lucide-react';
 import { apiClient, Usage } from '@/lib/api';
 
@@ -74,10 +73,20 @@ const plans = {
 
 type PlanTier = 'free' | 'pro' | 'max';
 
+function getCheckoutLink(baseLink: string, email?: string, userId?: string): string {
+  if (!baseLink) return '#';
+  const url = new URL(baseLink);
+  if (email) url.searchParams.set('prefilled_email', email);
+  if (userId) url.searchParams.set('client_reference_id', userId);
+  return url.toString();
+}
+
 export default function BillingPage() {
   const { data: session } = useSession();
   const token = (session as any)?.apiToken;
   const currentTier: PlanTier = (session as any)?.tier || 'free';
+  const userEmail = (session as any)?.user?.email;
+  const userId = (session as any)?.user?.id;
   const [isAnnual, setIsAnnual] = useState(false);
 
   const { data: usage } = useSWR<Usage>(
@@ -138,18 +147,16 @@ export default function BillingPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-semibold text-zinc-900 mb-3">Manage Subscription</h3>
-                    <Button variant="outline" className="w-full gap-2" disabled>
-                      Stripe Customer Portal
-                      <ExternalLink className="h-4 w-4" />
+                    <p className="text-sm text-zinc-600 mb-3">
+                      Need to update your payment method, cancel, or change plans? Reach out and we&apos;ll take care of it.
+                    </p>
+                    <Button variant="outline" className="w-full gap-2" asChild>
+                      <a href="mailto:support@webpeel.dev?subject=Subscription%20Change%20Request">
+                        Contact Support
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
                     </Button>
                   </div>
-                  <p className="text-xs text-zinc-500">
-                    Subscription management coming soon. Contact{' '}
-                    <a href="mailto:support@webpeel.dev" className="text-violet-600 hover:underline">
-                      support@webpeel.dev
-                    </a>{' '}
-                    for changes.
-                  </p>
                 </div>
               )}
             </div>
@@ -157,56 +164,41 @@ export default function BillingPage() {
         </Card>
       </div>
 
-      {/* Extra Usage Controls */}
+      {/* Extra Usage Info */}
       {currentTier !== 'free' && (
         <Card className="border-zinc-200">
           <CardHeader>
             <CardTitle className="text-xl">Extra Usage</CardTitle>
-            <CardDescription>Control spending when you exceed your plan limits</CardDescription>
+            <CardDescription>What happens when you exceed your plan limits</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-violet-50 rounded-lg border border-violet-100">
-              <div className="space-y-1">
-                <p className="font-medium text-zinc-900">Enable extra usage</p>
-                <p className="text-sm text-zinc-600">
-                  Continue making requests if you hit your plan limit
-                </p>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-violet-50 rounded-lg border border-violet-100">
+              <p className="font-medium text-zinc-900 mb-2">Pay-as-you-go rates</p>
+              <p className="text-sm text-zinc-600 mb-3">
+                When you hit your weekly limit, you can keep fetching at these rates:
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-white rounded-lg border border-zinc-100">
+                  <p className="text-lg font-bold text-zinc-900">$0.002</p>
+                  <p className="text-xs text-zinc-500">Basic fetch</p>
+                </div>
+                <div className="text-center p-3 bg-white rounded-lg border border-zinc-100">
+                  <p className="text-lg font-bold text-zinc-900">$0.01</p>
+                  <p className="text-xs text-zinc-500">Stealth fetch</p>
+                </div>
+                <div className="text-center p-3 bg-white rounded-lg border border-zinc-100">
+                  <p className="text-lg font-bold text-zinc-900">$0.001</p>
+                  <p className="text-xs text-zinc-500">Search</p>
+                </div>
               </div>
-              <Switch checked={usage?.extraUsage?.enabled} />
             </div>
-            
-            {usage?.extraUsage ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-zinc-200 rounded-lg">
-                  <div>
-                    <span className="text-sm text-zinc-600">Monthly spending limit</span>
-                    <p className="text-2xl font-bold text-zinc-900 mt-1">
-                      ${usage.extraUsage.spendingLimit.toFixed(2)}
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">Adjust</Button>
-                </div>
-                
-                <div className="flex items-center justify-between p-4 border border-zinc-200 rounded-lg">
-                  <div>
-                    <span className="text-sm text-zinc-600">Current balance</span>
-                    <p className="text-2xl font-bold text-zinc-900 mt-1">
-                      ${usage.extraUsage.balance.toFixed(2)}
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">Buy more</Button>
-                </div>
-                
-                <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-lg">
-                  <span className="text-sm text-zinc-700">Auto-reload when balance is low</span>
-                  <Switch checked={usage.extraUsage.autoReload} />
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-zinc-500">
-                <p className="text-sm">Extra usage data will appear here when available</p>
-              </div>
-            )}
+            <p className="text-xs text-zinc-500">
+              Extra usage billing is coming soon. For now, soft limits apply — your requests slow down but never stop completely.
+              Questions? Contact{' '}
+              <a href="mailto:support@webpeel.dev" className="text-violet-600 hover:underline">
+                support@webpeel.dev
+              </a>
+            </p>
           </CardContent>
         </Card>
       )}
@@ -257,7 +249,8 @@ export default function BillingPage() {
               const Icon = plan.icon;
               const isCurrent = currentTier === tier;
               const price = isAnnual ? plan.priceAnnual : plan.priceMonthly;
-              const link = isAnnual ? plan.annualLink : plan.monthlyLink;
+              const rawLink = isAnnual ? plan.annualLink : plan.monthlyLink;
+              const link = getCheckoutLink(rawLink, userEmail, userId);
               const monthlySavings = isAnnual ? (plan.priceMonthly * 12 - plan.priceAnnual) : 0;
               
               return (

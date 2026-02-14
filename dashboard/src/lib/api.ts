@@ -37,21 +37,11 @@ export interface Usage {
     week: string;
     basicUsed: number;
     stealthUsed: number;
-    captchaUsed: number;
     searchUsed: number;
     totalUsed: number;
     totalAvailable: number;
     rolloverCredits: number;
     remaining: number;
-    percentUsed: number;
-    resetsAt: string;
-  };
-  extraUsage: {
-    enabled: boolean;
-    spent: number;
-    spendingLimit: number;
-    balance: number;
-    autoReload: boolean;
     percentUsed: number;
     resetsAt: string;
   };
