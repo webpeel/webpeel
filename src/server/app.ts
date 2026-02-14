@@ -25,6 +25,7 @@ import { createActivityRouter } from './routes/activity.js';
 import { createCLIUsageRouter } from './routes/cli-usage.js';
 import { createJobsRouter } from './routes/jobs.js';
 import { createBatchRouter } from './routes/batch.js';
+import { createAgentRouter } from './routes/agent.js';
 
 export interface ServerConfig {
   port?: number;
@@ -97,6 +98,7 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createCLIUsageRouter());
   app.use(createJobsRouter());
   app.use(createBatchRouter());
+  app.use(createAgentRouter());
 
   // 404 handler
   app.use((req: Request, res: Response) => {

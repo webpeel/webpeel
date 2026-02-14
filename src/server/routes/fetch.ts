@@ -38,7 +38,9 @@ export function createFetchRouter(authStore: AuthStore): Router {
         images, 
         location, 
         languages,
-        onlyMainContent 
+        onlyMainContent,
+        maxAge,
+        storeInCache,
       } = req.query;
 
       // Validate URL parameter
@@ -79,13 +81,17 @@ export function createFetchRouter(authStore: AuthStore): Router {
       // Build cache key (include new parameters)
       const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}`;
 
-      // Check cache
+      // Check cache (with maxAge support)
+      const maxAgeMs = maxAge !== undefined ? parseInt(maxAge as string, 10) : 172800000; // Default 2 days
       const cached = cache.get(cacheKey);
-      if (cached) {
-        res.setHeader('X-Cache', 'HIT');
-        res.setHeader('X-Cache-Age', Math.floor((Date.now() - cached.timestamp) / 1000).toString());
-        res.json(cached.result);
-        return;
+      if (cached && maxAgeMs > 0) {
+        const cacheAge = Date.now() - cached.timestamp;
+        if (cacheAge < maxAgeMs) {
+          res.setHeader('X-Cache', 'HIT');
+          res.setHeader('X-Cache-Age', Math.floor(cacheAge / 1000).toString());
+          res.json(cached.result);
+          return;
+        }
       }
 
       // Parse options
@@ -209,11 +215,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
         // If soft-limited WITHOUT extra usage, don't track (already over quota)
       }
 
-      // Cache result
-      cache.set(cacheKey, {
-        result,
-        timestamp: Date.now(),
-      });
+      // Cache result (unless storeInCache is explicitly false)
+      if (storeInCache !== 'false') {
+        cache.set(cacheKey, {
+          result,
+          timestamp: Date.now(),
+        });
+      }
 
       // Add usage headers
       res.setHeader('X-Cache', 'MISS');

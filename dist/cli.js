@@ -990,6 +990,74 @@ program
         process.exit(1);
     }
 });
+// Agent command - autonomous web research
+program
+    .command('agent <prompt>')
+    .description('Autonomous web research — finds and extracts data from the web using AI')
+    .option('--llm-key <key>', 'LLM API key (or use OPENAI_API_KEY env var)')
+    .option('--llm-model <model>', 'LLM model to use (default: gpt-4o-mini)')
+    .option('--llm-base-url <url>', 'LLM API base URL')
+    .option('--urls <urls>', 'Comma-separated starting URLs')
+    .option('--max-pages <n>', 'Maximum pages to visit (default: 10)', '10')
+    .option('--schema <json>', 'JSON schema for structured output')
+    .option('-s, --silent', 'Silent mode (no spinner)')
+    .option('--json', 'Output as JSON')
+    .action(async (prompt, options) => {
+    const llmApiKey = options.llmKey || process.env.OPENAI_API_KEY;
+    if (!llmApiKey) {
+        console.error('Error: --llm-key or OPENAI_API_KEY environment variable is required');
+        process.exit(1);
+    }
+    const spinner = options.silent ? null : ora('Running agent research...').start();
+    try {
+        const { runAgent } = await import('./core/agent.js');
+        let schema;
+        if (options.schema) {
+            try {
+                schema = JSON.parse(options.schema);
+            }
+            catch {
+                console.error('Error: --schema must be valid JSON');
+                process.exit(1);
+            }
+        }
+        const result = await runAgent({
+            prompt,
+            urls: options.urls ? options.urls.split(',').map((u) => u.trim()) : undefined,
+            schema,
+            llmApiKey,
+            llmModel: options.llmModel,
+            llmApiBase: options.llmBaseUrl,
+            maxPages: parseInt(options.maxPages, 10),
+            onProgress: (progress) => {
+                if (spinner) {
+                    spinner.text = progress.message;
+                }
+            },
+        });
+        if (spinner) {
+            spinner.succeed(`Agent finished: ${result.pagesVisited} pages, ${result.creditsUsed} credits`);
+        }
+        if (options.json) {
+            console.log(JSON.stringify(result, null, 2));
+        }
+        else {
+            console.log(`\nSources (${result.sources.length}):`);
+            result.sources.forEach(s => console.log(`  • ${s}`));
+            console.log(`\nResults:`);
+            console.log(JSON.stringify(result.data, null, 2));
+        }
+        await cleanup();
+        process.exit(0);
+    }
+    catch (error) {
+        if (spinner)
+            spinner.fail('Agent research failed');
+        console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        await cleanup();
+        process.exit(1);
+    }
+});
 // Jobs command - list active jobs
 program
     .command('jobs')
