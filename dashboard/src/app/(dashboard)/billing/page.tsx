@@ -23,7 +23,7 @@ const plans = {
     features: [
       '125 fetches per week',
       '25/hr burst limit',
-      'Basic fetch mode',
+      'All features included',
       'Community support',
     ],
     popular: false,
@@ -40,7 +40,7 @@ const plans = {
     features: [
       '1,250 fetches per week',
       '100/hr burst limit',
-      'Anti-bot stealth mode',
+      'All features included',
       'Priority support',
       'Extra usage available',
     ],

@@ -37,8 +37,8 @@ npx webpeel https://news.ycombinator.com
 |---|:---:|:---:|:---:|:---:|
 | **Free tier** | ✅ 125/week | ❌ Cloud only | ❌ Cloud only | ✅ Unlimited |
 | **JS rendering** | ✅ Auto-escalates | ✅ Always | ❌ No | ❌ No |
-| **Stealth mode** | ✅ Pro plan | ✅ Yes | ⚠️ Limited | ❌ No |
-| **Crawl mode** | ✅ Pro plan | ✅ Yes | ❌ No | ❌ No |
+| **Stealth mode** | ✅ All plans | ✅ Yes | ⚠️ Limited | ❌ No |
+| **Crawl mode** | ✅ All plans | ✅ Yes | ❌ No | ❌ No |
 | **MCP Server** | ✅ Built-in | ✅ Separate repo | ❌ No | ✅ Yes |
 | **Zero config** | ✅ `npx webpeel` | ❌ API key required | ❌ API key required | ✅ Yes |
 | **Hosted API** | $9/mo (1,250/wk) | $16/mo (3K/mo) | $10/mo (Starter) | N/A |
@@ -63,8 +63,8 @@ WebPeel uses a **weekly usage budget** for all users (CLI and API):
 
 ### Highlights
 
-1. **🎭 Stealth Mode** *(Pro)* — Bypass bot detection with playwright-extra stealth plugin. Works on sites that block regular scrapers.
-2. **🕷️ Crawl Mode** *(Pro)* — Follow links and extract entire sites. Respects robots.txt and rate limits automatically.
+1. **🎭 Stealth Mode** — Bypass bot detection with playwright-extra stealth plugin. Works on sites that block regular scrapers.
+2. **🕷️ Crawl Mode** — Follow links and extract entire sites. Respects robots.txt and rate limits automatically.
 3. **💰 Generous Free Tier** — 125 free fetches every week. First 25 work instantly with no signup. Basic fetch + JS rendering included free.
 
 ---
@@ -352,9 +352,9 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
 
 Usage resets every **Monday at 00:00 UTC**, just like Claude Code.
 
-| Plan | Price | Weekly Fetches | Burst Limit | Stealth Mode | Extra Usage |
+| Plan | Price | Weekly Fetches | Burst Limit | All Features | Extra Usage |
 |------|------:|---------------:|:-----------:|:------------:|:-----------:|
-| **Free** | $0 | 125/wk (~500/mo) | 25/hr | ❌ | ❌ |
+| **Free** | $0 | 125/wk (~500/mo) | 25/hr | ✅ | ❌ |
 | **Pro** | $9/mo | 1,250/wk (~5K/mo) | 100/hr | ✅ | ✅ |
 | **Max** | $29/mo | 6,250/wk (~25K/mo) | 500/hr | ✅ | ✅ |
 
@@ -526,7 +526,7 @@ A: Yes! Run `npm run serve` to start the API server. See [docs/self-hosting.md](
 A: WebPeel is a tool — how you use it is up to you. Always check a site's ToS before fetching at scale. We recommend respecting `robots.txt` in your own workflows.
 
 **Q: What about Cloudflare and bot protection?**  
-A: WebPeel handles most Cloudflare challenges automatically via stealth mode (Pro plan). For heavily protected sites, stealth mode uses browser fingerprint randomization to bypass detection.
+A: WebPeel handles most Cloudflare challenges automatically via stealth mode (available on all plans). For heavily protected sites, stealth mode uses browser fingerprint randomization to bypass detection.
 
 **Q: Can I use this in production?**  
 A: Yes! The hosted API at `https://api.webpeel.dev` is production-ready with authentication, rate limiting, and usage tracking.

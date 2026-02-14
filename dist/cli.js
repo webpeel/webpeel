@@ -16,7 +16,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { writeFileSync, readFileSync } from 'fs';
 import { peel, peelBatch, cleanup } from './index.js';
-import { checkUsage, checkFeatureAccess, showUsageFooter, handleLogin, handleLogout, handleUsage, loadConfig } from './cli-auth.js';
+import { checkUsage, showUsageFooter, handleLogin, handleLogout, handleUsage, loadConfig } from './cli-auth.js';
 import { getCache, setCache, parseTTL, clearCache, cacheStats } from './cache.js';
 const program = new Command();
 program
@@ -73,15 +73,7 @@ program
         console.error(`Error: Invalid URL format: ${url}`);
         process.exit(1);
     }
-    // Check premium feature access (stealth requires Pro plan)
     const useStealth = options.stealth || false;
-    if (useStealth) {
-        const featureCheck = await checkFeatureAccess('stealth');
-        if (!featureCheck.allowed) {
-            console.error(featureCheck.message);
-            process.exit(1);
-        }
-    }
     // Check usage quota
     const usageCheck = await checkUsage();
     if (!usageCheck.allowed) {
@@ -332,12 +324,6 @@ program
     const isSilent = options.silent;
     const shouldRender = options.render;
     const selector = options.selector;
-    // Check premium feature access (batch requires Pro plan)
-    const featureCheck = await checkFeatureAccess('batch');
-    if (!featureCheck.allowed) {
-        console.error(featureCheck.message);
-        process.exit(1);
-    }
     // Check usage quota
     const usageCheck = await checkUsage();
     if (!usageCheck.allowed) {
@@ -469,12 +455,6 @@ program
     .option('-s, --silent', 'Silent mode (no spinner)')
     .option('--json', 'Output as JSON')
     .action(async (url, options) => {
-    // Check premium feature access (crawl requires Pro plan)
-    const featureCheck = await checkFeatureAccess('crawl');
-    if (!featureCheck.allowed) {
-        console.error(featureCheck.message);
-        process.exit(1);
-    }
     // Check usage quota
     const usageCheck = await checkUsage();
     if (!usageCheck.allowed) {

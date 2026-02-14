@@ -62,8 +62,8 @@ For Claude Code: `claude mcp add webpeel -- npx -y webpeel mcp`
 
 | Plan | Price | Weekly Fetches | Burst Limit | Stealth | Extra Usage |
 |------|-------|---------------|-------------|---------|-------------|
-| CLI  | $0    | ∞ (local)     | N/A         | Pro     | N/A         |
-| Free | $0    | 125/wk        | 25/hr       | ❌      | ❌          |
+| CLI  | $0    | ∞ (local)     | N/A         | ✅      | N/A         |
+| Free | $0    | 125/wk        | 25/hr       | ✅      | ❌          |
 | Pro  | $9/mo | 1,250/wk      | 100/hr      | ✅      | ✅          |
 | Max  | $29/mo| 6,250/wk      | 500/hr      | ✅      | ✅          |
 
