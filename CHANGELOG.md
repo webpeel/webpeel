@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [0.6.0] - 2026-02-14
+
+### Added — "Agent & Parity" Release
+- **Agent endpoint** (`POST /v1/agent`) — Autonomous web research with just a prompt. No URLs required. BYOK LLM.
+- **CLI `agent` command** — `webpeel agent "Find the founders of Stripe" --llm-key sk-...`
+- **Include/exclude tags** — `--include-tags main,article` / `--exclude-tags nav,footer` for fine-grained filtering
+- **Images extraction** — `--images` flag extracts all image URLs with alt text, dimensions, deduplication
+- **AI summarization** — `--summary` generates summaries via BYOK LLM (OpenAI-compatible)
+- **Location/language** — `--location US --language en` for geo-targeted scraping
+- **Server-side caching** — `maxAge` and `storeInCache` query params on `/v1/fetch`
+- **Search enhancements** — Categories (`github`, `pdf`, `news`), time filters (`tbs`), geo-targeting
+- **MCP: webpeel_summarize** — New MCP tool for AI summarization
+- **MCP: enhanced webpeel_fetch** — Added includeTags, excludeTags, images, location params
+- **Only main content** — `--only-main-content` shortcut (includes main, article, .content)
+
+### Fixed
+- Branding extraction reuses browser page (no second launch, 2-5s savings)
+- Dockerfile works correctly for Render deploys
+
 ## [0.5.0] - 2026-02-14
 
 ### Added — "9x Better" Release
