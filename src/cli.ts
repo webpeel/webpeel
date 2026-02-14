@@ -41,6 +41,23 @@ program
   .version(cliVersion)
   .enablePositionalOptions();
 
+// Check for updates (non-blocking, runs in background)
+async function checkForUpdates(): Promise<void> {
+  try {
+    const res = await fetch('https://registry.npmjs.org/webpeel/latest', {
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!res.ok) return;
+    const data = await res.json() as { version: string };
+    const latest = data.version;
+    if (latest && latest !== cliVersion && cliVersion !== '0.0.0') {
+      console.error(`\n💡 WebPeel v${latest} available (you have v${cliVersion}). Update: npm i -g webpeel@latest\n`);
+    }
+  } catch { /* silently ignore — don't slow down the user */ }
+}
+// Fire and forget — don't await, don't block
+void checkForUpdates();
+
 /**
  * Parse action strings into PageAction array
  * Format: "type:value" where type is wait|click|scroll|type|fill|press|hover|waitFor
