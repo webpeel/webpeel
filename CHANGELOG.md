@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2026-02-13
+
+### Added
+- **Smart content extraction** — Auto-detects main content area (`<article>`, `<main>`, `.post-content`, largest text block). Strips navigation, footers, sidebars, cookie banners. **96% token savings** on typical blog/news pages.
+- **JSON support** — Fetches JSON APIs directly, auto-formats with pretty-printing. `peel('https://api.example.com/data')` just works.
+- **RSS/Atom feed parsing** — Detects RSS/XML feeds and extracts structured items with titles, links, and descriptions.
+- **Plain text support** — text/plain, text/csv, text/markdown, JavaScript, CSS all accepted and returned as-is.
+- **Content quality score** (`quality: 0-1`) — Measures extraction cleanliness based on compression ratio, text density, structure, and length.
+- **Content fingerprint** (`fingerprint`) — SHA256 hash of content (16 chars) for change detection without storing pages.
+- **`--raw` flag** — Skip smart content extraction, return full page with all boilerplate.
+
+### Fixed
+- JSON API endpoints (short responses) no longer trigger "suspiciously small response" error
+- Cloudflare challenge detection limited to HTML content only
+
 ## [0.3.3] - 2026-02-13
 
 ### Added

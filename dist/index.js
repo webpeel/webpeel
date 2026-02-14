@@ -3,8 +3,9 @@
  *
  * Main library export
  */
+import { createHash } from 'crypto';
 import { smartFetch } from './core/strategies.js';
-import { htmlToMarkdown, htmlToText, estimateTokens, selectContent } from './core/markdown.js';
+import { htmlToMarkdown, htmlToText, estimateTokens, selectContent, detectMainContent, calculateQuality } from './core/markdown.js';
 import { extractMetadata, extractLinks } from './core/metadata.js';
 import { cleanup } from './core/fetcher.js';
 export * from './types.js';
@@ -27,7 +28,7 @@ export { crawl } from './core/crawler.js';
  */
 export async function peel(url, options = {}) {
     const startTime = Date.now();
-    let { render = false, stealth = false, wait = 0, format = 'markdown', timeout = 30000, userAgent, screenshot = false, screenshotFullPage = false, selector, exclude, headers, cookies, } = options;
+    let { render = false, stealth = false, wait = 0, format = 'markdown', timeout = 30000, userAgent, screenshot = false, screenshotFullPage = false, selector, exclude, headers, cookies, raw = false, } = options;
     // Detect PDF URLs and force browser rendering
     const isPdf = url.toLowerCase().endsWith('.pdf');
     if (isPdf) {
@@ -54,32 +55,112 @@ export async function peel(url, options = {}) {
             headers,
             cookies,
         });
-        // Apply selector filtering if requested
-        let html = fetchResult.html;
-        if (selector) {
-            html = selectContent(html, selector, exclude);
-        }
-        // Extract metadata and title
-        const { title, metadata } = extractMetadata(html, fetchResult.url);
-        // Extract links
-        const links = extractLinks(html, fetchResult.url);
-        // Convert content to requested format
+        // Detect content type from the response
+        const ct = (fetchResult.contentType || '').toLowerCase();
+        const isHTML = ct.includes('html') || ct.includes('xhtml') || (!ct && fetchResult.html.trimStart().startsWith('<'));
+        const isJSON = ct.includes('json');
+        const isXML = ct.includes('xml') || ct.includes('rss') || ct.includes('atom');
+        const isPlainText = ct.includes('text/plain') || ct.includes('text/markdown') || ct.includes('text/csv') || ct.includes('text/css') || ct.includes('javascript');
+        const detectedType = isHTML ? 'html' : isJSON ? 'json' : isXML ? 'xml' : isPlainText ? 'text' : 'html';
         let content;
-        switch (format) {
-            case 'html':
-                content = html;
-                break;
-            case 'text':
-                content = htmlToText(html);
-                break;
-            case 'markdown':
-            default:
-                content = htmlToMarkdown(html);
-                break;
+        let title = '';
+        let metadata = {};
+        let links = [];
+        let quality = 0;
+        if (isHTML) {
+            // Standard HTML pipeline
+            let html = fetchResult.html;
+            if (selector) {
+                html = selectContent(html, selector, exclude);
+            }
+            // Extract metadata and title from full HTML
+            const meta = extractMetadata(html, fetchResult.url);
+            title = meta.title;
+            metadata = meta.metadata;
+            links = extractLinks(html, fetchResult.url);
+            // Smart main content detection (unless raw or selector specified)
+            let contentHtml = html;
+            if (!raw && !selector) {
+                const detected = detectMainContent(html);
+                if (detected.detected) {
+                    contentHtml = detected.html;
+                }
+            }
+            switch (format) {
+                case 'html':
+                    content = contentHtml;
+                    break;
+                case 'text':
+                    content = htmlToText(contentHtml);
+                    break;
+                case 'markdown':
+                default:
+                    content = htmlToMarkdown(contentHtml, { raw });
+                    break;
+            }
+            quality = calculateQuality(content, fetchResult.html);
         }
-        // Calculate elapsed time and token estimate
+        else if (isJSON) {
+            // JSON content — format nicely
+            try {
+                const parsed = JSON.parse(fetchResult.html);
+                content = JSON.stringify(parsed, null, 2);
+                title = 'JSON Response';
+                // Extract any URLs from JSON for links
+                const urlRegex = /https?:\/\/[^\s"'`,\]})]+/g;
+                const found = content.match(urlRegex) || [];
+                links = [...new Set(found)];
+            }
+            catch {
+                content = fetchResult.html;
+                title = 'JSON Response (malformed)';
+            }
+            quality = 1.0; // JSON is structured, always "clean"
+        }
+        else if (isXML) {
+            // XML/RSS/Atom — convert to readable format
+            try {
+                const $ = (await import('cheerio')).load(fetchResult.html, { xml: true });
+                // Check if RSS/Atom feed
+                const items = $('item, entry');
+                if (items.length > 0) {
+                    title = $('channel > title, feed > title').first().text() || 'RSS/Atom Feed';
+                    const feedItems = [];
+                    items.each((_, el) => {
+                        const itemTitle = $(el).find('title').first().text();
+                        const itemLink = $(el).find('link').first().text() || $(el).find('link').first().attr('href') || '';
+                        const itemDesc = $(el).find('description, summary, content').first().text().slice(0, 200);
+                        feedItems.push(`## ${itemTitle}\n${itemLink}\n${itemDesc}`);
+                        if (itemLink)
+                            links.push(itemLink);
+                    });
+                    content = `# ${title}\n\n${feedItems.join('\n\n---\n\n')}`;
+                }
+                else {
+                    content = fetchResult.html;
+                    title = $('title').first().text() || 'XML Document';
+                }
+            }
+            catch {
+                content = fetchResult.html;
+                title = 'XML Document';
+            }
+            quality = 0.9;
+        }
+        else {
+            // Plain text, CSS, JS, etc — return as-is
+            content = fetchResult.html;
+            title = fetchResult.url.split('/').pop() || 'Text Document';
+            // Extract URLs from plain text
+            const urlRegex = /https?:\/\/[^\s"'`,\]})]+/g;
+            const found = content.match(urlRegex) || [];
+            links = [...new Set(found)];
+            quality = 1.0;
+        }
+        // Calculate elapsed time, tokens, and fingerprint
         const elapsed = Date.now() - startTime;
         const tokens = estimateTokens(content);
+        const fingerprint = createHash('sha256').update(content).digest('hex').slice(0, 16);
         // Convert screenshot buffer to base64 if present
         const screenshotBase64 = fetchResult.screenshot?.toString('base64');
         return {
@@ -92,6 +173,9 @@ export async function peel(url, options = {}) {
             method: fetchResult.method,
             elapsed,
             screenshot: screenshotBase64,
+            contentType: detectedType,
+            quality,
+            fingerprint,
         };
     }
     catch (error) {

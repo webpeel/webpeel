@@ -292,12 +292,21 @@ export async function simpleFetch(url, userAgent, timeoutMs = 30000, customHeade
                 }
                 throw new NetworkError(`HTTP ${response.status}: ${response.statusText}`);
             }
-            // SECURITY: Validate Content-Type
+            // Content-Type detection — accept a wide range of text-based content
             const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('text/html') &&
-                !contentType.includes('application/xhtml+xml') &&
-                !contentType.includes('application/pdf')) {
-                throw new WebPeelError(`Unsupported content type: ${contentType}. Supported: HTML, PDF`);
+            const ALLOWED_TYPES = [
+                'text/html', 'application/xhtml+xml', 'application/pdf',
+                'text/plain', 'text/markdown', 'text/csv',
+                'application/json', 'text/json',
+                'text/xml', 'application/xml', 'application/rss+xml', 'application/atom+xml',
+                'application/javascript', 'text/javascript', 'text/css',
+            ];
+            const isAllowed = ALLOWED_TYPES.some(t => contentType.includes(t)) || !contentType;
+            if (!isAllowed) {
+                // Check if it's at least text-based
+                if (!contentType.startsWith('text/') && !contentType.includes('json') && !contentType.includes('xml')) {
+                    throw new WebPeelError(`Binary content type: ${contentType}. WebPeel handles text-based content only.`);
+                }
             }
             // SECURITY: Stream response with size limit (prevent memory exhaustion)
             const chunks = [];
@@ -331,11 +340,17 @@ export async function simpleFetch(url, userAgent, timeoutMs = 30000, customHeade
                 offset += chunk.length;
             }
             const html = new TextDecoder().decode(combined);
-            if (!html || html.length < 100) {
+            // For HTML content, check for suspiciously small responses (bot blocks)
+            // Non-HTML content (JSON, text, XML) can legitimately be short
+            const isHtmlContent = contentType.includes('html') || contentType.includes('xhtml');
+            if (isHtmlContent && (!html || html.length < 100)) {
                 throw new BlockedError('Empty or suspiciously small response. Site may require JavaScript.');
             }
-            // Check for Cloudflare challenge
-            if (html.includes('cf-browser-verification') || html.includes('Just a moment...')) {
+            if (!html) {
+                throw new NetworkError('Empty response body');
+            }
+            // Check for Cloudflare challenge (only relevant for HTML)
+            if (isHtmlContent && (html.includes('cf-browser-verification') || html.includes('Just a moment...'))) {
                 throw new BlockedError('Cloudflare challenge detected. Try --render for browser mode.');
             }
             return {

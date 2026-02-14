@@ -1,6 +1,6 @@
 {
   "name": "webpeel",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Fast web fetcher for AI agents - stealth mode, crawl mode, smart escalation from simple HTTP to headless browser",
   "author": "Jake Liu",
   "license": "MIT",

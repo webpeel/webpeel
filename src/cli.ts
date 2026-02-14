@@ -50,6 +50,7 @@ program
   .option('--cache <ttl>', 'Cache results locally (e.g., "5m", "1h", "1d")')
   .option('--links', 'Output only the links found on the page')
   .option('--meta', 'Output only the page metadata (title, description, author, etc.)')
+  .option('--raw', 'Return full page without smart content extraction')
   .action(async (url: string | undefined, options) => {
     if (!url) {
       console.error('Error: URL is required\n');
@@ -159,6 +160,7 @@ program
         exclude: options.exclude,
         headers,
         cookies: options.cookie,
+        raw: options.raw || false,
       };
 
       // Determine format

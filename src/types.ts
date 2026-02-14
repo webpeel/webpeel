@@ -27,6 +27,8 @@ export interface PeelOptions {
   headers?: Record<string, string>;
   /** Cookies to set (key=value pairs) */
   cookies?: string[];
+  /** Skip smart content extraction — return full page without stripping boilerplate */
+  raw?: boolean;
 }
 
 export interface PeelResult {
@@ -48,6 +50,12 @@ export interface PeelResult {
   elapsed: number;
   /** Base64-encoded screenshot (PNG), only if screenshot option was set */
   screenshot?: string;
+  /** Content type detected (html, json, xml, text, rss, etc.) */
+  contentType?: string;
+  /** Content quality score 0-1 (how clean the extraction was) */
+  quality?: number;
+  /** SHA256 hash of content (first 16 chars) — for change detection */
+  fingerprint?: string;
 }
 
 export interface PageMetadata {

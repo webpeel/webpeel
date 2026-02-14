@@ -7,9 +7,25 @@
  */
 export declare function selectContent(html: string, selector: string, exclude?: string[]): string;
 /**
- * Convert HTML to clean, readable Markdown
+ * Try to detect the main content area of a page.
+ * Returns the main content HTML, or the full cleaned HTML if no main content detected.
  */
-export declare function htmlToMarkdown(html: string): string;
+export declare function detectMainContent(html: string): {
+    html: string;
+    detected: boolean;
+};
+/**
+ * Calculate content quality score (0-1)
+ * Measures how clean and useful the extracted content is
+ */
+export declare function calculateQuality(content: string, originalHtml: string): number;
+/**
+ * Convert HTML to clean, readable Markdown
+ * @param html - HTML to convert
+ */
+export declare function htmlToMarkdown(html: string, _options?: {
+    raw?: boolean;
+}): string;
 /**
  * Convert HTML to plain text (strip all formatting)
  */

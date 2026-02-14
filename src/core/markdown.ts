@@ -95,9 +95,113 @@ function cleanHTML(html: string): string {
 }
 
 /**
- * Convert HTML to clean, readable Markdown
+ * MAIN CONTENT SELECTORS — prioritized list of selectors to find the article body
+ * Checked in order: first match wins
  */
-export function htmlToMarkdown(html: string): string {
+const MAIN_CONTENT_SELECTORS = [
+  'article[role="main"]',
+  'main article',
+  '[role="main"] article',
+  'article',
+  '[role="main"]',
+  'main',
+  '.post-content', '.article-content', '.article-body', '.entry-content',
+  '.post-body', '.story-body', '.page-content',
+  '#content', '#main-content', '#article', '#post',
+  '.content', '.main-content',
+];
+
+/**
+ * Try to detect the main content area of a page.
+ * Returns the main content HTML, or the full cleaned HTML if no main content detected.
+ */
+export function detectMainContent(html: string): { html: string; detected: boolean } {
+  const $ = cheerio.load(html);
+  
+  for (const selector of MAIN_CONTENT_SELECTORS) {
+    const el = $(selector);
+    if (el.length > 0) {
+      // Check if it has meaningful content (at least 100 chars of text)
+      const text = el.first().text().trim();
+      if (text.length >= 100) {
+        return { html: $.html(el.first()), detected: true };
+      }
+    }
+  }
+  
+  // Fallback: find the largest text block (div or section with most text)
+  let bestEl: cheerio.Cheerio<any> | null = null;
+  let bestLen = 0;
+  
+  $('div, section').each((_, elem) => {
+    const $elem = $(elem);
+    const text = $elem.text().trim();
+    // Prefer elements with significant text that aren't too deeply nested
+    if (text.length > bestLen && text.length >= 200) {
+      // Check it's not a wrapper of the whole page
+      const parent = $elem.parent();
+      if (parent.length && parent[0] !== $('body')[0] && parent[0] !== $('html')[0]) {
+        bestEl = $elem;
+        bestLen = text.length;
+      }
+    }
+  });
+  
+  if (bestEl && bestLen > 300) {
+    return { html: $.html(bestEl), detected: true };
+  }
+  
+  return { html, detected: false };
+}
+
+/**
+ * Calculate content quality score (0-1)
+ * Measures how clean and useful the extracted content is
+ */
+export function calculateQuality(content: string, originalHtml: string): number {
+  if (!content || content.length < 10) return 0;
+  
+  const contentLen = content.length;
+  const htmlLen = originalHtml.length;
+  
+  // Factor 1: Compression ratio (how much we stripped) — higher is better, up to a point
+  const compressionRatio = Math.min(contentLen / Math.max(htmlLen, 1), 1);
+  // Sweet spot: 5-30% of original HTML is usually the real content
+  const compressionScore = compressionRatio < 0.01 ? 0.3 :
+    compressionRatio < 0.05 ? 0.7 :
+    compressionRatio < 0.40 ? 1.0 :
+    compressionRatio < 0.60 ? 0.8 : 0.5;
+  
+  // Factor 2: Text density (ratio of visible text to markdown formatting)
+  const textOnly = content.replace(/[#*_\[\]\(\)\-`|>]/g, '');
+  const textDensity = textOnly.trim().length / Math.max(contentLen, 1);
+  const densityScore = Math.min(textDensity / 0.7, 1);
+  
+  // Factor 3: Has meaningful structure (headings, paragraphs)
+  const hasHeadings = /^#{1,6}\s/m.test(content) ? 1 : 0.7;
+  const hasParagraphs = content.split('\n\n').length > 2 ? 1 : 0.8;
+  
+  // Factor 4: Not too short, not too long
+  const lengthScore = contentLen < 50 ? 0.3 :
+    contentLen < 200 ? 0.6 :
+    contentLen < 50000 ? 1.0 : 0.8;
+  
+  // Weighted average
+  const quality = (
+    compressionScore * 0.3 +
+    densityScore * 0.3 +
+    (hasHeadings * hasParagraphs) * 0.2 +
+    lengthScore * 0.2
+  );
+  
+  return Math.round(quality * 100) / 100;
+}
+
+/**
+ * Convert HTML to clean, readable Markdown
+ * @param html - HTML to convert
+ */
+export function htmlToMarkdown(html: string, _options?: { raw?: boolean }): string {
   const cleanedHTML = cleanHTML(html);
 
   const turndown = new TurndownService({
