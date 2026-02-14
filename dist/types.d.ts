@@ -57,6 +57,21 @@ export interface PeelOptions {
     extract?: ExtractOptions;
     /** Maximum token count for output (truncate intelligently if exceeded) */
     maxTokens?: number;
+    /** Track content changes (stores local snapshots) */
+    changeTracking?: boolean;
+    /** Extract branding/design system (requires render=true) */
+    branding?: boolean;
+    /** Generate AI summary of content */
+    summary?: boolean | {
+        prompt?: string;
+        maxLength?: number;
+    };
+    /** LLM configuration for AI features (extraction, summary) */
+    llm?: {
+        apiKey: string;
+        model?: string;
+        baseUrl?: string;
+    };
 }
 export interface PeelResult {
     /** Final URL (after redirects) */
@@ -85,6 +100,12 @@ export interface PeelResult {
     fingerprint?: string;
     /** Extracted structured data (when extract option is used) */
     extracted?: Record<string, any>;
+    /** Branding/design system profile */
+    branding?: import('./core/branding.js').BrandingProfile;
+    /** Content change tracking result */
+    changeTracking?: import('./core/change-tracking.js').ChangeResult;
+    /** AI-generated summary */
+    summary?: string;
 }
 export interface PageMetadata {
     /** Meta description */

@@ -46,3 +46,5 @@ QUICK_START.md
 screenshot.png
 .mcpregistry_github_token
 .mcpregistry_registry_token
+__pycache__/
+*.pyc

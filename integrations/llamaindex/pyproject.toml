@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webpeel-llamaindex"
+version = "0.1.0"
+description = "WebPeel reader for LlamaIndex — fast web fetching for AI agents"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Jake Liu", email = "jake@webpeel.dev"}
+]
+keywords = [
+    "llamaindex",
+    "webpeel",
+    "web-scraping",
+    "ai",
+    "llm",
+    "reader",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+    "llama-index-core>=0.10.0",
+]
+
+[project.urls]
+Homepage = "https://webpeel.dev"
+Documentation = "https://github.com/JakeLiuMe/webpeel"
+Repository = "https://github.com/JakeLiuMe/webpeel"
+Issues = "https://github.com/JakeLiuMe/webpeel/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["webpeel_llamaindex*"]

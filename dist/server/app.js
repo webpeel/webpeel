@@ -21,6 +21,8 @@ import { createOAuthRouter } from './routes/oauth.js';
 import { createStatsRouter } from './routes/stats.js';
 import { createActivityRouter } from './routes/activity.js';
 import { createCLIUsageRouter } from './routes/cli-usage.js';
+import { createJobsRouter } from './routes/jobs.js';
+import { createBatchRouter } from './routes/batch.js';
 export function createApp(config = {}) {
     const app = express();
     // SECURITY: Trust proxy for Render/production (HTTPS only)
@@ -71,6 +73,8 @@ export function createApp(config = {}) {
     app.use(createStatsRouter(authStore));
     app.use(createActivityRouter(authStore));
     app.use(createCLIUsageRouter());
+    app.use(createJobsRouter());
+    app.use(createBatchRouter());
     // 404 handler
     app.use((req, res) => {
         res.status(404).json({

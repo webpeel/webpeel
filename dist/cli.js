@@ -806,6 +806,243 @@ program
     }
     process.exit(0);
 });
+// Brand command - extract branding/design system
+program
+    .command('brand <url>')
+    .description('Extract branding and design system from a URL')
+    .option('-s, --silent', 'Silent mode (no spinner)')
+    .option('--json', 'Output as JSON (default)')
+    .action(async (url, options) => {
+    const spinner = options.silent ? null : ora('Extracting branding...').start();
+    try {
+        const result = await peel(url, {
+            extract: {
+                selectors: {
+                    primaryColor: 'meta[name="theme-color"]',
+                    title: 'title',
+                    logo: 'img[class*="logo"], img[alt*="logo"]',
+                },
+            },
+        });
+        if (spinner) {
+            spinner.succeed(`Extracted branding in ${result.elapsed}ms`);
+        }
+        // Extract branding data from metadata and page
+        const branding = {
+            url: result.url,
+            title: result.title,
+            colors: extractColors(result.content),
+            fonts: extractFonts(result.content),
+            extracted: result.extracted,
+            metadata: result.metadata,
+        };
+        console.log(JSON.stringify(branding, null, 2));
+        await cleanup();
+        process.exit(0);
+    }
+    catch (error) {
+        if (spinner)
+            spinner.fail('Branding extraction failed');
+        console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        await cleanup();
+        process.exit(1);
+    }
+});
+// Track command - track changes on a URL
+program
+    .command('track <url>')
+    .description('Track changes on a URL (returns fingerprint for change detection)')
+    .option('-s, --silent', 'Silent mode (no spinner)')
+    .option('--json', 'Output as JSON')
+    .action(async (url, options) => {
+    const spinner = options.silent ? null : ora('Fetching and tracking...').start();
+    try {
+        const result = await peel(url);
+        if (spinner) {
+            spinner.succeed(`Tracked in ${result.elapsed}ms`);
+        }
+        if (options.json) {
+            console.log(JSON.stringify({
+                url: result.url,
+                title: result.title,
+                fingerprint: result.fingerprint,
+                tokens: result.tokens,
+                contentType: result.contentType,
+                lastChecked: new Date().toISOString(),
+            }, null, 2));
+        }
+        else {
+            console.log(`URL: ${result.url}`);
+            console.log(`Title: ${result.title}`);
+            console.log(`Fingerprint: ${result.fingerprint}`);
+            console.log(`Tokens: ${result.tokens}`);
+            console.log(`Last checked: ${new Date().toISOString()}`);
+            console.log('\nSave this fingerprint to detect future changes.');
+        }
+        await cleanup();
+        process.exit(0);
+    }
+    catch (error) {
+        if (spinner)
+            spinner.fail('Tracking failed');
+        console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        await cleanup();
+        process.exit(1);
+    }
+});
+// Summarize command - AI-powered summary
+program
+    .command('summarize <url>')
+    .description('Generate an AI-powered summary of a URL')
+    .option('--llm-key <key>', 'LLM API key (or use OPENAI_API_KEY env var)')
+    .option('--llm-model <model>', 'LLM model to use (default: gpt-4o-mini)')
+    .option('--llm-base-url <url>', 'LLM API base URL (default: https://api.openai.com/v1)')
+    .option('--prompt <prompt>', 'Custom summary prompt')
+    .option('-s, --silent', 'Silent mode (no spinner)')
+    .option('--json', 'Output as JSON')
+    .action(async (url, options) => {
+    const llmApiKey = options.llmKey || process.env.OPENAI_API_KEY;
+    if (!llmApiKey) {
+        console.error('Error: --llm-key or OPENAI_API_KEY environment variable is required');
+        process.exit(1);
+    }
+    const spinner = options.silent ? null : ora('Fetching and summarizing...').start();
+    try {
+        const result = await peel(url, {
+            extract: {
+                prompt: options.prompt || 'Summarize this webpage in 2-3 sentences.',
+                llmApiKey,
+                llmModel: options.llmModel || 'gpt-4o-mini',
+                llmBaseUrl: options.llmBaseUrl || 'https://api.openai.com/v1',
+            },
+        });
+        if (spinner) {
+            spinner.succeed(`Summarized in ${result.elapsed}ms`);
+        }
+        if (options.json) {
+            console.log(JSON.stringify({
+                url: result.url,
+                title: result.title,
+                summary: result.extracted,
+            }, null, 2));
+        }
+        else {
+            console.log(`\n${result.title}\n`);
+            console.log(result.extracted);
+        }
+        await cleanup();
+        process.exit(0);
+    }
+    catch (error) {
+        if (spinner)
+            spinner.fail('Summary generation failed');
+        console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        await cleanup();
+        process.exit(1);
+    }
+});
+// Jobs command - list active jobs
+program
+    .command('jobs')
+    .description('List active jobs (crawl, batch)')
+    .option('--json', 'Output as JSON')
+    .action(async (options) => {
+    try {
+        const config = loadConfig();
+        if (!config.apiKey) {
+            console.error('Error: API key required. Run `webpeel login` first.');
+            process.exit(1);
+        }
+        const { fetch: undiciFetch } = await import('undici');
+        const response = await undiciFetch(`${process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev'}/v1/jobs`, {
+            headers: {
+                'Authorization': `Bearer ${config.apiKey}`,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`API error: HTTP ${response.status}`);
+        }
+        const jobs = await response.json();
+        if (options.json) {
+            console.log(JSON.stringify(jobs, null, 2));
+        }
+        else {
+            if (jobs.length === 0) {
+                console.log('No active jobs.');
+            }
+            else {
+                console.log(`Active Jobs (${jobs.length}):\n`);
+                for (const job of jobs) {
+                    console.log(`ID: ${job.id}`);
+                    console.log(`Type: ${job.type}`);
+                    console.log(`Status: ${job.status}`);
+                    console.log(`URL: ${job.url}`);
+                    console.log(`Created: ${job.createdAt}`);
+                    console.log('---');
+                }
+            }
+        }
+        process.exit(0);
+    }
+    catch (error) {
+        console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        process.exit(1);
+    }
+});
+// Job command - get job status
+program
+    .command('job <id>')
+    .description('Get status of a specific job')
+    .option('--json', 'Output as JSON')
+    .action(async (id, options) => {
+    try {
+        const config = loadConfig();
+        if (!config.apiKey) {
+            console.error('Error: API key required. Run `webpeel login` first.');
+            process.exit(1);
+        }
+        const { fetch: undiciFetch } = await import('undici');
+        const response = await undiciFetch(`${process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev'}/v1/jobs/${id}`, {
+            headers: {
+                'Authorization': `Bearer ${config.apiKey}`,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`API error: HTTP ${response.status}`);
+        }
+        const job = await response.json();
+        if (options.json) {
+            console.log(JSON.stringify(job, null, 2));
+        }
+        else {
+            console.log(`Job ID: ${job.id}`);
+            console.log(`Type: ${job.type}`);
+            console.log(`Status: ${job.status}`);
+            console.log(`URL: ${job.url}`);
+            console.log(`Created: ${job.createdAt}`);
+            if (job.completedAt) {
+                console.log(`Completed: ${job.completedAt}`);
+            }
+            if (job.error) {
+                console.log(`Error: ${job.error}`);
+            }
+            if (job.results) {
+                console.log(`\nResults: ${job.results.length} items`);
+                if (job.type === 'crawl' && job.results.length > 0) {
+                    console.log('\nFirst 5 URLs:');
+                    for (const result of job.results.slice(0, 5)) {
+                        console.log(`  - ${result.url}`);
+                    }
+                }
+            }
+        }
+        process.exit(0);
+    }
+    catch (error) {
+        console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        process.exit(1);
+    }
+});
 program.parse();
 // ============================================================
 // Shared output helper
@@ -873,5 +1110,25 @@ function writeStdout(data) {
                 resolve();
         });
     });
+}
+// Helper function to extract colors from content
+function extractColors(content) {
+    const colors = [];
+    const hexRegex = /#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g;
+    const matches = content.match(hexRegex);
+    if (matches) {
+        colors.push(...[...new Set(matches)].slice(0, 10));
+    }
+    return colors;
+}
+// Helper function to extract font information
+function extractFonts(content) {
+    const fonts = [];
+    const fontRegex = /font-family:\s*([^;}"'\n]+)/gi;
+    let match;
+    while ((match = fontRegex.exec(content)) !== null) {
+        fonts.push(match[1].trim());
+    }
+    return [...new Set(fonts)].slice(0, 5);
 }
 //# sourceMappingURL=cli.js.map

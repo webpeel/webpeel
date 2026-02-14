@@ -13,6 +13,9 @@ export * from './types.js';
 export { crawl } from './core/crawler.js';
 export { discoverSitemap } from './core/sitemap.js';
 export { mapDomain } from './core/map.js';
+export { extractBranding } from './core/branding.js';
+export { trackChange, getSnapshot, clearSnapshots } from './core/change-tracking.js';
+export { extractWithLLM } from './core/extract.js';
 /**
  * Fetch and extract content from a URL
  *
@@ -47,6 +50,10 @@ export async function peel(url, options = {}) {
     }
     // If actions are provided, force render mode
     if (actions && actions.length > 0) {
+        render = true;
+    }
+    // If branding is requested, force render mode
+    if (options.branding) {
         render = true;
     }
     try {
@@ -188,6 +195,69 @@ export async function peel(url, options = {}) {
         const fingerprint = createHash('sha256').update(content).digest('hex').slice(0, 16);
         // Convert screenshot buffer to base64 if present
         const screenshotBase64 = fetchResult.screenshot?.toString('base64');
+        // Extract branding if requested (requires browser)
+        let brandingProfile;
+        if (options.branding && render) {
+            try {
+                // Import playwright and create a page for branding extraction
+                const { chromium } = await import('playwright-core');
+                const browser = await chromium.launch({ headless: true });
+                const page = await browser.newPage({
+                    userAgent: userAgent || undefined,
+                });
+                // Navigate to the URL
+                await page.goto(fetchResult.url, {
+                    waitUntil: 'domcontentloaded',
+                    timeout: timeout || 30000,
+                });
+                // Wait if specified
+                if (wait > 0) {
+                    await page.waitForTimeout(wait);
+                }
+                // Extract branding
+                const { extractBranding } = await import('./core/branding.js');
+                brandingProfile = await extractBranding(page);
+                // Clean up
+                await browser.close();
+            }
+            catch (error) {
+                console.error('Branding extraction failed:', error);
+            }
+        }
+        // Track content changes if requested
+        let changeResult;
+        if (options.changeTracking) {
+            try {
+                const { trackChange } = await import('./core/change-tracking.js');
+                changeResult = await trackChange(fetchResult.url, content, fingerprint);
+            }
+            catch (error) {
+                console.error('Change tracking failed:', error);
+            }
+        }
+        // Generate AI summary if requested
+        let summaryText;
+        if (options.summary && options.llm) {
+            try {
+                const { extractWithLLM } = await import('./core/extract.js');
+                const summaryPrompt = typeof options.summary === 'object' && options.summary.prompt
+                    ? options.summary.prompt
+                    : 'Summarize the main points of this content in a concise paragraph.';
+                const maxLength = typeof options.summary === 'object' && options.summary.maxLength
+                    ? options.summary.maxLength
+                    : 200;
+                const result = await extractWithLLM(content, {
+                    prompt: `${summaryPrompt} Keep it under ${maxLength} words.`,
+                    llmApiKey: options.llm.apiKey,
+                    llmModel: options.llm.model,
+                    llmBaseUrl: options.llm.baseUrl,
+                });
+                summaryText = result.summary || Object.values(result)[0];
+            }
+            catch (error) {
+                console.error('Summary generation failed:', error);
+            }
+        }
         return {
             url: fetchResult.url,
             title,
@@ -202,6 +272,9 @@ export async function peel(url, options = {}) {
             quality,
             fingerprint,
             extracted,
+            branding: brandingProfile,
+            changeTracking: changeResult,
+            summary: summaryText,
         };
     }
     catch (error) {

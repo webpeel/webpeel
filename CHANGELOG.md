@@ -3,6 +3,57 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+
+## [0.5.0] - 2026-02-14
+
+### Added — "9x Better" Release
+
+#### Core Library
+- **Branding Extraction**: Full design system extraction from any webpage — colors, fonts, typography, spacing, components, CSS variables, logo, favicon, dark/light detection
+- **Change Tracking**: Local-first content change detection with file-based snapshots (`~/.webpeel/snapshots/`), unified diff output, change status tracking (new/same/changed/removed)
+- **AI Extraction (BYOK)**: LLM-powered structured data extraction using any OpenAI-compatible API — bring your own key, works with OpenAI, Anthropic proxy, local models
+- **Map with Search**: Relevance-based URL filtering in map command — score URLs by search term matches in path/title/description
+- **Batch Processing**: `peelBatch()` function with concurrency control for processing multiple URLs
+
+#### Server/API
+- **Async Job Queue**: In-memory job queue for crawl and batch operations with progress tracking, cancellation, and auto-expiration (24h)
+- **SSE Streaming**: Real-time progress updates via Server-Sent Events (`Accept: text/event-stream`)
+- **Webhook Callbacks**: HMAC-SHA256 signed webhook notifications for job events (started/page/completed/failed) with retry logic
+- **Batch Scrape API**: `POST /v1/batch/scrape` with concurrent processing (max 5) and structured extraction
+- **Async Crawl API**: `POST /v1/crawl` returns job ID, `GET /v1/crawl/:id` for status/results
+- **Enhanced Search**: Multi-source search (web/news/images via DuckDuckGo), optional auto-scrape of result URLs
+
+#### Python SDK (`python-sdk/`)
+- **Zero-dependency Python SDK**: Pure stdlib (urllib.request), Python 3.8+ compatible
+- Methods: `scrape()`, `search()`, `crawl()`, `map()`, `batch_scrape()`, `get_job()`
+- Proper error hierarchy: `WebPeelError`, `AuthError`, `RateLimitError`, `TimeoutError`
+- Dataclass-based types: `ScrapeResult`, `SearchResult`, `CrawlResult`, `MapResult`, `BatchResult`
+
+#### Integrations
+- **LangChain Document Loader** (`integrations/langchain/`): `WebPeelLoader` with lazy_load, render/stealth support
+- **LlamaIndex Reader** (`integrations/llamaindex/`): `WebPeelReader` for RAG pipelines
+
+#### CLI
+- `webpeel brand <url>` — Extract design system as JSON
+- `webpeel track <url>` — Track content changes with diff output
+- `webpeel summarize <url>` — AI-powered summary (requires --llm-key)
+- `webpeel jobs` — List active async jobs
+- `webpeel job <id>` — Check job status
+
+#### MCP
+- `webpeel_batch` — Batch fetch multiple URLs with concurrency control
+
+#### New API Endpoints
+- `POST /v1/crawl` — Start async crawl job
+- `GET /v1/crawl/:id` — Get crawl status (JSON or SSE)
+- `DELETE /v1/crawl/:id` — Cancel crawl
+- `POST /v1/batch/scrape` — Start batch scrape
+- `GET /v1/batch/scrape/:id` — Get batch status
+- `DELETE /v1/batch/scrape/:id` — Cancel batch
+- `GET /v1/jobs` — List all active jobs
+
+#### Blog
+- 4 SEO-optimized blog posts at `/blog/`: Firecrawl comparison, MCP guide, AI scraping guide, token optimization
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.4.0] - 2026-02-14

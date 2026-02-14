@@ -23,6 +23,8 @@ import { createOAuthRouter } from './routes/oauth.js';
 import { createStatsRouter } from './routes/stats.js';
 import { createActivityRouter } from './routes/activity.js';
 import { createCLIUsageRouter } from './routes/cli-usage.js';
+import { createJobsRouter } from './routes/jobs.js';
+import { createBatchRouter } from './routes/batch.js';
 
 export interface ServerConfig {
   port?: number;
@@ -93,6 +95,8 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createStatsRouter(authStore));
   app.use(createActivityRouter(authStore));
   app.use(createCLIUsageRouter());
+  app.use(createJobsRouter());
+  app.use(createBatchRouter());
 
   // 404 handler
   app.use((req: Request, res: Response) => {

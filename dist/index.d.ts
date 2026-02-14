@@ -9,6 +9,9 @@ export * from './types.js';
 export { crawl, type CrawlOptions, type CrawlResult, type CrawlProgress } from './core/crawler.js';
 export { discoverSitemap, type SitemapUrl, type SitemapResult } from './core/sitemap.js';
 export { mapDomain, type MapOptions, type MapResult } from './core/map.js';
+export { extractBranding, type BrandingProfile } from './core/branding.js';
+export { trackChange, getSnapshot, clearSnapshots, type ChangeResult, type Snapshot } from './core/change-tracking.js';
+export { extractWithLLM } from './core/extract.js';
 /**
  * Fetch and extract content from a URL
  *

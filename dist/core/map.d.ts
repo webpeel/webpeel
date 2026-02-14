@@ -15,6 +15,10 @@ export interface MapOptions {
     includePatterns?: string[];
     /** Exclude URL patterns matching these regexes */
     excludePatterns?: string[];
+    /** Filter URLs by relevance to this search query */
+    search?: string;
+    /** Only return URLs matching these content types */
+    contentTypeFilter?: string[];
 }
 export interface MapResult {
     /** All discovered URLs (deduplicated) */

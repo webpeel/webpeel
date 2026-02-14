@@ -20,6 +20,30 @@ try {
     pkgVersion = pkg.version;
 }
 catch { /* fallback */ }
+/**
+ * Helper function to extract colors from content
+ */
+function extractColorsFromContent(content) {
+    const colors = [];
+    const hexRegex = /#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g;
+    const matches = content.match(hexRegex);
+    if (matches) {
+        colors.push(...[...new Set(matches)].slice(0, 10));
+    }
+    return colors;
+}
+/**
+ * Helper function to extract font information from content
+ */
+function extractFontsFromContent(content) {
+    const fonts = [];
+    const fontRegex = /font-family:\s*([^;}"'\n]+)/gi;
+    let match;
+    while ((match = fontRegex.exec(content)) !== null) {
+        fonts.push(match[1].trim());
+    }
+    return [...new Set(fonts)].slice(0, 5);
+}
 const server = new Server({
     name: 'webpeel',
     version: pkgVersion,
@@ -415,6 +439,103 @@ const tools = [
             required: ['url'],
         },
     },
+    {
+        name: 'webpeel_brand',
+        description: 'Extract branding and design system from a URL. Returns colors, fonts, typography, and visual identity elements.',
+        annotations: {
+            title: 'Extract Branding',
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: true,
+        },
+        inputSchema: {
+            type: 'object',
+            properties: {
+                url: {
+                    type: 'string',
+                    description: 'URL to extract branding from',
+                },
+                render: {
+                    type: 'boolean',
+                    description: 'Use browser rendering',
+                    default: false,
+                },
+            },
+            required: ['url'],
+        },
+    },
+    {
+        name: 'webpeel_change_track',
+        description: 'Track changes on a URL by generating a content fingerprint. Use this to detect when a page has been updated.',
+        annotations: {
+            title: 'Track Page Changes',
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: true,
+        },
+        inputSchema: {
+            type: 'object',
+            properties: {
+                url: {
+                    type: 'string',
+                    description: 'URL to track for changes',
+                },
+                render: {
+                    type: 'boolean',
+                    description: 'Use browser rendering',
+                    default: false,
+                },
+            },
+            required: ['url'],
+        },
+    },
+    {
+        name: 'webpeel_summarize',
+        description: 'Generate an AI-powered summary of a webpage using an LLM. Requires an OpenAI-compatible API key.',
+        annotations: {
+            title: 'Summarize Page',
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: true,
+        },
+        inputSchema: {
+            type: 'object',
+            properties: {
+                url: {
+                    type: 'string',
+                    description: 'URL to summarize',
+                },
+                llmApiKey: {
+                    type: 'string',
+                    description: 'API key for LLM (OpenAI-compatible)',
+                },
+                prompt: {
+                    type: 'string',
+                    description: 'Custom summary prompt (default: "Summarize this webpage in 2-3 sentences.")',
+                    default: 'Summarize this webpage in 2-3 sentences.',
+                },
+                llmModel: {
+                    type: 'string',
+                    description: 'LLM model to use (default: gpt-4o-mini)',
+                    default: 'gpt-4o-mini',
+                },
+                llmBaseUrl: {
+                    type: 'string',
+                    description: 'LLM API base URL (default: https://api.openai.com/v1)',
+                    default: 'https://api.openai.com/v1',
+                },
+                render: {
+                    type: 'boolean',
+                    description: 'Use browser rendering',
+                    default: false,
+                },
+            },
+            required: ['url', 'llmApiKey'],
+        },
+    },
 ];
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools,
@@ -783,6 +904,175 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 resultText = JSON.stringify({
                     error: 'serialization_error',
                     message: 'Failed to serialize extract result',
+                });
+            }
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: resultText,
+                    },
+                ],
+            };
+        }
+        if (name === 'webpeel_brand') {
+            const { url, render } = args;
+            // SECURITY: Validate input parameters
+            if (!url || typeof url !== 'string') {
+                throw new Error('Invalid URL parameter');
+            }
+            if (url.length > 2048) {
+                throw new Error('URL too long (max 2048 characters)');
+            }
+            const options = {
+                render: render || false,
+                extract: {
+                    selectors: {
+                        primaryColor: 'meta[name="theme-color"]',
+                        title: 'title',
+                        logo: 'img[class*="logo"], img[alt*="logo"]',
+                    },
+                },
+            };
+            // SECURITY: Wrap in timeout (60 seconds max)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Brand extraction timed out after 60s')), 60000);
+            });
+            const result = await Promise.race([
+                peel(url, options),
+                timeoutPromise,
+            ]);
+            // Extract branding info
+            const branding = {
+                url: result.url,
+                title: result.title,
+                extracted: result.extracted,
+                metadata: result.metadata,
+                colors: extractColorsFromContent(result.content),
+                fonts: extractFontsFromContent(result.content),
+            };
+            // SECURITY: Handle JSON serialization errors
+            let resultText;
+            try {
+                resultText = JSON.stringify(branding, null, 2);
+            }
+            catch (jsonError) {
+                resultText = JSON.stringify({
+                    error: 'serialization_error',
+                    message: 'Failed to serialize branding result',
+                });
+            }
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: resultText,
+                    },
+                ],
+            };
+        }
+        if (name === 'webpeel_change_track') {
+            const { url, render } = args;
+            // SECURITY: Validate input parameters
+            if (!url || typeof url !== 'string') {
+                throw new Error('Invalid URL parameter');
+            }
+            if (url.length > 2048) {
+                throw new Error('URL too long (max 2048 characters)');
+            }
+            const options = {
+                render: render || false,
+            };
+            // SECURITY: Wrap in timeout (60 seconds max)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Change tracking timed out after 60s')), 60000);
+            });
+            const result = await Promise.race([
+                peel(url, options),
+                timeoutPromise,
+            ]);
+            // Return tracking info
+            const trackingInfo = {
+                url: result.url,
+                title: result.title,
+                fingerprint: result.fingerprint,
+                tokens: result.tokens,
+                contentType: result.contentType,
+                lastChecked: new Date().toISOString(),
+            };
+            // SECURITY: Handle JSON serialization errors
+            let resultText;
+            try {
+                resultText = JSON.stringify(trackingInfo, null, 2);
+            }
+            catch (jsonError) {
+                resultText = JSON.stringify({
+                    error: 'serialization_error',
+                    message: 'Failed to serialize tracking result',
+                });
+            }
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: resultText,
+                    },
+                ],
+            };
+        }
+        if (name === 'webpeel_summarize') {
+            const { url, llmApiKey, prompt, llmModel, llmBaseUrl, render, } = args;
+            // SECURITY: Validate input parameters
+            if (!url || typeof url !== 'string') {
+                throw new Error('Invalid URL parameter');
+            }
+            if (url.length > 2048) {
+                throw new Error('URL too long (max 2048 characters)');
+            }
+            if (!llmApiKey || typeof llmApiKey !== 'string') {
+                throw new Error('Invalid llmApiKey parameter: must be a string');
+            }
+            if (prompt !== undefined && typeof prompt !== 'string') {
+                throw new Error('Invalid prompt parameter: must be a string');
+            }
+            if (llmModel !== undefined && typeof llmModel !== 'string') {
+                throw new Error('Invalid llmModel parameter: must be a string');
+            }
+            if (llmBaseUrl !== undefined && typeof llmBaseUrl !== 'string') {
+                throw new Error('Invalid llmBaseUrl parameter: must be a string');
+            }
+            const options = {
+                render: render || false,
+                extract: {
+                    prompt: prompt || 'Summarize this webpage in 2-3 sentences.',
+                    llmApiKey,
+                    llmModel: llmModel || 'gpt-4o-mini',
+                    llmBaseUrl: llmBaseUrl || 'https://api.openai.com/v1',
+                },
+            };
+            // SECURITY: Wrap in timeout (60 seconds max)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Summarize operation timed out after 60s')), 60000);
+            });
+            const result = await Promise.race([
+                peel(url, options),
+                timeoutPromise,
+            ]);
+            // Return summary
+            const summaryResult = {
+                url: result.url,
+                title: result.title,
+                summary: result.extracted,
+            };
+            // SECURITY: Handle JSON serialization errors
+            let resultText;
+            try {
+                resultText = JSON.stringify(summaryResult, null, 2);
+            }
+            catch (jsonError) {
+                resultText = JSON.stringify({
+                    error: 'serialization_error',
+                    message: 'Failed to serialize summary result',
                 });
             }
             return {
