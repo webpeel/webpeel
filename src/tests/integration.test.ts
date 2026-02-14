@@ -6,7 +6,10 @@
 import { describe, it, expect } from 'vitest';
 import { peel } from '../index.js';
 
-describe('integration tests', () => {
+// Skip integration tests in CI — they require network access to real sites
+const describeIntegration = process.env.CI ? describe.skip : describe;
+
+describeIntegration('integration tests', () => {
   it('fetches a real webpage', async () => {
     const result = await peel('https://example.com', {
       timeout: 10000,
