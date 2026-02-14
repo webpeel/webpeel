@@ -242,20 +242,16 @@ export async function peel(url, options = {}) {
         let summaryText;
         if (options.summary && options.llm) {
             try {
-                const { extractWithLLM } = await import('./core/extract.js');
-                const summaryPrompt = typeof options.summary === 'object' && options.summary.prompt
-                    ? options.summary.prompt
-                    : 'Summarize the main points of this content in a concise paragraph.';
+                const { summarizeContent } = await import('./core/summarize.js');
                 const maxLength = typeof options.summary === 'object' && options.summary.maxLength
                     ? options.summary.maxLength
-                    : 200;
-                const result = await extractWithLLM(content, {
-                    prompt: `${summaryPrompt} Keep it under ${maxLength} words.`,
-                    llmApiKey: options.llm.apiKey,
-                    llmModel: options.llm.model,
-                    llmBaseUrl: options.llm.baseUrl,
+                    : 150;
+                summaryText = await summarizeContent(content, {
+                    apiKey: options.llm.apiKey,
+                    model: options.llm.model,
+                    apiBase: options.llm.baseUrl,
+                    maxWords: maxLength,
                 });
-                summaryText = result.summary || Object.values(result)[0];
             }
             catch (error) {
                 console.error('Summary generation failed:', error);

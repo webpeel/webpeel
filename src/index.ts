@@ -19,6 +19,7 @@ export { mapDomain, type MapOptions, type MapResult } from './core/map.js';
 export { extractBranding, type BrandingProfile } from './core/branding.js';
 export { trackChange, getSnapshot, clearSnapshots, type ChangeResult, type Snapshot } from './core/change-tracking.js';
 export { extractWithLLM } from './core/extract.js';
+export { summarizeContent, type SummarizeOptions } from './core/summarize.js';
 
 /**
  * Fetch and extract content from a URL
@@ -283,21 +284,17 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     let summaryText: string | undefined;
     if (options.summary && options.llm) {
       try {
-        const { extractWithLLM } = await import('./core/extract.js');
-        const summaryPrompt = typeof options.summary === 'object' && options.summary.prompt
-          ? options.summary.prompt
-          : 'Summarize the main points of this content in a concise paragraph.';
+        const { summarizeContent } = await import('./core/summarize.js');
         const maxLength = typeof options.summary === 'object' && options.summary.maxLength
           ? options.summary.maxLength
-          : 200;
+          : 150;
         
-        const result = await extractWithLLM(content, {
-          prompt: `${summaryPrompt} Keep it under ${maxLength} words.`,
-          llmApiKey: options.llm.apiKey,
-          llmModel: options.llm.model,
-          llmBaseUrl: options.llm.baseUrl,
+        summaryText = await summarizeContent(content, {
+          apiKey: options.llm.apiKey,
+          model: options.llm.model,
+          apiBase: options.llm.baseUrl,
+          maxWords: maxLength,
         });
-        summaryText = result.summary || Object.values(result)[0] as string;
       } catch (error) {
         console.error('Summary generation failed:', error);
       }
