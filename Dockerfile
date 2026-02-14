@@ -1,51 +1,28 @@
 # Multi-stage Dockerfile for WebPeel API Server
-# Stage 1: Build dependencies and install browsers
-FROM node:20-slim AS builder
 
-# Install dependencies for Playwright
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    ca-certificates \
-    fonts-liberation \
-    libappindicator3-1 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdbus-1-3 \
-    libdrm2 \
-    libgbm1 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
+# Stage 1: Build TypeScript and install dependencies
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files and source
+COPY package*.json tsconfig.json ./
+COPY src ./src
 
-# Install ALL dependencies (including optionalDependencies for server)
+# Install all dependencies (including dev for TypeScript compilation)
 RUN npm ci --include=optional
 
-# Install Playwright browsers (Chromium only for production)
-RUN npx playwright install --with-deps chromium
+# Build TypeScript to dist/
+RUN npx tsc
 
-# Stage 2: Production image
+# Stage 2: Production image with Playwright Chromium
 FROM node:20-slim
 
-# Install runtime dependencies and curl for healthcheck
+# Install runtime dependencies for Playwright Chromium + curl for healthcheck
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
     fonts-liberation \
-    libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -71,16 +48,24 @@ RUN groupadd -r webpeel && useradd -r -g webpeel -G audio,video webpeel \
     && chown -R webpeel:webpeel /home/webpeel \
     && chown -R webpeel:webpeel /app
 
-# Copy node_modules and Playwright browsers from builder
-COPY --from=builder --chown=webpeel:webpeel /app/node_modules ./node_modules
-COPY --from=builder --chown=webpeel:webpeel /root/.cache/ms-playwright /home/webpeel/.cache/ms-playwright
-
-# Copy application files
+# Copy package files and install production deps only
 COPY --chown=webpeel:webpeel package*.json ./
-COPY --chown=webpeel:webpeel dist ./dist
+RUN npm ci --omit=dev --include=optional && npm cache clean --force
+
+# Install Playwright Chromium browser (as root, then fix permissions)
+RUN npx playwright install --with-deps chromium && \
+    mkdir -p /home/webpeel/.cache && \
+    cp -r /root/.cache/ms-playwright /home/webpeel/.cache/ms-playwright && \
+    chown -R webpeel:webpeel /home/webpeel/.cache
+
+# Copy built output from builder
+COPY --from=builder --chown=webpeel:webpeel /app/dist ./dist
 
 # Switch to non-root user
 USER webpeel
+
+# Tell Playwright where to find browsers
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/webpeel/.cache/ms-playwright
 
 # Expose port
 EXPOSE 3000
