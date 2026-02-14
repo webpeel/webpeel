@@ -493,7 +493,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - [x] Crawl mode (follow links, respect robots.txt)
 - [ ] PDF extraction
 - [ ] Webhook notifications for monitoring
-- [ ] AI CAPTCHA solving (planned)
+- [ ] Structured data extraction (JSON output)
 
 Vote on features and roadmap at [GitHub Discussions](https://github.com/JakeLiuMe/webpeel/discussions).
 
@@ -510,8 +510,8 @@ A: Yes! Run `npm run serve` to start the API server. See [docs/self-hosting.md](
 **Q: Does this violate websites' Terms of Service?**  
 A: WebPeel is a tool — how you use it is up to you. Always check a site's ToS before fetching at scale. We recommend respecting `robots.txt` in your own workflows.
 
-**Q: What about CAPTCHA and Cloudflare?**  
-A: WebPeel handles most Cloudflare challenges automatically via stealth mode. AI-powered CAPTCHA solving is on our roadmap.
+**Q: What about Cloudflare and bot protection?**  
+A: WebPeel handles most Cloudflare challenges automatically via stealth mode (Pro plan). For heavily protected sites, stealth mode uses browser fingerprint randomization to bypass detection.
 
 **Q: Can I use this in production?**  
 A: Yes! The hosted API at `https://api.webpeel.dev` is production-ready with authentication, rate limiting, and usage tracking.
