@@ -110,7 +110,10 @@ export async function checkUsage() {
         if (used >= limit) {
             return {
                 allowed: false,
-                message: `You've used your ${limit} free fetches.\n\nSign up for free at https://app.webpeel.dev/signup to get 125 fetches/week.\nOr run: webpeel login\n`,
+                message: `You've used your ${limit} free fetches this week.\n\n` +
+                    `📦 Sign up free → 125 fetches/week:  webpeel login\n` +
+                    `⚡ Pro ($9/mo) → 1,250 fetches/week: https://webpeel.dev/#pricing\n` +
+                    `🚀 Max ($29/mo) → 6,250 fetches/week\n`,
             };
         }
         // Increment usage counter
@@ -191,9 +194,19 @@ export function showUsageFooter(usageInfo, isAnonymous, stealth = false) {
         console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} free fetches remaining${costText}. Run \`webpeel login\` to get 125/week free.`);
     }
     else if (usageInfo.limit <= 125) {
-        // Free tier authenticated users
+        // Free tier authenticated users — show upgrade CTA
         const costText = stealth ? ' (costs 5 credits)' : '';
-        console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} fetches remaining this week${costText}.`);
+        const pct = Math.round((usageInfo.used / usageInfo.limit) * 100);
+        if (pct >= 80) {
+            console.error(`⚠️  ${usageInfo.remaining}/${usageInfo.limit} fetches remaining this week${costText}.`);
+            console.error(`   Upgrade to Pro ($9/mo) for 1,250/week → https://webpeel.dev/#pricing`);
+        }
+        else if (pct >= 50) {
+            console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} fetches remaining this week${costText}. Upgrade: webpeel.dev/#pricing`);
+        }
+        else {
+            console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} fetches remaining this week${costText}.`);
+        }
     }
     // Don't show footer for paid users
 }
