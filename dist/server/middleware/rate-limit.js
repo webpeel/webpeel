@@ -55,8 +55,14 @@ export class RateLimiter {
 export function createRateLimitMiddleware(limiter) {
     return (req, res, next) => {
         try {
-            // Use API key or IP address as identifier
-            const identifier = req.auth?.keyInfo?.key || req.ip || 'unknown';
+            // Use API key or real client IP as identifier
+            // Cloudflare sets CF-Connecting-IP to the real client IP;
+            // req.ip can vary per Cloudflare edge node causing rate limit bypass
+            const clientIp = req.headers['cf-connecting-ip']
+                || req.headers['x-real-ip']
+                || req.ip
+                || 'unknown';
+            const identifier = req.auth?.keyInfo?.key || clientIp;
             const limit = req.auth?.rateLimit || 10;
             const result = limiter.checkLimit(identifier, limit);
             // Calculate reset timestamp

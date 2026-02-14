@@ -89,11 +89,14 @@ export async function smartFetch(url: string, options: StrategyOptions = {}): Pr
         method: 'simple',
       };
     } catch (error) {
-      // If blocked or needs JS, escalate to browser
+      // If blocked, needs JS, or has TLS issues, escalate to browser
       if (error instanceof BlockedError) {
         // Fall through to browser strategy
+      } else if (error instanceof NetworkError && error.message.includes('TLS/SSL')) {
+        // TLS errors may work with browser (different cert handling)
+        // Fall through to browser strategy
       } else {
-        // Re-throw other errors (timeout, network errors)
+        // Re-throw other errors (timeout, DNS, connection refused)
         throw error;
       }
     }
