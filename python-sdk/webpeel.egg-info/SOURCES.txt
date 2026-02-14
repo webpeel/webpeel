@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+tests/test_client.py
+webpeel/__init__.py
+webpeel/_version.py
+webpeel/client.py
+webpeel/exceptions.py
+webpeel/types.py
+webpeel.egg-info/PKG-INFO
+webpeel.egg-info/SOURCES.txt
+webpeel.egg-info/dependency_links.txt
+webpeel.egg-info/top_level.txt

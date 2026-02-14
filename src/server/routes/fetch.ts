@@ -157,10 +157,10 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const result = await peel(url, options);
       const elapsed = Date.now() - startTime;
 
-      // Determine fetch type based on request parameters
-      // TODO: This is a simplified version - enhance based on actual peel() behavior
+      // Determine fetch type from the result method
       const fetchType: 'basic' | 'stealth' | 'captcha' | 'search' = 
-        options.render ? 'stealth' : 'basic';
+        result.method === 'stealth' ? 'stealth' : 
+        result.method === 'browser' ? 'stealth' : 'basic';
 
       // Log request to database (PostgreSQL only)
       const pgStore = authStore as any;

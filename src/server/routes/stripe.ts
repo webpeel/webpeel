@@ -262,7 +262,7 @@ async function handlePaymentFailed(
 
     if (result.rows.length > 0) {
       console.warn(`Payment failed for customer ${customerId} (${result.rows[0].email})`);
-      // TODO: Send email notification
+      // Note: Email notification not implemented. Log only for now.
     }
   } catch (error) {
     console.error('Failed to handle payment failure:', error);
@@ -272,7 +272,7 @@ async function handlePaymentFailed(
 
 /**
  * Map Stripe price ID to tier
- * TODO: Configure these in environment variables
+ * Maps Stripe price IDs to tiers (configured via STRIPE_PRICE_PRO and STRIPE_PRICE_MAX env vars)
  */
 function getTierFromPriceId(priceId: string): 'free' | 'pro' | 'max' {
   // Map price IDs to tiers

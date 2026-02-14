@@ -669,49 +669,8 @@ export function createUserRouter(): Router {
     // DISABLED: Stripe integration in progress
     res.status(501).json({
       error: 'not_implemented',
-      message: 'Coming soon — Stripe checkout integration in progress',
+      message: 'Extra usage purchases are available through our billing portal. Visit https://app.webpeel.dev/billing',
     });
-    return;
-
-    /* TODO: Implement Stripe checkout
-    try {
-      const { userId } = (req as any).user as JwtPayload;
-      const { amount } = req.body;
-
-      // Validate amount (must be one of the preset values)
-      const validAmounts = [10, 25, 50, 100];
-      if (!validAmounts.includes(amount)) {
-        res.status(400).json({
-          error: 'invalid_amount',
-          message: `Amount must be one of: ${validAmounts.join(', ')}`,
-        });
-        return;
-      }
-
-      // TODO: Integrate with Stripe checkout
-      // For now, just add directly (testing only)
-      const result = await pool.query(
-        `UPDATE users 
-        SET extra_usage_balance = extra_usage_balance + $1, updated_at = now() 
-        WHERE id = $2
-        RETURNING extra_usage_balance`,
-        [amount, userId]
-      );
-
-      res.json({
-        success: true,
-        amount,
-        newBalance: parseFloat(result.rows[0].extra_usage_balance),
-        message: 'Balance added (Stripe integration pending)',
-      });
-    } catch (error) {
-      console.error('Buy extra usage error:', error);
-      res.status(500).json({
-        error: 'purchase_failed',
-        message: 'Failed to purchase extra usage',
-      });
-    }
-    */
   });
 
   /**

@@ -204,7 +204,7 @@ async function handlePaymentFailed(pool, invoice) {
         const result = await pool.query('SELECT email FROM users WHERE stripe_customer_id = $1', [customerId]);
         if (result.rows.length > 0) {
             console.warn(`Payment failed for customer ${customerId} (${result.rows[0].email})`);
-            // TODO: Send email notification
+            // Note: Email notification not implemented. Log only for now.
         }
     }
     catch (error) {
@@ -214,7 +214,7 @@ async function handlePaymentFailed(pool, invoice) {
 }
 /**
  * Map Stripe price ID to tier
- * TODO: Configure these in environment variables
+ * Maps Stripe price IDs to tiers (configured via STRIPE_PRICE_PRO and STRIPE_PRICE_MAX env vars)
  */
 function getTierFromPriceId(priceId) {
     // Map price IDs to tiers
