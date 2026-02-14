@@ -1,6 +1,6 @@
 {
   "name": "webpeel",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Fast web fetcher for AI agents - stealth mode, crawl mode, smart escalation from simple HTTP to headless browser",
   "author": "Jake Liu",
   "license": "MIT",
@@ -37,7 +37,11 @@
     "dist/cli-auth.js",
     "dist/cli-auth.js.map",
     "dist/cli-auth.d.ts",
-    "dist/cli-auth.d.ts.map"
+    "dist/cli-auth.d.ts.map",
+    "dist/cache.js",
+    "dist/cache.js.map",
+    "dist/cache.d.ts",
+    "dist/cache.d.ts.map"
   ],
   "scripts": {
     "build": "tsc",

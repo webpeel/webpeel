@@ -24,10 +24,21 @@ import { getCache, setCache, parseTTL, clearCache, cacheStats } from './cache.js
 
 const program = new Command();
 
+// Read version from package.json dynamically
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+let cliVersion = '0.0.0';
+try {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const pkgPath = resolve(__dirname, '..', 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  cliVersion = pkg.version;
+} catch { /* fallback */ }
+
 program
   .name('webpeel')
   .description('Fast web fetcher for AI agents')
-  .version('0.3.1')
+  .version(cliVersion)
   .enablePositionalOptions();
 
 program
