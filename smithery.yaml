@@ -1,0 +1,20 @@
+# Smithery MCP Server Configuration
+# https://smithery.ai
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      WEBPEEL_API_KEY:
+        type: string
+        description: "Optional WebPeel API key for higher rate limits"
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', 'webpeel@latest', 'mcp'],
+      env: {
+        ...(config.WEBPEEL_API_KEY ? { WEBPEEL_API_KEY: config.WEBPEEL_API_KEY } : {})
+      }
+    })
