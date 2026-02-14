@@ -12,5 +12,6 @@
  * - POST /v1/map
  */
 import { Router } from 'express';
-export declare function createCompatRouter(): Router;
+import type { IJobQueue } from '../job-queue.js';
+export declare function createCompatRouter(jobQueue: IJobQueue): Router;
 //# sourceMappingURL=compat.d.ts.map

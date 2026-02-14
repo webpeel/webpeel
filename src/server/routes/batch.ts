@@ -5,10 +5,10 @@
 import { Router, Request, Response } from 'express';
 import { peel } from '../../index.js';
 import type { PeelOptions } from '../../index.js';
-import { jobQueue } from '../job-queue.js';
+import type { IJobQueue } from '../job-queue.js';
 import { sendWebhook } from './webhooks.js';
 
-export function createBatchRouter(): Router {
+export function createBatchRouter(jobQueue: IJobQueue): Router {
   const router = Router();
 
   /**
@@ -58,8 +58,8 @@ export function createBatchRouter(): Router {
       }
 
       // Create job
-      const job = jobQueue.createJob('batch', webhook);
-      jobQueue.updateJob(job.id, {
+      const job = await jobQueue.createJob('batch', webhook);
+      await jobQueue.updateJob(job.id, {
         total: urls.length,
       });
 
@@ -93,7 +93,7 @@ export function createBatchRouter(): Router {
           const processBatch = async () => {
             while (urlIndex < urls.length) {
               // Check if job was cancelled
-              const currentJob = jobQueue.getJob(job.id);
+              const currentJob = await jobQueue.getJob(job.id);
               if (currentJob?.status === 'cancelled') {
                 return;
               }
@@ -206,10 +206,10 @@ export function createBatchRouter(): Router {
   /**
    * GET /v1/batch/scrape/:id - Get batch scrape status + results
    */
-  router.get('/v1/batch/scrape/:id', (req: Request, res: Response) => {
+  router.get('/v1/batch/scrape/:id', async (req: Request, res: Response) => {
     try {
       const id = req.params.id as string;
-      const job = jobQueue.getJob(id);
+      const job = await jobQueue.getJob(id);
 
       if (!job) {
         res.status(404).json({
@@ -250,10 +250,10 @@ export function createBatchRouter(): Router {
   /**
    * DELETE /v1/batch/scrape/:id - Cancel batch scrape job
    */
-  router.delete('/v1/batch/scrape/:id', (req: Request, res: Response) => {
+  router.delete('/v1/batch/scrape/:id', async (req: Request, res: Response) => {
     try {
       const id = req.params.id as string;
-      const job = jobQueue.getJob(id);
+      const job = await jobQueue.getJob(id);
 
       if (!job) {
         res.status(404).json({
@@ -271,7 +271,7 @@ export function createBatchRouter(): Router {
         return;
       }
 
-      const cancelled = jobQueue.cancelJob(id);
+      const cancelled = await jobQueue.cancelJob(id);
 
       if (!cancelled) {
         res.status(400).json({

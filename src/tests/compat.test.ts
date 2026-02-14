@@ -23,15 +23,6 @@ vi.mock('../core/map.js', () => ({
   mapDomain: vi.fn(),
 }));
 
-// Mock the job queue
-vi.mock('../server/job-queue.js', () => ({
-  jobQueue: {
-    createJob: vi.fn(),
-    updateJob: vi.fn(),
-    getJob: vi.fn(),
-  },
-}));
-
 // Mock undici for search tests
 vi.mock('undici', () => ({
   fetch: vi.fn(),
@@ -40,19 +31,30 @@ vi.mock('undici', () => ({
 import { peel as mockPeel } from '../index.js';
 import { crawl as mockCrawl } from '../core/crawler.js';
 import { mapDomain as mockMapDomain } from '../core/map.js';
-import { jobQueue as mockJobQueue } from '../server/job-queue.js';
 import { fetch as mockFetch } from 'undici';
+import type { IJobQueue } from '../server/job-queue.js';
 
 describe('Firecrawl compatibility routes', () => {
   let app: Express;
+  let mockJobQueue: IJobQueue;
 
   beforeEach(() => {
     vi.clearAllMocks();
     
+    // Create mock job queue
+    mockJobQueue = {
+      createJob: vi.fn(),
+      updateJob: vi.fn(),
+      getJob: vi.fn(),
+      cancelJob: vi.fn(),
+      listJobs: vi.fn(),
+      destroy: vi.fn(),
+    };
+    
     // Create Express app with compat router
     app = express();
     app.use(express.json());
-    app.use(createCompatRouter());
+    app.use(createCompatRouter(mockJobQueue));
   });
 
   describe('POST /v1/scrape', () => {

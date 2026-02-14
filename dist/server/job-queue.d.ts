@@ -1,7 +1,8 @@
 /**
- * In-memory job queue for async operations
+ * Job queue for async operations
  *
- * Tracks crawl, batch scrape, and extraction jobs with progress updates
+ * Factory creates PostgreSQL-backed queue in production or in-memory queue for local dev.
+ * Tracks crawl, batch scrape, and extraction jobs with progress updates.
  */
 export interface WebhookConfig {
     url: string;
@@ -24,7 +25,25 @@ export interface Job {
     updatedAt: string;
     expiresAt: string;
 }
-export declare class JobQueue {
+/**
+ * Job queue interface - implemented by both in-memory and PostgreSQL queues
+ */
+export interface IJobQueue {
+    createJob(type: Job['type'], webhook?: WebhookConfig): Job | Promise<Job>;
+    getJob(id: string): Job | null | Promise<Job | null>;
+    updateJob(id: string, update: Partial<Job>): void | Promise<void>;
+    cancelJob(id: string): boolean | Promise<boolean>;
+    listJobs(options?: {
+        type?: string;
+        status?: string;
+        limit?: number;
+    }): Job[] | Promise<Job[]>;
+    destroy(): void;
+}
+/**
+ * In-memory job queue for local development
+ */
+export declare class InMemoryJobQueue implements IJobQueue {
     private jobs;
     private cleanupInterval;
     constructor();
@@ -61,5 +80,11 @@ export declare class JobQueue {
      */
     destroy(): void;
 }
-export declare const jobQueue: JobQueue;
+/**
+ * Create job queue based on environment
+ * - Uses PostgreSQL if DATABASE_URL is set
+ * - Falls back to in-memory for local development
+ */
+export declare function createJobQueue(): IJobQueue;
+export declare const jobQueue: InMemoryJobQueue;
 //# sourceMappingURL=job-queue.d.ts.map

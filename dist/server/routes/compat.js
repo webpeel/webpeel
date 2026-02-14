@@ -15,7 +15,6 @@ import { Router } from 'express';
 import { peel } from '../../index.js';
 import { crawl } from '../../core/crawler.js';
 import { mapDomain } from '../../core/map.js';
-import { jobQueue } from '../job-queue.js';
 /**
  * Map Firecrawl's action format to our PageAction format
  */
@@ -39,7 +38,7 @@ function mapFirecrawlActions(actions) {
         }
     });
 }
-export function createCompatRouter() {
+export function createCompatRouter(jobQueue) {
     const router = Router();
     /**
      * POST /v1/scrape - Firecrawl's main scrape endpoint
@@ -166,7 +165,7 @@ export function createCompatRouter() {
                 return;
             }
             // Create job
-            const job = jobQueue.createJob('crawl', webhook);
+            const job = await jobQueue.createJob('crawl', webhook);
             // Start crawl in background
             setImmediate(async () => {
                 try {
@@ -240,10 +239,10 @@ export function createCompatRouter() {
     /**
      * GET /v1/crawl/:id - Get crawl job status (Firecrawl format)
      */
-    router.get('/v1/crawl/:id', (req, res) => {
+    router.get('/v1/crawl/:id', async (req, res) => {
         try {
             const id = req.params.id;
-            const job = jobQueue.getJob(id);
+            const job = await jobQueue.getJob(id);
             if (!job) {
                 res.status(404).json({
                     success: false,

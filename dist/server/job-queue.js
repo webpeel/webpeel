@@ -1,10 +1,15 @@
 /**
- * In-memory job queue for async operations
+ * Job queue for async operations
  *
- * Tracks crawl, batch scrape, and extraction jobs with progress updates
+ * Factory creates PostgreSQL-backed queue in production or in-memory queue for local dev.
+ * Tracks crawl, batch scrape, and extraction jobs with progress updates.
  */
 import { randomUUID } from 'crypto';
-export class JobQueue {
+import { PostgresJobQueue } from './pg-job-queue.js';
+/**
+ * In-memory job queue for local development
+ */
+export class InMemoryJobQueue {
     jobs = new Map();
     cleanupInterval;
     constructor() {
@@ -114,6 +119,22 @@ export class JobQueue {
         clearInterval(this.cleanupInterval);
     }
 }
-// Global job queue instance
-export const jobQueue = new JobQueue();
+/**
+ * Create job queue based on environment
+ * - Uses PostgreSQL if DATABASE_URL is set
+ * - Falls back to in-memory for local development
+ */
+export function createJobQueue() {
+    if (process.env.DATABASE_URL) {
+        console.log('Using PostgreSQL job queue');
+        return new PostgresJobQueue();
+    }
+    else {
+        console.log('Using in-memory job queue');
+        return new InMemoryJobQueue();
+    }
+}
+// Legacy global instance for backwards compatibility (deprecated)
+// @deprecated Use createJobQueue() instead
+export const jobQueue = new InMemoryJobQueue();
 //# sourceMappingURL=job-queue.js.map

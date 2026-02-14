@@ -16,7 +16,7 @@ import { Router, Request, Response } from 'express';
 import { peel } from '../../index.js';
 import { crawl } from '../../core/crawler.js';
 import { mapDomain } from '../../core/map.js';
-import { jobQueue } from '../job-queue.js';
+import type { IJobQueue } from '../job-queue.js';
 import type { PeelOptions, PageAction } from '../../types.js';
 
 /**
@@ -43,7 +43,7 @@ function mapFirecrawlActions(actions?: any[]): PageAction[] | undefined {
   });
 }
 
-export function createCompatRouter(): Router {
+export function createCompatRouter(jobQueue: IJobQueue): Router {
   const router = Router();
 
   /**
@@ -206,7 +206,7 @@ export function createCompatRouter(): Router {
       }
 
       // Create job
-      const job = jobQueue.createJob('crawl', webhook);
+      const job = await jobQueue.createJob('crawl', webhook);
 
       // Start crawl in background
       setImmediate(async () => {
@@ -286,10 +286,10 @@ export function createCompatRouter(): Router {
   /**
    * GET /v1/crawl/:id - Get crawl job status (Firecrawl format)
    */
-  router.get('/v1/crawl/:id', (req: Request, res: Response) => {
+  router.get('/v1/crawl/:id', async (req: Request, res: Response) => {
     try {
       const id = req.params.id as string;
-      const job = jobQueue.getJob(id);
+      const job = await jobQueue.getJob(id);
 
       if (!job) {
         res.status(404).json({

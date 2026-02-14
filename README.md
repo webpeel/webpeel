@@ -1,13 +1,14 @@
 # WebPeel
 
 [![npm version](https://img.shields.io/npm/v/webpeel.svg)](https://www.npmjs.com/package/webpeel)
+[![PyPI version](https://img.shields.io/pypi/v/webpeel.svg)](https://pypi.org/project/webpeel/)
 [![npm downloads](https://img.shields.io/npm/dm/webpeel.svg)](https://www.npmjs.com/package/webpeel)
 [![GitHub stars](https://img.shields.io/github/stars/JakeLiuMe/webpeel.svg)](https://github.com/JakeLiuMe/webpeel/stargazers)
 [![CI](https://github.com/JakeLiuMe/webpeel/actions/workflows/ci.yml/badge.svg)](https://github.com/JakeLiuMe/webpeel/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Turn any web page into clean markdown. **Smart escalation. Stealth mode. Crawl mode. Free to start.**
+**Turn any web page into AI-ready markdown. Smart escalation. Stealth mode. Autonomous agent. Free to start.**
 
 ```bash
 npx webpeel https://news.ycombinator.com
@@ -33,43 +34,21 @@ npx webpeel https://news.ycombinator.com
 
 ## Why WebPeel?
 
-|  | **WebPeel** | Firecrawl | Jina Reader | MCP Fetch |
-|---|:---:|:---:|:---:|:---:|
-| **Free tier** | ✅ 125/week | 500 one-time | ❌ Cloud only | ✅ Unlimited |
-| **Smart escalation** | ✅ HTTP→Browser→Stealth | Manual mode | ❌ No | ❌ No |
+| Feature | **WebPeel** | Firecrawl | Jina Reader | MCP Fetch |
+|---------|:-----------:|:---------:|:-----------:|:---------:|
+| **Free tier** | ✅ **125/wk recurring** | 500 one-time | ❌ Cloud only | ✅ Unlimited |
+| **Smart escalation** | ✅ **HTTP→Browser→Stealth** | Manual mode | ❌ No | ❌ No |
 | **Stealth mode** | ✅ All plans | ✅ Yes | ⚠️ Limited | ❌ No |
-| **Crawl + Map** | ✅ All plans | ✅ Yes | ❌ No | ❌ No |
-| **AI Extraction** | ✅ BYOK (any LLM) | ✅ Built-in | ❌ No | ❌ No |
-| **Branding** | ✅ Design system | ✅ Yes | ❌ No | ❌ No |
-| **Change Tracking** | ✅ Local snapshots | ✅ Server-side | ❌ No | ❌ No |
-| **Python SDK** | ✅ Zero deps | ✅ httpx/pydantic | ❌ No | ❌ No |
-| **LangChain** | ✅ Official | ✅ Official | ❌ No | ❌ No |
-| **MCP Server** | ✅ Built-in (6 tools) | ✅ Separate repo | ❌ No | ✅ Yes |
-| **Token Budget** | ✅ `--max-tokens` | ❌ No | ❌ No | ❌ No |
-| **Zero config** | ✅ `npx webpeel` | ❌ API key required | ❌ API key required | ✅ Yes |
-| **Pricing** | $0 local / $9-$29 | $16-$333/mo | $10/mo+ | Free |
-| **License** | MIT | AGPL-3.0 | Proprietary | MIT |
+| **Firecrawl-compatible API** | ✅ **YES (only us!)** | ✅ Native | ❌ No | ❌ No |
+| **Self-hosting** | ✅ **Docker compose** | ⚠️ Complex | ❌ No | N/A |
+| **Autonomous agent** | ✅ **BYOK any LLM** | ⚠️ Locked to Spark | ❌ No | ❌ No |
+| **MCP tools** | ✅ **9 tools** | 3 tools | 0 tools | 1 tool |
+| **Python SDK** | ✅ **Zero-dep** | Requires requests | N/A | N/A |
+| **License** | ✅ **MIT** | AGPL-3.0 | Proprietary | MIT |
+| **Interactive playground** | ✅ **No signup** | Requires signup | ❌ No | ❌ No |
+| **Pricing** | **Free/$9/$29** | $0/$16/$83 | Custom | Free |
 
-**WebPeel gives you Firecrawl's power with a generous free tier and MIT license.**
-
-### Usage Model
-
-WebPeel uses a **weekly usage budget** for all users (CLI and API):
-
-- **First 25 fetches**: No account needed — try it instantly
-- **Free tier**: 125 fetches/week (resets every Monday)
-- **Pro tier**: 1,250 fetches/week ($9/mo)
-- **Max tier**: 6,250 fetches/week ($29/mo)
-
-**Credit costs**: Basic fetch = 1 credit, Stealth mode = 5 credits, Search = 1 credit, Crawl = 1 credit/page
-
-**Open source**: The CLI is MIT licensed — you can self-host if needed. But the hosted API requires authentication after 25 fetches.
-
-### Highlights
-
-1. **🎭 Stealth Mode** — Bypass bot detection with playwright-extra stealth plugin. Works on sites that block regular scrapers.
-2. **🕷️ Crawl Mode** — Follow links and extract entire sites. Respects robots.txt and rate limits automatically.
-3. **💰 Generous Free Tier** — 125 free fetches every week. First 25 work instantly with no signup. Basic fetch + JS rendering included free.
+**WebPeel is the only Firecrawl-compatible alternative with a generous free tier and MIT license.**
 
 ---
 
@@ -84,62 +63,29 @@ npx webpeel https://example.com
 # After 25 fetches, sign up for free (125/week)
 webpeel login
 
-# Check your usage
-webpeel usage
-
 # Stealth mode (bypass bot detection)
 npx webpeel https://protected-site.com --stealth
 
-# Page actions: click, scroll, type before extraction (v0.4.0)
-npx webpeel https://example.com --action "click:.cookie-accept" --action "wait:2000" --action "scroll:bottom"
-
-# Structured data extraction with CSS selectors (v0.4.0)
-npx webpeel https://example.com --extract '{"title": "h1", "price": ".price", "description": ".desc"}'
-
-# Token budget: truncate output to max tokens (v0.4.0)
-npx webpeel https://example.com --max-tokens 2000
-
-# Map discovery: find all URLs on a domain via sitemap & crawling (v0.4.0)
-npx webpeel map https://example.com --max-urls 5000
-
-# Extract branding/design system from a page (v0.5.0)
-npx webpeel brand https://example.com
-
-# Track content changes over time (v0.5.0)
-npx webpeel track https://example.com
+# Autonomous agent — just give a prompt (BYOK LLM)
+npx webpeel agent "Find the founders of Stripe" --llm-key sk-...
 
 # Crawl a website (follow links, respect robots.txt)
-npx webpeel crawl https://example.com --max-pages 20 --max-depth 2
+npx webpeel crawl https://example.com --max-pages 20
 
-# Sitemap-first crawl with content deduplication (v0.4.0)
-npx webpeel crawl https://example.com --sitemap-first --max-pages 100
+# Search the web
+npx webpeel search "best AI frameworks 2026"
 
-# JSON output with metadata
-npx webpeel https://example.com --json
+# Extract structured data
+npx webpeel https://example.com --extract '{"title": "h1", "price": ".price"}'
 
-# Cache results locally (avoid repeat fetches)
-npx webpeel https://example.com --cache 5m
+# Get branding/design system
+npx webpeel brand https://stripe.com
 
-# Extract just the links from a page
-npx webpeel https://example.com --links
-
-# Extract just the metadata (title, description, author)
-npx webpeel https://example.com --meta
-
-# Batch fetch from file or stdin
-cat urls.txt | npx webpeel batch
-
-# Force browser rendering (for JS-heavy sites)
-npx webpeel https://x.com/elonmusk --render
-
-# Wait for dynamic content
-npx webpeel https://example.com --render --wait 3000
-
-# View your config and cache stats
-webpeel config
+# Track content changes
+npx webpeel track https://example.com/pricing
 ```
 
-### Library (TypeScript)
+### Node.js Library
 
 ```bash
 npm install webpeel
@@ -154,22 +100,18 @@ console.log(result.content);    // Clean markdown
 console.log(result.metadata);   // { title, description, author, ... }
 console.log(result.tokens);     // Estimated token count
 
-// Branding extraction (v0.5.0)
-const brand = await peel('https://stripe.com', { branding: true, render: true });
-console.log(brand.branding);    // { colors, fonts, typography, cssVariables, ... }
-
-// Change tracking (v0.5.0)
-const tracked = await peel('https://example.com/pricing', { changeTracking: true });
-console.log(tracked.changeTracking);  // { changeStatus: 'new' | 'same' | 'changed', diff: ... }
-
-// AI extraction with your own LLM key (v0.5.0)
-const extracted = await peel('https://example.com', {
-  extract: { prompt: 'Extract the pricing plans', llmApiKey: 'sk-...' },
+// With options
+const advanced = await peel('https://example.com', {
+  render: true,           // Use browser for JS-heavy sites
+  stealth: true,          // Anti-bot stealth mode
+  screenshot: true,       // Capture screenshot
+  maxTokens: 4000,        // Limit output tokens
+  images: true,           // Extract image URLs
+  includeTags: ['main'],  // Filter to specific HTML tags
 });
-console.log(extracted.extracted);
 ```
 
-### Python SDK (v0.5.0)
+### Python SDK
 
 ```bash
 pip install webpeel
@@ -192,30 +134,23 @@ job = client.crawl("https://docs.example.com", limit=100)
 status = client.get_job(job.id)
 ```
 
-Zero dependencies. Pure Python 3.8+ stdlib. [Full docs →](python-sdk/README.md)
+**Zero dependencies. Pure Python 3.8+ stdlib.** [Full docs →](python-sdk/README.md)
 
-### MCP Server (Claude Desktop, Cursor, VS Code, Windsurf)
+### MCP Server (Claude Desktop, Cursor, Windsurf, VS Code)
 
-WebPeel provides six MCP tools: `webpeel_fetch`, `webpeel_search`, `webpeel_crawl`, `webpeel_map`, `webpeel_extract`, and `webpeel_batch`.
+WebPeel provides **9 MCP tools** for AI agents:
 
-#### Claude Desktop
+- `webpeel_fetch` — Fetch any URL as clean markdown
+- `webpeel_search` — Search the web
+- `webpeel_crawl` — Crawl websites
+- `webpeel_map` — Discover all URLs on a domain
+- `webpeel_extract` — Extract structured data
+- `webpeel_batch` — Batch fetch multiple URLs
+- `webpeel_agent` — Autonomous web research (BYOK LLM)
+- `webpeel_summarize` — AI-powered summarization
+- `webpeel_brand` — Extract branding/design system
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "webpeel": {
-      "command": "npx",
-      "args": ["-y", "webpeel", "mcp"]
-    }
-  }
-}
-```
-
-#### Cursor
-
-Add to Cursor Settings → MCP Servers:
+**Claude Desktop** — Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -228,9 +163,33 @@ Add to Cursor Settings → MCP Servers:
 }
 ```
 
-#### VS Code (with Cline or other MCP clients)
+**Cursor** — Add to Settings → MCP Servers:
 
-Create or edit `~/.vscode/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "mcp"]
+    }
+  }
+}
+```
+
+**VS Code** (with Cline or other MCP clients) — Create `~/.vscode/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "mcp"]
+    }
+  }
+}
+```
+
+**Windsurf** — Add to `~/.codeium/windsurf/mcp_config.json`:
 
 ```json
 {
@@ -248,32 +207,401 @@ Or install with one click:
 [![Install in Claude Desktop](https://img.shields.io/badge/Install-Claude%20Desktop-5B3FFF?style=for-the-badge&logo=anthropic)](https://mcp.so/install/webpeel?for=claude)
 [![Install in VS Code](https://img.shields.io/badge/Install-VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode)](https://mcp.so/install/webpeel?for=vscode)
 
-#### Windsurf
+### Docker (Self-Hosted)
 
-Add to `~/.codeium/windsurf/mcp_config.json`:
+```bash
+# Clone the repo
+git clone https://github.com/JakeLiuMe/webpeel.git
+cd webpeel
 
-```json
-{
-  "mcpServers": {
-    "webpeel": {
-      "command": "npx",
-      "args": ["-y", "webpeel", "mcp"]
-    }
-  }
-}
+# Start with Docker Compose
+docker compose up
 ```
+
+Your API will be available at `http://localhost:3000` with all features included.
 
 ---
 
-## Use with Claude Code
+## Features
 
-One command to add WebPeel to Claude Code:
+### 🎯 Smart Escalation
+
+WebPeel automatically tries the fastest method first, then escalates only when needed:
+
+```
+HTTP Fetch (200ms)  →  Browser Rendering (2s)  →  Stealth Mode (5s)
+     80% of sites           15% of sites           5% of sites
+```
+
+No configuration needed — it just works.
+
+```typescript
+import { peel } from 'webpeel';
+
+// Automatically escalates if needed
+const result = await peel('https://protected-site.com');
+console.log(result.method); // 'simple', 'browser', or 'stealth'
+```
+
+### 🎭 Stealth Mode
+
+Bypass bot detection and Cloudflare protection using playwright-extra stealth plugin.
+
+```bash
+# CLI
+npx webpeel https://protected-site.com --stealth
+```
+
+```typescript
+// Library
+const result = await peel('https://protected-site.com', { stealth: true });
+```
+
+Masks browser fingerprints, navigator properties, WebGL vendor, and more.
+
+### 🕷️ Crawl & Map
+
+Crawl entire websites or discover all URLs on a domain.
+
+```bash
+# Crawl with link following
+npx webpeel crawl https://docs.example.com --max-pages 100 --max-depth 3
+
+# Sitemap-first crawl (faster, more comprehensive)
+npx webpeel crawl https://example.com --sitemap-first
+
+# Discover all URLs (sitemap + link crawling)
+npx webpeel map https://example.com --max-urls 5000
+```
+
+```typescript
+import { crawl, mapDomain } from 'webpeel';
+
+// Crawl with progress tracking
+const pages = await crawl('https://docs.example.com', {
+  limit: 100,
+  maxDepth: 3,
+  onProgress: (progress) => {
+    console.log(`${progress.completed}/${progress.total} pages`);
+  },
+});
+
+// Discover all URLs
+const urls = await mapDomain('https://example.com', { limit: 5000 });
+console.log(urls.map(u => u.url)); // Array of all discovered URLs
+```
+
+Respects `robots.txt`, honors crawl delays, and includes content deduplication.
+
+### 🔍 Search
+
+Search the web via DuckDuckGo with optional auto-scrape of results.
+
+```bash
+# CLI
+npx webpeel search "latest AI news"
+npx webpeel search "machine learning frameworks" --limit 20
+```
+
+```bash
+# API
+curl "https://api.webpeel.dev/v1/search?q=AI+frameworks&limit=10"
+```
+
+Supports time filters, categories (news, github, pdf), and geo-targeting.
+
+### 🤖 Autonomous Agent (BYOK)
+
+**v0.6.0**: Give WebPeel a prompt and let it research the web autonomously using your own LLM.
+
+```bash
+# CLI with any OpenAI-compatible LLM
+npx webpeel agent "Find the pricing plans for Notion" --llm-key sk-...
+npx webpeel agent "Who are the founders of Stripe?" --llm-model gpt-4o
+```
+
+```typescript
+import { runAgent } from 'webpeel';
+
+const result = await runAgent({
+  prompt: 'Find the pricing plans for Notion',
+  llmApiKey: 'sk-...',           // OpenAI, Anthropic proxy, or local
+  llmModel: 'gpt-4o-mini',
+  maxIterations: 10,
+});
+
+console.log(result.answer);      // Compiled research answer
+console.log(result.sources);     // URLs used
+console.log(result.iterations);  // Research steps taken
+```
+
+**BYOK = Bring Your Own Key.** Works with OpenAI, Anthropic (via proxy), local models, or any OpenAI-compatible API.
+
+### 📊 Structured Extraction
+
+Extract structured data using CSS selectors or AI-powered extraction.
+
+```bash
+# CSS-based extraction
+npx webpeel https://example.com --extract '{"title": "h1", "price": ".price", "description": ".desc"}'
+```
+
+```typescript
+import { peel } from 'webpeel';
+
+// CSS selectors
+const result = await peel('https://example.com', {
+  extract: {
+    selectors: {
+      title: 'h1',
+      price: '.price',
+      description: '.desc',
+    },
+  },
+});
+console.log(result.extracted); // { title: '...', price: '...', ... }
+
+// AI-powered extraction (BYOK)
+const aiExtract = await peel('https://example.com', {
+  extract: {
+    prompt: 'Extract all product names and prices',
+    llmApiKey: 'sk-...',
+  },
+});
+console.log(aiExtract.extracted);
+```
+
+### 📸 Screenshots
+
+Capture full-page or viewport screenshots as base64 PNG.
+
+```bash
+# CLI
+npx webpeel https://example.com --screenshot
+npx webpeel https://example.com --screenshot --screenshot-full-page
+```
+
+```typescript
+const result = await peel('https://example.com', {
+  screenshot: true,
+  screenshotFullPage: true,
+});
+console.log(result.screenshot); // Base64 PNG string
+```
+
+### 🎨 Branding Extraction
+
+**v0.5.0**: Extract complete design systems from any website — colors, fonts, typography, spacing, CSS variables, logo, favicon.
+
+```bash
+# CLI
+npx webpeel brand https://stripe.com
+```
+
+```typescript
+import { extractBranding } from 'webpeel';
+
+const brand = await extractBranding('https://stripe.com');
+console.log(brand.colors);      // Primary, secondary, accent, etc.
+console.log(brand.fonts);       // Font families used
+console.log(brand.typography);  // Headings, body text styles
+console.log(brand.logo);        // Logo URL
+console.log(brand.favicon);     // Favicon URL
+console.log(brand.cssVariables); // CSS custom properties
+```
+
+Perfect for competitive analysis, design inspiration, or building style guides.
+
+### 🔄 Change Tracking
+
+**v0.5.0**: Track content changes over time with local snapshots and unified diff output.
+
+```bash
+# CLI
+npx webpeel track https://example.com/pricing
+```
+
+```typescript
+import { trackChange } from 'webpeel';
+
+const result = await trackChange('https://example.com/pricing');
+console.log(result.changeStatus); // 'new', 'same', 'changed', or 'removed'
+console.log(result.diff);         // Unified diff if changed
+console.log(result.previousSnapshot); // Previous content
+```
+
+Snapshots stored in `~/.webpeel/snapshots/` — fully local, no server needed.
+
+### 🎯 Token Budget
+
+Intelligently truncate output to fit within LLM context limits.
+
+```bash
+# CLI
+npx webpeel https://example.com --max-tokens 4000
+```
+
+```typescript
+const result = await peel('https://example.com', { maxTokens: 4000 });
+console.log(result.tokens); // Will be ≤ 4000
+```
+
+Uses tiktoken for accurate token estimation, preserves markdown structure while truncating.
+
+### 🏷️ Tag Filtering
+
+**v0.6.0**: Include/exclude specific HTML tags for fine-grained content control.
+
+```bash
+# CLI
+npx webpeel https://example.com --include-tags article,main,section
+npx webpeel https://example.com --exclude-tags nav,footer,aside
+npx webpeel https://example.com --only-main-content  # Shortcut for main content
+```
+
+```typescript
+const result = await peel('https://example.com', {
+  includeTags: ['article', 'main'],
+  excludeTags: ['nav', 'footer'],
+});
+```
+
+Removes navigation, footers, sidebars, cookie banners — **saves ~96% tokens** on typical pages.
+
+### 🖼️ Images Extraction
+
+**v0.6.0**: Extract all images with URLs, alt text, dimensions, and deduplication.
+
+```bash
+# CLI
+npx webpeel https://example.com --images
+```
+
+```typescript
+const result = await peel('https://example.com', { images: true });
+console.log(result.images);
+// [
+//   { src: 'https://...', alt: '...', width: 800, height: 600 },
+//   ...
+// ]
+```
+
+### 💭 AI Summarization
+
+**v0.6.0**: Generate concise summaries using your own LLM.
+
+```bash
+# CLI
+npx webpeel https://example.com --summary --llm-key sk-...
+```
+
+```typescript
+import { summarizeContent } from 'webpeel';
+
+const summary = await summarizeContent('...long content...', {
+  apiKey: 'sk-...',
+  model: 'gpt-4o-mini',
+  maxWords: 150,
+});
+console.log(summary);
+```
+
+### 🌍 Location & Language
+
+**v0.6.0**: Geo-targeted scraping with location and language preferences.
+
+```bash
+# CLI
+npx webpeel https://example.com --location US --language en
+```
+
+```typescript
+const result = await peel('https://example.com', {
+  location: 'US',
+  language: 'en',
+});
+```
+
+Useful for location-specific content, regional pricing, and localized pages.
+
+### 🔥 Firecrawl Compatibility
+
+**v0.7.0**: Drop-in replacement for Firecrawl — same API endpoints, same request/response format.
+
+```bash
+# Just change the base URL
+# Before: https://api.firecrawl.dev/v1/scrape
+# After:  https://api.webpeel.dev/v1/scrape
+
+curl "https://api.webpeel.dev/v1/scrape" \
+  -H "Authorization: Bearer wp_..." \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
+```
+
+WebPeel accepts Firecrawl API keys (format: `fc-...`) and maps them to equivalent features. **Migration takes 5 minutes.**
+
+---
+
+## Integrations
+
+### LangChain
+
+```typescript
+import { WebPeelLoader } from 'webpeel/integrations/langchain';
+
+const loader = new WebPeelLoader('https://example.com', {
+  render: true,
+  stealth: true,
+});
+const docs = await loader.load();
+```
+
+### LlamaIndex
+
+```typescript
+import { WebPeelReader } from 'webpeel/integrations/llamaindex';
+
+const reader = new WebPeelReader({ render: true });
+const documents = await reader.loadData(['https://example.com']);
+```
+
+### CrewAI
+
+```python
+from webpeel import WebPeel
+from crewai import Agent, Task, Crew
+
+webpeel = WebPeel()
+
+researcher = Agent(
+    role='Web Researcher',
+    goal='Gather information from websites',
+    tools=[webpeel.scrape, webpeel.search],
+)
+```
+
+### Dify
+
+WebPeel MCP server works with Dify's MCP integration out of the box.
+
+### n8n
+
+Use the HTTP Request node with WebPeel's API:
+
+```
+GET https://api.webpeel.dev/v1/fetch?url={{$node["Trigger"].json["url"]}}
+```
+
+### Claude Code Skill
+
+Install the WebPeel skill for OpenClaw:
 
 ```bash
 claude mcp add webpeel -- npx -y webpeel mcp
 ```
 
-Or add to your project's `.mcp.json` for team sharing:
+Or add to `.mcp.json` for team sharing:
 
 ```json
 {
@@ -285,14 +613,6 @@ Or add to your project's `.mcp.json` for team sharing:
   }
 }
 ```
-
-This gives Claude Code access to:
-- **webpeel_fetch** — Fetch any URL as clean markdown (with stealth mode, actions, extraction & token budget)
-- **webpeel_search** — Search the web via DuckDuckGo
-- **webpeel_batch** — Fetch multiple URLs concurrently
-- **webpeel_crawl** — Crawl websites following links (with sitemap-first & deduplication)
-- **webpeel_map** — Discover all URLs on a domain via sitemap.xml & link crawling
-- **webpeel_extract** — Extract structured data using CSS selectors or JSON schema
 
 ---
 
@@ -334,66 +654,181 @@ Fetch and extract content from a URL.
 
 ```typescript
 interface PeelOptions {
-  render?: boolean;        // Force browser mode (default: false)
-  wait?: number;           // Wait time after page load in ms (default: 0)
-  format?: 'markdown' | 'text' | 'html';  // Output format (default: 'markdown')
-  timeout?: number;        // Request timeout in ms (default: 30000)
-  userAgent?: string;      // Custom user agent
+  render?: boolean;              // Force browser mode (default: false)
+  stealth?: boolean;             // Use stealth mode (default: false)
+  wait?: number;                 // Wait time after page load in ms
+  format?: 'markdown' | 'text' | 'html'; // Output format
+  timeout?: number;              // Request timeout in ms
+  screenshot?: boolean;          // Capture screenshot
+  screenshotFullPage?: boolean;  // Full-page screenshot
+  selector?: string;             // CSS selector for content
+  exclude?: string;              // CSS selector to exclude
+  includeTags?: string[];        // HTML tags to include
+  excludeTags?: string[];        // HTML tags to exclude
+  maxTokens?: number;            // Max tokens in output
+  images?: boolean;              // Extract image URLs
+  location?: string;             // Geo-location (country code)
+  language?: string;             // Preferred language
+  branding?: boolean;            // Extract branding/design
+  changeTracking?: boolean;      // Track content changes
+  summary?: boolean | { maxLength: number }; // AI summary
+  llm?: {                        // LLM config for AI features
+    apiKey: string;
+    model?: string;
+    baseUrl?: string;
+  };
+  extract?: {                    // Structured extraction
+    selectors?: Record<string, string>;
+    schema?: object;
+    prompt?: string;
+    llmApiKey?: string;
+  };
+  actions?: Array<{              // Browser actions
+    type: 'click' | 'type' | 'scroll' | 'wait' | 'fill' | 'select' | 'press' | 'hover';
+    selector?: string;
+    value?: string | number;
+  }>;
 }
 
 interface PeelResult {
-  url: string;             // Final URL (after redirects)
-  title: string;           // Page title
-  content: string;         // Page content in requested format
-  metadata: {              // Extracted metadata
+  url: string;                   // Final URL (after redirects)
+  title: string;                 // Page title
+  content: string;               // Page content (markdown/text/html)
+  metadata: {                    // Extracted metadata
     description?: string;
     author?: string;
-    published?: string;    // ISO 8601 date
-    image?: string;        // Open Graph image
+    published?: string;          // ISO 8601 date
+    image?: string;              // Open Graph image
     canonical?: string;
   };
-  links: string[];         // All links on page (absolute URLs)
-  tokens: number;          // Estimated token count
-  method: 'simple' | 'browser';  // Method used
-  elapsed: number;         // Time taken (ms)
+  links: string[];               // All links on page
+  tokens: number;                // Estimated token count
+  method: 'simple' | 'browser' | 'stealth'; // Method used
+  elapsed: number;               // Time taken (ms)
+  quality: number;               // Content quality score (0-1)
+  fingerprint: string;           // Content hash (16 chars)
+  screenshot?: string;           // Base64 PNG (if requested)
+  extracted?: Record<string, any>; // Structured data
+  branding?: BrandingProfile;    // Branding info
+  changeTracking?: ChangeResult; // Change tracking
+  summary?: string;              // AI summary
+  images?: ImageInfo[];          // Extracted images
 }
 ```
 
-### Error Types
+### `crawl(url, options?)`
+
+Crawl a website by following links.
 
 ```typescript
-import { TimeoutError, BlockedError, NetworkError } from 'webpeel';
+import { crawl } from 'webpeel';
 
-try {
-  const result = await peel('https://example.com');
-} catch (error) {
-  if (error instanceof TimeoutError) {
-    // Request timed out
-  } else if (error instanceof BlockedError) {
-    // Site blocked the request (403, Cloudflare, etc.)
-  } else if (error instanceof NetworkError) {
-    // Network/DNS error
-  }
-}
+const pages = await crawl('https://docs.example.com', {
+  limit: 100,                    // Max pages to crawl
+  maxDepth: 3,                   // Max link depth
+  allowedDomains: ['example.com'], // Restrict to domains
+  excludePaths: ['/admin'],      // Exclude URL patterns
+  sitemapFirst: true,            // Parse sitemap before crawling
+  onProgress: (progress) => {
+    console.log(`${progress.completed}/${progress.total} pages`);
+  },
+});
+```
+
+### `mapDomain(url, options?)`
+
+Discover all URLs on a domain via sitemap.xml and link crawling.
+
+```typescript
+import { mapDomain } from 'webpeel';
+
+const urls = await mapDomain('https://example.com', {
+  limit: 5000,                   // Max URLs to discover
+  searchTerm: 'pricing',         // Filter by relevance (optional)
+});
+
+console.log(urls.map(u => u.url)); // Array of discovered URLs
+```
+
+### `extractBranding(url)`
+
+Extract branding and design system from a website.
+
+```typescript
+import { extractBranding } from 'webpeel';
+
+const brand = await extractBranding('https://stripe.com');
+
+console.log(brand.colors);       // Primary, secondary, etc.
+console.log(brand.fonts);        // Font families
+console.log(brand.typography);   // Heading/body styles
+console.log(brand.logo);         // Logo URL
+console.log(brand.favicon);      // Favicon URL
+```
+
+### `trackChange(url, content?, fingerprint?)`
+
+Track content changes over time.
+
+```typescript
+import { trackChange } from 'webpeel';
+
+const result = await trackChange('https://example.com/pricing');
+
+console.log(result.changeStatus); // 'new' | 'same' | 'changed' | 'removed'
+console.log(result.diff);         // Unified diff (if changed)
+```
+
+### `runAgent(options)`
+
+Autonomous web research using your own LLM.
+
+```typescript
+import { runAgent } from 'webpeel';
+
+const result = await runAgent({
+  prompt: 'Find the pricing plans for Notion',
+  llmApiKey: 'sk-...',
+  llmModel: 'gpt-4o-mini',
+  maxIterations: 10,
+});
+
+console.log(result.answer);      // Compiled answer
+console.log(result.sources);     // URLs used
+console.log(result.iterations);  // Research steps
+```
+
+### `summarizeContent(content, options)`
+
+Generate AI-powered summary.
+
+```typescript
+import { summarizeContent } from 'webpeel';
+
+const summary = await summarizeContent('...long content...', {
+  apiKey: 'sk-...',
+  model: 'gpt-4o-mini',
+  maxWords: 150,
+});
 ```
 
 ### `cleanup()`
 
-Clean up browser resources. Call this when you're done using WebPeel in your application:
+Clean up browser resources. Call when done using WebPeel:
 
 ```typescript
-import { peel, cleanup } from 'webpeel';
+import { cleanup } from 'webpeel';
 
-// ... use peel() ...
+// ... use peel(), crawl(), etc. ...
 
-await cleanup();  // Close browser instances
+await cleanup(); // Close browser instances
 ```
 
 ---
 
 ## Hosted API
 
-Live at `https://api.webpeel.dev` — authentication required after first 25 fetches.
+Live at `https://api.webpeel.dev` — Firecrawl-compatible endpoints.
 
 ```bash
 # Register and get your API key
@@ -403,7 +838,23 @@ curl -X POST https://api.webpeel.dev/v1/auth/register \
 
 # Fetch a page
 curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
-  -H "Authorization: Bearer wp_live_your_api_key"
+  -H "Authorization: Bearer wp_..."
+
+# Search the web
+curl "https://api.webpeel.dev/v1/search?q=AI+frameworks" \
+  -H "Authorization: Bearer wp_..."
+
+# Start a crawl job (async)
+curl -X POST https://api.webpeel.dev/v1/crawl \
+  -H "Authorization: Bearer wp_..." \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://docs.example.com","limit":100}'
+
+# Autonomous agent
+curl -X POST https://api.webpeel.dev/v1/agent \
+  -H "Authorization: Bearer wp_..." \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Find Notion pricing","llmApiKey":"sk-..."}'
 ```
 
 ### Pricing — Weekly Reset Model
@@ -416,17 +867,12 @@ Usage resets every **Monday at 00:00 UTC**, just like Claude Code.
 | **Pro** | $9/mo | 1,250/wk (~5K/mo) | 100/hr | ✅ | ✅ |
 | **Max** | $29/mo | 6,250/wk (~25K/mo) | 500/hr | ✅ | ✅ |
 
-**Three layers of usage control:**
-1. **Burst limit** — Per-hour cap (25/hr free, 100/hr Pro, 500/hr Max) prevents hammering
-2. **Weekly limit** — Main usage gate, resets every Monday
-3. **Extra usage** — When you hit your weekly limit, keep fetching at pay-as-you-go rates
+**All features on all plans** — including stealth mode, crawl, agent, extraction, and more.
 
-**Extra usage rates (Pro/Max only):**
-| Fetch Type | Cost |
-|-----------|------|
-| Basic (HTTP) | $0.002 |
-| Stealth (browser) | $0.01 |
-| Search | $0.001 |
+**Extra usage rates** (Pro/Max only when you exceed weekly limit):
+- Basic fetch: $0.002
+- Stealth mode: $0.01
+- Search: $0.001
 
 ### Why WebPeel Beats Firecrawl
 
@@ -440,14 +886,11 @@ Usage resets every **Monday at 00:00 UTC**, just like Claude Code.
 | **Self-Host** | ✅ MIT | ✅ MIT | ❌ AGPL |
 
 **Key differentiators:**
-- **Like Claude Code** — Generous free tier (125/week), pay when you need more
-- **Weekly resets** — Your usage refreshes every Monday, not once a month
-- **Soft limits on every tier** — At 100%, we degrade gracefully instead of blocking you
-- **Extra usage** — Pro/Max users can toggle on pay-as-you-go with spending caps (no surprise bills)
-- **First 25 free** — Try it instantly, no signup required
-- **Open source** — MIT licensed, self-host if you want full control
-
-See pricing at [webpeel.dev](https://webpeel.dev/#pricing)
+- **Generous free tier** — 125/week recurring (not one-time like Firecrawl)
+- **Firecrawl-compatible** — Drop-in replacement, migration takes 5 minutes
+- **MIT license** — Self-host without restrictions
+- **BYOK agent** — Use any LLM (OpenAI, Anthropic, local models)
+- **Weekly resets** — Like Claude Code, not monthly lockouts
 
 ---
 
@@ -494,17 +937,49 @@ const result = await peel('https://x.com/elonmusk', {
 console.log(result.content);  // Rendered tweet content
 ```
 
-### Token counting for LLM usage
+### Batch processing with concurrency
 
 ```typescript
-const result = await peel('https://example.com/long-article');
+import { peelBatch } from 'webpeel';
 
-console.log(`Content is ~${result.tokens} tokens`);
-// Content is ~3,247 tokens
+const urls = [
+  'https://example.com',
+  'https://example.org',
+  'https://example.net',
+];
 
-if (result.tokens > 4000) {
-  console.log('Too long for GPT-3.5 context window');
-}
+const results = await peelBatch(urls, { concurrency: 3 });
+
+results.forEach(result => {
+  if ('error' in result) {
+    console.error(`Failed: ${result.url} - ${result.error}`);
+  } else {
+    console.log(`Success: ${result.title}`);
+  }
+});
+```
+
+### Autonomous research
+
+```typescript
+import { runAgent } from 'webpeel';
+
+const result = await runAgent({
+  prompt: 'Compare the pricing of Notion, Coda, and Airtable',
+  llmApiKey: 'sk-...',
+  llmModel: 'gpt-4o',
+  maxIterations: 15,
+});
+
+console.log(result.answer);
+// "Based on my research:
+//  - Notion: Free, Plus ($10/mo), Business ($18/mo), Enterprise (custom)
+//  - Coda: Free, Pro ($12/mo), Team ($36/user/mo), Enterprise (custom)
+//  - Airtable: Free, Plus ($10/mo), Pro ($20/mo), Enterprise (custom)
+//  ..."
+
+console.log(result.sources);
+// ["https://notion.so/pricing", "https://coda.io/pricing", ...]
 ```
 
 ---
@@ -513,9 +988,11 @@ if (result.tokens > 4000) {
 
 - **AI Agents**: Feed web content to Claude, GPT, or local LLMs
 - **Research**: Bulk extract articles, docs, or social media
-- **Monitoring**: Track content changes on websites
-- **Archiving**: Save web pages as clean markdown
+- **Monitoring**: Track content changes on pricing pages, docs, etc.
+- **Competitive Analysis**: Extract branding, design systems, and structured data
 - **Data Pipelines**: Extract structured data from web sources
+- **Archiving**: Save web pages as clean markdown
+- **RAG Pipelines**: Load web content into LangChain, LlamaIndex, etc.
 
 ---
 
@@ -543,46 +1020,35 @@ node dist/cli.js https://example.com
 
 # Test the MCP server
 npm run mcp
+
+# Start API server
+npm run serve
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## Roadmap
+## Links
 
-- [x] CLI with smart escalation
-- [x] TypeScript library
-- [x] MCP server for Claude/Cursor/VS Code
-- [x] Hosted API with authentication and usage tracking
-- [x] Rate limiting and caching
-- [x] Batch processing API (`batch <file>`)
-- [x] Screenshot capture (`--screenshot`)
-- [x] CSS selector filtering (`--selector`, `--exclude`)
-- [x] DuckDuckGo search (`search <query>`)
-- [x] Custom headers and cookies
-- [x] Weekly reset usage model with extra usage
-- [x] Stealth mode (playwright-extra + anti-detect)
-- [x] Crawl mode (follow links, respect robots.txt)
-- [x] PDF extraction (v0.4.0)
-- [x] Structured data extraction with CSS selectors and JSON schema (v0.4.0)
-- [x] Page actions: click, scroll, type, fill, select, press, hover (v0.4.0)
-- [x] Map/sitemap discovery for full site URL mapping (v0.4.0)
-- [x] Token budget for output truncation (v0.4.0)
-- [x] Advanced crawl: sitemap-first, BFS/DFS, content deduplication (v0.4.0)
-- [ ] Webhook notifications for monitoring
-
-Vote on features and roadmap at [GitHub Discussions](https://github.com/JakeLiuMe/webpeel/discussions).
+- **Documentation**: [webpeel.dev/docs](https://webpeel.dev/docs)
+- **Playground**: [webpeel.dev/playground](https://webpeel.dev/playground) (no signup required)
+- **API Reference**: [api.webpeel.dev](https://api.webpeel.dev)
+- **npm Package**: [npmjs.com/package/webpeel](https://www.npmjs.com/package/webpeel)
+- **Python SDK**: [pypi.org/project/webpeel](https://pypi.org/project/webpeel/)
+- **Migration Guide**: [webpeel.dev/migrate-from-firecrawl](https://webpeel.dev/migrate-from-firecrawl)
+- **Blog**: [webpeel.dev/blog](https://webpeel.dev/blog)
+- **GitHub Discussions**: [github.com/JakeLiuMe/webpeel/discussions](https://github.com/JakeLiuMe/webpeel/discussions)
 
 ---
 
 ## FAQ
 
 **Q: How is this different from Firecrawl?**  
-A: WebPeel has a more generous free tier (125/week vs Firecrawl's 500 one-time credits) and uses weekly resets like Claude Code. We also have smart escalation to avoid burning resources on simple pages.
+A: WebPeel is Firecrawl-compatible but with a more generous free tier (125/week recurring vs 500 one-time), MIT license (vs AGPL), and autonomous agent with BYOK LLM. We also have smart escalation to avoid burning resources on simple pages.
 
 **Q: Can I self-host the API server?**  
-A: Yes! Run `npm run serve` to start the API server. See [docs/self-hosting.md](docs/self-hosting.md) (coming soon).
+A: Yes! Run `docker compose up` to start the full stack. It's MIT licensed — no restrictions.
 
 **Q: Does this violate websites' Terms of Service?**  
 A: WebPeel is a tool — how you use it is up to you. Always check a site's ToS before fetching at scale. We recommend respecting `robots.txt` in your own workflows.
@@ -593,12 +1059,48 @@ A: WebPeel handles most Cloudflare challenges automatically via stealth mode (av
 **Q: Can I use this in production?**  
 A: Yes! The hosted API at `https://api.webpeel.dev` is production-ready with authentication, rate limiting, and usage tracking.
 
+**Q: Is this really Firecrawl-compatible?**  
+A: Yes! WebPeel accepts Firecrawl API keys (format: `fc-...`) and supports the same endpoints (`/v1/scrape`, `/v1/crawl`, etc.) with equivalent request/response formats. Migration typically takes 5 minutes.
+
+---
+
+## Roadmap
+
+- [x] CLI with smart escalation
+- [x] TypeScript library
+- [x] MCP server (9 tools)
+- [x] Hosted API with auth and usage tracking
+- [x] Stealth mode (playwright-extra + anti-detect)
+- [x] Crawl mode (follow links, respect robots.txt)
+- [x] PDF extraction
+- [x] Structured data extraction (CSS selectors + AI)
+- [x] Page actions (click, scroll, type, etc.)
+- [x] Map/sitemap discovery
+- [x] Token budget
+- [x] Advanced crawl (sitemap-first, BFS/DFS, deduplication)
+- [x] Branding extraction
+- [x] Change tracking
+- [x] Python SDK (zero dependencies)
+- [x] LangChain & LlamaIndex integrations
+- [x] Autonomous agent (BYOK LLM)
+- [x] Tag filtering (include/exclude)
+- [x] Images extraction
+- [x] AI summarization
+- [x] Location/language support
+- [x] Firecrawl compatibility
+- [ ] Webhook notifications for monitoring
+- [ ] Browser extension for one-click extraction
+- [ ] GraphQL API
+
+Vote on features at [GitHub Discussions](https://github.com/JakeLiuMe/webpeel/discussions).
+
 ---
 
 ## Credits
 
 Built with:
 - [Playwright](https://playwright.dev/) — Headless browser automation
+- [playwright-extra](https://github.com/berstend/puppeteer-extra/tree/master/packages/playwright-extra) — Stealth plugin
 - [Cheerio](https://cheerio.js.org/) — Fast HTML parsing
 - [Turndown](https://github.com/mixmark-io/turndown) — HTML to Markdown conversion
 - [Commander](https://github.com/tj/commander.js) — CLI framework

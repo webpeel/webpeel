@@ -1,10 +1,12 @@
 /**
- * In-memory job queue for async operations
+ * Job queue for async operations
  * 
- * Tracks crawl, batch scrape, and extraction jobs with progress updates
+ * Factory creates PostgreSQL-backed queue in production or in-memory queue for local dev.
+ * Tracks crawl, batch scrape, and extraction jobs with progress updates.
  */
 
 import { randomUUID } from 'crypto';
+import { PostgresJobQueue } from './pg-job-queue.js';
 
 export interface WebhookConfig {
   url: string;
@@ -29,7 +31,22 @@ export interface Job {
   expiresAt: string; // 24h after completion
 }
 
-export class JobQueue {
+/**
+ * Job queue interface - implemented by both in-memory and PostgreSQL queues
+ */
+export interface IJobQueue {
+  createJob(type: Job['type'], webhook?: WebhookConfig): Job | Promise<Job>;
+  getJob(id: string): Job | null | Promise<Job | null>;
+  updateJob(id: string, update: Partial<Job>): void | Promise<void>;
+  cancelJob(id: string): boolean | Promise<boolean>;
+  listJobs(options?: { type?: string; status?: string; limit?: number }): Job[] | Promise<Job[]>;
+  destroy(): void;
+}
+
+/**
+ * In-memory job queue for local development
+ */
+export class InMemoryJobQueue implements IJobQueue {
   private jobs: Map<string, Job> = new Map();
   private cleanupInterval: NodeJS.Timeout;
 
@@ -163,5 +180,21 @@ export class JobQueue {
   }
 }
 
-// Global job queue instance
-export const jobQueue = new JobQueue();
+/**
+ * Create job queue based on environment
+ * - Uses PostgreSQL if DATABASE_URL is set
+ * - Falls back to in-memory for local development
+ */
+export function createJobQueue(): IJobQueue {
+  if (process.env.DATABASE_URL) {
+    console.log('Using PostgreSQL job queue');
+    return new PostgresJobQueue();
+  } else {
+    console.log('Using in-memory job queue');
+    return new InMemoryJobQueue();
+  }
+}
+
+// Legacy global instance for backwards compatibility (deprecated)
+// @deprecated Use createJobQueue() instead
+export const jobQueue = new InMemoryJobQueue();

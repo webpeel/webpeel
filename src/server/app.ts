@@ -26,6 +26,7 @@ import { createCLIUsageRouter } from './routes/cli-usage.js';
 import { createJobsRouter } from './routes/jobs.js';
 import { createBatchRouter } from './routes/batch.js';
 import { createAgentRouter } from './routes/agent.js';
+import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
 
 export interface ServerConfig {
@@ -73,6 +74,9 @@ export function createApp(config: ServerConfig = {}): Express {
 
   console.log(`Using ${usePostgres ? 'PostgreSQL' : 'in-memory'} auth store`);
 
+  // Job queue - Use PostgreSQL if DATABASE_URL is set, otherwise in-memory
+  const jobQueue = createJobQueue();
+
   // Rate limiter
   const rateLimiter = new RateLimiter(config.rateLimitWindowMs || 60000);
 
@@ -90,7 +94,7 @@ export function createApp(config: ServerConfig = {}): Express {
 
   // Apply rate limiting middleware globally
   app.use(createRateLimitMiddleware(rateLimiter));
-  app.use(createCompatRouter());
+  app.use(createCompatRouter(jobQueue));
   app.use(createFetchRouter(authStore));
   app.use(createSearchRouter(authStore));
   app.use(createUserRouter());
@@ -98,8 +102,8 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createStatsRouter(authStore));
   app.use(createActivityRouter(authStore));
   app.use(createCLIUsageRouter());
-  app.use(createJobsRouter());
-  app.use(createBatchRouter());
+  app.use(createJobsRouter(jobQueue));
+  app.use(createBatchRouter(jobQueue));
   app.use(createAgentRouter());
 
   // 404 handler

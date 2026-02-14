@@ -3,9 +3,8 @@
  */
 import { Router } from 'express';
 import { peel } from '../../index.js';
-import { jobQueue } from '../job-queue.js';
 import { sendWebhook } from './webhooks.js';
-export function createBatchRouter() {
+export function createBatchRouter(jobQueue) {
     const router = Router();
     /**
      * POST /v1/batch/scrape - Submit batch of URLs
@@ -50,8 +49,8 @@ export function createBatchRouter() {
                 }
             }
             // Create job
-            const job = jobQueue.createJob('batch', webhook);
-            jobQueue.updateJob(job.id, {
+            const job = await jobQueue.createJob('batch', webhook);
+            await jobQueue.updateJob(job.id, {
                 total: urls.length,
             });
             // Start batch processing in background
@@ -80,7 +79,7 @@ export function createBatchRouter() {
                     const processBatch = async () => {
                         while (urlIndex < urls.length) {
                             // Check if job was cancelled
-                            const currentJob = jobQueue.getJob(job.id);
+                            const currentJob = await jobQueue.getJob(job.id);
                             if (currentJob?.status === 'cancelled') {
                                 return;
                             }
@@ -184,10 +183,10 @@ export function createBatchRouter() {
     /**
      * GET /v1/batch/scrape/:id - Get batch scrape status + results
      */
-    router.get('/v1/batch/scrape/:id', (req, res) => {
+    router.get('/v1/batch/scrape/:id', async (req, res) => {
         try {
             const id = req.params.id;
-            const job = jobQueue.getJob(id);
+            const job = await jobQueue.getJob(id);
             if (!job) {
                 res.status(404).json({
                     error: 'not_found',
@@ -225,10 +224,10 @@ export function createBatchRouter() {
     /**
      * DELETE /v1/batch/scrape/:id - Cancel batch scrape job
      */
-    router.delete('/v1/batch/scrape/:id', (req, res) => {
+    router.delete('/v1/batch/scrape/:id', async (req, res) => {
         try {
             const id = req.params.id;
-            const job = jobQueue.getJob(id);
+            const job = await jobQueue.getJob(id);
             if (!job) {
                 res.status(404).json({
                     error: 'not_found',
@@ -243,7 +242,7 @@ export function createBatchRouter() {
                 });
                 return;
             }
-            const cancelled = jobQueue.cancelJob(id);
+            const cancelled = await jobQueue.cancelJob(id);
             if (!cancelled) {
                 res.status(400).json({
                     error: 'invalid_request',

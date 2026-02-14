@@ -3,9 +3,8 @@
  */
 import { Router } from 'express';
 import { crawl } from '../../index.js';
-import { jobQueue } from '../job-queue.js';
 import { sendWebhook } from './webhooks.js';
-export function createJobsRouter() {
+export function createJobsRouter(jobQueue) {
     const router = Router();
     /**
      * POST /v1/crawl - Start async crawl job
@@ -33,7 +32,7 @@ export function createJobsRouter() {
                 return;
             }
             // Create job
-            const job = jobQueue.createJob('crawl', webhook);
+            const job = await jobQueue.createJob('crawl', webhook);
             // Start crawl in background
             setImmediate(async () => {
                 try {
@@ -127,10 +126,10 @@ export function createJobsRouter() {
     /**
      * GET /v1/crawl/:id - Get crawl job status + results (with SSE support)
      */
-    router.get('/v1/crawl/:id', (req, res) => {
+    router.get('/v1/crawl/:id', async (req, res) => {
         try {
             const id = req.params.id;
-            const job = jobQueue.getJob(id);
+            const job = await jobQueue.getJob(id);
             if (!job) {
                 res.status(404).json({
                     error: 'not_found',
@@ -155,8 +154,8 @@ export function createJobsRouter() {
                     ...job,
                 });
                 // Poll for updates every second
-                const interval = setInterval(() => {
-                    const updatedJob = jobQueue.getJob(id);
+                const interval = setInterval(async () => {
+                    const updatedJob = await jobQueue.getJob(id);
                     if (!updatedJob) {
                         clearInterval(interval);
                         res.end();
@@ -203,10 +202,10 @@ export function createJobsRouter() {
     /**
      * DELETE /v1/crawl/:id - Cancel crawl job
      */
-    router.delete('/v1/crawl/:id', (req, res) => {
+    router.delete('/v1/crawl/:id', async (req, res) => {
         try {
             const id = req.params.id;
-            const cancelled = jobQueue.cancelJob(id);
+            const cancelled = await jobQueue.cancelJob(id);
             if (!cancelled) {
                 res.status(404).json({
                     error: 'not_found',
@@ -230,10 +229,10 @@ export function createJobsRouter() {
     /**
      * GET /v1/jobs - List all jobs
      */
-    router.get('/v1/jobs', (req, res) => {
+    router.get('/v1/jobs', async (req, res) => {
         try {
             const { type, status, limit } = req.query;
-            const jobs = jobQueue.listJobs({
+            const jobs = await jobQueue.listJobs({
                 type: type,
                 status: status,
                 limit: limit ? parseInt(limit, 10) : 50,

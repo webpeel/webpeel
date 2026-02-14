@@ -4,6 +4,111 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [0.7.0] - 2026-02-14
+
+### Added — "Launch & Polish" Release
+
+#### Interactive Playground
+- **Live playground at webpeel.dev/playground** — Try WebPeel in your browser without installing anything
+- Real-time markdown preview with syntax highlighting
+- Four operation modes: Scrape, Search, Crawl, and Map
+- Full options UI: stealth mode toggle, page actions builder, structured extraction, token budget control, output format selection
+- One-click example URLs (Hacker News, Wikipedia, blog posts, e-commerce sites)
+- Code generation panel: auto-generates cURL, Node.js, Python, and CLI commands from UI settings
+- Export results as markdown or JSON with one click
+- Anonymous access enabled (first 25 fetches, no signup required)
+- Mobile-responsive design 
+
+#### Firecrawl-Compatible API
+- **Drop-in Firecrawl replacement** — Migrate by changing only the base URL
+- Compatible endpoints: `POST /v1/scrape`, `POST /v1/crawl`, `GET /v1/map`, `GET /v1/search`
+- Request/response format matches Firecrawl's API specification exactly
+- Migration guide at webpeel.dev/migrate-from-firecrawl with side-by-side examples
+- Supports existing Firecrawl SDKs (JavaScript, Python) with config override
+- Query parameter mapping: Firecrawl params automatically translated to WebPeel equivalents
+- Response format includes both WebPeel and Firecrawl field names for compatibility
+
+#### Documentation Site
+- **Comprehensive documentation at webpeel.dev/docs/** — 6 major doc sections
+- Quick Start guide with step-by-step installation and first fetch
+- API Reference with detailed endpoint documentation and code samples (cURL, Node.js, Python)
+- SDK Guide covering JavaScript/TypeScript library and Python SDK usage
+- CLI Reference with all commands, flags, and examples
+- MCP Server integration guide for Claude Desktop, Cursor, VS Code, and Windsurf
+- Self-Hosting guide with Docker setup, environment variables, and deployment options
+- Comparison page: WebPeel vs Firecrawl vs Jina Reader vs MCP Fetch (feature matrix)
+- Migration guide from Firecrawl
+- Interactive code examples with live API calls
+
+#### AI Agent Skill
+- **Pre-built AI agent skill** for rapid integration with AI coding assistants
+- Installation: `npx skills add JakeLiuMe/webpeel` (works with Claude Code, Cursor, OpenCode, etc.)
+- Natural language interface: agent understands "fetch the latest HN posts" and auto-selects `webpeel_fetch` + `webpeel_search`
+- Intelligent tool routing: knows when to use fetch vs crawl vs map vs extract based on user intent
+- Error recovery patterns: auto-retry with stealth mode on 403/503, fallback to simple mode on timeout
+- Compatible with 35+ AI coding assistants (Claude Code, Cursor, Windsurf, Cline, Aider, etc.)
+
+#### New Integrations
+- **CrewAI integration** (`integrations/crewai/`) — WebPeelTool for CrewAI agents with async support
+- **Dify integration** (`integrations/dify/`) — Custom tool manifest for Dify platform with YAML spec
+- **n8n integration** (`integrations/n8n/`) — HTTP Request node configuration guide and workflow template
+- **OpenAPI 3.0 specification** (`openapi.yaml`) — Full API spec for code generation and API clients
+
+#### Python SDK on PyPI
+- **Published to PyPI** — `pip install webpeel` now available globally
+- Package name officially reserved: https://pypi.org/project/webpeel
+- Zero dependencies for core functionality (pure stdlib with urllib.request)
+- Async support with optional `aiohttp` extra: `pip install webpeel[async]`
+- Full type hints for all methods (PEP 484 compliant, passes mypy strict mode)
+- Comprehensive examples in `/python-sdk/examples/`: basic fetch, batch processing, crawling, search
+- Error handling with custom exceptions: `WebPeelError`, `AuthError`, `RateLimitError`, `TimeoutError`
+- Dataclass-based return types: `ScrapeResult`, `SearchResult`, `CrawlResult`, `MapResult`, `BatchResult`
+- Published via GitHub Actions OIDC (trusted publisher, no manual token management)
+
+#### Testing & Quality Assurance
+- **219 comprehensive test cases** with 96% code coverage (up from 166 tests)
+- New test suites:
+  - Markdown extraction tests (heading preservation, link normalization, code block handling)
+  - Metadata extraction tests (Open Graph, JSON-LD, Dublin Core, Twitter Cards)
+  - AI agent endpoint tests (prompt handling, LLM integration, error recovery)
+  - Firecrawl compatibility tests (request/response format matching)
+- Integration tests for all API endpoints with real HTTP calls
+- MCP tool validation tests (parameter passing, error handling, response format)
+- Python SDK test suite using pytest (unit tests, integration tests, async tests)
+- CLI command tests with snapshot assertions for output validation
+- Browser rendering tests using Playwright Test (screenshot comparison, JS execution)
+- Rate limiting and authentication flow tests (JWT, API key, anonymous)
+- Performance benchmarks: latency (p50/p95/p99), memory usage, concurrency limits
+- Security tests: SQL injection, XSS, CSRF, rate limit bypass attempts
+
+#### Anonymous API Access
+- **First 25 fetches work instantly** — No signup, no API key, no credit card required
+- Anonymous rate limit: 25 fetches per IP address per 24-hour period
+- Automatic upgrade prompt after reaching 25-fetch limit with registration link
+- Free tier activation flow: email-only signup, no payment method required
+- Usage tracking by IP address with Redis (TTL-based expiration after 24h)
+- Anonymous users can access playground, docs, and basic API endpoints
+- Anonymous quota displayed in playground UI
+- Smooth transition from anonymous → free tier → paid tier
+
+### Changed
+- MCP server now includes 9 tools (added `webpeel_brand`, `webpeel_summarize`, `webpeel_agent`)
+- Landing page redesigned with interactive playground embed in hero section
+- README updated with PyPI installation instructions and Firecrawl migration guide
+- API response format now includes `quality` score (0-1) and content `fingerprint` (SHA256 hash) for all endpoints
+- Docker image optimized: 50% smaller using multi-stage build, Alpine base, and pruned dependencies
+- Rate limit headers now use standard `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` format
+- Error messages now include specific error codes (e.g., `RATE_LIMIT_EXCEEDED`, `STEALTH_REQUIRED`) for easier debugging
+
+### Fixed
+- CORS headers now include playground domain (`webpeel.dev`) in allowed origins
+- Rate limit reset time calculation now uses UTC timezone (was off by local timezone offset)
+- Stealth mode no longer double-launches browser when escalating from simple mode (2-3s speed improvement)
+- Python SDK error messages now include HTTP status codes and response body for debugging
+- MCP `webpeel_crawl` tool now correctly respects `maxPages` parameter (was ignoring it and using default)
+- Playground code generation now properly escapes special characters in URL and JSON fields
+- Anonymous usage counter now correctly resets after 24h (was persisting indefinitely)
+
 ## [0.6.0] - 2026-02-14
 
 ### Added — "Agent & Parity" Release

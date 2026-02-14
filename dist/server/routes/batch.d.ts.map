@@ -1,1 +1,1 @@
-{"version":3,"file":"batch.d.ts","sourceRoot":"","sources":["../../../src/server/routes/batch.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,OAAO,EAAE,MAAM,EAAqB,MAAM,SAAS,CAAC;AAMpD,wBAAgB,iBAAiB,IAAI,MAAM,CA+R1C"}
+{"version":3,"file":"batch.d.ts","sourceRoot":"","sources":["../../../src/server/routes/batch.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,OAAO,EAAE,MAAM,EAAqB,MAAM,SAAS,CAAC;AAGpD,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,iBAAiB,CAAC;AAGjD,wBAAgB,iBAAiB,CAAC,QAAQ,EAAE,SAAS,GAAG,MAAM,CA+R7D"}
