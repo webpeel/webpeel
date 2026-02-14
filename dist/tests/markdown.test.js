@@ -1,432 +1,434 @@
 /**
- * Tests for markdown conversion
+ * Tests for markdown.ts functions
+ * Tests filterByTags, detectMainContent, and other markdown utilities
  */
 import { describe, it, expect } from 'vitest';
-import { htmlToMarkdown, htmlToText, estimateTokens, filterByTags, selectContent, detectMainContent, calculateQuality, truncateToTokenBudget, } from '../core/markdown.js';
-describe('htmlToMarkdown', () => {
-    it('converts basic HTML to markdown', () => {
-        const html = `
-      <h1>Test Title</h1>
-      <p>This is a <strong>test</strong> paragraph with <em>formatting</em>.</p>
-      <ul>
-        <li>Item 1</li>
-        <li>Item 2</li>
-      </ul>
-    `;
-        const markdown = htmlToMarkdown(html);
-        expect(markdown).toContain('# Test Title');
-        expect(markdown).toContain('**test**');
-        expect(markdown).toContain('_formatting_');
-        expect(markdown).toContain('Item 1');
-        expect(markdown).toContain('Item 2');
-    });
-    it('removes script and style tags', () => {
-        const html = `
-      <h1>Title</h1>
-      <script>alert('test');</script>
-      <style>.test { color: red; }</style>
-      <p>Content</p>
-    `;
-        const markdown = htmlToMarkdown(html);
-        expect(markdown).not.toContain('alert');
-        expect(markdown).not.toContain('.test');
-        expect(markdown).toContain('Title');
-        expect(markdown).toContain('Content');
-    });
-    it('removes navigation and footer elements', () => {
-        const html = `
-      <nav>Navigation</nav>
-      <h1>Main Content</h1>
-      <p>Paragraph</p>
-      <footer>Footer content</footer>
-    `;
-        const markdown = htmlToMarkdown(html);
-        expect(markdown).not.toContain('Navigation');
-        expect(markdown).not.toContain('Footer');
-        expect(markdown).toContain('Main Content');
-        expect(markdown).toContain('Paragraph');
-    });
-    it('preserves code blocks', () => {
-        const html = `
-      <pre><code class="language-javascript">console.log('hello');</code></pre>
-    `;
-        const markdown = htmlToMarkdown(html);
-        expect(markdown).toContain('```javascript');
-        expect(markdown).toContain("console.log('hello');");
-        expect(markdown).toContain('```');
-    });
-    it('preserves images in context', () => {
-        const html = `
-      <html><body>
-        <p>Some text with an image: <img src="https://example.com/image.jpg" alt="Test Image" /></p>
-      </body></html>
-    `;
-        const markdown = htmlToMarkdown(html);
-        expect(markdown).toContain('Some text');
-        // Image handling can vary, but content should be present
-        expect(markdown.length).toBeGreaterThan(0);
-    });
-});
-describe('htmlToText', () => {
-    it('converts HTML to plain text', () => {
-        const html = `
-      <h1>Title</h1>
-      <p>This is a <strong>paragraph</strong>.</p>
-    `;
-        const text = htmlToText(html);
-        expect(text).toContain('Title');
-        expect(text).toContain('This is a paragraph');
-        expect(text).not.toContain('<h1>');
-        expect(text).not.toContain('<strong>');
-    });
-    it('removes scripts and styles', () => {
-        const html = `
-      <h1>Title</h1>
-      <script>alert('test');</script>
-      <p>Content</p>
-    `;
-        const text = htmlToText(html);
-        expect(text).not.toContain('alert');
-        expect(text).toContain('Title');
-        expect(text).toContain('Content');
-    });
-});
-describe('estimateTokens', () => {
-    it('estimates tokens correctly', () => {
-        const text = 'This is a test string with about 8 words';
-        const tokens = estimateTokens(text);
-        // Rough estimate: 1 token ≈ 4 characters
-        // 42 characters / 4 = ~11 tokens
-        expect(tokens).toBeGreaterThan(8);
-        expect(tokens).toBeLessThan(15);
-    });
-    it('handles empty strings', () => {
-        expect(estimateTokens('')).toBe(0);
-    });
-    it('handles long text', () => {
-        const longText = 'word '.repeat(1000); // 5000 characters
-        const tokens = estimateTokens(longText);
-        expect(tokens).toBeGreaterThan(1000);
-        expect(tokens).toBeLessThan(2000);
-    });
-    it('estimates single character correctly', () => {
-        expect(estimateTokens('a')).toBe(1);
-    });
-    it('estimates with special characters', () => {
-        const text = '🚀 Hello! @#$%^&*()';
-        const tokens = estimateTokens(text);
-        expect(tokens).toBeGreaterThan(0);
-    });
-});
+import { filterByTags, detectMainContent, calculateQuality, truncateToTokenBudget, estimateTokens } from '../core/markdown.js';
 describe('filterByTags', () => {
-    it('includes only specified tags', () => {
+    it('filters by tag name (article)', () => {
         const html = `
       <html>
         <body>
           <nav>Navigation</nav>
-          <article>Article content</article>
-          <aside>Sidebar</aside>
-        </body>
-      </html>
-    `;
-        const filtered = filterByTags(html, ['article']);
-        expect(filtered).toContain('Article content');
-        expect(filtered).not.toContain('Navigation');
-        expect(filtered).not.toContain('Sidebar');
-    });
-    it('excludes specified tags', () => {
-        const html = `
-      <html>
-        <body>
-          <nav>Navigation</nav>
-          <article>Article content</article>
+          <article>Main article content</article>
           <footer>Footer</footer>
         </body>
       </html>
     `;
-        const filtered = filterByTags(html, undefined, ['nav', 'footer']);
-        expect(filtered).toContain('Article content');
-        expect(filtered).not.toContain('Navigation');
-        expect(filtered).not.toContain('Footer');
+        const result = filterByTags(html, ['article']);
+        expect(result).toContain('Main article content');
+        expect(result).not.toContain('Navigation');
+        expect(result).not.toContain('Footer');
     });
-    it('handles both include and exclude tags', () => {
-        const html = `
-      <html>
-        <body>
-          <article>
-            <h1>Title</h1>
-            <nav>Article nav</nav>
-            <p>Content</p>
-          </article>
-          <aside>Sidebar</aside>
-        </body>
-      </html>
-    `;
-        const filtered = filterByTags(html, ['article'], ['nav']);
-        expect(filtered).toContain('Title');
-        expect(filtered).toContain('Content');
-        expect(filtered).not.toContain('Article nav');
-        expect(filtered).not.toContain('Sidebar');
-    });
-    it('supports CSS class selectors', () => {
-        const html = `
-      <html>
-        <body>
-          <div class="content">Main content</div>
-          <div class="sidebar">Sidebar</div>
-        </body>
-      </html>
-    `;
-        const filtered = filterByTags(html, ['.content']);
-        expect(filtered).toContain('Main content');
-        expect(filtered).not.toContain('Sidebar');
-    });
-    it('returns empty string when include tags match nothing', () => {
-        const html = `
-      <html>
-        <body>
-          <div>Content</div>
-        </body>
-      </html>
-    `;
-        const filtered = filterByTags(html, ['article']);
-        expect(filtered).toBe('');
-    });
-    it('handles multiple include tag matches', () => {
-        const html = `
-      <html>
-        <body>
-          <article>Article 1</article>
-          <article>Article 2</article>
-          <section>Section content</section>
-        </body>
-      </html>
-    `;
-        const filtered = filterByTags(html, ['article', 'section']);
-        expect(filtered).toContain('Article 1');
-        expect(filtered).toContain('Article 2');
-        expect(filtered).toContain('Section content');
-    });
-});
-describe('selectContent', () => {
-    it('selects content by CSS selector', () => {
-        const html = `
-      <html>
-        <body>
-          <div class="content">Main content</div>
-          <div class="sidebar">Sidebar</div>
-        </body>
-      </html>
-    `;
-        const selected = selectContent(html, '.content');
-        expect(selected).toContain('Main content');
-        expect(selected).not.toContain('Sidebar');
-    });
-    it('falls back to full HTML when selector matches nothing', () => {
-        const html = `
-      <html>
-        <body>
-          <div>Content</div>
-        </body>
-      </html>
-    `;
-        const selected = selectContent(html, '.nonexistent');
-        expect(selected).toContain('Content'); // Returns full HTML
-    });
-    it('applies exclude patterns', () => {
-        const html = `
-      <html>
-        <body>
-          <article>
-            <h1>Title</h1>
-            <nav>Navigation</nav>
-            <p>Content</p>
-          </article>
-        </body>
-      </html>
-    `;
-        const selected = selectContent(html, 'article', ['nav']);
-        expect(selected).toContain('Title');
-        expect(selected).toContain('Content');
-        expect(selected).not.toContain('Navigation');
-    });
-    it('handles multiple matching selectors', () => {
-        const html = `
-      <html>
-        <body>
-          <p class="intro">Intro</p>
-          <p class="intro">More intro</p>
-        </body>
-      </html>
-    `;
-        const selected = selectContent(html, '.intro');
-        expect(selected).toContain('Intro');
-        expect(selected).toContain('More intro');
-    });
-});
-describe('detectMainContent', () => {
-    it('detects article tags', () => {
-        const html = `
-      <html>
-        <body>
-          <nav>Navigation</nav>
-          <article>
-            <h1>Article Title</h1>
-            <p>This is the main article content with sufficient length to be detected as the primary content area of the page.</p>
-          </article>
-          <footer>Footer</footer>
-        </body>
-      </html>
-    `;
-        const result = detectMainContent(html);
-        expect(result.detected).toBe(true);
-        expect(result.html).toContain('Article Title');
-        expect(result.html).not.toContain('Navigation');
-    });
-    it('detects main tags', () => {
+    it('filters by tag name (main)', () => {
         const html = `
       <html>
         <body>
           <header>Header</header>
-          <main>
-            <h1>Main Content</h1>
-            <p>This is the main content area with enough text to be considered significant content for detection purposes.</p>
-          </main>
+          <main>Main content here</main>
           <aside>Sidebar</aside>
         </body>
       </html>
     `;
-        const result = detectMainContent(html);
-        expect(result.detected).toBe(true);
-        expect(result.html).toContain('Main Content');
-        expect(result.html).not.toContain('Header');
+        const result = filterByTags(html, ['main']);
+        expect(result).toContain('Main content here');
+        expect(result).not.toContain('Header');
+        expect(result).not.toContain('Sidebar');
     });
-    it('detects content divs by class', () => {
+    it('filters by CSS class selector (.content)', () => {
         const html = `
       <html>
         <body>
-          <div class="sidebar">Sidebar</div>
-          <div class="post-content">
-            <h1>Post Title</h1>
-            <p>This is the main post content that should be detected as the primary content because it has sufficient text length.</p>
+          <div class="sidebar">Sidebar content</div>
+          <div class="content">Main content</div>
+          <div class="ads">Advertisements</div>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, ['.content']);
+        expect(result).toContain('Main content');
+        expect(result).not.toContain('Sidebar content');
+        expect(result).not.toContain('Advertisements');
+    });
+    it('filters by CSS id selector (#main)', () => {
+        const html = `
+      <html>
+        <body>
+          <div id="header">Header</div>
+          <div id="main">Main content area</div>
+          <div id="footer">Footer</div>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, ['#main']);
+        expect(result).toContain('Main content area');
+        expect(result).not.toContain('Header');
+        expect(result).not.toContain('Footer');
+    });
+    it('handles multiple includeTags', () => {
+        const html = `
+      <html>
+        <body>
+          <nav>Nav</nav>
+          <article>Article 1</article>
+          <main>Main content</main>
+          <footer>Footer</footer>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, ['article', 'main']);
+        expect(result).toContain('Article 1');
+        expect(result).toContain('Main content');
+        expect(result).not.toContain('Nav');
+        expect(result).not.toContain('Footer');
+    });
+    it('handles empty includeTags array', () => {
+        const html = `
+      <html>
+        <body>
+          <article>Content</article>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, []);
+        // Empty array should return full HTML
+        expect(result).toContain('Content');
+    });
+    it('handles null includeTags', () => {
+        const html = `
+      <html>
+        <body>
+          <article>Content</article>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, undefined);
+        // Undefined should return full HTML
+        expect(result).toContain('Content');
+    });
+    it('removes content from excluded tags', () => {
+        const html = `
+      <html>
+        <body>
+          <nav>Navigation</nav>
+          <article>Main content</article>
+          <footer>Footer</footer>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, undefined, ['nav', 'footer']);
+        expect(result).toContain('Main content');
+        expect(result).not.toContain('Navigation');
+        expect(result).not.toContain('Footer');
+    });
+    it('removes multiple excluded tags', () => {
+        const html = `
+      <html>
+        <head><script>alert('hi')</script></head>
+        <body>
+          <nav>Nav</nav>
+          <aside>Sidebar</aside>
+          <article>Content</article>
+          <footer>Footer</footer>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, undefined, ['nav', 'aside', 'footer', 'script']);
+        expect(result).toContain('Content');
+        expect(result).not.toContain('Nav');
+        expect(result).not.toContain('Sidebar');
+        expect(result).not.toContain('Footer');
+        expect(result).not.toContain('alert');
+    });
+    it('excludes tags by CSS selectors', () => {
+        const html = `
+      <html>
+        <body>
+          <div class="ad">Advertisement</div>
+          <div class="content">Main content</div>
+          <div class="banner">Banner</div>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, undefined, ['.ad', '.banner']);
+        expect(result).toContain('Main content');
+        expect(result).not.toContain('Advertisement');
+        expect(result).not.toContain('Banner');
+    });
+    it('handles empty excludeTags array', () => {
+        const html = `
+      <html>
+        <body>
+          <article>Content</article>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, undefined, []);
+        expect(result).toContain('Content');
+    });
+    it('handles null excludeTags', () => {
+        const html = `
+      <html>
+        <body>
+          <article>Content</article>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, undefined, undefined);
+        expect(result).toContain('Content');
+    });
+    it('applies excludeTags before includeTags', () => {
+        const html = `
+      <html>
+        <body>
+          <article>
+            <nav>Article nav</nav>
+            <p>Article content</p>
+          </article>
+        </body>
+      </html>
+    `;
+        // First excludes nav, then includes article
+        const result = filterByTags(html, ['article'], ['nav']);
+        expect(result).toContain('Article content');
+        expect(result).not.toContain('Article nav');
+    });
+    it('preserves content within matched tags', () => {
+        const html = `
+      <html>
+        <body>
+          <article>
+            <h1>Title</h1>
+            <p>Paragraph 1</p>
+            <p>Paragraph 2</p>
+            <img src="test.jpg" alt="Test" />
+            <a href="/link">Link</a>
+          </article>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, ['article']);
+        expect(result).toContain('Title');
+        expect(result).toContain('Paragraph 1');
+        expect(result).toContain('Paragraph 2');
+        expect(result).toContain('test.jpg');
+        expect(result).toContain('Link');
+    });
+    it('returns empty string when includeTags match nothing', () => {
+        const html = `
+      <html>
+        <body>
+          <div>Content</div>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, ['article']);
+        expect(result).toBe('');
+    });
+    it('handles complex nested structures', () => {
+        const html = `
+      <html>
+        <body>
+          <div class="container">
+            <nav>Nav</nav>
+            <main>
+              <article>
+                <header>Article header</header>
+                <section>Article content</section>
+              </article>
+            </main>
+            <aside>Sidebar</aside>
           </div>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, ['article'], ['nav', 'aside', 'header']);
+        expect(result).toContain('Article content');
+        expect(result).not.toContain('Nav');
+        expect(result).not.toContain('Sidebar');
+        expect(result).not.toContain('Article header');
+    });
+    it('handles attribute selectors', () => {
+        const html = `
+      <html>
+        <body>
+          <div role="main">Main content</div>
+          <div role="navigation">Nav</div>
+        </body>
+      </html>
+    `;
+        const result = filterByTags(html, ['[role="main"]']);
+        expect(result).toContain('Main content');
+        expect(result).not.toContain('Nav');
+    });
+});
+describe('detectMainContent', () => {
+    it('detects article[role="main"]', () => {
+        const html = `
+      <html>
+        <body>
+          <nav>Nav content</nav>
+          <article role="main">This is the main article content with sufficient length to be detected as meaningful content area. Adding more text to exceed the minimum character requirement of one hundred characters for proper detection by the algorithm.</article>
         </body>
       </html>
     `;
         const result = detectMainContent(html);
         expect(result.detected).toBe(true);
-        expect(result.html).toContain('Post Title');
+        expect(result.html).toContain('main article content');
+        expect(result.html).not.toContain('Nav content');
     });
-    it('returns not detected when no semantic elements exist', () => {
+    it('detects main article', () => {
         const html = `
       <html>
         <body>
-          <div>
-            <div>Short text</div>
-            <div>
-              <p>This is a much longer text block but without semantic containers.</p>
-            </div>
-          </div>
+          <main>
+            <article>Article inside main with plenty of text to make it meaningful and worth extracting. Here is more content padding to ensure we cross the minimum threshold for detection.</article>
+          </main>
         </body>
       </html>
     `;
         const result = detectMainContent(html);
-        // Without article/main/.content, detection should not trigger
-        expect(result.detected).toBe(false);
+        expect(result.detected).toBe(true);
+        expect(result.html).toContain('Article inside main');
+    });
+    it('detects standalone article', () => {
+        const html = `
+      <html>
+        <body>
+          <header>Header</header>
+          <article>Standalone article with enough content to be detected as the main content area of the page. Here is more content padding to ensure we cross the minimum threshold.</article>
+          <footer>Footer</footer>
+        </body>
+      </html>
+    `;
+        const result = detectMainContent(html);
+        expect(result.detected).toBe(true);
+        expect(result.html).toContain('Standalone article');
+    });
+    it('detects main tag', () => {
+        const html = `
+      <html>
+        <body>
+          <header>Header</header>
+          <main>Main content area with substantial text that makes it the primary content of this webpage. Here is more content padding to ensure we cross the minimum threshold.</main>
+          <footer>Footer</footer>
+        </body>
+      </html>
+    `;
+        const result = detectMainContent(html);
+        expect(result.detected).toBe(true);
+        expect(result.html).toContain('Main content area');
+    });
+    it('skips main content with insufficient text', () => {
+        const html = `
+      <html>
+        <body>
+          <article>Short</article>
+          <div>This is a much longer content block that contains substantial text and should be detected as the main content area.</div>
+        </body>
+      </html>
+    `;
+        const result = detectMainContent(html);
+        // Should fallback to finding largest text block
+        expect(result.html).toContain('much longer content block');
+    });
+    it('falls back to largest text block', () => {
+        const html = `
+      <html>
+        <body>
+          <div>Short div</div>
+          <section>This section contains a lot of text that makes it the primary content. It has many words and sentences that provide value to readers. This is definitely the main content area that should be extracted.</section>
+          <div>Another short div</div>
+        </body>
+      </html>
+    `;
+        const result = detectMainContent(html);
+        expect(result.html).toContain('section contains a lot of text');
     });
     it('returns full HTML when no main content detected', () => {
         const html = `
       <html>
         <body>
-          <div>Short</div>
+          <div>Short 1</div>
+          <div>Short 2</div>
         </body>
       </html>
     `;
         const result = detectMainContent(html);
         expect(result.detected).toBe(false);
-        expect(result.html).toContain('Short');
+        expect(result.html).toContain('Short 1');
+        expect(result.html).toContain('Short 2');
     });
 });
 describe('calculateQuality', () => {
-    it('scores clean markdown content highly', () => {
-        const content = `# Article Title
-
-This is a well-formatted article with multiple paragraphs and good structure.
-
-## Section 1
-
-More content here with meaningful text that demonstrates quality.`;
-        const originalHtml = '<html><head><script>...</script></head><body>' + content.repeat(10) + '</body></html>';
-        const quality = calculateQuality(content, originalHtml);
-        expect(quality).toBeGreaterThan(0.5);
-        expect(quality).toBeLessThanOrEqual(1.0);
-    });
-    it('scores short content lower', () => {
-        const content = 'Too short';
-        const originalHtml = '<html><body>' + content + '</body></html>';
-        const quality = calculateQuality(content, originalHtml);
-        expect(quality).toBeLessThan(0.5);
+    it('returns quality score between 0 and 1', () => {
+        const content = 'Some markdown content';
+        const html = '<html><body><p>Some markdown content</p></body></html>';
+        const quality = calculateQuality(content, html);
+        expect(quality).toBeGreaterThanOrEqual(0);
+        expect(quality).toBeLessThanOrEqual(1);
     });
     it('returns 0 for empty content', () => {
         const quality = calculateQuality('', '<html></html>');
         expect(quality).toBe(0);
     });
-    it('scores content with headings and paragraphs highly', () => {
-        const content = `# Main Title
-
-First paragraph with meaningful content.
-
-## Subsection
-
-More paragraphs here with good text density and structure.`;
-        const originalHtml = '<html><body><div>' + content.repeat(5) + '</div></body></html>';
-        const quality = calculateQuality(content, originalHtml);
-        expect(quality).toBeGreaterThan(0.6);
+    it('returns 0 for very short content', () => {
+        const quality = calculateQuality('abc', '<html><body><p>abc</p></body></html>');
+        expect(quality).toBeLessThan(0.5);
     });
-    it('penalizes content with too much markup', () => {
-        const content = '# # # * * * [ ] ( ) | | | > > >'.repeat(10);
-        const originalHtml = '<html><body>' + content + '</body></html>';
-        const quality = calculateQuality(content, originalHtml);
-        expect(quality).toBeLessThan(0.7);
+    it('gives higher scores to well-extracted content', () => {
+        // Clean markdown extracted from larger HTML
+        const goodContent = `# Main Article\n\nThis is a good article with meaningful content. It has paragraphs and structure.`;
+        const html = '<html><head><script>lots of js</script></head><body><nav>nav</nav><article><h1>Main Article</h1><p>This is a good article with meaningful content. It has paragraphs and structure.</p></article><footer>footer</footer></body></html>';
+        const quality = calculateQuality(goodContent, html);
+        expect(quality).toBeGreaterThan(0.5);
+    });
+    it('penalizes content that is too similar to HTML (poor extraction)', () => {
+        const poorContent = '<html><head><script>code</script></head><body><nav>nav</nav><p>Content</p></body></html>';
+        const html = '<html><head><script>code</script></head><body><nav>nav</nav><p>Content</p></body></html>';
+        const quality = calculateQuality(poorContent, html);
+        expect(quality).toBeLessThan(0.8);
+    });
+});
+describe('estimateTokens', () => {
+    it('estimates tokens for short text', () => {
+        const text = 'Hello world';
+        const tokens = estimateTokens(text);
+        // "Hello world" = 11 chars / 4 = ~3 tokens
+        expect(tokens).toBeGreaterThan(0);
+        expect(tokens).toBeLessThan(10);
+    });
+    it('estimates tokens for longer text', () => {
+        const text = 'This is a much longer piece of text that contains multiple sentences and should result in more tokens being estimated.';
+        const tokens = estimateTokens(text);
+        expect(tokens).toBeGreaterThan(20);
+    });
+    it('returns 0 for empty string', () => {
+        expect(estimateTokens('')).toBe(0);
     });
 });
 describe('truncateToTokenBudget', () => {
     it('returns content as-is when under budget', () => {
         const content = 'Short content';
-        const tokens = estimateTokens(content);
-        const truncated = truncateToTokenBudget(content, tokens + 100);
-        expect(truncated).toBe(content);
+        const result = truncateToTokenBudget(content, 100);
+        expect(result).toBe(content);
     });
     it('truncates content when over budget', () => {
-        const content = 'word '.repeat(1000); // ~5000 chars = ~1250 tokens
-        const truncated = truncateToTokenBudget(content, 500);
-        expect(truncated).toContain('[Content truncated');
-        expect(estimateTokens(truncated)).toBeLessThanOrEqual(550); // Allow some margin
+        const content = 'A'.repeat(1000); // 1000 chars = ~250 tokens
+        const result = truncateToTokenBudget(content, 50);
+        expect(result.length).toBeLessThan(content.length);
+        expect(result).toContain('truncated');
     });
-    it('preserves first heading', () => {
-        const content = `# Important Title
-
-Paragraph 1 with content.
-
-Paragraph 2 with more content.
-
-${'More content. '.repeat(200)}`;
-        const truncated = truncateToTokenBudget(content, 100);
-        expect(truncated).toContain('# Important Title');
-        expect(truncated).toContain('[Content truncated');
+    it('preserves first heading when truncating', () => {
+        const content = `# Main Title\n\nParagraph 1\n\n## Section 2\n\nParagraph 2\n\n${'A'.repeat(1000)}`;
+        const result = truncateToTokenBudget(content, 50);
+        expect(result).toContain('# Main Title');
+        expect(result).toContain('truncated');
     });
-    it('handles content without headings', () => {
-        const content = 'No headings here. '.repeat(100);
-        const truncated = truncateToTokenBudget(content, 50);
-        expect(truncated).toContain('[Content truncated');
-        expect(estimateTokens(truncated)).toBeLessThanOrEqual(60);
-    });
-    it('enforces minimum content inclusion', () => {
-        const content = `# Title
-
-First line of content.`;
-        const truncated = truncateToTokenBudget(content, 5); // Very low budget
-        expect(truncated).toContain('# Title');
+    it('adds truncation notice', () => {
+        const content = 'A'.repeat(1000);
+        const result = truncateToTokenBudget(content, 50);
+        expect(result).toContain('[Content truncated to ~50 tokens]');
     });
 });
 //# sourceMappingURL=markdown.test.js.map

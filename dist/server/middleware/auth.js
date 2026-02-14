@@ -39,11 +39,16 @@ export function createAuthMiddleware(authStore) {
                 apiKey = apiKeyHeader;
             }
             if (!apiKey) {
-                res.status(401).json({
-                    error: 'missing_key',
-                    message: 'API key is required. Provide via Authorization: Bearer <key> or X-API-Key header.',
-                });
-                return;
+                // Allow anonymous free-tier access (125/week, 25/hr burst)
+                // This enables the playground and basic usage without signup
+                req.auth = {
+                    keyInfo: null,
+                    tier: 'free',
+                    rateLimit: 25, // requests per minute for anonymous
+                    softLimited: false,
+                    extraUsageAvailable: false,
+                };
+                return next();
             }
             // Validate API key if provided
             let keyInfo = null;
