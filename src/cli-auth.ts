@@ -22,6 +22,8 @@ const API_BASE_URL = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
 
 interface CLIConfig {
   apiKey?: string;
+  /** BYOK key for Brave Search (optional) */
+  braveApiKey?: string;
   anonymousUsage: number;  // count of fetches without login
   lastReset: string;       // ISO date of last anonymous counter reset
   planTier?: string;       // cached plan tier (free/pro/max)

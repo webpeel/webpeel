@@ -26,6 +26,7 @@ import { createCLIUsageRouter } from './routes/cli-usage.js';
 import { createJobsRouter } from './routes/jobs.js';
 import { createBatchRouter } from './routes/batch.js';
 import { createAgentRouter } from './routes/agent.js';
+import { createAnswerRouter } from './routes/answer.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
 import { createSentryHooks } from './sentry.js';
@@ -141,6 +142,7 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createJobsRouter(jobQueue));
   app.use(createBatchRouter(jobQueue));
   app.use(createAgentRouter());
+  app.use(createAnswerRouter());
 
   // 404 handler
   app.use((req: Request, res: Response) => {

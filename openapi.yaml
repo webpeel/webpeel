@@ -158,7 +158,9 @@ paths:
     get:
       operationId: search
       summary: Search the web
-      description: Search the web via DuckDuckGo and get results with snippets.
+      description: |
+        Search the web and get results with snippets.
+        Supports DuckDuckGo (default, free) and Brave Search (requires API key via BYOK).
       tags: [Search]
       parameters:
         - name: q
@@ -167,6 +169,18 @@ paths:
           schema:
             type: string
           description: Search query
+        - name: provider
+          in: query
+          schema:
+            type: string
+            enum: [duckduckgo, brave]
+            default: duckduckgo
+          description: "Search provider (default: duckduckgo)"
+        - name: searchApiKey
+          in: query
+          schema:
+            type: string
+          description: API key for search provider (alternative to x-search-api-key header)
         - name: limit
           in: query
           schema:
@@ -201,6 +215,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchResponse"
+
+  /v1/answer:
+    post:
+      operationId: answer
+      summary: Answer a question with web sources
+      description: |
+        Search the web, fetch top results, and generate an AI-powered answer with
+        source citations using the caller's own LLM API key (BYOK).
+      tags: [Answer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question, llmProvider, llmApiKey]
+              properties:
+                question:
+                  type: string
+                  description: The question to answer
+                searchProvider:
+                  type: string
+                  enum: [duckduckgo, brave]
+                  default: duckduckgo
+                  description: Search provider
+                searchApiKey:
+                  type: string
+                  description: API key for Brave Search
+                llmProvider:
+                  type: string
+                  enum: [openai, anthropic, google]
+                  description: LLM provider
+                llmApiKey:
+                  type: string
+                  description: LLM API key (BYOK)
+                llmModel:
+                  type: string
+                  description: LLM model name (optional, uses provider default)
+                maxSources:
+                  type: integer
+                  default: 5
+                  minimum: 1
+                  maximum: 10
+                  description: Number of web sources to fetch
+                stream:
+                  type: boolean
+                  default: false
+                  description: Stream answer via SSE
+      responses:
+        "200":
+          description: Generated answer with citations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnswerResponse"
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE stream (when stream=true)
 
   /v1/crawl:
     post:
@@ -453,11 +526,46 @@ components:
               snippet:
                 type: string
 
+    AnswerResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+          description: Generated answer with [1], [2] citations
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              url:
+                type: string
+              snippet:
+                type: string
+        searchProvider:
+          type: string
+          enum: [duckduckgo, brave]
+        llmProvider:
+          type: string
+          enum: [openai, anthropic, google]
+        llmModel:
+          type: string
+        tokensUsed:
+          type: object
+          properties:
+            input:
+              type: integer
+            output:
+              type: integer
+
 tags:
   - name: Scrape
     description: Scrape web pages
   - name: Search
     description: Search the web
+  - name: Answer
+    description: AI-powered question answering with web sources
   - name: Crawl
     description: Crawl websites
   - name: Batch

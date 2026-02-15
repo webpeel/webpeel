@@ -1,18 +1,27 @@
 /**
  * Agent API - autonomous web research endpoint
+ *
+ * Supports:
+ * - POST /v1/agent           — synchronous (default) or SSE streaming (stream: true)
+ * - POST /v1/agent/async     — async with job queue
+ * - GET  /v1/agent/:id       — job status
+ * - DELETE /v1/agent/:id     — cancel job
  */
 
 import { Router, Request, Response } from 'express';
 import { runAgent } from '../../core/agent.js';
-import type { AgentOptions, AgentProgress } from '../../core/agent.js';
+import type { AgentOptions, AgentProgress, AgentStreamEvent, AgentDepth, AgentTopic } from '../../core/agent.js';
 import { jobQueue } from '../job-queue.js';
 import { sendWebhook } from './webhooks.js';
+
+const VALID_DEPTHS: AgentDepth[] = ['basic', 'thorough'];
+const VALID_TOPICS: AgentTopic[] = ['general', 'news', 'technical', 'academic'];
 
 export function createAgentRouter(): Router {
   const router = Router();
 
   /**
-   * POST /v1/agent - Run autonomous web research (synchronous)
+   * POST /v1/agent - Run autonomous web research (synchronous or SSE streaming)
    */
   router.post('/v1/agent', async (req: Request, res: Response) => {
     try {
@@ -20,11 +29,16 @@ export function createAgentRouter(): Router {
         prompt,
         urls,
         schema,
+        outputSchema,
         llmApiKey,
         llmApiBase,
         llmModel,
         maxPages,
+        maxSources,
         maxCredits,
+        depth,
+        topic,
+        stream,
       } = req.body;
 
       // Validate required parameters
@@ -44,11 +58,42 @@ export function createAgentRouter(): Router {
         return;
       }
 
-      // Validate optional URLs array
+      // Validate optional parameters
       if (urls && !Array.isArray(urls)) {
+        res.status(400).json({ error: 'invalid_request', message: '"urls" must be an array' });
+        return;
+      }
+
+      if (depth && !VALID_DEPTHS.includes(depth)) {
         res.status(400).json({
           error: 'invalid_request',
-          message: '"urls" must be an array',
+          message: `"depth" must be one of: ${VALID_DEPTHS.join(', ')}`,
+        });
+        return;
+      }
+
+      if (topic && !VALID_TOPICS.includes(topic)) {
+        res.status(400).json({
+          error: 'invalid_request',
+          message: `"topic" must be one of: ${VALID_TOPICS.join(', ')}`,
+        });
+        return;
+      }
+
+      if (maxSources !== undefined) {
+        if (typeof maxSources !== 'number' || maxSources < 1 || maxSources > 20) {
+          res.status(400).json({
+            error: 'invalid_request',
+            message: '"maxSources" must be a number between 1 and 20',
+          });
+          return;
+        }
+      }
+
+      if (outputSchema !== undefined && (typeof outputSchema !== 'object' || outputSchema === null)) {
+        res.status(400).json({
+          error: 'invalid_request',
+          message: '"outputSchema" must be a JSON Schema object',
         });
         return;
       }
@@ -58,17 +103,62 @@ export function createAgentRouter(): Router {
         prompt,
         urls,
         schema,
+        outputSchema,
         llmApiKey,
         llmApiBase,
         llmModel,
         maxPages,
+        maxSources,
         maxCredits,
+        depth,
+        topic,
       };
 
-      // Run agent
-      const result = await runAgent(agentOptions);
+      // -----------------------------------------------------------------------
+      // SSE Streaming mode
+      // -----------------------------------------------------------------------
+      if (stream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+        res.flushHeaders();
 
-      // Return result
+        const sendSSE = (data: AgentStreamEvent | { type: 'error'; message: string }) => {
+          if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+          }
+        };
+
+        let closed = false;
+        req.on('close', () => { closed = true; });
+
+        agentOptions.onEvent = (event: AgentStreamEvent) => {
+          if (closed) return;
+          sendSSE(event);
+        };
+
+        try {
+          await runAgent(agentOptions);
+
+          // The 'done' event is already emitted by runAgent via onEvent
+          // End the stream
+          if (!res.writableEnded) {
+            res.end();
+          }
+        } catch (error: any) {
+          sendSSE({ type: 'error', message: error.message || 'Agent failed' });
+          if (!res.writableEnded) {
+            res.end();
+          }
+        }
+        return;
+      }
+
+      // -----------------------------------------------------------------------
+      // Normal synchronous mode (backward compatible)
+      // -----------------------------------------------------------------------
+      const result = await runAgent(agentOptions);
       res.json(result);
     } catch (error: any) {
       console.error('Agent error:', error);
@@ -88,11 +178,15 @@ export function createAgentRouter(): Router {
         prompt,
         urls,
         schema,
+        outputSchema,
         llmApiKey,
         llmApiBase,
         llmModel,
         maxPages,
+        maxSources,
         maxCredits,
+        depth,
+        topic,
         webhook,
       } = req.body;
 
@@ -135,11 +229,15 @@ export function createAgentRouter(): Router {
             prompt,
             urls,
             schema,
+            outputSchema,
             llmApiKey,
             llmApiBase,
             llmModel,
             maxPages,
+            maxSources,
             maxCredits,
+            depth,
+            topic,
             onProgress: (progress: AgentProgress) => {
               // Update job progress
               jobQueue.updateJob(job.id, {
