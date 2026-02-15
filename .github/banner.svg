@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7C3AED"/>
+      <stop offset="50%" style="stop-color:#8B5CF6"/>
+      <stop offset="100%" style="stop-color:#A78BFA"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0)"/>
+      <stop offset="50%" style="stop-color:rgba(255,255,255,0.06)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="300" rx="16" fill="url(#bg)"/>
+  <rect width="1200" height="300" rx="16" fill="url(#shine)"/>
+  
+  <!-- Subtle grid pattern -->
+  <g opacity="0.04" stroke="#fff" stroke-width="1">
+    <line x1="0" y1="60" x2="1200" y2="60"/>
+    <line x1="0" y1="120" x2="1200" y2="120"/>
+    <line x1="0" y1="180" x2="1200" y2="180"/>
+    <line x1="0" y1="240" x2="1200" y2="240"/>
+    <line x1="200" y1="0" x2="200" y2="300"/>
+    <line x1="400" y1="0" x2="400" y2="300"/>
+    <line x1="600" y1="0" x2="600" y2="300"/>
+    <line x1="800" y1="0" x2="800" y2="300"/>
+    <line x1="1000" y1="0" x2="1000" y2="300"/>
+  </g>
+  
+  <!-- Logo icon -->
+  <g transform="translate(380, 80)">
+    <rect width="48" height="48" fill="#fff" fill-opacity="0.95" rx="10"/>
+    <path d="M30 8H18l-10 10v24a4 4 0 004 4h24a4 4 0 004-4V18L30 8z" fill="none" stroke="#8B5CF6" stroke-width="2.5"/>
+    <path d="M30 8v8a2 2 0 002 2h8" fill="none" stroke="#8B5CF6" stroke-width="2"/>
+    <line x1="14" y1="26" x2="28" y2="26" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="14" y1="33" x2="34" y2="33" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Product name -->
+  <text x="440" y="123" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="46" font-weight="700" fill="#ffffff" letter-spacing="-1">WebPeel</text>
+  
+  <!-- Tagline -->
+  <text x="380" y="170" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="rgba(255,255,255,0.85)" letter-spacing="0.2">Web fetching for AI agents. Fast. Stealthy. Open source.</text>
+  
+  <!-- Terminal preview -->
+  <g transform="translate(380, 200)">
+    <rect width="440" height="52" rx="8" fill="rgba(0,0,0,0.25)"/>
+    <text x="16" y="32" font-family="'JetBrains Mono', 'SF Mono', 'Fira Code', monospace" font-size="14" fill="rgba(255,255,255,0.5)">$</text>
+    <text x="32" y="32" font-family="'JetBrains Mono', 'SF Mono', 'Fira Code', monospace" font-size="14" fill="rgba(255,255,255,0.9)">npx webpeel https://example.com</text>
+  </g>
+  
+  <!-- Decorative dots -->
+  <circle cx="100" cy="60" r="3" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="150" cy="90" r="2" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="1050" cy="80" r="4" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="1100" cy="200" r="2.5" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="120" cy="220" r="2" fill="rgba(255,255,255,0.06)"/>
+</svg>
