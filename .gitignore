@@ -48,3 +48,4 @@ screenshot.png
 .mcpregistry_registry_token
 __pycache__/
 *.pyc
+.vercel

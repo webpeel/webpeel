@@ -96,7 +96,7 @@ Extra usage rates: Basic $0.002, Stealth $0.01, Search $0.001
 ## Links
 
 - Website: https://webpeel.dev
-- GitHub: https://github.com/JakeLiuMe/webpeel
+- GitHub: https://github.com/webpeel/webpeel
 - npm: https://www.npmjs.com/package/webpeel
 - Dashboard: https://app.webpeel.dev
 - API: https://api.webpeel.dev
