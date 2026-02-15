@@ -18,6 +18,8 @@ export { trackChange, getSnapshot, clearSnapshots } from './core/change-tracking
 export { extractWithLLM } from './core/extract.js';
 export { runAgent } from './core/agent.js';
 export { summarizeContent } from './core/summarize.js';
+export { getSearchProvider, DuckDuckGoProvider, BraveSearchProvider, } from './core/search-provider.js';
+export { answerQuestion, } from './core/answer.js';
 /**
  * Fetch and extract content from a URL
  *

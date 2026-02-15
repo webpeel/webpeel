@@ -1,11 +1,12 @@
 /**
- * Search endpoint with caching
+ * Search endpoint with caching — supports DuckDuckGo (default) and Brave (BYOK)
  */
 import { Router } from 'express';
 import { fetch as undiciFetch } from 'undici';
 import { load } from 'cheerio';
 import { LRUCache } from 'lru-cache';
 import { peel } from '../../index.js';
+import { getSearchProvider, } from '../../core/search-provider.js';
 export function createSearchRouter(authStore) {
     const router = Router();
     // LRU cache: 15 minute TTL, max 500 entries, 50MB total size
@@ -20,6 +21,16 @@ export function createSearchRouter(authStore) {
     router.get('/v1/search', async (req, res) => {
         try {
             const { q, count, scrapeResults, sources, categories, tbs, country, location } = req.query;
+            // --- Search provider (new: BYOK Brave support) ---
+            const providerParam = (req.query.provider || '').toLowerCase() || 'duckduckgo';
+            const validProviders = ['duckduckgo', 'brave'];
+            const providerId = validProviders.includes(providerParam)
+                ? providerParam
+                : 'duckduckgo';
+            // API key: query param, header, or empty
+            const searchApiKey = req.query.searchApiKey ||
+                req.headers['x-search-api-key'] ||
+                '';
             // Validate query parameter
             if (!q || typeof q !== 'string') {
                 res.status(400).json({
@@ -47,7 +58,7 @@ export function createSearchRouter(authStore) {
             const countryStr = country || '';
             const locationStr = location || '';
             // Build cache key (include all parameters)
-            const cacheKey = `search:${q}:${resultCount}:${sourcesStr}:${shouldScrape}:${categoriesStr}:${tbsStr}:${countryStr}:${locationStr}`;
+            const cacheKey = `search:${providerId}:${q}:${resultCount}:${sourcesStr}:${shouldScrape}:${categoriesStr}:${tbsStr}:${countryStr}:${locationStr}`;
             // Check cache
             const cached = cache.get(cacheKey);
             if (cached) {
@@ -61,76 +72,26 @@ export function createSearchRouter(authStore) {
             }
             const startTime = Date.now();
             const data = {};
-            // Fetch web results
+            // Fetch web results via the search-provider abstraction
             if (sourcesArray.includes('web')) {
-                // Build search URL with parameters
-                const params = new URLSearchParams();
-                params.set('q', q);
-                // Add DuckDuckGo-specific parameters
-                if (tbsStr) {
-                    // Time-based search (tbs): qdr:d (day), qdr:w (week), qdr:m (month), qdr:y (year)
-                    params.set('df', tbsStr);
-                }
-                if (countryStr || locationStr) {
-                    // Region/location preference (kl parameter)
-                    // DuckDuckGo uses format like 'us-en' for US English
-                    const region = countryStr || locationStr;
-                    params.set('kl', region.toLowerCase());
-                }
-                const searchUrl = `https://html.duckduckgo.com/html/?${params.toString()}`;
-                const response = await undiciFetch(searchUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-                    },
+                const provider = getSearchProvider(providerId);
+                const providerResults = await provider.searchWeb(q, {
+                    count: resultCount,
+                    apiKey: searchApiKey || undefined,
+                    tbs: tbsStr || undefined,
+                    country: countryStr || undefined,
+                    location: locationStr || undefined,
                 });
-                if (!response.ok) {
-                    throw new Error(`Search failed: HTTP ${response.status}`);
-                }
-                const html = await response.text();
-                const $ = load(html);
-                const results = [];
-                $('.result').each((_i, elem) => {
-                    if (results.length >= resultCount)
-                        return;
-                    const $result = $(elem);
-                    let title = $result.find('.result__title').text().trim();
-                    const rawUrl = $result.find('.result__a').attr('href') || '';
-                    let snippet = $result.find('.result__snippet').text().trim();
-                    if (!title || !rawUrl)
-                        return;
-                    // Extract actual URL from DuckDuckGo redirect
-                    let url = rawUrl;
-                    try {
-                        const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
-                        const uddg = ddgUrl.searchParams.get('uddg');
-                        if (uddg) {
-                            url = decodeURIComponent(uddg);
-                        }
-                    }
-                    catch {
-                        // Use raw URL if parsing fails
-                    }
-                    // SECURITY: Validate and sanitize results — only allow HTTP/HTTPS URLs
-                    try {
-                        const parsed = new URL(url);
-                        if (!['http:', 'https:'].includes(parsed.protocol)) {
-                            return;
-                        }
-                        url = parsed.href;
-                    }
-                    catch {
-                        return;
-                    }
-                    // Limit text lengths to prevent bloat
-                    title = title.slice(0, 200);
-                    snippet = snippet.slice(0, 500);
-                    results.push({ title, url, snippet });
-                });
+                // Map to SearchResult (with optional content field)
+                let results = providerResults.map(r => ({
+                    title: r.title,
+                    url: r.url,
+                    snippet: r.snippet,
+                }));
                 // Apply category filtering if specified
-                let filteredResults = results;
                 if (categoriesStr) {
                     const categoryList = categoriesStr.split(',').map(c => c.trim().toLowerCase());
-                    filteredResults = results.filter(result => {
+                    results = results.filter(result => {
                         const urlLower = result.url.toLowerCase();
                         return categoryList.some(category => {
                             switch (category) {
@@ -151,7 +112,6 @@ export function createSearchRouter(authStore) {
                                     return urlLower.includes('twitter.com') || urlLower.includes('x.com') ||
                                         urlLower.includes('facebook.com') || urlLower.includes('linkedin.com');
                                 default:
-                                    // Custom category: check if URL contains the category name
                                     return urlLower.includes(category);
                             }
                         });
@@ -159,7 +119,7 @@ export function createSearchRouter(authStore) {
                 }
                 // Scrape each result URL if requested
                 if (shouldScrape) {
-                    for (const result of filteredResults) {
+                    for (const result of results) {
                         try {
                             const peelResult = await peel(result.url, {
                                 format: 'markdown',
@@ -168,14 +128,13 @@ export function createSearchRouter(authStore) {
                             result.content = peelResult.content;
                         }
                         catch (error) {
-                            // Skip failed scrapes
                             result.content = `[Failed to scrape: ${error.message}]`;
                         }
                     }
                 }
-                data.web = filteredResults;
+                data.web = results;
             }
-            // Fetch news results
+            // Fetch news results (DDG only — Brave news is not supported via HTML scraping)
             if (sourcesArray.includes('news')) {
                 const newsUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}&t=news`;
                 const response = await undiciFetch(newsUrl, {
@@ -197,7 +156,6 @@ export function createSearchRouter(authStore) {
                         const sourceText = $result.find('.result__extras__url').text().trim();
                         if (!title || !rawUrl)
                             return;
-                        // Extract actual URL
                         let url = rawUrl;
                         try {
                             const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
@@ -209,7 +167,6 @@ export function createSearchRouter(authStore) {
                         catch {
                             // Use raw URL if parsing fails
                         }
-                        // Validate URL
                         try {
                             const parsed = new URL(url);
                             if (!['http:', 'https:'].includes(parsed.protocol)) {
@@ -220,7 +177,6 @@ export function createSearchRouter(authStore) {
                         catch {
                             return;
                         }
-                        // Limit text lengths
                         title = title.slice(0, 200);
                         snippet = snippet.slice(0, 500);
                         results.push({
@@ -233,7 +189,7 @@ export function createSearchRouter(authStore) {
                     data.news = results;
                 }
             }
-            // Fetch image results
+            // Fetch image results (DDG only)
             if (sourcesArray.includes('images')) {
                 const imagesUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}&t=images`;
                 const response = await undiciFetch(imagesUrl, {
@@ -255,7 +211,6 @@ export function createSearchRouter(authStore) {
                         const sourceText = $result.find('.result__extras__url').text().trim();
                         if (!title || !rawUrl || !thumbnail)
                             return;
-                        // Extract actual URL
                         let url = rawUrl;
                         try {
                             const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');

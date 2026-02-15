@@ -9,6 +9,8 @@
  */
 interface CLIConfig {
     apiKey?: string;
+    /** BYOK key for Brave Search (optional) */
+    braveApiKey?: string;
     anonymousUsage: number;
     lastReset: string;
     planTier?: string;

@@ -52,18 +52,36 @@ export class RateLimiter {
         }
     }
 }
+/**
+ * Hourly burst limits per tier.
+ * These are the hard caps enforced by the in-memory sliding window.
+ * Free: 25/hr, Pro: 100/hr, Max: 500/hr (matches pricing page).
+ */
+const TIER_BURST_LIMITS = {
+    free: 25,
+    starter: 50,
+    pro: 100,
+    enterprise: 250,
+    max: 500,
+};
 export function createRateLimitMiddleware(limiter) {
     return (req, res, next) => {
         try {
-            // Use API key or real client IP as identifier
-            // Cloudflare sets CF-Connecting-IP to the real client IP;
-            // req.ip can vary per Cloudflare edge node causing rate limit bypass
+            // Use API key or real client IP as identifier.
+            // Prefer Cloudflare CF-Connecting-IP, then x-forwarded-for first
+            // entry (real client), then x-real-ip, then req.ip.
+            const forwardedFor = req.headers['x-forwarded-for'];
+            const firstForwardedIp = typeof forwardedFor === 'string'
+                ? forwardedFor.split(',')[0].trim()
+                : Array.isArray(forwardedFor) ? forwardedFor[0] : undefined;
             const clientIp = req.headers['cf-connecting-ip']
+                || firstForwardedIp
                 || req.headers['x-real-ip']
                 || req.ip
                 || 'unknown';
             const identifier = req.auth?.keyInfo?.key || clientIp;
-            const limit = req.auth?.rateLimit || 10;
+            // Use tier-based hourly burst limits (matches the 1-hour sliding window)
+            const limit = TIER_BURST_LIMITS[req.auth?.tier || 'free'] || 25;
             const result = limiter.checkLimit(identifier, limit);
             // Calculate reset timestamp
             const now = Date.now();

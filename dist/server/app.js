@@ -24,6 +24,8 @@ import { createCLIUsageRouter } from './routes/cli-usage.js';
 import { createJobsRouter } from './routes/jobs.js';
 import { createBatchRouter } from './routes/batch.js';
 import { createAgentRouter } from './routes/agent.js';
+import { createAnswerRouter } from './routes/answer.js';
+import { createMcpRouter } from './routes/mcp.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
 import { createSentryHooks } from './sentry.js';
@@ -68,6 +70,8 @@ export function createApp(config = {}) {
         // API-safe CSP: JSON-only API does not need scripts/styles/fonts.
         // Keep this strict to reduce attack surface without affecting API clients.
         res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+        // Best-effort removal of Render's origin header (may be re-added by proxy)
+        res.removeHeader('x-render-origin-server');
         next();
     });
     // SECURITY: JSON parse error handler
@@ -90,7 +94,7 @@ export function createApp(config = {}) {
     // Job queue - Use PostgreSQL if DATABASE_URL is set, otherwise in-memory
     const jobQueue = createJobQueue();
     // Rate limiter
-    const rateLimiter = new RateLimiter(config.rateLimitWindowMs || 60000);
+    const rateLimiter = new RateLimiter(config.rateLimitWindowMs || 3_600_000); // 1 hour
     // Clean up rate limiter every 5 minutes
     setInterval(() => {
         rateLimiter.cleanup();
@@ -113,6 +117,8 @@ export function createApp(config = {}) {
     app.use(createJobsRouter(jobQueue));
     app.use(createBatchRouter(jobQueue));
     app.use(createAgentRouter());
+    app.use(createAnswerRouter());
+    app.use(createMcpRouter());
     // 404 handler
     app.use((req, res) => {
         res.status(404).json({

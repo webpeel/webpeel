@@ -16,7 +16,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { writeFileSync, readFileSync } from 'fs';
 import { peel, peelBatch, cleanup } from './index.js';
-import { checkUsage, showUsageFooter, handleLogin, handleLogout, handleUsage, loadConfig } from './cli-auth.js';
+import { checkUsage, showUsageFooter, handleLogin, handleLogout, handleUsage, loadConfig, saveConfig } from './cli-auth.js';
 import { getCache, setCache, parseTTL, clearCache, cacheStats } from './cache.js';
 const program = new Command();
 // Read version from package.json dynamically
@@ -363,8 +363,10 @@ program
 // Search command
 program
     .command('search <query>')
-    .description('Search using DuckDuckGo')
+    .description('Search the web (DuckDuckGo by default, or Brave with --provider brave)')
     .option('-n, --count <n>', 'Number of results (1-10)', '5')
+    .option('--provider <provider>', 'Search provider: duckduckgo (default) or brave')
+    .option('--search-api-key <key>', 'API key for the search provider (or env WEBPEEL_BRAVE_API_KEY)')
     .option('--json', 'Output as JSON')
     .option('-s, --silent', 'Silent mode')
     .action(async (query, options) => {
@@ -379,61 +381,21 @@ program
     }
     const spinner = isSilent ? null : ora('Searching...').start();
     try {
-        // Import the search function dynamically
-        const { fetch: undiciFetch } = await import('undici');
-        const { load } = await import('cheerio');
-        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-        const response = await undiciFetch(searchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-            },
-        });
-        if (!response.ok) {
-            throw new Error(`Search failed: HTTP ${response.status}`);
-        }
-        const html = await response.text();
-        const $ = load(html);
-        const results = [];
-        $('.result').each((_i, elem) => {
-            if (results.length >= count)
-                return;
-            const $result = $(elem);
-            const title = $result.find('.result__title').text().trim();
-            const rawUrl = $result.find('.result__a').attr('href') || '';
-            const snippet = $result.find('.result__snippet').text().trim();
-            if (!title || !rawUrl)
-                return;
-            // Extract actual URL from DuckDuckGo redirect
-            let url = rawUrl;
-            try {
-                const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
-                const uddg = ddgUrl.searchParams.get('uddg');
-                if (uddg) {
-                    url = decodeURIComponent(uddg);
-                }
-            }
-            catch {
-                // Use raw URL if parsing fails
-            }
-            // Validate final URL
-            try {
-                const parsed = new URL(url);
-                if (!['http:', 'https:'].includes(parsed.protocol)) {
-                    return;
-                }
-                url = parsed.href;
-            }
-            catch {
-                return;
-            }
-            results.push({
-                title: title.slice(0, 200),
-                url,
-                snippet: snippet.slice(0, 500)
-            });
+        const { getSearchProvider } = await import('./core/search-provider.js');
+        // Resolve provider
+        const providerId = (options.provider || 'duckduckgo');
+        const config = loadConfig();
+        const apiKey = options.searchApiKey
+            || process.env.WEBPEEL_BRAVE_API_KEY
+            || config.braveApiKey
+            || undefined;
+        const provider = getSearchProvider(providerId);
+        const results = await provider.searchWeb(query, {
+            count: Math.min(Math.max(count, 1), 10),
+            apiKey,
         });
         if (spinner) {
-            spinner.succeed(`Found ${results.length} results`);
+            spinner.succeed(`Found ${results.length} results (${providerId})`);
         }
         // Show usage footer for free/anonymous users
         if (usageCheck.usageInfo && !isSilent) {
@@ -805,21 +767,34 @@ program
     .action(async () => {
     await import('./mcp/server.js');
 });
-// Config command
+// Config command  —  webpeel config [get|set] [key] [value]
 program
     .command('config')
     .description('View or update CLI configuration')
-    .argument('[key]', 'Config key to get or set')
+    .argument('[action]', '"get <key>", "set <key> <value>", or omit for overview')
+    .argument('[key]', 'Config key')
     .argument('[value]', 'Value to set')
-    .action(async (key, value) => {
+    .action(async (action, key, value) => {
     const config = loadConfig();
-    if (!key) {
+    // Settable config keys (safe for user modification)
+    const SETTABLE_KEYS = {
+        braveApiKey: 'Brave Search API key',
+    };
+    const maskSecret = (k, v) => {
+        if (!v)
+            return '(not set)';
+        if (k === 'apiKey' || k === 'braveApiKey')
+            return v.slice(0, 4) + '...' + v.slice(-4);
+        return String(v);
+    };
+    if (!action) {
         // Show all config
         console.log('WebPeel CLI Configuration');
         console.log(`  Config file: ~/.webpeel/config.json`);
         console.log('');
-        console.log(`  apiKey:     ${config.apiKey ? config.apiKey.slice(0, 7) + '...' + config.apiKey.slice(-4) : '(not set)'}`);
-        console.log(`  planTier:   ${config.planTier || 'free'}`);
+        console.log(`  apiKey:         ${maskSecret('apiKey', config.apiKey)}`);
+        console.log(`  braveApiKey:    ${maskSecret('braveApiKey', config.braveApiKey)}`);
+        console.log(`  planTier:       ${config.planTier || 'free'}`);
         console.log(`  anonymousUsage: ${config.anonymousUsage}`);
         const stats = cacheStats();
         console.log('');
@@ -827,21 +802,52 @@ program
         console.log(`    entries:  ${stats.entries}`);
         console.log(`    size:     ${(stats.sizeBytes / 1024).toFixed(1)} KB`);
         console.log(`    dir:      ${stats.dir}`);
+        console.log('');
+        console.log('  Settable keys: ' + Object.keys(SETTABLE_KEYS).join(', '));
+        console.log('  Usage: webpeel config set <key> <value>');
         process.exit(0);
     }
-    if (key && !value) {
-        // Get a specific key
-        const val = config[key];
-        if (val !== undefined) {
-            console.log(key === 'apiKey' && val ? val.slice(0, 7) + '...' + val.slice(-4) : val);
-        }
-        else {
-            console.error(`Unknown config key: ${key}`);
+    if (action === 'set') {
+        if (!key) {
+            console.error('Usage: webpeel config set <key> <value>');
+            console.error('Settable keys: ' + Object.keys(SETTABLE_KEYS).join(', '));
             process.exit(1);
         }
+        if (!(key in SETTABLE_KEYS)) {
+            console.error(`Cannot set "${key}". Settable keys: ${Object.keys(SETTABLE_KEYS).join(', ')}`);
+            process.exit(1);
+        }
+        if (!value) {
+            console.error(`Usage: webpeel config set ${key} <value>`);
+            process.exit(1);
+        }
+        config[key] = value;
+        saveConfig(config);
+        console.log(`✓ ${key} saved`);
+        process.exit(0);
     }
-    // Note: Setting config values directly is not supported for security
-    // Use `webpeel login` for API key, plan is fetched from server
+    if (action === 'get') {
+        const lookupKey = key || '';
+        const val = config[lookupKey];
+        if (val !== undefined) {
+            console.log(maskSecret(lookupKey, String(val)));
+        }
+        else {
+            console.error(`Unknown config key: ${lookupKey}`);
+            process.exit(1);
+        }
+        process.exit(0);
+    }
+    // Legacy: `webpeel config <key>` — treat action as the key name
+    const val = config[action];
+    if (val !== undefined) {
+        console.log(maskSecret(action, String(val)));
+    }
+    else {
+        console.error(`Unknown config key or action: ${action}`);
+        console.error('Usage: webpeel config [get|set] [key] [value]');
+        process.exit(1);
+    }
     process.exit(0);
 });
 // Cache management command
@@ -1175,6 +1181,88 @@ program
     }
     catch (error) {
         console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        process.exit(1);
+    }
+});
+// Answer command - search + fetch + LLM-generated answer
+program
+    .command('answer <question>')
+    .description('Ask a question, search the web, and get an AI-generated answer with citations (BYOK)')
+    .option('--provider <provider>', 'Search provider: duckduckgo (default) or brave')
+    .option('--search-api-key <key>', 'Search provider API key (or env WEBPEEL_BRAVE_API_KEY)')
+    .option('--llm <provider>', 'LLM provider: openai, anthropic, or google (required)')
+    .option('--llm-api-key <key>', 'LLM API key (or env OPENAI_API_KEY / ANTHROPIC_API_KEY / GOOGLE_API_KEY)')
+    .option('--llm-model <model>', 'LLM model name (optional, uses provider default)')
+    .option('--max-sources <n>', 'Maximum sources to fetch (1-10, default 5)', '5')
+    .option('--json', 'Output as JSON')
+    .option('-s, --silent', 'Silent mode')
+    .action(async (question, options) => {
+    const spinner = options.silent ? null : ora('Thinking...').start();
+    try {
+        const { answerQuestion } = await import('./core/answer.js');
+        const config = loadConfig();
+        const llmProvider = options.llm;
+        if (!llmProvider || !['openai', 'anthropic', 'google'].includes(llmProvider)) {
+            console.error('Error: --llm is required (openai, anthropic, or google)');
+            process.exit(1);
+        }
+        const llmApiKey = options.llmApiKey
+            || process.env.OPENAI_API_KEY
+            || process.env.ANTHROPIC_API_KEY
+            || process.env.GOOGLE_API_KEY
+            || '';
+        if (!llmApiKey) {
+            console.error('Error: --llm-api-key is required (or set OPENAI_API_KEY / ANTHROPIC_API_KEY / GOOGLE_API_KEY)');
+            process.exit(1);
+        }
+        const searchProvider = (options.provider || 'duckduckgo');
+        const searchApiKey = options.searchApiKey
+            || process.env.WEBPEEL_BRAVE_API_KEY
+            || config.braveApiKey
+            || undefined;
+        const maxSources = Math.min(Math.max(parseInt(options.maxSources) || 5, 1), 10);
+        if (spinner)
+            spinner.text = 'Searching the web...';
+        const result = await answerQuestion({
+            question,
+            searchProvider,
+            searchApiKey,
+            llmProvider,
+            llmApiKey,
+            llmModel: options.llmModel,
+            maxSources,
+            stream: false,
+        });
+        if (spinner)
+            spinner.succeed('Done');
+        if (options.json) {
+            const jsonStr = JSON.stringify(result, null, 2);
+            await new Promise((resolve, reject) => {
+                process.stdout.write(jsonStr + '\n', (err) => {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve();
+                });
+            });
+        }
+        else {
+            console.log(`\n${result.answer}`);
+            console.log(`\nSources:`);
+            result.citations.forEach((c, i) => {
+                console.log(`  [${i + 1}] ${c.title}`);
+                console.log(`      ${c.url}`);
+            });
+            console.log(`\nModel: ${result.llmModel} (${result.llmProvider})`);
+        }
+        await cleanup();
+        process.exit(0);
+    }
+    catch (error) {
+        if (spinner)
+            spinner.fail('Answer generation failed');
+        console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        await cleanup();
         process.exit(1);
     }
 });

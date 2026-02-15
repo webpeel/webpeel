@@ -19,7 +19,7 @@ export { mapDomain, type MapOptions, type MapResult } from './core/map.js';
 export { extractBranding, type BrandingProfile } from './core/branding.js';
 export { trackChange, getSnapshot, clearSnapshots, type ChangeResult, type Snapshot } from './core/change-tracking.js';
 export { extractWithLLM } from './core/extract.js';
-export { runAgent, type AgentOptions, type AgentResult, type AgentProgress } from './core/agent.js';
+export { runAgent, type AgentOptions, type AgentResult, type AgentProgress, type AgentStreamEvent, type AgentDepth, type AgentTopic } from './core/agent.js';
 export { summarizeContent, type SummarizeOptions } from './core/summarize.js';
 export {
   getSearchProvider,

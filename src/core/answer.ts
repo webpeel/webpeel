@@ -281,7 +281,7 @@ async function callAnthropic(
       model,
       system,
       messages: [{ role: 'user', content: user }],
-      max_tokens: 800,
+      max_tokens: 4096,
       temperature: 0.2,
       stream,
     }),

@@ -405,6 +405,13 @@ paths:
         Autonomous web research using your own LLM. Searches, fetches, analyzes,
         and compiles data based on a natural language prompt.
         Requires a BYOK (Bring Your Own Key) LLM API key.
+
+        **Streaming:** Set `stream: true` to receive Server-Sent Events (SSE):
+        - `{"type":"step","action":"searching","query":"..."}` — searching
+        - `{"type":"step","action":"fetching","url":"..."}` — fetching a page
+        - `{"type":"step","action":"analyzing","summary":"..."}` — processing
+        - `{"type":"chunk","text":"..."}` — incremental answer text
+        - `{"type":"done","answer":"...","sources":[...],"tokensUsed":{...}}` — final result
       tags: [Agent]
       requestBody:
         required: true
@@ -430,19 +437,101 @@ paths:
                   type: string
                   default: gpt-4o-mini
                   description: LLM model to use
-                llmBaseUrl:
+                llmApiBase:
                   type: string
                   description: Custom LLM API base URL
                 schema:
                   type: object
-                  description: JSON schema for structured output
-                maxIterations:
+                  description: JSON schema for structured output (legacy — prefer outputSchema)
+                outputSchema:
+                  type: object
+                  description: JSON Schema for structured output. When provided, the LLM response is validated against this schema.
+                depth:
+                  type: string
+                  enum: [basic, thorough]
+                  default: basic
+                  description: |
+                    Research depth:
+                    - `basic`: 1 search round, top 3 results (fast)
+                    - `thorough`: up to 3 search rounds, top 10 results, cross-references (comprehensive)
+                topic:
+                  type: string
+                  enum: [general, news, technical, academic]
+                  default: general
+                  description: Topic filter — adjusts search queries and source prioritization
+                maxSources:
+                  type: integer
+                  default: 5
+                  minimum: 1
+                  maximum: 20
+                  description: Maximum number of web sources to fetch and analyse
+                maxPages:
                   type: integer
                   default: 10
-                  description: Max research iterations
+                  description: Max pages to visit (legacy — prefer maxSources)
+                maxCredits:
+                  type: integer
+                  description: Maximum credits/cost to spend
+                stream:
+                  type: boolean
+                  default: false
+                  description: When true, return Server-Sent Events (SSE) with progress and incremental answer
       responses:
         "200":
-          description: Research results
+          description: |
+            Research results (JSON when stream=false, SSE when stream=true).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE stream with step/chunk/done events
+
+  /mcp:
+    post:
+      operationId: mcpPost
+      summary: MCP Streamable HTTP endpoint
+      description: |
+        Hosted MCP (Model Context Protocol) server over HTTP. Send JSON-RPC 2.0
+        messages and receive MCP protocol responses.
+
+        **Connect any MCP client** with:
+        ```json
+        {
+          "url": "https://api.webpeel.dev/mcp",
+          "headers": { "Authorization": "Bearer wp_..." }
+        }
+        ```
+
+        Supports tools: `webpeel_fetch`, `webpeel_search`, `webpeel_crawl`,
+        `webpeel_map`, `webpeel_extract`, `webpeel_batch`, `webpeel_agent`.
+      tags: [MCP]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: JSON-RPC 2.0 message (e.g., tools/list, tools/call)
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ["2.0"]
+                method:
+                  type: string
+                  description: MCP method (e.g., "initialize", "tools/list", "tools/call")
+                id:
+                  oneOf:
+                    - type: string
+                    - type: number
+                params:
+                  type: object
+              required: [jsonrpc, method]
+      responses:
+        "200":
+          description: MCP JSON-RPC response
 
   /health:
     get:

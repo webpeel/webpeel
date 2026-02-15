@@ -7,11 +7,11 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
 import { peel, peelBatch } from '../index.js';
-import { fetch as undiciFetch } from 'undici';
-import { load } from 'cheerio';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { getSearchProvider } from '../core/search-provider.js';
+import { answerQuestion } from '../core/answer.js';
 // Read version from package.json
 let pkgVersion = '0.3.1';
 try {
@@ -52,67 +52,8 @@ const server = new Server({
         tools: {},
     },
 });
-/**
- * Search DuckDuckGo HTML and return structured results
- */
-async function searchWeb(query, count = 5) {
-    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    try {
-        const response = await undiciFetch(searchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-            },
-        });
-        if (!response.ok) {
-            throw new Error(`Search failed: HTTP ${response.status}`);
-        }
-        const html = await response.text();
-        const $ = load(html);
-        const results = [];
-        $('.result').each((_i, elem) => {
-            if (results.length >= count)
-                return;
-            const $result = $(elem);
-            let title = $result.find('.result__title').text().trim();
-            const rawUrl = $result.find('.result__a').attr('href') || '';
-            let snippet = $result.find('.result__snippet').text().trim();
-            if (!title || !rawUrl)
-                return;
-            // Extract actual URL from DuckDuckGo redirect
-            let url = rawUrl;
-            try {
-                const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
-                const uddg = ddgUrl.searchParams.get('uddg');
-                if (uddg) {
-                    url = decodeURIComponent(uddg);
-                }
-            }
-            catch {
-                // Use raw URL if parsing fails
-            }
-            // SECURITY: Validate and sanitize results — only allow HTTP/HTTPS URLs
-            try {
-                const parsed = new URL(url);
-                if (!['http:', 'https:'].includes(parsed.protocol)) {
-                    return;
-                }
-                url = parsed.href;
-            }
-            catch {
-                return;
-            }
-            // Limit text lengths to prevent bloat
-            title = title.slice(0, 200);
-            snippet = snippet.slice(0, 500);
-            results.push({ title, url, snippet });
-        });
-        return results;
-    }
-    catch (error) {
-        const err = error;
-        throw new Error(`Search failed: ${err.message}`);
-    }
-}
+// Legacy searchWeb function removed — search logic now lives in
+// core/search-provider.ts (DuckDuckGoProvider / BraveSearchProvider).
 const tools = [
     {
         name: 'webpeel_fetch',
@@ -221,7 +162,7 @@ const tools = [
     },
     {
         name: 'webpeel_search',
-        description: 'Search the web using DuckDuckGo and return results with titles, URLs, and snippets. Use this to find relevant web pages before fetching them.',
+        description: 'Search the web and return results with titles, URLs, and snippets. Supports DuckDuckGo (free, default) and Brave Search (requires API key). Use this to find relevant web pages before fetching them.',
         annotations: {
             title: 'Search the Web',
             readOnlyHint: true,
@@ -242,6 +183,16 @@ const tools = [
                     default: 5,
                     minimum: 1,
                     maximum: 10,
+                },
+                provider: {
+                    type: 'string',
+                    enum: ['duckduckgo', 'brave'],
+                    description: 'Search provider (default: duckduckgo). Use "brave" with a searchApiKey for better results.',
+                    default: 'duckduckgo',
+                },
+                searchApiKey: {
+                    type: 'string',
+                    description: 'API key for Brave Search (required when provider is "brave")',
                 },
             },
             required: ['query'],
@@ -559,6 +510,57 @@ const tools = [
             required: ['url', 'llmApiKey'],
         },
     },
+    {
+        name: 'webpeel_answer',
+        description: 'Ask a question, search the web, fetch top results, and generate a cited answer using an LLM (BYOK). Returns an answer with [1], [2] source citations. Supports OpenAI, Anthropic, and Google LLMs.',
+        annotations: {
+            title: 'Answer a Question',
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: false,
+            openWorldHint: true,
+        },
+        inputSchema: {
+            type: 'object',
+            properties: {
+                question: {
+                    type: 'string',
+                    description: 'The question to answer',
+                },
+                searchProvider: {
+                    type: 'string',
+                    enum: ['duckduckgo', 'brave'],
+                    description: 'Search provider (default: duckduckgo)',
+                    default: 'duckduckgo',
+                },
+                searchApiKey: {
+                    type: 'string',
+                    description: 'API key for Brave Search (required when searchProvider is "brave")',
+                },
+                llmProvider: {
+                    type: 'string',
+                    enum: ['openai', 'anthropic', 'google'],
+                    description: 'LLM provider to use for answer generation',
+                },
+                llmApiKey: {
+                    type: 'string',
+                    description: 'API key for the LLM provider (BYOK)',
+                },
+                llmModel: {
+                    type: 'string',
+                    description: 'LLM model name (optional, uses provider default)',
+                },
+                maxSources: {
+                    type: 'number',
+                    description: 'Maximum number of sources to fetch (1-10, default 5)',
+                    default: 5,
+                    minimum: 1,
+                    maximum: 10,
+                },
+            },
+            required: ['question', 'llmProvider', 'llmApiKey'],
+        },
+    },
 ];
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools,
@@ -662,7 +664,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             };
         }
         if (name === 'webpeel_search') {
-            const { query, count } = args;
+            const { query, count, provider, searchApiKey: searchKey } = args;
             // SECURITY: Validate input parameters
             if (!query || typeof query !== 'string') {
                 throw new Error('Invalid query parameter');
@@ -675,13 +677,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     throw new Error('Invalid count parameter: must be between 1 and 10');
                 }
             }
+            const validProviders = ['duckduckgo', 'brave'];
+            const providerId = provider && validProviders.includes(provider)
+                ? provider
+                : 'duckduckgo';
             const resultCount = Math.min(Math.max(count || 5, 1), 10);
             // SECURITY: Wrap in timeout (30 seconds max)
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error('Search operation timed out after 30s')), 30000);
             });
+            const searchProvider = getSearchProvider(providerId);
             const results = await Promise.race([
-                searchWeb(query, resultCount),
+                searchProvider.searchWeb(query, {
+                    count: resultCount,
+                    apiKey: searchKey || undefined,
+                }),
                 timeoutPromise,
             ]);
             // SECURITY: Handle JSON serialization errors
@@ -1112,6 +1122,66 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 resultText = JSON.stringify({
                     error: 'serialization_error',
                     message: 'Failed to serialize summary result',
+                });
+            }
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: resultText,
+                    },
+                ],
+            };
+        }
+        if (name === 'webpeel_answer') {
+            const { question, searchProvider: sp, searchApiKey: sak, llmProvider: lp, llmApiKey: lak, llmModel: lm, maxSources: ms, } = args;
+            // SECURITY: Validate input parameters
+            if (!question || typeof question !== 'string') {
+                throw new Error('Invalid question parameter');
+            }
+            if (question.length > 2000) {
+                throw new Error('Question too long (max 2000 characters)');
+            }
+            const validLlmProviders = ['openai', 'anthropic', 'google'];
+            if (!lp || !validLlmProviders.includes(lp)) {
+                throw new Error('Invalid llmProvider parameter: must be openai, anthropic, or google');
+            }
+            if (!lak || typeof lak !== 'string') {
+                throw new Error('Invalid llmApiKey parameter: must be a string');
+            }
+            const validSearchProviders = ['duckduckgo', 'brave'];
+            const resolvedSp = sp && validSearchProviders.includes(sp)
+                ? sp
+                : 'duckduckgo';
+            const resolvedMs = typeof ms === 'number'
+                ? Math.min(Math.max(ms, 1), 10)
+                : 5;
+            // SECURITY: Wrap in timeout (3 minutes max)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Answer operation timed out after 3 minutes')), 180000);
+            });
+            const result = await Promise.race([
+                answerQuestion({
+                    question,
+                    searchProvider: resolvedSp,
+                    searchApiKey: sak || undefined,
+                    llmProvider: lp,
+                    llmApiKey: lak,
+                    llmModel: lm || undefined,
+                    maxSources: resolvedMs,
+                    stream: false,
+                }),
+                timeoutPromise,
+            ]);
+            // SECURITY: Handle JSON serialization errors
+            let resultText;
+            try {
+                resultText = JSON.stringify(result, null, 2);
+            }
+            catch (jsonError) {
+                resultText = JSON.stringify({
+                    error: 'serialization_error',
+                    message: 'Failed to serialize answer result',
                 });
             }
             return {

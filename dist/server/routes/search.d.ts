@@ -1,5 +1,5 @@
 /**
- * Search endpoint with caching
+ * Search endpoint with caching — supports DuckDuckGo (default) and Brave (BYOK)
  */
 import { Router } from 'express';
 import { AuthStore } from '../auth-store.js';

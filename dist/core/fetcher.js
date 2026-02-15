@@ -1,6 +1,12 @@
 /**
  * Core fetching logic: simple HTTP and browser-based fetching
  */
+// Force IPv4-first DNS resolution globally.
+// Prevents IPv6 connection failures (TLS errors, timeouts) on hosts that
+// advertise AAAA records but can't actually route IPv6 (e.g. Render containers).
+// Must run before any network library is used.
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
 import { chromium } from 'playwright';
 import { chromium as stealthChromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
