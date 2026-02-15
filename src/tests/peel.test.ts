@@ -128,10 +128,11 @@ describe('peel() function', () => {
     expect(result.method).toBe('stealth');
   });
 
-  it('forces browser for PDF URLs', async () => {
+  it('handles PDF URLs via simple fetch (no browser needed)', async () => {
     const result = await peel('https://example.com/document.pdf');
 
-    expect(result.method).toBe('browser');
+    // PDFs are now parsed via pdf-parse in the simple HTTP path — no browser required
+    expect(result.method).toBe('simple');
   });
 
   it('forces browser when screenshot requested', async () => {

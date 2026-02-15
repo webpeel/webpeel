@@ -14,6 +14,7 @@ import { chromium as stealthChromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { fetch as undiciFetch } from 'undici';
 import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types.js';
+import type { PageAction } from '../types.js';
 
 // Add stealth plugin to playwright-extra
 stealthChromium.use(StealthPlugin());
@@ -265,10 +266,14 @@ function validateUserAgent(userAgent: string): string {
 }
 
 export interface FetchResult {
+  /** Text content (HTML/JSON/XML/plain text). For binary documents, this may be an empty string. */
   html: string;
+  /** Raw response body (used for binary documents like PDFs/DOCX). */
+  buffer?: Buffer;
   url: string;
   statusCode?: number;
   screenshot?: Buffer;
+  /** Raw Content-Type header from the response (may include charset). */
   contentType?: string;
   /** Playwright page object (only available in browser/stealth mode, must be closed by caller) */
   page?: import('playwright-core').Page;
@@ -365,20 +370,43 @@ export async function simpleFetch(
         throw new NetworkError(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Content-Type detection — accept a wide range of text-based content
+      // Content-Type detection
       const contentType = response.headers.get('content-type') || '';
+      const contentTypeLower = contentType.toLowerCase();
+      const urlLower = currentUrl.toLowerCase();
+
+      // Support binary documents (PDF/DOCX) in the simple HTTP path.
+      const isPdf = contentTypeLower.includes('application/pdf') || urlLower.endsWith('.pdf');
+      const isDocx = contentTypeLower.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || urlLower.endsWith('.docx');
+      const isBinaryDoc = isPdf || isDocx;
+
+      // Accept a wide range of text-based content, plus supported binary documents.
       const ALLOWED_TYPES = [
-        'text/html', 'application/xhtml+xml', 'application/pdf',
+        'text/html', 'application/xhtml+xml',
         'text/plain', 'text/markdown', 'text/csv',
         'application/json', 'text/json',
         'text/xml', 'application/xml', 'application/rss+xml', 'application/atom+xml',
         'application/javascript', 'text/javascript', 'text/css',
+        // Documents
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       ];
-      const isAllowed = ALLOWED_TYPES.some(t => contentType.includes(t)) || !contentType;
+
+      const isAllowed =
+        !contentTypeLower ||
+        ALLOWED_TYPES.some(t => contentTypeLower.includes(t)) ||
+        // Many servers mislabel docs as octet-stream; allow when URL implies a supported document.
+        (contentTypeLower.includes('application/octet-stream') && isBinaryDoc);
+
       if (!isAllowed) {
         // Check if it's at least text-based
-        if (!contentType.startsWith('text/') && !contentType.includes('json') && !contentType.includes('xml')) {
-          throw new WebPeelError(`Binary content type: ${contentType}. WebPeel handles text-based content only.`);
+        const isTexty =
+          contentTypeLower.startsWith('text/') ||
+          contentTypeLower.includes('json') ||
+          contentTypeLower.includes('xml');
+
+        if (!isTexty) {
+          throw new WebPeelError(`Binary content type: ${contentType}. WebPeel handles text-based content and PDF/DOCX documents only.`);
         }
       }
 
@@ -417,15 +445,21 @@ export async function simpleFetch(
         offset += chunk.length;
       }
 
-      const html = new TextDecoder().decode(combined);
+      const buffer = Buffer.from(combined);
+      const html = isBinaryDoc ? '' : new TextDecoder().decode(combined);
 
       // For HTML content, check for suspiciously small responses (bot blocks)
       // Non-HTML content (JSON, text, XML) can legitimately be short
-      const isHtmlContent = contentType.includes('html') || contentType.includes('xhtml');
+      const isHtmlContent = !isBinaryDoc && (contentTypeLower.includes('html') || contentTypeLower.includes('xhtml'));
       if (isHtmlContent && (!html || html.length < 100)) {
         throw new BlockedError('Empty or suspiciously small response. Site may require JavaScript.');
       }
-      if (!html) {
+
+      if (!isBinaryDoc && !html) {
+        throw new NetworkError('Empty response body');
+      }
+
+      if (isBinaryDoc && buffer.length === 0) {
         throw new NetworkError('Empty response body');
       }
 
@@ -436,6 +470,7 @@ export async function simpleFetch(
 
       return {
         html,
+        buffer: isBinaryDoc ? buffer : undefined,
         url: currentUrl,
         statusCode: response.status,
         contentType,
@@ -534,15 +569,7 @@ export async function browserFetch(
     headers?: Record<string, string>;
     cookies?: string[];
     stealth?: boolean;
-    actions?: Array<{
-      type: 'wait' | 'click' | 'scroll' | 'type' | 'fill' | 'select' | 'press' | 'hover' | 'waitForSelector' | 'screenshot';
-      selector?: string;
-      value?: string;
-      key?: string;
-      ms?: number;
-      to?: 'top' | 'bottom' | number;
-      timeout?: number;
-    }>;
+    actions?: PageAction[];
     /** Keep the browser page open after fetch (caller must close page + browser) */
     keepPageOpen?: boolean;
   } = {}
@@ -648,12 +675,21 @@ export async function browserFetch(
     let screenshotBuffer: Buffer | undefined;
     
     const fetchPromise = (async () => {
-      await page!.goto(url, {
+      const response = await page!.goto(url, {
         waitUntil: 'domcontentloaded',
         timeout: timeoutMs,
       });
 
-      // Wait for additional time if requested (for dynamic content)
+      const finalUrl = page!.url();
+      const contentType = response?.headers()?.['content-type'] || '';
+      const contentTypeLower = contentType.toLowerCase();
+      const urlLower = finalUrl.toLowerCase();
+
+      const isPdf = contentTypeLower.includes('application/pdf') || urlLower.endsWith('.pdf');
+      const isDocx = contentTypeLower.includes('wordprocessingml.document') || urlLower.endsWith('.docx');
+      const isBinaryDoc = !!response && (isPdf || isDocx);
+
+      // Wait for additional time if requested (for dynamic content / screenshots)
       if (waitMs > 0) {
         await page!.waitForTimeout(waitMs);
       }
@@ -667,28 +703,60 @@ export async function browserFetch(
         }
       }
 
-      const html = await page!.content();
-      const finalUrl = page!.url();
+      // If the navigation returned a binary document (PDF/DOCX), grab the raw body.
+      if (isBinaryDoc) {
+        const buffer = await response!.body();
 
-      return { html, finalUrl };
+        // Capture screenshot if requested (and not already captured by actions)
+        if (screenshot && !screenshotBuffer) {
+          screenshotBuffer = await page!.screenshot({
+            fullPage: screenshotFullPage,
+            type: 'png',
+          });
+        }
+
+        return {
+          html: '',
+          finalUrl,
+          buffer,
+          contentType,
+          statusCode: response!.status(),
+        };
+      }
+
+      const html = await page!.content();
+
+      return {
+        html,
+        finalUrl,
+        contentType,
+        statusCode: response?.status(),
+      };
     })();
 
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new TimeoutError(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
     });
 
-    const { html, finalUrl } = await Promise.race([fetchPromise, timeoutPromise]);
+    const fetchData = await Promise.race([fetchPromise, timeoutPromise]);
+    const { html, finalUrl } = fetchData;
+    const fetchBuffer = 'buffer' in fetchData ? (fetchData as any).buffer as Buffer | undefined : undefined;
+    const fetchContentType = 'contentType' in fetchData ? (fetchData as any).contentType as string | undefined : undefined;
+    const fetchStatusCode = 'statusCode' in fetchData ? (fetchData as any).statusCode as number | undefined : undefined;
+    const isBinaryDoc = !!fetchBuffer;
 
-    // SECURITY: Limit HTML size
-    if (html.length > 10 * 1024 * 1024) { // 10MB limit
-      throw new WebPeelError('Response too large (max 10MB)');
+    // SECURITY: Limit HTML size (skip for binary documents where html is empty)
+    if (!isBinaryDoc) {
+      if (html.length > 10 * 1024 * 1024) { // 10MB limit
+        throw new WebPeelError('Response too large (max 10MB)');
+      }
+
+      if (!html || html.length < 100) {
+        throw new BlockedError('Empty or suspiciously small response from browser.');
+      }
     }
 
-    if (!html || html.length < 100) {
-      throw new BlockedError('Empty or suspiciously small response from browser.');
-    }
-
-    // Capture screenshot if requested (and not already captured by actions)
+    // Capture screenshot if requested (and not already captured by actions or document handler)
     if (screenshot && !screenshotBuffer) {
       screenshotBuffer = await page!.screenshot({ 
         fullPage: screenshotFullPage, 
@@ -700,7 +768,10 @@ export async function browserFetch(
     if (keepPageOpen && page) {
       return {
         html,
+        buffer: fetchBuffer,
         url: finalUrl,
+        statusCode: fetchStatusCode,
+        contentType: fetchContentType,
         screenshot: screenshotBuffer,
         page,
         browser,
@@ -709,7 +780,10 @@ export async function browserFetch(
 
     return {
       html,
+      buffer: fetchBuffer,
       url: finalUrl,
+      statusCode: fetchStatusCode,
+      contentType: fetchContentType,
       screenshot: screenshotBuffer,
     };
   } catch (error) {
@@ -736,6 +810,203 @@ export async function browserFetch(
 /**
  * Retry a fetch operation with exponential backoff
  */
+export async function browserScreenshot(
+  url: string,
+  options: {
+    fullPage?: boolean;
+    width?: number;
+    height?: number;
+    format?: 'png' | 'jpeg';
+    quality?: number;
+    waitMs?: number;
+    timeoutMs?: number;
+    userAgent?: string;
+    headers?: Record<string, string>;
+    cookies?: string[];
+    stealth?: boolean;
+    actions?: Array<{
+      type: 'wait' | 'click' | 'scroll' | 'type' | 'fill' | 'select' | 'press' | 'hover' | 'waitForSelector' | 'screenshot';
+      selector?: string;
+      value?: string;
+      key?: string;
+      ms?: number;
+      to?: 'top' | 'bottom' | number;
+      timeout?: number;
+    }>;
+  } = {}
+): Promise<{ buffer: Buffer; finalUrl: string }> {
+  // SECURITY: Validate URL to prevent SSRF
+  validateUrl(url);
+
+  const {
+    fullPage = false,
+    width,
+    height,
+    format = 'png',
+    quality,
+    waitMs = 0,
+    timeoutMs = 30000,
+    userAgent,
+    headers,
+    cookies,
+    stealth = false,
+    actions,
+  } = options;
+
+  const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
+
+  // Basic validation
+  if (waitMs < 0 || waitMs > 60000) {
+    throw new WebPeelError('Wait time must be between 0 and 60000ms');
+  }
+  if (timeoutMs < 1000 || timeoutMs > 120000) {
+    throw new WebPeelError('Timeout must be between 1000 and 120000ms');
+  }
+
+  if (width !== undefined && (!Number.isFinite(width) || width < 100 || width > 5000)) {
+    throw new WebPeelError('Width must be between 100 and 5000');
+  }
+  if (height !== undefined && (!Number.isFinite(height) || height < 100 || height > 5000)) {
+    throw new WebPeelError('Height must be between 100 and 5000');
+  }
+
+  if (format !== 'png' && format !== 'jpeg') {
+    throw new WebPeelError('Format must be png or jpeg');
+  }
+  if (format === 'jpeg' && quality !== undefined) {
+    if (!Number.isFinite(quality) || quality < 1 || quality > 100) {
+      throw new WebPeelError('JPEG quality must be between 1 and 100');
+    }
+  }
+
+  // SECURITY: Validate custom headers if provided
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
+      if (key.toLowerCase() === 'host') {
+        throw new WebPeelError('Custom Host header is not allowed');
+      }
+      if (typeof value !== 'string' || value.length > 500) {
+        throw new WebPeelError('Invalid header value');
+      }
+    }
+  }
+
+  // SECURITY: Limit concurrent browser pages with timeout
+  const queueStartTime = Date.now();
+  const QUEUE_TIMEOUT_MS = 30000;
+
+  while (activePagesCount >= MAX_CONCURRENT_PAGES) {
+    if (Date.now() - queueStartTime > QUEUE_TIMEOUT_MS) {
+      throw new TimeoutError('Browser page queue timeout - too many concurrent requests');
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  activePagesCount++;
+  let page: Page | null = null;
+
+  try {
+    const browser = stealth ? await getStealthBrowser() : await getBrowser();
+
+    page = await browser.newPage({
+      userAgent: validatedUserAgent,
+      viewport: width || height ? {
+        width: width || 1280,
+        height: height || 720,
+      } : undefined,
+    });
+
+    if (headers && Object.keys(headers).length > 0) {
+      await page.setExtraHTTPHeaders(headers);
+    }
+
+    if (cookies && cookies.length > 0) {
+      const parsedCookies = cookies.map(cookie => {
+        const [nameValue] = cookie.split(';').map(s => s.trim());
+        const [name, value] = nameValue.split('=');
+
+        if (!name || value === undefined) {
+          throw new WebPeelError(`Invalid cookie format: ${cookie}`);
+        }
+
+        return {
+          name: name.trim(),
+          value: value.trim(),
+          url,
+        };
+      });
+
+      await page.context().addCookies(parsedCookies);
+    }
+
+    // For screenshots, allow all resources
+    await page.route('**/*', (route) => route.continue());
+
+    let screenshotBuffer: Buffer | undefined;
+
+    const doWork = (async () => {
+      await page!.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: timeoutMs,
+      });
+
+      if (waitMs > 0) {
+        await page!.waitForTimeout(waitMs);
+      }
+
+      if (actions && actions.length > 0) {
+        const { executeActions } = await import('./actions.js');
+        const actionScreenshot = await executeActions(page!, actions, {
+          fullPage,
+          type: format,
+          quality,
+        });
+        if (actionScreenshot) {
+          screenshotBuffer = actionScreenshot;
+        }
+      }
+
+      const finalUrl = page!.url();
+
+      // Capture screenshot if not captured via actions
+      if (!screenshotBuffer) {
+        screenshotBuffer = await page!.screenshot({
+          fullPage,
+          type: format,
+          ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
+        });
+      }
+
+      return { finalUrl, screenshotBuffer: screenshotBuffer! };
+    })();
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new TimeoutError(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
+    });
+
+    const { finalUrl, screenshotBuffer: buf } = await Promise.race([doWork, timeoutPromise]);
+
+    return { buffer: buf, finalUrl };
+  } catch (error) {
+    if (error instanceof BlockedError || error instanceof WebPeelError || error instanceof TimeoutError) {
+      throw error;
+    }
+
+    if (error instanceof Error && error.message.includes('Timeout')) {
+      throw new TimeoutError('Browser screenshot timed out');
+    }
+
+    throw new NetworkError(
+      `Browser screenshot failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  } finally {
+    if (page) {
+      await page.close().catch(() => {});
+    }
+    activePagesCount--;
+  }
+}
+
 export async function retryFetch<T>(
   fn: () => Promise<T>,
   maxAttempts: number = 3,

@@ -14,11 +14,13 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { peel, peelBatch } from '../index.js';
 import type { PeelOptions } from '../types.js';
+import { normalizeActions } from '../core/actions.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getSearchProvider, type SearchProviderId } from '../core/search-provider.js';
 import { answerQuestion, type LLMProviderId } from '../core/answer.js';
+import { extractInlineJson, type LLMProvider as InlineLLMProvider } from '../core/extract-inline.js';
 
 // Read version from package.json
 let pkgVersion = '0.3.1';
@@ -160,8 +162,21 @@ const tools: Tool[] = [
           type: 'array',
           items: {
             type: 'object',
+            properties: {
+              type: { type: 'string', enum: ['click', 'type', 'fill', 'scroll', 'wait', 'press', 'hover', 'select', 'waitForSelector', 'screenshot'] },
+              selector: { type: 'string', description: 'CSS selector (for click, type, fill, select, hover, waitForSelector)' },
+              value: { type: 'string', description: 'Value for type/fill/select actions' },
+              text: { type: 'string', description: 'Alias for value (Firecrawl compat)' },
+              key: { type: 'string', description: 'Keyboard key for press action (e.g., "Enter")' },
+              milliseconds: { type: 'number', description: 'Wait duration in ms (for wait action)' },
+              ms: { type: 'number', description: 'Alias for milliseconds' },
+              direction: { type: 'string', enum: ['up', 'down', 'left', 'right'], description: 'Scroll direction' },
+              amount: { type: 'number', description: 'Scroll amount in pixels' },
+              timeout: { type: 'number', description: 'Per-action timeout override in ms (default 5000, max 30000 total)' },
+            },
+            required: ['type'],
           },
-          description: 'Page actions to execute before extraction (e.g., [{type: "click", selector: ".btn"}, {type: "wait", ms: 2000}])',
+          description: 'Page actions to execute before extraction. Auto-enables browser rendering. Examples: [{type: "click", selector: ".load-more"}, {type: "wait", milliseconds: 2000}, {type: "scroll", direction: "down", amount: 500}]',
         },
         maxTokens: {
           type: 'number',
@@ -170,6 +185,33 @@ const tools: Tool[] = [
         extract: {
           type: 'object',
           description: 'Structured data extraction options: {selectors: {field: "css"}} or {schema: {...}}',
+        },
+        inlineExtract: {
+          type: 'object',
+          description: 'Inline LLM-powered JSON extraction (BYOK). Provide schema and/or prompt, plus llmProvider & llmApiKey.',
+          properties: {
+            schema: {
+              type: 'object',
+              description: 'JSON Schema describing the desired output structure',
+            },
+            prompt: {
+              type: 'string',
+              description: 'Natural language prompt describing what to extract',
+            },
+          },
+        },
+        llmProvider: {
+          type: 'string',
+          enum: ['openai', 'anthropic', 'google'],
+          description: 'LLM provider for inline extraction (required with inlineExtract)',
+        },
+        llmApiKey: {
+          type: 'string',
+          description: 'LLM API key for inline extraction — BYOK (required with inlineExtract)',
+        },
+        llmModel: {
+          type: 'string',
+          description: 'LLM model name (optional, uses provider default)',
         },
       },
       required: ['url'],
@@ -576,6 +618,75 @@ const tools: Tool[] = [
       required: ['question', 'llmProvider', 'llmApiKey'],
     },
   },
+  {
+    name: 'webpeel_screenshot',
+    description: 'Take a screenshot of a URL and return a base64-encoded image. Supports full page or viewport capture, custom dimensions, PNG/JPEG format, quality setting, and page actions before capture.',
+    annotations: {
+      title: 'Take Screenshot',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'The URL to screenshot',
+        },
+        fullPage: {
+          type: 'boolean',
+          description: 'Capture the full scrollable page (default: viewport only)',
+          default: false,
+        },
+        width: {
+          type: 'number',
+          description: 'Viewport width in pixels (default: 1280)',
+          default: 1280,
+          minimum: 100,
+          maximum: 5000,
+        },
+        height: {
+          type: 'number',
+          description: 'Viewport height in pixels (default: 720)',
+          default: 720,
+          minimum: 100,
+          maximum: 5000,
+        },
+        format: {
+          type: 'string',
+          enum: ['png', 'jpeg'],
+          description: 'Image format (default: png)',
+          default: 'png',
+        },
+        quality: {
+          type: 'number',
+          description: 'JPEG quality 1-100 (ignored for PNG)',
+          minimum: 1,
+          maximum: 100,
+        },
+        waitFor: {
+          type: 'number',
+          description: 'Milliseconds to wait after page load before screenshot',
+          default: 0,
+        },
+        stealth: {
+          type: 'boolean',
+          description: 'Use stealth mode to bypass bot detection',
+          default: false,
+        },
+        actions: {
+          type: 'array',
+          items: {
+            type: 'object',
+          },
+          description: 'Page actions to execute before screenshot (e.g., [{type: "click", selector: ".btn"}, {type: "wait", ms: 2000}])',
+        },
+      },
+      required: ['url'],
+    },
+  },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -604,7 +715,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         headers,
         actions,
         maxTokens,
-        extract
+        extract,
+        inlineExtract,
+        llmProvider,
+        llmApiKey,
+        llmModel,
       } = args as {
         url: string;
         render?: boolean;
@@ -623,6 +738,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         actions?: any[];
         maxTokens?: number;
         extract?: any;
+        inlineExtract?: { schema?: Record<string, any>; prompt?: string };
+        llmProvider?: string;
+        llmApiKey?: string;
+        llmModel?: string;
       };
 
       // SECURITY: Validate input parameters
@@ -686,8 +805,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error('Invalid location parameter: must be a string');
       }
 
+      // Normalize actions (handles Firecrawl-style aliases)
+      const normalizedActions = actions ? normalizeActions(actions) : undefined;
+      const hasActions = normalizedActions && normalizedActions.length > 0;
+
       const options: PeelOptions = {
-        render: render || false,
+        render: render || hasActions || false,
         stealth: stealth || false,
         wait: wait || 0,
         format: format || 'markdown',
@@ -700,7 +823,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         images,
         location: location ? { country: location } : undefined,
         headers,
-        actions,
+        actions: normalizedActions,
         maxTokens,
         extract,
       };
@@ -714,6 +837,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         peel(url, options),
         timeoutPromise,
       ]) as any;
+
+      // Inline LLM extraction (post-fetch, BYOK)
+      if (inlineExtract && (inlineExtract.schema || inlineExtract.prompt) && llmApiKey && llmProvider) {
+        const validProviders: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
+        if (validProviders.includes(llmProvider as InlineLLMProvider)) {
+          const extractResult = await extractInlineJson(result.content, {
+            schema: inlineExtract.schema,
+            prompt: inlineExtract.prompt,
+            llmProvider: llmProvider as InlineLLMProvider,
+            llmApiKey,
+            llmModel,
+          });
+          result.json = extractResult.data;
+          result.extractTokensUsed = extractResult.tokensUsed;
+        }
+      }
 
       // SECURITY: Handle JSON serialization errors
       let resultText: string;
@@ -1443,6 +1582,104 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         resultText = JSON.stringify({
           error: 'serialization_error',
           message: 'Failed to serialize answer result',
+        });
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: resultText,
+          },
+        ],
+      };
+    }
+
+    if (name === 'webpeel_screenshot') {
+      const { takeScreenshot } = await import('../core/screenshot.js');
+
+      const {
+        url,
+        fullPage,
+        width,
+        height,
+        format,
+        quality,
+        waitFor,
+        stealth,
+        actions,
+      } = args as {
+        url: string;
+        fullPage?: boolean;
+        width?: number;
+        height?: number;
+        format?: 'png' | 'jpeg';
+        quality?: number;
+        waitFor?: number;
+        stealth?: boolean;
+        actions?: any[];
+      };
+
+      // SECURITY: Validate input parameters
+      if (!url || typeof url !== 'string') {
+        throw new Error('Invalid URL parameter');
+      }
+
+      if (url.length > 2048) {
+        throw new Error('URL too long (max 2048 characters)');
+      }
+
+      if (width !== undefined && (typeof width !== 'number' || width < 100 || width > 5000)) {
+        throw new Error('Invalid width: must be between 100 and 5000');
+      }
+
+      if (height !== undefined && (typeof height !== 'number' || height < 100 || height > 5000)) {
+        throw new Error('Invalid height: must be between 100 and 5000');
+      }
+
+      if (format !== undefined && !['png', 'jpeg'].includes(format)) {
+        throw new Error('Invalid format: must be png or jpeg');
+      }
+
+      if (quality !== undefined && (typeof quality !== 'number' || quality < 1 || quality > 100)) {
+        throw new Error('Invalid quality: must be between 1 and 100');
+      }
+
+      if (waitFor !== undefined && (typeof waitFor !== 'number' || waitFor < 0 || waitFor > 60000)) {
+        throw new Error('Invalid waitFor: must be between 0 and 60000');
+      }
+
+      // SECURITY: Wrap in timeout (60 seconds max)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Screenshot timed out after 60s')), 60000);
+      });
+
+      const result = await Promise.race([
+        takeScreenshot(url, {
+          fullPage: fullPage || false,
+          width,
+          height,
+          format: format || 'png',
+          quality,
+          waitFor,
+          stealth: stealth || false,
+          actions,
+        }),
+        timeoutPromise,
+      ]) as any;
+
+      let resultText: string;
+      try {
+        resultText = JSON.stringify({
+          url: result.url,
+          format: result.format,
+          contentType: result.contentType,
+          screenshot: result.screenshot,
+        }, null, 2);
+      } catch (jsonError) {
+        resultText = JSON.stringify({
+          error: 'serialization_error',
+          message: 'Failed to serialize screenshot result',
         });
       }
 

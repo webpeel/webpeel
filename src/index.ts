@@ -10,6 +10,7 @@ import { htmlToMarkdown, htmlToText, estimateTokens, selectContent, detectMainCo
 import { extractMetadata, extractLinks, extractImages } from './core/metadata.js';
 import { cleanup } from './core/fetcher.js';
 import { extractStructured } from './core/extract.js';
+import { isPdfContentType, isDocxContentType, extractDocumentToFormat } from './core/documents.js';
 import type { PeelOptions, PeelResult, ImageInfo } from './types.js';
 
 export * from './types.js';
@@ -19,6 +20,8 @@ export { mapDomain, type MapOptions, type MapResult } from './core/map.js';
 export { extractBranding, type BrandingProfile } from './core/branding.js';
 export { trackChange, getSnapshot, clearSnapshots, type ChangeResult, type Snapshot } from './core/change-tracking.js';
 export { extractWithLLM } from './core/extract.js';
+export { extractDocumentToFormat, isPdfContentType, isDocxContentType, type DocumentExtractionResult } from './core/documents.js';
+export { extractInlineJson, type InlineExtractOptions, type InlineExtractResult } from './core/extract-inline.js';
 export { runAgent, type AgentOptions, type AgentResult, type AgentProgress, type AgentStreamEvent, type AgentDepth, type AgentTopic } from './core/agent.js';
 export { summarizeContent, type SummarizeOptions } from './core/summarize.js';
 export {
@@ -81,11 +84,8 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     location: _location,
   } = options;
 
-  // Detect PDF URLs and force browser rendering
-  const isPdf = url.toLowerCase().endsWith('.pdf');
-  if (isPdf) {
-    render = true;
-  }
+  // NOTE: PDFs/DOCX are now handled via simpleFetch + document parser.
+  // No need to force browser rendering for them.
 
   // If screenshot is requested, force render mode
   if (screenshot) {
@@ -126,12 +126,19 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
 
     // Detect content type from the response
     const ct = (fetchResult.contentType || '').toLowerCase();
-    const isHTML = ct.includes('html') || ct.includes('xhtml') || (!ct && fetchResult.html.trimStart().startsWith('<'));
-    const isJSON = ct.includes('json');
-    const isXML = ct.includes('xml') || ct.includes('rss') || ct.includes('atom');
-    const isPlainText = ct.includes('text/plain') || ct.includes('text/markdown') || ct.includes('text/csv') || ct.includes('text/css') || ct.includes('javascript');
+    const urlLower = fetchResult.url.toLowerCase();
+
+    // Check for binary document types (PDF/DOCX)
+    const isDocument = isPdfContentType(ct) || isDocxContentType(ct) ||
+      urlLower.endsWith('.pdf') || urlLower.endsWith('.docx');
+    const hasBuffer = !!fetchResult.buffer;
+
+    const isHTML = !isDocument && (ct.includes('html') || ct.includes('xhtml') || (!ct && fetchResult.html.trimStart().startsWith('<')));
+    const isJSON = !isDocument && ct.includes('json');
+    const isXML = !isDocument && (ct.includes('xml') || ct.includes('rss') || ct.includes('atom'));
+    const isPlainText = !isDocument && (ct.includes('text/plain') || ct.includes('text/markdown') || ct.includes('text/csv') || ct.includes('text/css') || ct.includes('javascript'));
     
-    const detectedType = isHTML ? 'html' : isJSON ? 'json' : isXML ? 'xml' : isPlainText ? 'text' : 'html';
+    const detectedType = isDocument ? 'document' : isHTML ? 'html' : isJSON ? 'json' : isXML ? 'xml' : isPlainText ? 'text' : 'html';
     
     let content: string;
     let title = '';
@@ -139,7 +146,19 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     let links: string[] = [];
     let quality = 0;
     
-    if (isHTML) {
+    if (isDocument && hasBuffer) {
+      // Document parsing pipeline (PDF/DOCX)
+      const docResult = await extractDocumentToFormat(fetchResult.buffer!, {
+        url: fetchResult.url,
+        contentType: fetchResult.contentType,
+        format,
+      });
+
+      content = docResult.content;
+      title = docResult.metadata.title;
+      metadata = docResult.metadata;
+      quality = 1.0; // Documents are inherently structured content
+    } else if (isHTML) {
       // Standard HTML pipeline
       let html = fetchResult.html;
       

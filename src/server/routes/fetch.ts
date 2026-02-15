@@ -4,10 +4,14 @@
 
 import { Router, Request, Response } from 'express';
 import { peel } from '../../index.js';
-import type { PeelOptions } from '../../types.js';
+import type { PeelOptions, PageAction, InlineExtractParam, InlineLLMProvider } from '../../types.js';
+import { normalizeActions } from '../../core/actions.js';
+import { extractInlineJson } from '../../core/extract-inline.js';
 import { LRUCache } from 'lru-cache';
 import { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
+
+const VALID_LLM_PROVIDERS: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
 
 interface CacheEntry {
   result: any;
@@ -40,6 +44,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         location, 
         languages,
         onlyMainContent,
+        actions,
         maxAge,
         storeInCache,
       } = req.query;
@@ -93,8 +98,24 @@ export function createFetchRouter(authStore: AuthStore): Router {
         throw error;
       }
 
+      // Parse actions query param (JSON-encoded array)
+      let parsedActions: PageAction[] | undefined;
+      if (actions && typeof actions === 'string') {
+        try {
+          const raw = JSON.parse(actions);
+          parsedActions = normalizeActions(raw);
+        } catch (e) {
+          res.status(400).json({
+            error: 'invalid_request',
+            message: 'Invalid "actions" parameter: must be a valid JSON array',
+          });
+          return;
+        }
+      }
+
       // Build cache key (include new parameters)
-      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}`;
+      const actionsKey = parsedActions ? JSON.stringify(parsedActions) : '';
+      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${actionsKey}`;
 
       // Check cache (with maxAge support)
       const maxAgeMs = maxAge !== undefined ? parseInt(maxAge as string, 10) : 172800000; // Default 2 days
@@ -129,15 +150,21 @@ export function createFetchRouter(authStore: AuthStore): Router {
         ? ['main', 'article', '.content', '#content']
         : includeTagsArray;
 
+      // When actions are present, force browser mode (skip HTTP fast path)
+      const hasActions = parsedActions && parsedActions.length > 0;
+      const shouldRender = hasActions || render === 'true';
+
       const options: PeelOptions = {
         // SOFT LIMIT: When over quota AND no extra usage, force HTTP-only
         // If extra usage is available, allow full functionality
-        render: (isSoftLimited && !hasExtraUsage) ? false : render === 'true',
+        // Exception: actions always require render
+        render: (isSoftLimited && !hasExtraUsage && !hasActions) ? false : shouldRender,
         wait: (isSoftLimited && !hasExtraUsage) ? 0 : (wait ? parseInt(wait as string, 10) : undefined),
         format: (format as 'markdown' | 'text' | 'html') || 'markdown',
         includeTags: finalIncludeTags,
         excludeTags: excludeTagsArray,
         images: images === 'true',
+        actions: parsedActions,
         location: location || languagesArray ? {
           country: location as string | undefined,
           languages: languagesArray,
@@ -145,7 +172,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
       };
 
       // Inform the user if their request was degraded
-      if (isSoftLimited && !hasExtraUsage && render === 'true') {
+      if (isSoftLimited && !hasExtraUsage && render === 'true' && !hasActions) {
         res.setHeader('X-Degraded', 'render=true downgraded to HTTP-only (quota exceeded)');
       }
 
@@ -292,6 +319,302 @@ export function createFetchRouter(authStore: AuthStore): Router {
       }
     }
   });
+
+  // -----------------------------------------------------------------------
+  // POST /v1/fetch — same as GET but accepts JSON body with extract param
+  // POST /v2/scrape — alias with identical behaviour
+  // -----------------------------------------------------------------------
+
+  async function handlePostFetch(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        url,
+        render,
+        wait,
+        format,
+        includeTags,
+        excludeTags,
+        images,
+        location,
+        languages,
+        onlyMainContent,
+        actions: rawActions,
+        storeInCache: storeFlag,
+        // Inline extraction (BYOK)
+        extract,
+        llmProvider,
+        llmApiKey,
+        llmModel,
+        // Firecrawl-compatible formats array
+        formats,
+      } = req.body as {
+        url?: string;
+        render?: boolean;
+        wait?: number;
+        format?: string;
+        includeTags?: string[];
+        excludeTags?: string[];
+        images?: boolean;
+        location?: string;
+        languages?: string[];
+        onlyMainContent?: boolean;
+        actions?: any[];
+        storeInCache?: boolean;
+        extract?: InlineExtractParam;
+        llmProvider?: string;
+        llmApiKey?: string;
+        llmModel?: string;
+        formats?: any[];
+      };
+
+      // --- Validate URL -------------------------------------------------------
+      if (!url || typeof url !== 'string') {
+        res.status(400).json({
+          error: 'invalid_request',
+          message: 'Missing or invalid "url" parameter',
+        });
+        return;
+      }
+
+      if (url.length > 2048) {
+        res.status(400).json({
+          error: 'invalid_url',
+          message: 'URL too long (max 2048 characters)',
+        });
+        return;
+      }
+
+      try {
+        new URL(url);
+      } catch {
+        res.status(400).json({
+          error: 'invalid_url',
+          message: 'Invalid URL format',
+        });
+        return;
+      }
+
+      try {
+        validateUrlForSSRF(url);
+      } catch (error) {
+        if (error instanceof SSRFError) {
+          res.status(400).json({
+            error: 'forbidden_url',
+            message: 'Cannot fetch localhost, private networks, or non-HTTP URLs',
+          });
+          return;
+        }
+        throw error;
+      }
+
+      // --- Parse and normalize actions -----------------------------------------
+      let postActions: PageAction[] | undefined;
+      if (rawActions !== undefined) {
+        try {
+          postActions = normalizeActions(rawActions);
+        } catch (e) {
+          res.status(400).json({
+            error: 'invalid_request',
+            message: `Invalid "actions" parameter: ${(e as Error).message}`,
+          });
+          return;
+        }
+      }
+
+      // --- Resolve inline extract from body or Firecrawl-compatible formats ---
+      let resolvedExtract: InlineExtractParam | undefined = extract;
+
+      if (!resolvedExtract && Array.isArray(formats)) {
+        const jsonFormat = formats.find(
+          (f: any) => (typeof f === 'object' && f !== null && f.type === 'json') ||
+                      (typeof f === 'string' && f === 'json'),
+        );
+        if (jsonFormat && typeof jsonFormat === 'object' && (jsonFormat.schema || jsonFormat.prompt)) {
+          resolvedExtract = {
+            schema: jsonFormat.schema,
+            prompt: jsonFormat.prompt,
+          };
+        }
+      }
+
+      // Validate LLM params if extraction is requested
+      if (resolvedExtract && (resolvedExtract.schema || resolvedExtract.prompt)) {
+        if (!llmProvider || !VALID_LLM_PROVIDERS.includes(llmProvider as InlineLLMProvider)) {
+          res.status(400).json({
+            error: 'invalid_request',
+            message: `"llmProvider" is required for inline extraction and must be one of: ${VALID_LLM_PROVIDERS.join(', ')}`,
+          });
+          return;
+        }
+        if (!llmApiKey || typeof llmApiKey !== 'string' || llmApiKey.trim().length === 0) {
+          res.status(400).json({
+            error: 'invalid_request',
+            message: 'Missing or invalid "llmApiKey" (BYOK required for inline extraction)',
+          });
+          return;
+        }
+      }
+
+      // --- Build PeelOptions ---------------------------------------------------
+      const isSoftLimited = req.auth?.softLimited === true;
+      const hasExtraUsage = req.auth?.extraUsageAvailable === true;
+
+      const includeTagsArray = Array.isArray(includeTags) ? includeTags : undefined;
+      const excludeTagsArray = Array.isArray(excludeTags) ? excludeTags : undefined;
+      const languagesArray = Array.isArray(languages) ? languages : undefined;
+
+      const finalIncludeTags = onlyMainContent === true
+        ? ['main', 'article', '.content', '#content']
+        : includeTagsArray;
+
+      const resolvedFormat = (format as 'markdown' | 'text' | 'html') || 'markdown';
+      if (!['markdown', 'text', 'html'].includes(resolvedFormat)) {
+        res.status(400).json({
+          error: 'invalid_request',
+          message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
+        });
+        return;
+      }
+
+      const resolvedWait = typeof wait === 'number' ? wait : undefined;
+      if (resolvedWait !== undefined && (isNaN(resolvedWait) || resolvedWait < 0 || resolvedWait > 60000)) {
+        res.status(400).json({
+          error: 'invalid_request',
+          message: 'Invalid "wait" parameter: must be between 0 and 60000ms',
+        });
+        return;
+      }
+
+      // When actions are present, force browser mode
+      const postHasActions = postActions && postActions.length > 0;
+      const postShouldRender = postHasActions || render === true;
+
+      const options: PeelOptions = {
+        render: (isSoftLimited && !hasExtraUsage && !postHasActions) ? false : postShouldRender,
+        wait: (isSoftLimited && !hasExtraUsage) ? 0 : resolvedWait,
+        format: resolvedFormat,
+        includeTags: finalIncludeTags,
+        excludeTags: excludeTagsArray,
+        images: images === true,
+        actions: postActions,
+        location: location || languagesArray ? {
+          country: location,
+          languages: languagesArray,
+        } : undefined,
+      };
+
+      if (isSoftLimited && !hasExtraUsage && render === true && !postHasActions) {
+        res.setHeader('X-Degraded', 'render=true downgraded to HTTP-only (quota exceeded)');
+      }
+
+      // --- Fetch content -------------------------------------------------------
+      const startTime = Date.now();
+      const result = await peel(url, options);
+      const elapsed = Date.now() - startTime;
+
+      // --- Inline extraction (post-fetch) -------------------------------------
+      let jsonData: Record<string, any> | undefined;
+      let extractTokensUsed: { input: number; output: number } | undefined;
+
+      if (resolvedExtract && (resolvedExtract.schema || resolvedExtract.prompt) && llmApiKey) {
+        const extractResult = await extractInlineJson(result.content, {
+          schema: resolvedExtract.schema,
+          prompt: resolvedExtract.prompt,
+          llmProvider: llmProvider as InlineLLMProvider,
+          llmApiKey: llmApiKey.trim(),
+          llmModel,
+        });
+        jsonData = extractResult.data;
+        extractTokensUsed = extractResult.tokensUsed;
+      }
+
+      // --- Usage tracking (same as GET) ----------------------------------------
+      const fetchType: 'basic' | 'stealth' | 'captcha' | 'search' =
+        result.method === 'stealth' ? 'stealth' :
+        result.method === 'browser' ? 'stealth' : 'basic';
+
+      const pgStore = authStore as any;
+      if (req.auth?.keyInfo?.accountId && typeof pgStore.pool !== 'undefined') {
+        pgStore.pool.query(
+          `INSERT INTO usage_logs
+            (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            req.auth.keyInfo.accountId,
+            'fetch',
+            url,
+            fetchType,
+            elapsed,
+            200,
+            req.ip || req.socket.remoteAddress,
+            req.get('user-agent'),
+          ]
+        ).catch((err: any) => {
+          console.error('Failed to log request to usage_logs:', err);
+        });
+      }
+
+      if (req.auth?.keyInfo?.key && typeof pgStore.trackBurstUsage === 'function') {
+        await pgStore.trackBurstUsage(req.auth.keyInfo.key);
+
+        if (isSoftLimited && hasExtraUsage) {
+          const extraResult = await pgStore.trackExtraUsage(
+            req.auth.keyInfo.key,
+            fetchType,
+            url,
+            elapsed,
+            200
+          );
+          if (extraResult.success) {
+            res.setHeader('X-Extra-Usage-Charged', `$${extraResult.cost.toFixed(4)}`);
+            res.setHeader('X-Extra-Usage-New-Balance', extraResult.newBalance.toFixed(2));
+          } else {
+            res.setHeader('X-Degraded', 'Extra usage insufficient, degraded to soft limit');
+          }
+        } else if (!isSoftLimited) {
+          await pgStore.trackUsage(req.auth.keyInfo.key, fetchType);
+        }
+      }
+
+      // Cache result
+      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}`;
+      if (storeFlag !== false) {
+        cache.set(cacheKey, { result, timestamp: Date.now() });
+      }
+
+      // --- Build response ------------------------------------------------------
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('X-Credits-Used', '1');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.setHeader('X-Fetch-Type', fetchType);
+
+      const responseBody: any = { ...result };
+      if (jsonData !== undefined) {
+        responseBody.json = jsonData;
+      }
+      if (extractTokensUsed) {
+        responseBody.extractTokensUsed = extractTokensUsed;
+      }
+
+      res.json(responseBody);
+    } catch (error: any) {
+      const err = error as any;
+      console.error('POST fetch/scrape error:', err);
+
+      if (err.code) {
+        const safeMessage = err.message.replace(/[<>"']/g, '');
+        res.status(500).json({ error: err.code, message: safeMessage });
+      } else {
+        res.status(500).json({
+          error: 'internal_error',
+          message: 'An unexpected error occurred while fetching the URL',
+        });
+      }
+    }
+  }
+
+  router.post('/v1/fetch', handlePostFetch);
+  router.post('/v2/scrape', handlePostFetch);
 
   return router;
 }

@@ -6,6 +6,7 @@
  * 
  * Implements Firecrawl endpoints:
  * - POST /v1/scrape
+ * - POST /v2/scrape  (v2 with formats: ["screenshot"] support)
  * - POST /v1/crawl
  * - GET /v1/crawl/:id
  * - POST /v1/search
@@ -16,31 +17,22 @@ import { Router, Request, Response } from 'express';
 import { peel } from '../../index.js';
 import { crawl } from '../../core/crawler.js';
 import { mapDomain } from '../../core/map.js';
+import { takeScreenshot } from '../../core/screenshot.js';
 import type { IJobQueue } from '../job-queue.js';
-import type { PeelOptions, PageAction } from '../../types.js';
+import type { PeelOptions, PageAction, InlineLLMProvider } from '../../types.js';
+import { normalizeActions } from '../../core/actions.js';
+import { extractInlineJson } from '../../core/extract-inline.js';
+
+const VALID_LLM_PROVIDERS: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
 
 /**
- * Map Firecrawl's action format to our PageAction format
+ * Map Firecrawl's action format to our PageAction format.
+ * Delegates to the shared normalizeActions helper so behaviour stays
+ * consistent across all API surfaces.
  */
 function mapFirecrawlActions(actions?: any[]): PageAction[] | undefined {
   if (!actions || !Array.isArray(actions)) return undefined;
-  
-  return actions.map(action => {
-    switch (action.type) {
-      case 'wait':
-        return { type: 'wait', ms: action.milliseconds || action.ms || 1000 };
-      case 'click':
-        return { type: 'click', selector: action.selector };
-      case 'type':
-        return { type: 'type', selector: action.selector, value: action.text || action.value };
-      case 'scroll':
-        return { type: 'scroll', to: action.direction === 'down' ? 'bottom' : 'top' };
-      case 'screenshot':
-        return { type: 'screenshot' };
-      default:
-        return action as PageAction;
-    }
-  });
+  return normalizeActions(actions);
 }
 
 export function createCompatRouter(jobQueue: IJobQueue): Router {
@@ -64,6 +56,11 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
         actions,
         headers,
         location,
+        // Inline extraction (BYOK)
+        extract: extractParam,
+        llmProvider,
+        llmApiKey,
+        llmModel,
       } = req.body;
 
       // Validate URL
@@ -143,8 +140,35 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
         data.images = result.images;
       }
 
-      if (formats.includes('json')) {
-        // Return structured metadata as JSON
+      // --- Inline JSON extraction via LLM (BYOK) ---
+      // Resolve extract from: (1) top-level extract param, (2) formats array object
+      let resolvedExtract: { schema?: Record<string, any>; prompt?: string } | undefined;
+
+      if (extractParam && typeof extractParam === 'object' && (extractParam.schema || extractParam.prompt)) {
+        resolvedExtract = extractParam;
+      }
+
+      if (!resolvedExtract) {
+        const jsonFormatObj = formats.find(
+          (f: any) => typeof f === 'object' && f !== null && f.type === 'json' && (f.schema || f.prompt),
+        );
+        if (jsonFormatObj) {
+          resolvedExtract = { schema: jsonFormatObj.schema, prompt: jsonFormatObj.prompt };
+        }
+      }
+
+      if (resolvedExtract && llmApiKey && llmProvider && VALID_LLM_PROVIDERS.includes(llmProvider as InlineLLMProvider)) {
+        const extractResult = await extractInlineJson(result.content, {
+          schema: resolvedExtract.schema,
+          prompt: resolvedExtract.prompt,
+          llmProvider: llmProvider as InlineLLMProvider,
+          llmApiKey: llmApiKey.trim(),
+          llmModel,
+        });
+        data.json = extractResult.data;
+        data.extractTokensUsed = extractResult.tokensUsed;
+      } else if (formats.includes('json')) {
+        // Fallback: return structured metadata as JSON (no LLM)
         data.json = result.extracted || result.metadata;
       }
 
@@ -495,6 +519,147 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to map domain',
+      });
+    }
+  });
+
+  /**
+   * POST /v2/scrape - Firecrawl v2-compatible scrape with screenshot support
+   *
+   * Same as /v1/scrape but adds first-class screenshot support.
+   * When formats includes "screenshot" (and nothing else), returns
+   * a screenshot directly; otherwise falls through to peel() like v1.
+   */
+  router.post('/v2/scrape', async (req: Request, res: Response) => {
+    try {
+      const {
+        url,
+        formats = ['markdown'],
+        onlyMainContent = true,
+        includeTags,
+        excludeTags,
+        waitFor,
+        timeout,
+        actions,
+        headers,
+        location,
+        // Screenshot-specific v2 options
+        fullPage,
+        width,
+        height,
+        screenshotFormat,
+        quality,
+      } = req.body;
+
+      // Validate URL
+      if (!url || typeof url !== 'string') {
+        res.status(400).json({
+          success: false,
+          error: 'Missing or invalid "url" parameter',
+        });
+        return;
+      }
+
+      const wantsScreenshot = formats.includes('screenshot') || formats.includes('screenshot@fullPage');
+
+      // If screenshot-only request, use the dedicated screenshot function
+      if (wantsScreenshot && formats.length === 1) {
+        const result = await takeScreenshot(url, {
+          fullPage: fullPage === true || formats[0] === 'screenshot@fullPage',
+          width: typeof width === 'number' ? width : undefined,
+          height: typeof height === 'number' ? height : undefined,
+          format: screenshotFormat || 'png',
+          quality: typeof quality === 'number' ? quality : undefined,
+          waitFor: typeof waitFor === 'number' ? waitFor : undefined,
+          timeout: typeof timeout === 'number' ? timeout : 30000,
+          actions: mapFirecrawlActions(actions),
+          headers,
+        });
+
+        res.json({
+          success: true,
+          data: {
+            screenshot: `data:${result.contentType};base64,${result.screenshot}`,
+            metadata: {
+              sourceURL: result.url,
+              statusCode: 200,
+              format: result.format,
+            },
+          },
+        });
+        return;
+      }
+
+      // Otherwise, fall through to peel() like v1/scrape
+      const needsRender = waitFor !== undefined || actions !== undefined || wantsScreenshot;
+
+      const options: PeelOptions = {
+        render: needsRender,
+        wait: waitFor,
+        timeout: timeout || 30000,
+        includeTags: Array.isArray(includeTags) ? includeTags : undefined,
+        excludeTags: Array.isArray(excludeTags) ? excludeTags : undefined,
+        raw: onlyMainContent === false,
+        actions: mapFirecrawlActions(actions),
+        headers,
+        screenshot: wantsScreenshot,
+        screenshotFullPage: fullPage === true,
+        images: formats.includes('images'),
+        format: 'markdown',
+      };
+
+      if (location) {
+        options.location = {
+          country: location.country,
+          languages: location.languages,
+        };
+      }
+
+      const result = await peel(url, options);
+
+      const data: any = {
+        markdown: result.content,
+        metadata: {
+          title: result.title,
+          description: result.metadata.description || '',
+          language: 'en',
+          sourceURL: result.url,
+          statusCode: 200,
+          ...result.metadata,
+        },
+      };
+
+      if (formats.includes('html')) {
+        const htmlResult = await peel(url, { ...options, format: 'html' });
+        data.html = htmlResult.content;
+      }
+
+      if (formats.includes('rawHtml')) {
+        const rawResult = await peel(url, { ...options, format: 'html', raw: true });
+        data.rawHtml = rawResult.content;
+      }
+
+      if (formats.includes('links')) {
+        data.links = result.links;
+      }
+
+      if (wantsScreenshot && result.screenshot) {
+        data.screenshot = `data:image/png;base64,${result.screenshot}`;
+      }
+
+      if (formats.includes('images') && result.images) {
+        data.images = result.images;
+      }
+
+      res.json({
+        success: true,
+        data,
+      });
+    } catch (error: any) {
+      console.error('Firecrawl /v2/scrape error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to scrape URL',
       });
     }
   });

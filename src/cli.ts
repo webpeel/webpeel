@@ -60,7 +60,19 @@ void checkForUpdates();
 
 /**
  * Parse action strings into PageAction array
- * Format: "type:value" where type is wait|click|scroll|type|fill|press|hover|waitFor
+ * Formats:
+ *   click:.selector         — click an element
+ *   type:.selector=text     — type text into an input
+ *   fill:.selector=text     — fill an input (replaces existing value)
+ *   scroll:down:500         — scroll direction + amount
+ *   scroll:bottom           — scroll to bottom (legacy)
+ *   scroll:top              — scroll to top (legacy)
+ *   wait:2000               — wait N ms
+ *   press:Enter             — press a keyboard key
+ *   hover:.selector         — hover over an element
+ *   waitFor:.selector       — wait for a selector to appear
+ *   select:.selector=value  — select dropdown option
+ *   screenshot              — take a screenshot
  */
 function parseActions(actionStrings: string[]): PageAction[] {
   return actionStrings.map(str => {
@@ -69,25 +81,49 @@ function parseActions(actionStrings: string[]): PageAction[] {
     
     switch (type) {
       case 'wait': 
-        return { type: 'wait', ms: parseInt(value) || 1000 };
+        return { type: 'wait' as const, ms: parseInt(value) || 1000 };
       case 'click': 
-        return { type: 'click', selector: value };
-      case 'scroll': 
-        return { type: 'scroll', to: value === 'top' ? 'top' : value === 'bottom' ? 'bottom' : parseInt(value) };
+        return { type: 'click' as const, selector: value };
+      case 'scroll': {
+        // scroll:down:500  or  scroll:bottom  or  scroll:500
+        const parts = value.split(':');
+        const dir = parts[0];
+        
+        if (dir === 'top' || dir === 'bottom') {
+          return { type: 'scroll' as const, to: dir };
+        }
+        if (dir === 'down' || dir === 'up' || dir === 'left' || dir === 'right') {
+          const amount = parseInt(parts[1] || '500', 10);
+          return { type: 'scroll' as const, direction: dir as 'down' | 'up' | 'left' | 'right', amount };
+        }
+        // Bare number: absolute position
+        const num = parseInt(dir, 10);
+        if (!isNaN(num)) {
+          return { type: 'scroll' as const, to: num };
+        }
+        // Default: scroll to bottom
+        return { type: 'scroll' as const, to: 'bottom' as const };
+      }
       case 'type': {
         const [sel, ...text] = value.split('=');
-        return { type: 'type', selector: sel, value: text.join('=') };
+        return { type: 'type' as const, selector: sel, value: text.join('=') };
       }
       case 'fill': {
         const [sel, ...text] = value.split('=');
-        return { type: 'fill', selector: sel, value: text.join('=') };
+        return { type: 'fill' as const, selector: sel, value: text.join('=') };
+      }
+      case 'select': {
+        const [sel, ...vals] = value.split('=');
+        return { type: 'select' as const, selector: sel, value: vals.join('=') };
       }
       case 'press': 
-        return { type: 'press', key: value };
+        return { type: 'press' as const, key: value };
       case 'hover': 
-        return { type: 'hover', selector: value };
+        return { type: 'hover' as const, selector: value };
       case 'waitFor': 
-        return { type: 'waitForSelector', selector: value };
+        return { type: 'waitForSelector' as const, selector: value };
+      case 'screenshot': 
+        return { type: 'screenshot' as const };
       default: 
         throw new Error(`Unknown action type: ${type}`);
     }
@@ -1357,6 +1393,130 @@ program
     } catch (error) {
       if (spinner) spinner.fail('Answer generation failed');
       console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      await cleanup();
+      process.exit(1);
+    }
+  });
+
+// Screenshot command
+program
+  .command('screenshot <url>')
+  .description('Take a screenshot of a URL and save as PNG/JPEG')
+  .option('--full-page', 'Capture full page (not just viewport)')
+  .option('--width <px>', 'Viewport width in pixels (default: 1280)', parseInt)
+  .option('--height <px>', 'Viewport height in pixels (default: 720)', parseInt)
+  .option('--format <fmt>', 'Image format: png (default) or jpeg', 'png')
+  .option('--quality <n>', 'JPEG quality 1-100 (ignored for PNG)', parseInt)
+  .option('-w, --wait <ms>', 'Wait time after page load (ms)', parseInt)
+  .option('-t, --timeout <ms>', 'Request timeout (ms)', parseInt, 30000)
+  .option('--stealth', 'Use stealth mode to bypass bot detection')
+  .option('--action <actions...>', 'Page actions before screenshot (e.g., "click:.btn" "wait:2000")')
+  .option('-o, --output <path>', 'Output file path (default: screenshot.png)')
+  .option('-s, --silent', 'Silent mode (no spinner)')
+  .option('--json', 'Output base64 JSON instead of binary file')
+  .action(async (url: string, options) => {
+    // Validate URL
+    try {
+      const parsed = new URL(url);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        console.error('Error: Only HTTP and HTTPS protocols are allowed');
+        process.exit(1);
+      }
+    } catch {
+      console.error(`Error: Invalid URL format: ${url}`);
+      process.exit(1);
+    }
+
+    // Check usage quota
+    const usageCheck = await checkUsage();
+    if (!usageCheck.allowed) {
+      console.error(usageCheck.message);
+      process.exit(1);
+    }
+
+    const spinner = options.silent ? null : ora('Taking screenshot...').start();
+
+    try {
+      // Validate format
+      const format = options.format?.toLowerCase();
+      if (format && !['png', 'jpeg', 'jpg'].includes(format)) {
+        console.error('Error: --format must be png, jpeg, or jpg');
+        process.exit(1);
+      }
+
+      // Parse actions
+      let actions: PageAction[] | undefined;
+      if (options.action && options.action.length > 0) {
+        try {
+          actions = parseActions(options.action);
+        } catch (e) {
+          console.error(`Error: ${(e as Error).message}`);
+          process.exit(1);
+        }
+      }
+
+      const { takeScreenshot } = await import('./core/screenshot.js');
+
+      const result = await takeScreenshot(url, {
+        fullPage: options.fullPage || false,
+        width: options.width,
+        height: options.height,
+        format: format || 'png',
+        quality: options.quality,
+        waitFor: options.wait,
+        timeout: options.timeout,
+        stealth: options.stealth || false,
+        actions,
+      });
+
+      if (spinner) {
+        spinner.succeed(`Screenshot taken (${result.format})`);
+      }
+
+      // Show usage footer for free/anonymous users
+      if (usageCheck.usageInfo && !options.silent) {
+        showUsageFooter(usageCheck.usageInfo, usageCheck.isAnonymous || false, true);
+      }
+
+      if (options.json) {
+        // Output JSON with base64
+        const jsonStr = JSON.stringify({
+          url: result.url,
+          format: result.format,
+          contentType: result.contentType,
+          screenshot: result.screenshot,
+        }, null, 2);
+        await new Promise<void>((resolve, reject) => {
+          process.stdout.write(jsonStr + '\n', (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      } else {
+        // Save to file
+        const ext = result.format === 'jpeg' ? 'jpg' : 'png';
+        const outputPath = options.output || `screenshot.${ext}`;
+        const buffer = Buffer.from(result.screenshot, 'base64');
+        writeFileSync(outputPath, buffer);
+
+        if (!options.silent) {
+          console.error(`Screenshot saved to: ${outputPath} (${(buffer.length / 1024).toFixed(1)} KB)`);
+        }
+      }
+
+      await cleanup();
+      process.exit(0);
+    } catch (error) {
+      if (spinner) {
+        spinner.fail('Screenshot failed');
+      }
+
+      if (error instanceof Error) {
+        console.error(`\nError: ${error.message}`);
+      } else {
+        console.error('\nError: Unknown error occurred');
+      }
+
       await cleanup();
       process.exit(1);
     }

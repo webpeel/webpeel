@@ -20,8 +20,10 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { peel, peelBatch } from '../../index.js';
 import type { PeelOptions } from '../../types.js';
+import { normalizeActions } from '../../core/actions.js';
 import { runAgent } from '../../core/agent.js';
 import type { AgentDepth, AgentTopic } from '../../core/agent.js';
+import { extractInlineJson, type LLMProvider as InlineLLMProvider } from '../../core/extract-inline.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -55,6 +57,37 @@ function getTools(): Tool[] {
           selector: { type: 'string', description: 'CSS selector to extract specific content' },
           maxTokens: { type: 'number', description: 'Maximum token count for output' },
           images: { type: 'boolean', description: 'Extract image URLs', default: false },
+          inlineExtract: {
+            type: 'object',
+            description: 'Inline LLM-powered JSON extraction (BYOK). Provide schema and/or prompt.',
+            properties: {
+              schema: { type: 'object', description: 'JSON Schema for desired output' },
+              prompt: { type: 'string', description: 'Extraction prompt' },
+            },
+          },
+          llmProvider: { type: 'string', enum: ['openai', 'anthropic', 'google'], description: 'LLM provider for inline extraction' },
+          llmApiKey: { type: 'string', description: 'LLM API key (BYOK) for inline extraction' },
+          llmModel: { type: 'string', description: 'LLM model name (optional)' },
+          actions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string', enum: ['click', 'type', 'fill', 'scroll', 'wait', 'press', 'hover', 'select', 'waitForSelector', 'screenshot'] },
+                selector: { type: 'string' },
+                value: { type: 'string' },
+                text: { type: 'string' },
+                key: { type: 'string' },
+                milliseconds: { type: 'number' },
+                ms: { type: 'number' },
+                direction: { type: 'string', enum: ['up', 'down', 'left', 'right'] },
+                amount: { type: 'number' },
+                timeout: { type: 'number' },
+              },
+              required: ['type'],
+            },
+            description: 'Page actions to execute before extraction (auto-enables browser rendering)',
+          },
         },
         required: ['url'],
       },
@@ -170,20 +203,47 @@ async function handleToolCall(name: string, args: Record<string, unknown>): Prom
       if (!url || typeof url !== 'string') throw new Error('Invalid URL');
       if (url.length > 2048) throw new Error('URL too long');
 
+      // Normalize actions (handles Firecrawl-style aliases)
+      const parsedActions = args.actions ? normalizeActions(args.actions) : undefined;
+      const hasActions = parsedActions && parsedActions.length > 0;
+
       const options: PeelOptions = {
-        render: (args.render as boolean) || false,
+        render: (args.render as boolean) || hasActions || false,
         stealth: (args.stealth as boolean) || false,
         wait: (args.wait as number) || 0,
         format: (args.format as 'markdown' | 'text' | 'html') || 'markdown',
         selector: args.selector as string | undefined,
         maxTokens: args.maxTokens as number | undefined,
         images: args.images as boolean | undefined,
+        actions: parsedActions,
       };
 
       const result = await Promise.race([
         peel(url, options),
         timeout(60000, 'Fetch timed out'),
-      ]);
+      ]) as any;
+
+      // Inline LLM extraction (post-fetch, BYOK)
+      const inlineExtract = args.inlineExtract as { schema?: Record<string, any>; prompt?: string } | undefined;
+      const llmProvider = args.llmProvider as string | undefined;
+      const llmApiKey = args.llmApiKey as string | undefined;
+      const llmModel = args.llmModel as string | undefined;
+
+      if (inlineExtract && (inlineExtract.schema || inlineExtract.prompt) && llmApiKey && llmProvider) {
+        const validProviders: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
+        if (validProviders.includes(llmProvider as InlineLLMProvider)) {
+          const extractResult = await extractInlineJson(result.content, {
+            schema: inlineExtract.schema,
+            prompt: inlineExtract.prompt,
+            llmProvider: llmProvider as InlineLLMProvider,
+            llmApiKey,
+            llmModel,
+          });
+          result.json = extractResult.data;
+          result.extractTokensUsed = extractResult.tokensUsed;
+        }
+      }
+
       return ok(safeStringify(result));
     }
 

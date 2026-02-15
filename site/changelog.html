@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog — WebPeel</title>
+  <meta name="description" content="Release notes and product updates for WebPeel.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://webpeel.dev/changelog">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://webpeel.dev/changelog">
+  <meta property="og:title" content="Changelog — WebPeel">
+  <meta property="og:description" content="Release notes and product updates for WebPeel.">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#FAFAF8">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg:#FAFAF8;
+      --surface:#FFFFFF;
+      --text:#09090B;
+      --text-2:#52525B;
+      --text-3:#71717A;
+      --border:#E4E4E7;
+      --border-light:#F4F4F5;
+      --accent:#8B5CF6;
+      --accent-light:#EDE9FE;
+      --radius:12px;
+    }
+    body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; -webkit-font-smoothing:antialiased; }
+    a { color: inherit; text-decoration:none; }
+    a:hover { text-decoration:none; }
+    .serif { font-family:'Instrument Serif',Georgia,serif; }
+    .mono { font-family:'JetBrains Mono',monospace; }
+    .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+    nav { position:sticky; top:0; z-index:100; background:rgba(250,250,248,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border-light); }
+    .nav-inner { display:flex; align-items:center; justify-content:space-between; height:56px; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .nav-logo { display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; }
+    .nav-logo svg { width:24px; height:24px; }
+    .nav-links { display:flex; align-items:center; gap:22px; }
+    .nav-links a { font-size:14px; color:var(--text-3); transition: color 0.15s; }
+    .nav-links a:hover { color:var(--text); }
+    .nav-links a.active { color:var(--text); font-weight:600; }
+
+    main { padding: 72px 0; }
+    h1 { font-size: 48px; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 10px; }
+    .lead { font-size: 16px; color: var(--text-2); max-width: 64ch; }
+
+    .releases { margin-top: 44px; display: grid; gap: 18px; }
+    .release {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+    .release-header { display:flex; align-items:flex-start; justify-content:space-between; gap: 14px; margin-bottom: 14px; }
+    .release-title { display:flex; align-items:center; gap: 10px; flex-wrap:wrap; }
+    .release-version { font-size: 15px; font-weight: 600; }
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .release-meta { font-size: 13px; color: var(--text-3); }
+    .release ul { padding-left: 18px; }
+    .release li { color: var(--text-2); font-size: 15px; margin: 8px 0; }
+    .release code { font-family:'JetBrains Mono',monospace; font-size: 13px; background: rgba(139,92,246,0.08); padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(139,92,246,0.14); }
+
+    footer { border-top:1px solid var(--border); padding:40px 0; }
+    .footer-inner { display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .footer-left { font-size:13px; color:#A1A1AA; }
+    .footer-links { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+    .footer-links a { font-size:13px; color:var(--text-3); }
+    .footer-links a:hover { color:var(--text); }
+
+    @media(max-width:768px) {
+      main { padding: 48px 0; }
+      h1 { font-size: 36px; }
+      .release-header { flex-direction: column; }
+      .footer-inner { flex-direction:column; gap:16px; text-align:center; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/changelog" class="active">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h1 class="serif">Changelog</h1>
+      <p class="lead">Release notes and product updates for WebPeel.</p>
+
+      <div class="releases">
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.7.0</div>
+              <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">2026</div>
+          </div>
+          <ul>
+            <li>Interactive Playground with code generation</li>
+            <li>Firecrawl-compatible <code>/v2/scrape</code>, <code>/v2/crawl</code>, <code>/v2/map</code> endpoints</li>
+            <li>Full documentation site with API reference, CLI, MCP, SDKs docs</li>
+            <li>AI Agent endpoint (<code>/v1/agent</code>) for autonomous web research</li>
+            <li>Answer endpoint (<code>/v1/answer</code>) — search + LLM synthesis with citations</li>
+            <li>Brave Search BYOK support</li>
+            <li>Hosted MCP endpoint (single URL setup)</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.6.0</div>
+            </div>
+            <div class="release-meta">2026</div>
+          </div>
+          <ul>
+            <li>Branding extraction endpoint</li>
+            <li>Change tracking / content monitoring</li>
+            <li>SSE streaming for agent and crawl</li>
+            <li>Batch scraping with webhooks</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.5.0</div>
+            </div>
+            <div class="release-meta">2026</div>
+          </div>
+          <ul>
+            <li>Search endpoint with DuckDuckGo</li>
+            <li>Crawl endpoint with depth control</li>
+            <li>Map endpoint for URL discovery</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.4.0</div>
+            </div>
+            <div class="release-meta">2026</div>
+          </div>
+          <ul>
+            <li>MCP server with 9 tools</li>
+            <li>Python SDK (zero deps)</li>
+            <li>LangChain &amp; LlamaIndex integrations</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.3.0</div>
+            </div>
+            <div class="release-meta">2026</div>
+          </div>
+          <ul>
+            <li>Stealth mode with anti-detection</li>
+            <li>Smart escalation (HTTP → browser → stealth)</li>
+            <li>CLI tool</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.2.0</div>
+            </div>
+            <div class="release-meta">2026</div>
+          </div>
+          <ul>
+            <li>Browser rendering with Playwright</li>
+            <li>Multiple output formats (markdown, HTML, text, JSON)</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.1.0</div>
+            </div>
+            <div class="release-meta">2026</div>
+          </div>
+          <ul>
+            <li>Initial release — HTTP fetch with content extraction</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. Open source under MIT.</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="/docs/">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/blog">Blog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

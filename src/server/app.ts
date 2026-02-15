@@ -28,6 +28,7 @@ import { createBatchRouter } from './routes/batch.js';
 import { createAgentRouter } from './routes/agent.js';
 import { createAnswerRouter } from './routes/answer.js';
 import { createMcpRouter } from './routes/mcp.js';
+import { createScreenshotRouter } from './routes/screenshot.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
 import { createSentryHooks } from './sentry.js';
@@ -134,6 +135,7 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createRateLimitMiddleware(rateLimiter));
   app.use(createCompatRouter(jobQueue));
   app.use(createFetchRouter(authStore));
+  app.use(createScreenshotRouter(authStore));
   app.use(createSearchRouter(authStore));
   app.use(createUserRouter());
   app.use(createOAuthRouter());

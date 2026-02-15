@@ -4,11 +4,37 @@
 
 export interface PageAction {
   type: 'wait' | 'click' | 'scroll' | 'type' | 'fill' | 'select' | 'press' | 'hover' | 'waitForSelector' | 'screenshot';
+
+  /** CSS selector for element-targeted actions */
   selector?: string;
+
+  /**
+   * Value/text payload for actions like type/fill/select.
+   * Accepts Firecrawl-style `text` too (normalized internally).
+   */
   value?: string;
+  text?: string;
+
+  /** Keyboard key for press actions (e.g., "Enter") */
   key?: string;
+
+  /** Wait duration for wait actions (ms). Firecrawl uses `milliseconds`. */
   ms?: number;
+  milliseconds?: number;
+
+  /**
+   * Scroll target (absolute) — legacy/internal.
+   * Use direction+amount for relative scrolling.
+   */
   to?: 'top' | 'bottom' | number;
+
+  /** Relative scroll direction (Firecrawl-style) */
+  direction?: 'up' | 'down' | 'left' | 'right';
+
+  /** Relative scroll amount in pixels (Firecrawl-style) */
+  amount?: number;
+
+  /** Per-action timeout override (ms) */
   timeout?: number;
 }
 
@@ -26,6 +52,20 @@ export interface ExtractOptions {
   /** LLM API base URL (default: https://api.openai.com/v1) */
   llmBaseUrl?: string;
 }
+
+/**
+ * Inline structured extraction options (BYOK, multi-provider).
+ * Used with /v1/fetch POST, /v2/scrape, and /v1/scrape (Firecrawl compat).
+ */
+export interface InlineExtractParam {
+  /** JSON Schema describing the desired output structure */
+  schema?: Record<string, any>;
+  /** Natural language prompt describing what to extract */
+  prompt?: string;
+}
+
+/** LLM provider for BYOK inline extraction */
+export type InlineLLMProvider = 'openai' | 'anthropic' | 'google';
 
 export interface PeelOptions {
   /** Use headless browser instead of simple HTTP fetch */
@@ -125,8 +165,10 @@ export interface PeelResult {
   quality?: number;
   /** SHA256 hash of content (first 16 chars) — for change detection */
   fingerprint?: string;
-  /** Extracted structured data (when extract option is used) */
+  /** Extracted structured data (when extract option is used — CSS/heuristic extraction) */
   extracted?: Record<string, any>;
+  /** Structured JSON from inline LLM extraction (when extract + llmProvider is used) */
+  json?: Record<string, any>;
   /** Branding/design system profile */
   branding?: import('./core/branding.js').BrandingProfile;
   /** Content change tracking result */
@@ -148,6 +190,14 @@ export interface PageMetadata {
   image?: string;
   /** Canonical URL */
   canonical?: string;
+  /** MIME content type (set for documents like PDF/DOCX) */
+  contentType?: string;
+  /** Word count (set for documents like PDF/DOCX) */
+  wordCount?: number;
+  /** Page count (set for PDF documents) */
+  pages?: number;
+  /** Allow additional document-specific metadata */
+  [key: string]: any;
 }
 
 export class WebPeelError extends Error {
