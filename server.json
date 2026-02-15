@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.JakeLiuMe/webpeel",
+  "name": "io.github.webpeel/webpeel",
   "title": "WebPeel",
   "description": "Fetch any web page as clean, AI-ready markdown with smart HTTP-to-browser escalation.",
   "version": "0.3.1",
   "websiteUrl": "https://webpeel.dev",
   "repository": {
-    "url": "https://github.com/JakeLiuMe/webpeel",
+    "url": "https://github.com/webpeel/webpeel",
     "source": "github"
   },
   "packages": [

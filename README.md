@@ -8,8 +8,8 @@
   <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/v/webpeel.svg" alt="npm version"></a>
   <a href="https://pypi.org/project/webpeel/"><img src="https://img.shields.io/pypi/v/webpeel.svg" alt="PyPI version"></a>
   <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/dm/webpeel.svg" alt="npm downloads"></a>
-  <a href="https://github.com/JakeLiuMe/webpeel/stargazers"><img src="https://img.shields.io/github/stars/JakeLiuMe/webpeel.svg" alt="GitHub stars"></a>
-  <a href="https://github.com/JakeLiuMe/webpeel/actions/workflows/ci.yml"><img src="https://github.com/JakeLiuMe/webpeel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/webpeel/webpeel/stargazers"><img src="https://img.shields.io/github/stars/webpeel/webpeel.svg" alt="GitHub stars"></a>
+  <a href="https://github.com/webpeel/webpeel/actions/workflows/ci.yml"><img src="https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.6-blue.svg" alt="TypeScript"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License"></a>
 </p>
@@ -23,7 +23,7 @@
   <a href="https://webpeel.dev/docs">Docs</a> ·
   <a href="https://webpeel.dev/playground">Playground</a> ·
   <a href="https://app.webpeel.dev">Dashboard</a> ·
-  <a href="https://github.com/JakeLiuMe/webpeel/discussions">Discussions</a>
+  <a href="https://github.com/webpeel/webpeel/discussions">Discussions</a>
 </p>
 
 ---
@@ -140,7 +140,7 @@ Zero dependencies. Pure Python 3.8+. [Full SDK docs →](python-sdk/README.md)
 ### Docker (Self-Hosted)
 
 ```bash
-git clone https://github.com/JakeLiuMe/webpeel.git
+git clone https://github.com/webpeel/webpeel.git
 cd webpeel && docker compose up
 ```
 
@@ -227,7 +227,7 @@ Resets every Monday. All features on all plans. [Compare with Firecrawl →](htt
 ## Development
 
 ```bash
-git clone https://github.com/JakeLiuMe/webpeel.git
+git clone https://github.com/webpeel/webpeel.git
 cd webpeel
 npm install && npm run build
 npm test
@@ -237,15 +237,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Links
 
-[Documentation](https://webpeel.dev/docs) · [Playground](https://webpeel.dev/playground) · [API Reference](https://webpeel.dev/docs/api-reference) · [npm](https://www.npmjs.com/package/webpeel) · [PyPI](https://pypi.org/project/webpeel/) · [Migration Guide](https://webpeel.dev/migrate-from-firecrawl) · [Blog](https://webpeel.dev/blog) · [Discussions](https://github.com/JakeLiuMe/webpeel/discussions)
+[Documentation](https://webpeel.dev/docs) · [Playground](https://webpeel.dev/playground) · [API Reference](https://webpeel.dev/docs/api-reference) · [npm](https://www.npmjs.com/package/webpeel) · [PyPI](https://pypi.org/project/webpeel/) · [Migration Guide](https://webpeel.dev/migrate-from-firecrawl) · [Blog](https://webpeel.dev/blog) · [Discussions](https://github.com/webpeel/webpeel/discussions)
 
 ## Star History
 
-<a href="https://star-history.com/#JakeLiuMe/webpeel&Date">
+<a href="https://star-history.com/#webpeel/webpeel&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=JakeLiuMe/webpeel&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=JakeLiuMe/webpeel&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=JakeLiuMe/webpeel&type=Date" width="600" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=webpeel/webpeel&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=webpeel/webpeel&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webpeel/webpeel&type=Date" width="600" />
   </picture>
 </a>
 
@@ -256,5 +256,5 @@ MIT © [Jake Liu](https://github.com/JakeLiuMe)
 ---
 
 <p align="center">
-  <b>Like WebPeel?</b> <a href="https://github.com/JakeLiuMe/webpeel">⭐ Star us on GitHub</a> — it helps others discover the project!
+  <b>Like WebPeel?</b> <a href="https://github.com/webpeel/webpeel">⭐ Star us on GitHub</a> — it helps others discover the project!
 </p>

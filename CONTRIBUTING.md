@@ -6,7 +6,7 @@ Thanks for your interest in contributing to WebPeel! 🎉
 
 ```bash
 # Clone the repo
-git clone https://github.com/JakeLiuMe/webpeel.git
+git clone https://github.com/webpeel/webpeel.git
 cd webpeel
 
 # Install dependencies
@@ -111,7 +111,7 @@ PORT=8080 npx webpeel serve
 - **Tests**: More test coverage (especially integration tests)
 - **Documentation**: Improve docs, add examples
 - **Performance**: Faster fetching, better caching
-- **Bug fixes**: Check [issues](https://github.com/JakeLiuMe/webpeel/issues)
+- **Bug fixes**: Check [issues](https://github.com/webpeel/webpeel/issues)
 
 ## License
 

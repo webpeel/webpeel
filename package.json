@@ -55,10 +55,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JakeLiuMe/webpeel.git"
+    "url": "git+https://github.com/webpeel/webpeel.git"
   },
   "bugs": {
-    "url": "https://github.com/JakeLiuMe/webpeel/issues"
+    "url": "https://github.com/webpeel/webpeel/issues"
   },
   "homepage": "https://webpeel.dev",
   "keywords": [
@@ -125,5 +125,5 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "mcpName": "io.github.JakeLiuMe/webpeel"
+  "mcpName": "io.github.webpeel/webpeel"
 }

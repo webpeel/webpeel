@@ -42,7 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 #### AI Agent Skill
 - **Pre-built AI agent skill** for rapid integration with AI coding assistants
-- Installation: `npx skills add JakeLiuMe/webpeel` (works with Claude Code, Cursor, OpenCode, etc.)
+- Installation: `npx skills add webpeel/webpeel` (works with Claude Code, Cursor, OpenCode, etc.)
 - Natural language interface: agent understands "fetch the latest HN posts" and auto-selects `webpeel_fetch` + `webpeel_search`
 - Intelligent tool routing: knows when to use fetch vs crawl vs map vs extract based on user intent
 - Error recovery patterns: auto-retry with stealth mode on 403/503, fallback to simple mode on timeout
@@ -361,5 +361,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stealth mode with playwright-extra
 - Zero-config setup
 
-[0.1.1]: https://github.com/JakeLiuMe/webpeel/releases/tag/v0.1.1
-[0.1.0]: https://github.com/JakeLiuMe/webpeel/releases/tag/v0.1.0
+[0.1.1]: https://github.com/webpeel/webpeel/releases/tag/v0.1.1
+[0.1.0]: https://github.com/webpeel/webpeel/releases/tag/v0.1.0

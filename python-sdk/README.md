@@ -224,6 +224,6 @@ MIT © Jake Liu
 ## Links
 
 - [Homepage](https://webpeel.dev)
-- [Documentation](https://github.com/JakeLiuMe/webpeel)
-- [GitHub](https://github.com/JakeLiuMe/webpeel)
-- [Issues](https://github.com/JakeLiuMe/webpeel/issues)
+- [Documentation](https://github.com/webpeel/webpeel)
+- [GitHub](https://github.com/webpeel/webpeel)
+- [Issues](https://github.com/webpeel/webpeel/issues)

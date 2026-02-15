@@ -3,7 +3,7 @@
 ## Directories & Registries
 - [ ] Smithery: Submit smithery.yaml (Jake needs to sign in at smithery.ai)
 - [ ] awesome-mcp-servers: PR to https://github.com/punkpeye/awesome-mcp-servers
-- [ ] MCP Registry: Already published as io.github.JakeLiuMe/webpeel
+- [ ] MCP Registry: Already published as io.github.webpeel/webpeel
 - [ ] npm: ✅ Published webpeel@0.7.0
 - [ ] PyPI: ✅ Published webpeel 0.1.0
 

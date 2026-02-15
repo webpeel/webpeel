@@ -21,7 +21,7 @@ docker compose version
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/JakeLiuMe/webpeel.git
+git clone https://github.com/webpeel/webpeel.git
 cd webpeel
 ```
 
@@ -291,9 +291,9 @@ docker compose exec -T db psql -U webpeel webpeel < backup.sql
 
 ## Getting Help
 
-- **Issues:** [GitHub Issues](https://github.com/JakeLiuMe/webpeel/issues)
+- **Issues:** [GitHub Issues](https://github.com/webpeel/webpeel/issues)
 - **Documentation:** [webpeel.dev](https://webpeel.dev)
-- **Support:** Open an issue on [GitHub Issues](https://github.com/JakeLiuMe/webpeel/issues)
+- **Support:** Open an issue on [GitHub Issues](https://github.com/webpeel/webpeel/issues)
 
 ---
 

@@ -203,7 +203,7 @@ curl -H "Authorization: Bearer wp_..." "https://api.webpeel.dev/v1/fetch?url=htt
 
 ## Links
 
-- **GitHub**: https://github.com/JakeLiuMe/webpeel
+- **GitHub**: https://github.com/webpeel/webpeel
 - **npm**: https://www.npmjs.com/package/webpeel
 - **PyPI**: https://pypi.org/project/webpeel/
 - **Docs**: https://webpeel.dev/docs/

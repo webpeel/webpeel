@@ -189,9 +189,9 @@ WebPeelLoader(
 ## Links
 
 - [WebPeel Homepage](https://webpeel.dev)
-- [Documentation](https://github.com/JakeLiuMe/webpeel)
+- [Documentation](https://github.com/webpeel/webpeel)
 - [Python SDK](https://pypi.org/project/webpeel/)
-- [GitHub](https://github.com/JakeLiuMe/webpeel)
+- [GitHub](https://github.com/webpeel/webpeel)
 
 ## License
 

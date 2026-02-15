@@ -10,7 +10,7 @@ body:
 
         Before posting, please check:
         - Docs: https://webpeel.dev/docs/
-        - Discussions: https://github.com/JakeLiuMe/webpeel/discussions
+        - Discussions: https://github.com/webpeel/webpeel/discussions
 
   - type: textarea
     id: question
