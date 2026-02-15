@@ -147,8 +147,12 @@
     .markdown-body th { text-align: left; padding: 8px 12px; background: var(--border-light); font-weight: 600; font-size: 13px; border-bottom: 1px solid var(--border); }
     .markdown-body td { padding: 8px 12px; border-bottom: 1px solid var(--border-light); }
     .markdown-body tr:last-child td { border-bottom: none; }
-    /* Strip any inline styles from rendered content (e.g. HN orange nav) */
-    .markdown-body [style] { all: revert; font: inherit; color: inherit; }
+    /* Strip inline styles & legacy HTML from rendered content (e.g. HN tables) */
+    .markdown-body [style] { background: none !important; color: inherit !important; font: inherit !important; border: none !important; padding: 0 !important; width: auto !important; }
+    .markdown-body [bgcolor] { background: none !important; }
+    .markdown-body table[id], .markdown-body table[border], .markdown-body table[cellpadding] { display: block; width: 100% !important; border: none; }
+    .markdown-body .pagetop, .markdown-body .hnname { display: inline; font: inherit; }
+    .markdown-body font { font: inherit; color: inherit; }
 
     /* SEARCH RESULTS */
     .search-results { display: flex; flex-direction: column; gap: 20px; }
