@@ -45,6 +45,10 @@ CORS_ORIGINS=https://your-domain.com,https://app.your-domain.com
 # Optional: Stripe integration (for paid tiers)
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Optional: Sentry error tracking
+SENTRY_DSN=https://<public-key>@o<org-id>.ingest.sentry.io/<project-id>
+SENTRY_TRACES_SAMPLE_RATE=0.1
 ```
 
 **⚠️ Security:** Generate a strong `JWT_SECRET` using:
@@ -91,6 +95,10 @@ Expected response:
 | `CORS_ORIGINS` | No | See below | Comma-separated list of allowed origins |
 | `STRIPE_SECRET_KEY` | No | - | Stripe API key (for paid features) |
 | `STRIPE_WEBHOOK_SECRET` | No | - | Stripe webhook signing secret |
+| `SENTRY_DSN` | No | - | Enable Sentry error reporting for API/server exceptions |
+| `SENTRY_ENVIRONMENT` | No | `NODE_ENV` | Sentry environment label (`production`, `staging`, etc.) |
+| `SENTRY_RELEASE` | No | - | Release tag shown in Sentry issues (e.g. `webpeel@0.7.0`) |
+| `SENTRY_TRACES_SAMPLE_RATE` | No | unset | APM traces sample rate from `0.0` to `1.0` |
 
 **Default CORS Origins:**
 - `https://app.webpeel.dev`
@@ -285,7 +293,7 @@ docker compose exec -T db psql -U webpeel webpeel < backup.sql
 
 - **Issues:** [GitHub Issues](https://github.com/JakeLiuMe/webpeel/issues)
 - **Documentation:** [webpeel.dev](https://webpeel.dev)
-- **Community:** Join our Discord (link in README)
+- **Support:** Open an issue on [GitHub Issues](https://github.com/JakeLiuMe/webpeel/issues)
 
 ---
 

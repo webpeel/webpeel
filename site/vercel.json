@@ -1,7 +1,9 @@
 {
   "rewrites": [
     { "source": "/docs", "destination": "/docs/index.html" },
-    { "source": "/docs/", "destination": "/docs/index.html" }
+    { "source": "/docs/", "destination": "/docs/index.html" },
+    { "source": "/status", "destination": "/status.html" },
+    { "source": "/status/", "destination": "/status.html" }
   ],
   "headers": [
     {
@@ -9,7 +11,12 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://api.webpeel.dev https://webpeel-api.onrender.com; form-action 'self'"
+        }
       ]
     },
     {

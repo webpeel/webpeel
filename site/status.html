@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebPeel Status</title>
+  <meta name="description" content="Live status for webpeel.dev and the WebPeel API health endpoint.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://webpeel.dev/status">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#FAFAF8">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #FAFAF8;
+      --surface: #fff;
+      --text: #09090B;
+      --text-2: #52525B;
+      --border: #E4E4E7;
+      --green: #16A34A;
+      --red: #DC2626;
+      --yellow: #D97706;
+      --accent: #8B5CF6;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .refresh-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    h1 {
+      margin: 8px 0 6px;
+      font-size: 34px;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 0 0 22px;
+      color: var(--text-2);
+    }
+
+    .status-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .label {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--yellow);
+    }
+
+    .up .dot { background: var(--green); }
+    .down .dot { background: var(--red); }
+
+    .details {
+      margin-top: 8px;
+      color: var(--text-2);
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .meta {
+      margin-top: 18px;
+      color: var(--text-2);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top">
+      <a href="/" class="brand">WebPeel</a>
+      <button class="refresh-btn" id="refreshBtn" type="button">Refresh</button>
+    </div>
+
+    <h1>Status</h1>
+    <p class="subtitle">Simple live checks for website and API availability.</p>
+
+    <section class="status-card" id="siteCard">
+      <div class="row">
+        <div class="label">Website</div>
+        <div class="badge" id="siteBadge"><span class="dot"></span><span>Checking…</span></div>
+      </div>
+      <div class="details" id="siteDetails">Running checks…</div>
+    </section>
+
+    <section class="status-card" id="apiCard">
+      <div class="row">
+        <div class="label">API</div>
+        <div class="badge" id="apiBadge"><span class="dot"></span><span>Checking…</span></div>
+      </div>
+      <div class="details" id="apiDetails">Running checks…</div>
+    </section>
+
+    <p class="meta" id="lastUpdated">Last updated: —</p>
+    <noscript><p class="meta">JavaScript is required to run live health checks.</p></noscript>
+  </div>
+
+  <script>
+    const API_ENDPOINTS = [
+      'https://api.webpeel.dev/health',
+      'https://webpeel-api.onrender.com/health',
+    ];
+
+    async function fetchWithTimeout(url, timeoutMs = 8000) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+        return response;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    function setBadge(cardEl, badgeEl, status, label) {
+      cardEl.classList.remove('up', 'down');
+      if (status === 'up') cardEl.classList.add('up');
+      if (status === 'down') cardEl.classList.add('down');
+      badgeEl.innerHTML = `<span class="dot"></span><span>${label}</span>`;
+    }
+
+    async function checkWebsite() {
+      const siteCard = document.getElementById('siteCard');
+      const siteBadge = document.getElementById('siteBadge');
+      const siteDetails = document.getElementById('siteDetails');
+
+      setBadge(siteCard, siteBadge, 'checking', 'Checking…');
+
+      try {
+        const [robotsRes, faviconRes] = await Promise.all([
+          fetchWithTimeout('/robots.txt'),
+          fetchWithTimeout('/favicon.ico'),
+        ]);
+
+        if (!robotsRes.ok || !faviconRes.ok) {
+          throw new Error(`robots.txt=${robotsRes.status}, favicon.ico=${faviconRes.status}`);
+        }
+
+        siteDetails.textContent = `webpeel.dev is reachable (robots.txt ${robotsRes.status}, favicon.ico ${faviconRes.status}).`;
+        setBadge(siteCard, siteBadge, 'up', 'Operational');
+      } catch (error) {
+        siteDetails.textContent = `Website check failed: ${error.message || 'unknown error'}`;
+        setBadge(siteCard, siteBadge, 'down', 'Issue detected');
+      }
+    }
+
+    async function checkApi() {
+      const apiCard = document.getElementById('apiCard');
+      const apiBadge = document.getElementById('apiBadge');
+      const apiDetails = document.getElementById('apiDetails');
+
+      setBadge(apiCard, apiBadge, 'checking', 'Checking…');
+
+      for (const endpoint of API_ENDPOINTS) {
+        try {
+          const response = await fetchWithTimeout(endpoint);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          const data = await response.json().catch(() => ({}));
+          const version = data.version ? `version ${data.version}` : 'version unknown';
+          const uptime = Number.isFinite(data.uptime) ? `uptime ${data.uptime}s` : 'uptime unknown';
+
+          apiDetails.textContent = `API healthy via ${endpoint} (${version}, ${uptime}).`;
+          setBadge(apiCard, apiBadge, 'up', 'Operational');
+          return;
+        } catch {
+          // Try next endpoint
+        }
+      }
+
+      apiDetails.textContent = 'API health check failed on all configured endpoints.';
+      setBadge(apiCard, apiBadge, 'down', 'Issue detected');
+    }
+
+    async function refreshStatus() {
+      const refreshBtn = document.getElementById('refreshBtn');
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = 'Refreshing…';
+
+      await Promise.all([checkWebsite(), checkApi()]);
+
+      document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleString()}`;
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'Refresh';
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', refreshStatus);
+    refreshStatus();
+  </script>
+</body>
+</html>

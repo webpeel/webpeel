@@ -26,10 +26,16 @@ import { createBatchRouter } from './routes/batch.js';
 import { createAgentRouter } from './routes/agent.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
+import { createSentryHooks } from './sentry.js';
 export function createApp(config = {}) {
     const app = express();
     // SECURITY: Trust proxy for Render/production (HTTPS only)
     app.set('trust proxy', 1);
+    // Optional error tracking (enabled only when SENTRY_DSN is set)
+    const sentry = createSentryHooks();
+    if (sentry.requestHandler) {
+        app.use(sentry.requestHandler);
+    }
     // Stripe webhook route MUST come before express.json() to get raw body
     const stripeRouter = createStripeRouter();
     app.use('/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeRouter);
@@ -57,6 +63,11 @@ export function createApp(config = {}) {
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         res.setHeader('X-XSS-Protection', '1; mode=block');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        // API-safe CSP: JSON-only API does not need scripts/styles/fonts.
+        // Keep this strict to reduce attack surface without affecting API clients.
+        res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
         next();
     });
     // SECURITY: JSON parse error handler
@@ -109,6 +120,10 @@ export function createApp(config = {}) {
             message: `Route not found: ${req.method} ${req.path}`,
         });
     });
+    // Sentry error middleware should run before the generic error handler.
+    if (sentry.errorHandler) {
+        app.use(sentry.errorHandler);
+    }
     // Error handler - SECURITY: Do not expose internal error details
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     app.use((err, _req, res, _next) => {
