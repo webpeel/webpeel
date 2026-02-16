@@ -225,6 +225,28 @@
     .code-body .hl-fn { color: #93C5FD; }
     .code-body .hl-cm { color: #52525B; }
 
+    /* BENCHMARKS */
+    .benchmark-section { padding-top: 24px; }
+    .benchmark-header { max-width: 760px; margin: 0 auto 36px; text-align: center; }
+    .benchmark-header h2 { font-family: 'Instrument Serif', serif; font-size: 42px; font-weight: 400; margin-bottom: 4px; }
+    .benchmark-kicker { font-size: 28px; line-height: 1; margin-bottom: 14px; color: var(--text); font-style: italic; }
+    .benchmark-subtitle { font-size: 15px; color: var(--text-2); max-width: 640px; margin: 0 auto; }
+    .benchmark-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .benchmark-card { background: #FAFAFA; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .benchmark-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 4px; letter-spacing: -0.01em; }
+    .benchmark-card p { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+    .benchmark-bars { display: grid; gap: 12px; margin-top: 16px; }
+    .benchmark-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+    .benchmark-label { font-size: 13px; color: var(--text-2); font-weight: 500; }
+    .benchmark-row.webpeel .benchmark-label { color: var(--text); font-weight: 600; }
+    .benchmark-track { height: 16px; border-radius: 999px; background: #F1ECE3; overflow: hidden; }
+    .benchmark-fill { height: 100%; width: 0; border-radius: inherit; background: #E5E0D8; min-width: 8%; }
+    .benchmark-row.webpeel .benchmark-fill { background: linear-gradient(90deg, var(--accent), #8B5CF6); }
+    .benchmark-value { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .benchmark-footnote { margin-top: 12px; font-size: 12px; color: var(--text-3); }
+    .benchmark-methodology { margin-top: 18px; text-align: center; font-size: 12px; color: var(--text-3); }
+    .benchmark-methodology a { color: var(--accent); text-decoration: underline; text-decoration-color: rgba(139,92,246,0.4); text-underline-offset: 2px; }
+
     /* COMPARE TABLE */
     .compare-table { width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius); border: 1px solid var(--border); }
     .compare-table th, .compare-table td { padding: 12px 16px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border-light); white-space: nowrap; }
@@ -318,7 +340,10 @@
       .demo { margin-top: 40px; }
       .terminal { border-radius: 12px; }
       .terminal-body { padding: 16px; font-size: 12px; overflow-x: auto; min-height: 200px; }
-      .steps, .pricing-grid { grid-template-columns: 1fr; }
+      .steps, .pricing-grid, .benchmark-grid { grid-template-columns: 1fr; }
+      .benchmark-header h2 { font-size: 34px; }
+      .benchmark-kicker { font-size: 24px; }
+      .benchmark-row { grid-template-columns: 86px minmax(0, 1fr) auto; }
       .stats { gap: 16px; flex-wrap: wrap; }
       .stat { min-width: auto; width: 100%; }
       .stat-num { font-size: 24px; }
@@ -581,6 +606,104 @@
 <span class="hl-kw">webpeel</span> search <span class="hl-str">"latest AI news"</span></pre>
         </div>
       </div>
+    </div>
+  </section>
+
+
+  <!-- BENCHMARKS -->
+  <section id="benchmarks" class="benchmark-section reveal" data-reveal style="--accent: #7C3AED;">
+    <div class="container">
+      <div class="benchmark-header">
+        <h2>Benchmarks</h2>
+        <p class="benchmark-kicker serif"><em>Tested on 30 real-world URLs</em></p>
+        <p class="benchmark-subtitle">Independent benchmark across news, docs, e-commerce, social media, and enterprise sites.</p>
+      </div>
+
+      <div class="benchmark-grid reveal-stagger" data-reveal>
+        <article class="benchmark-card">
+          <h3>Success Rate</h3>
+          <p>Successful extraction across the full 30-URL benchmark suite.</p>
+          <div class="benchmark-bars">
+            <div class="benchmark-row webpeel">
+              <div class="benchmark-label">WebPeel</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 100%;"></div></div>
+              <div class="benchmark-value">100%</div>
+            </div>
+            <div class="benchmark-row">
+              <div class="benchmark-label">ScrapingBee</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 80%;"></div></div>
+              <div class="benchmark-value">80%</div>
+            </div>
+            <div class="benchmark-row">
+              <div class="benchmark-label">Raw HTTP</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 80%;"></div></div>
+              <div class="benchmark-value">80%</div>
+            </div>
+            <div class="benchmark-row">
+              <div class="benchmark-label">Jina Reader</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 53%;"></div></div>
+              <div class="benchmark-value">53%</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="benchmark-card">
+          <h3>Median Speed</h3>
+          <p>Requests per second equivalent. Faster = longer bar.</p>
+          <div class="benchmark-bars">
+            <div class="benchmark-row">
+              <div class="benchmark-label">Raw HTTP</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 100%;"></div></div>
+              <div class="benchmark-value">171ms</div>
+            </div>
+            <div class="benchmark-row webpeel">
+              <div class="benchmark-label">WebPeel</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 38.8%;"></div></div>
+              <div class="benchmark-value">441ms</div>
+            </div>
+            <div class="benchmark-row">
+              <div class="benchmark-label">ScrapingBee</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 9.9%;"></div></div>
+              <div class="benchmark-value">1,728ms</div>
+            </div>
+            <div class="benchmark-row">
+              <div class="benchmark-label">Jina Reader</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 8%;"></div></div>
+              <div class="benchmark-value">2,908ms</div>
+            </div>
+          </div>
+          <div class="benchmark-footnote">Raw HTTP has no JS rendering or content extraction. WebPeel is the fastest full-featured fetcher.</div>
+        </article>
+
+        <article class="benchmark-card">
+          <h3>Quality Score</h3>
+          <p>Content extraction quality score (0-1 scale), displayed as a percentage.</p>
+          <div class="benchmark-bars">
+            <div class="benchmark-row webpeel">
+              <div class="benchmark-label">WebPeel</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 86.7%;"></div></div>
+              <div class="benchmark-value">86.7%</div>
+            </div>
+            <div class="benchmark-row">
+              <div class="benchmark-label">Raw HTTP</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 84.2%;"></div></div>
+              <div class="benchmark-value">84.2%</div>
+            </div>
+            <div class="benchmark-row">
+              <div class="benchmark-label">ScrapingBee</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 74.4%;"></div></div>
+              <div class="benchmark-value">74.4%</div>
+            </div>
+            <div class="benchmark-row">
+              <div class="benchmark-label">Jina Reader</div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 69.1%;"></div></div>
+              <div class="benchmark-value">69.1%</div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="benchmark-methodology">30-URL benchmark suite across 6 categories. Run Feb 2026. <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener noreferrer">Full results on GitHub.</a></div>
     </div>
   </section>
 
@@ -1029,10 +1152,6 @@
           <div style="display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 10px 12px; background: #FAFAFA; border: 1px solid var(--border-light); border-radius: 10px;">
             <span style="font-size: 14px; font-weight: 500; color: var(--text);">Stealth mode</span>
             <span class="mono" style="font-size: 13px; color: var(--text-2);">$0.01 / extra credit</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 10px 12px; background: #FAFAFA; border: 1px solid var(--border-light); border-radius: 10px; opacity: 0.6;">
-            <span style="font-size: 14px; font-weight: 500; color: var(--text);">CAPTCHA solve <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--accent-light); color: var(--accent); font-weight: 600; margin-left: 4px;">COMING SOON</span></span>
-            <span class="mono" style="font-size: 13px; color: var(--text-2);">$0.02 / extra credit</span>
           </div>
         </div>
         <div style="margin-top: 12px; font-size: 13px; color: var(--text-3);">Prices shown are per extra credit (usage above your included weekly credits).</div>
