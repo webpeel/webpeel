@@ -115,6 +115,7 @@ export function createUserRouter() {
             // Store API key
             await pool.query(`INSERT INTO api_keys (user_id, key_hash, key_prefix, name)
         VALUES ($1, $2, $3, 'Default')`, [user.id, keyHash, keyPrefix]);
+            const signupTimestamp = new Date().toISOString();
             res.status(201).json({
                 user: {
                     id: user.id,
@@ -127,6 +128,32 @@ export function createUserRouter() {
                 },
                 apiKey, // SECURITY: Only returned once, never stored or shown again
             });
+            // Fire-and-forget Discord webhook for successful signups; never block registration on webhook errors.
+            try {
+                const webhookUrl = process.env.DISCORD_SIGNUP_WEBHOOK;
+                if (webhookUrl) {
+                    void fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            embeds: [{
+                                    title: '🎉 New Signup',
+                                    color: 9133302,
+                                    fields: [
+                                        { name: 'Email', value: email, inline: true },
+                                        { name: 'Tier', value: 'Free', inline: true },
+                                        { name: 'Timestamp', value: signupTimestamp, inline: false },
+                                    ],
+                                    timestamp: signupTimestamp,
+                                    footer: { text: 'WebPeel Signups' },
+                                }],
+                        }),
+                    }).catch(() => { });
+                }
+            }
+            catch {
+                // Intentionally swallow webhook failures.
+            }
         }
         catch (error) {
             if (error.code === '23505') { // Unique violation
