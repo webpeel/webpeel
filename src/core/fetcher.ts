@@ -878,7 +878,8 @@ export async function browserFetch(
 
       // Quick check: if body text is very thin, wait for JS to render more content.
       // Only adds latency when the page clearly hasn't loaded yet.
-      const bodyTextLength = await page!.evaluate(() => document.body?.innerText?.trim().length || 0).catch(() => 0);
+      // eslint-disable-next-line @typescript-eslint/no-implied-eval
+      const bodyTextLength = await page!.evaluate('document.body?.innerText?.trim().length || 0').catch(() => 0) as number;
       if (bodyTextLength < 500) {
         await page!.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {});
         throwIfAborted();
