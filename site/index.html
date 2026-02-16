@@ -635,11 +635,6 @@
               <div class="benchmark-value">80%</div>
             </div>
             <div class="benchmark-row">
-              <div class="benchmark-label">Raw HTTP</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 80%;"></div></div>
-              <div class="benchmark-value">80%</div>
-            </div>
-            <div class="benchmark-row">
               <div class="benchmark-label">Jina Reader</div>
               <div class="benchmark-track"><div class="benchmark-fill" style="width: 53%;"></div></div>
               <div class="benchmark-value">53%</div>
@@ -649,45 +644,35 @@
 
         <article class="benchmark-card">
           <h3>Median Speed</h3>
-          <p>Requests per second equivalent. Faster = longer bar.</p>
+          <p>Median response time. Faster = longer bar.</p>
           <div class="benchmark-bars">
-            <div class="benchmark-row">
-              <div class="benchmark-label">Raw HTTP</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 100%;"></div></div>
-              <div class="benchmark-value">171ms</div>
-            </div>
             <div class="benchmark-row webpeel">
               <div class="benchmark-label">WebPeel</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 38.8%;"></div></div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 100%;"></div></div>
               <div class="benchmark-value">441ms</div>
             </div>
             <div class="benchmark-row">
               <div class="benchmark-label">ScrapingBee</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 9.9%;"></div></div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 25.5%;"></div></div>
               <div class="benchmark-value">1,728ms</div>
             </div>
             <div class="benchmark-row">
               <div class="benchmark-label">Jina Reader</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 8%;"></div></div>
+              <div class="benchmark-track"><div class="benchmark-fill" style="width: 15.2%;"></div></div>
               <div class="benchmark-value">2,908ms</div>
             </div>
           </div>
-          <div class="benchmark-footnote">Raw HTTP has no JS rendering or content extraction. WebPeel is the fastest full-featured fetcher.</div>
+          <div class="benchmark-footnote">WebPeel is 4× faster than ScrapingBee and 6.6× faster than Jina Reader.</div>
         </article>
 
         <article class="benchmark-card">
           <h3>Quality Score</h3>
-          <p>Content extraction quality score (0-1 scale), displayed as a percentage.</p>
+          <p>Content extraction quality — clean markdown, metadata, links.</p>
           <div class="benchmark-bars">
             <div class="benchmark-row webpeel">
               <div class="benchmark-label">WebPeel</div>
               <div class="benchmark-track"><div class="benchmark-fill" style="width: 86.7%;"></div></div>
               <div class="benchmark-value">86.7%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Raw HTTP</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 84.2%;"></div></div>
-              <div class="benchmark-value">84.2%</div>
             </div>
             <div class="benchmark-row">
               <div class="benchmark-label">ScrapingBee</div>
