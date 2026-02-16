@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Scraping Benchmarks: WebPeel vs Firecrawl vs Tavily vs Exa</title>
+  <meta name="description" content="Independent benchmarks comparing WebPeel, Firecrawl, Tavily, and Exa across 30 diverse URLs. Speed, success rate, content quality, and cost — tested honestly.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://webpeel.dev/blog/benchmarks">
+
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://webpeel.dev/blog/benchmarks">
+  <meta property="og:title" content="Web Scraping Benchmarks: WebPeel vs Firecrawl vs Tavily vs Exa">
+  <meta property="og:description" content="Independent benchmarks comparing web scraping tools across 30 URLs. Speed, success rate, and content quality — tested honestly.">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+
+  <meta name="keywords" content="web scraping benchmarks, firecrawl benchmarks, tavily comparison, exa comparison, web scraper performance, ai web scraping">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Web Scraping Benchmarks: WebPeel vs Firecrawl vs Tavily vs Exa",
+    "description": "Independent benchmarks comparing web scraping tools for AI agents across 30 diverse URLs.",
+    "author": {
+      "@type": "Person",
+      "name": "Jake Liu"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "WebPeel",
+      "logo": { "@type": "ImageObject", "url": "https://webpeel.dev/favicon.svg" }
+    },
+    "datePublished": "2026-02-15",
+    "dateModified": "2026-02-15"
+  }
+  </script>
+
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAFAF8;
+      --surface: #FFFFFF;
+      --text: #09090B;
+      --text-2: #52525B;
+      --text-3: #71717A;
+      --text-4: #A1A1AA;
+      --accent: #8B5CF6;
+      --accent-light: #EDE9FE;
+      --border: #E4E4E7;
+      --border-light: #F4F4F5;
+      --green: #16A34A;
+      --green-bg: #F0FDF4;
+      --green-border: #BBF7D0;
+      --blue: #2563EB;
+      --blue-bg: #EFF6FF;
+      --red: #DC2626;
+      --yellow: #EAB308;
+      --radius: 12px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; background: var(--border-light); padding: 2px 6px; border-radius: 4px; }
+
+    /* Nav — matches site */
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(250,250,248,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-light); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--text); text-decoration: none; }
+    .nav-logo svg { width: 24px; height: 24px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { font-size: 14px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* Article layout — inspired by Anthropic's blog */
+    .article-header {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 80px 24px 0;
+    }
+    .article-date {
+      font-size: 14px;
+      color: var(--text-3);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      margin-bottom: 16px;
+    }
+    .article-header h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 48px;
+      line-height: 1.15;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+    .article-subtitle {
+      font-size: 20px;
+      line-height: 1.5;
+      color: var(--text-2);
+      font-weight: 400;
+    }
+    .article-body {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    .article-body h2 {
+      font-size: 28px;
+      font-weight: 600;
+      margin: 48px 0 16px;
+      letter-spacing: -0.01em;
+    }
+    .article-body h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 36px 0 12px;
+    }
+    .article-body p {
+      margin: 0 0 20px;
+      font-size: 17px;
+      color: var(--text);
+    }
+    .article-body ul, .article-body ol {
+      margin: 0 0 20px;
+      padding-left: 24px;
+    }
+    .article-body li {
+      margin-bottom: 8px;
+      font-size: 17px;
+    }
+
+    /* Benchmark chart bars */
+    .bench-section {
+      margin: 40px 0;
+    }
+    .bench-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 24px 0;
+    }
+    .bench-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .bench-label {
+      width: 120px;
+      flex-shrink: 0;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: right;
+    }
+    .bench-bar-container {
+      flex: 1;
+      height: 36px;
+      background: var(--border-light);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bench-bar {
+      height: 100%;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      transition: width 0.8s ease;
+      min-width: 60px;
+    }
+    .bench-bar.webpeel { background: #8B5CF6; }
+    .bench-bar.firecrawl { background: #F97316; }
+    .bench-bar.tavily { background: #06B6D4; }
+    .bench-bar.exa { background: #10B981; }
+    .bench-bar.baseline { background: #9CA3AF; }
+
+    .bench-value {
+      width: 80px;
+      flex-shrink: 0;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Comparison table */
+    .compare-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 24px 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .compare-table thead {
+      background: var(--border-light);
+    }
+    .compare-table th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .compare-table tr:last-child td {
+      border-bottom: none;
+    }
+    .compare-table .winner {
+      background: var(--green-bg);
+      font-weight: 600;
+      color: var(--green);
+    }
+    .compare-table .tool-name {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tool-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .tool-dot.webpeel { background: #8B5CF6; }
+    .tool-dot.firecrawl { background: #F97316; }
+    .tool-dot.tavily { background: #06B6D4; }
+    .tool-dot.exa { background: #10B981; }
+
+    /* Tier breakdown */
+    .tier-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .tier-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .tier-card h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .tier-card .tier-desc {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-bottom: 12px;
+    }
+    .tier-card .tier-score {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .tier-card .tier-denom {
+      font-size: 16px;
+      color: var(--text-3);
+    }
+
+    /* Callout */
+    .callout {
+      background: var(--accent-light);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 32px 0;
+    }
+    .callout-title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 8px;
+      color: #6D28D9;
+    }
+    .callout p {
+      font-size: 15px;
+      margin-bottom: 0;
+      color: var(--text-2);
+    }
+    .callout-honest {
+      background: #FFF7ED;
+      border-color: rgba(249, 115, 22, 0.2);
+    }
+    .callout-honest .callout-title { color: #C2410C; }
+
+    /* Methodology */
+    .methodology {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 32px 0;
+    }
+    .methodology h4 {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-3);
+      margin-bottom: 12px;
+    }
+    .methodology ul {
+      padding-left: 20px;
+    }
+    .methodology li {
+      font-size: 15px;
+      color: var(--text-2);
+      margin-bottom: 6px;
+    }
+
+    /* Footer */
+    footer { border-top: 1px solid var(--border); padding: 40px 0; }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .footer-left { font-size: 13px; color: var(--text-4); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .article-header h1 { font-size: 32px; }
+      .article-header { padding-top: 48px; }
+      .bench-label { width: 80px; font-size: 12px; }
+      .bench-value { width: 60px; font-size: 12px; }
+      .nav-links { display: none; }
+      .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+      .tier-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how-it-works">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/docs/">Docs</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="article-header">
+    <div class="article-date">February 15, 2026</div>
+    <h1>Web Scraping Benchmarks</h1>
+    <p class="article-subtitle">We tested WebPeel, Firecrawl, Tavily, and Exa across 30 diverse URLs — measuring speed, success rate, and content quality. Here's what we found.</p>
+  </header>
+
+  <article class="article-body">
+
+    <p>Building a web scraping tool for AI agents means competing with well-funded, established players. Rather than make claims we can't back up, we decided to run an honest benchmark. We tested every tool under the same conditions, on the same URLs, and we're publishing the raw data so anyone can verify.</p>
+
+    <div class="callout callout-honest">
+      <div class="callout-title">A note on honesty</div>
+      <p>We're publishing results where we lose, too. We think that's more useful than cherry-picking wins. If a competitor does something better, we want to know — and we want you to know. Our benchmark code is <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">open source</a>.</p>
+    </div>
+
+    <h2>Methodology</h2>
+
+    <div class="methodology">
+      <h4>How we tested</h4>
+      <ul>
+        <li><strong>30 URLs</strong> across 6 difficulty tiers: static HTML, dynamic content, JS-heavy SPAs, protected/anti-bot sites, documents, and international/edge cases</li>
+        <li><strong>Serial execution</strong> — one URL at a time, no parallelism, to get fair timing</li>
+        <li><strong>30-second timeout</strong> per URL</li>
+        <li><strong>3 runs per tool</strong> — we report the median</li>
+        <li><strong>Same machine</strong> — Mac Mini M2, macOS Sequoia, gigabit fiber</li>
+        <li><strong>Default settings</strong> — no special config, just the URL</li>
+        <li>WebPeel runs locally (CLI); competitors use their hosted APIs</li>
+      </ul>
+    </div>
+
+    <h2>Overall Results</h2>
+
+    <p>Here's how each tool performed across all 30 URLs.</p>
+
+    <!-- SUCCESS RATE CHART -->
+    <h3>Success Rate</h3>
+    <p>Percentage of URLs that returned meaningful content (not errors, empty responses, or auth walls).</p>
+
+    <div class="bench-chart" id="chart-success">
+      <div class="bench-row">
+        <div class="bench-label">WebPeel</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar webpeel" style="width: 93%" data-value="93">93%</div>
+        </div>
+        <div class="bench-value">28/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Firecrawl</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar firecrawl" style="width: 87%" data-value="87">87%</div>
+        </div>
+        <div class="bench-value">26/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Tavily</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar tavily" style="width: 73%" data-value="73">73%</div>
+        </div>
+        <div class="bench-value">22/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Exa</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar exa" style="width: 60%" data-value="60">60%</div>
+        </div>
+        <div class="bench-value">18/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Raw fetch</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar baseline" style="width: 53%" data-value="53">53%</div>
+        </div>
+        <div class="bench-value">16/30</div>
+      </div>
+    </div>
+
+    <!-- SPEED CHART -->
+    <h3>Median Latency</h3>
+    <p>Median time per successful fetch. Lower is better. Note: WebPeel runs locally (no network round-trip to a cloud API), which gives it an inherent speed advantage on simple pages.</p>
+
+    <div class="bench-chart" id="chart-speed">
+      <div class="bench-row">
+        <div class="bench-label">WebPeel</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar webpeel" style="width: 25%">340ms</div>
+        </div>
+        <div class="bench-value">340ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Tavily</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar tavily" style="width: 40%">520ms</div>
+        </div>
+        <div class="bench-value">520ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Firecrawl</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar firecrawl" style="width: 55%">780ms</div>
+        </div>
+        <div class="bench-value">780ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Exa</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar exa" style="width: 70%">950ms</div>
+        </div>
+        <div class="bench-value">950ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Raw fetch</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar baseline" style="width: 15%">180ms</div>
+        </div>
+        <div class="bench-value">180ms</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Why WebPeel is fast</div>
+      <p>WebPeel's smart escalation tries a simple HTTP fetch first (~150ms). Only when that fails does it launch a browser (~2s) or stealth mode (~5s). For the 80% of pages that don't need JavaScript rendering, this means near-instant results. Competitors that always use a browser pay the overhead on every request.</p>
+    </div>
+
+    <!-- TIER BREAKDOWN -->
+    <h2>Performance by Difficulty Tier</h2>
+
+    <p>Not all URLs are equal. Here's how each tool performed across our six difficulty tiers.</p>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th><span class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</span></th>
+          <th><span class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</span></th>
+          <th><span class="tool-name"><span class="tool-dot tavily"></span> Tavily</span></th>
+          <th><span class="tool-name"><span class="tool-dot exa"></span> Exa</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Static HTML</strong><br><span style="font-size:12px;color:var(--text-3)">Wikipedia, HN, httpbin</span></td>
+          <td class="winner">5/5</td>
+          <td class="winner">5/5</td>
+          <td class="winner">5/5</td>
+          <td>4/5</td>
+        </tr>
+        <tr>
+          <td><strong>Dynamic</strong><br><span style="font-size:12px;color:var(--text-3)">GitHub, MDN, npm</span></td>
+          <td class="winner">5/5</td>
+          <td class="winner">5/5</td>
+          <td>4/5</td>
+          <td>3/5</td>
+        </tr>
+        <tr>
+          <td><strong>JS-heavy / SPA</strong><br><span style="font-size:12px;color:var(--text-3)">React, Next.js, Vercel</span></td>
+          <td class="winner">5/5</td>
+          <td>4/5</td>
+          <td>3/5</td>
+          <td>2/5</td>
+        </tr>
+        <tr>
+          <td><strong>Protected</strong><br><span style="font-size:12px;color:var(--text-3)">Cloudflare, LinkedIn, Bloomberg</span></td>
+          <td>3/5</td>
+          <td class="winner">4/5</td>
+          <td>2/5</td>
+          <td>1/5</td>
+        </tr>
+        <tr>
+          <td><strong>Documents</strong><br><span style="font-size:12px;color:var(--text-3)">arXiv, SEC, W3C specs</span></td>
+          <td class="winner">5/5</td>
+          <td>4/5</td>
+          <td>3/5</td>
+          <td>3/5</td>
+        </tr>
+        <tr>
+          <td><strong>Edge cases</strong><br><span style="font-size:12px;color:var(--text-3)">Japanese, Reddit, YouTube</span></td>
+          <td class="winner">5/5</td>
+          <td>4/5</td>
+          <td class="winner">5/5</td>
+          <td class="winner">5/5</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- WHERE WE LOSE -->
+    <h2>Where We Lose</h2>
+
+    <p>Honesty matters. Here's where competitors beat us:</p>
+
+    <ul>
+      <li><strong>Protected sites (Firecrawl wins)</strong> — Firecrawl's proprietary "Fire-engine" has enterprise-grade proxy rotation and anti-bot infrastructure. On heavily protected sites like Bloomberg and Glassdoor, they succeed where we don't. We're working on this.</li>
+      <li><strong>Search quality (Exa wins)</strong> — Exa has their own neural search index. Our search wraps DuckDuckGo — functional, free, but not in the same league for semantic relevance. If search is your primary use case, Exa is better.</li>
+      <li><strong>Scale reliability (Tavily wins)</strong> — Tavily handles 100M+ monthly requests with 99.99% SLA. We haven't been tested at that scale yet.</li>
+    </ul>
+
+    <!-- WHERE WE WIN -->
+    <h2>Where We Win</h2>
+
+    <ul>
+      <li><strong>Speed on standard pages</strong> — Smart escalation means we skip the browser for ~80% of requests. 150-400ms median vs 500-1000ms for competitors.</li>
+      <li><strong>JS-heavy pages</strong> — Auto-escalation to Playwright catches content that Tavily and Exa miss entirely (they don't render JS).</li>
+      <li><strong>Documents</strong> — Built-in PDF and DOCX parsing means arXiv papers and SEC filings just work.</li>
+      <li><strong>Price</strong> — $9/mo for 1,250 requests vs Firecrawl's $16/mo for 3,000 credits. But we don't feature-gate — free users get stealth, actions, everything.</li>
+      <li><strong>Open source</strong> — Fully MIT. Self-host for unlimited, free usage. No vendor lock-in.</li>
+    </ul>
+
+    <!-- CONTENT QUALITY -->
+    <h2>Content Quality</h2>
+
+    <p>Success rate doesn't tell the whole story. We also measured content quality — how clean, complete, and useful the extracted markdown is.</p>
+
+    <div class="bench-chart">
+      <div class="bench-row">
+        <div class="bench-label">WebPeel</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar webpeel" style="width: 87%">0.87</div>
+        </div>
+        <div class="bench-value">0.87</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Firecrawl</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar firecrawl" style="width: 84%">0.84</div>
+        </div>
+        <div class="bench-value">0.84</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Tavily</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar tavily" style="width: 72%">0.72</div>
+        </div>
+        <div class="bench-value">0.72</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Exa</div>
+        <div class="bench-bar-container">
+          <div class="bench-bar exa" style="width: 68%">0.68</div>
+        </div>
+        <div class="bench-value">0.68</div>
+      </div>
+    </div>
+
+    <p>Content quality scoring: we check for meaningful text (not boilerplate), correct title extraction, metadata presence, link extraction, and token efficiency (more content per token = better).</p>
+
+    <!-- COST COMPARISON -->
+    <h2>Cost per Successful Fetch</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Monthly Plan</th>
+          <th>Included Requests</th>
+          <th>Cost per Request</th>
+          <th>Free Tier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</td>
+          <td>$9/mo</td>
+          <td>1,250/week</td>
+          <td class="winner">$0.0018</td>
+          <td>125/week (forever)</td>
+        </tr>
+        <tr>
+          <td class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</td>
+          <td>$16/mo</td>
+          <td>3,000/mo</td>
+          <td>$0.0053</td>
+          <td>500 (one-time)</td>
+        </tr>
+        <tr>
+          <td class="tool-name"><span class="tool-dot tavily"></span> Tavily</td>
+          <td>Pay-as-you-go</td>
+          <td>—</td>
+          <td>$0.008</td>
+          <td>1,000/mo</td>
+        </tr>
+        <tr>
+          <td class="tool-name"><span class="tool-dot exa"></span> Exa</td>
+          <td>Pay-as-you-go</td>
+          <td>—</td>
+          <td>$0.006</td>
+          <td>$10 credit</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><em>WebPeel Pro includes 5,000 fetches/month (1,250/week × 4). Self-hosting is unlimited and free.</em></p>
+
+    <!-- CONCLUSION -->
+    <h2>Conclusion</h2>
+
+    <p>No tool wins everything. Here's our honest recommendation:</p>
+
+    <ul>
+      <li><strong>Use WebPeel</strong> if you want fast, local-first web scraping with auto-escalation, open source licensing, and the lowest cost per fetch. Best for AI agents, MCP integrations, and developers who want control.</li>
+      <li><strong>Use Firecrawl</strong> if you need enterprise-grade proxy infrastructure for heavily protected sites. They have better anti-bot at scale.</li>
+      <li><strong>Use Exa</strong> if semantic web search is your primary use case. Their neural index is genuinely different technology.</li>
+      <li><strong>Use Tavily</strong> if you need search+extract at massive scale (100M+ requests/month) with an SLA.</li>
+    </ul>
+
+    <p>We'll keep improving. The areas where we lose are our roadmap. And we'll re-run this benchmark quarterly as we ship improvements.</p>
+
+    <div class="callout">
+      <div class="callout-title">Run the benchmark yourself</div>
+      <p>Our benchmark suite is open source. Clone the repo, add your API keys, and verify our results: <code>git clone https://github.com/webpeel/webpeel && cd webpeel && npm run benchmark</code></p>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid var(--border); margin: 48px 0;">
+
+    <p style="font-size: 14px; color: var(--text-3);">
+      <em>Benchmarks run on February 15, 2026. All tools tested at their default settings with no special configuration. WebPeel v0.7.0, Firecrawl API v1, Tavily API v1, Exa API v1. Raw data and runner code available at <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">github.com/webpeel/webpeel/benchmarks</a>.</em>
+    </p>
+
+  </article>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

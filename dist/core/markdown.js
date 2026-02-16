@@ -6,10 +6,8 @@ import * as cheerio from 'cheerio';
 const JUNK_SELECTORS = [
     // Scripts, styles, metadata
     'script', 'style', 'noscript', 'iframe', 'link[rel="stylesheet"]',
-    // Navigation & structure
-    'nav', 'header', 'footer', 'aside',
-    '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]',
-    '[role="complementary"]', '[role="search"]',
+    // Navigation
+    'nav', '[role="navigation"]', '[role="search"]',
     '.sidebar', '.topbar', '.top-bar', '.site-nav', '.main-nav',
     '.breadcrumb', '.breadcrumbs', '[class*="breadcrumb"]',
     '.pagination', '[class*="pagination"]',
@@ -20,21 +18,22 @@ const JUNK_SELECTORS = [
     '.cookie-banner', '.cookie-notice', '.cookie-consent',
     '[class*="cookie"]', '[id*="cookie"]',
     '[class*="consent"]', '[class*="gdpr"]',
-    // Popups, modals, banners
-    '[class*="banner"]', '[class*="popup"]', '[class*="modal"]',
-    '[class*="overlay"]', '[class*="notification-bar"]',
-    // Social & sharing
-    '.social-share', '[class*="share"]', '[class*="social"]',
-    // Newsletter & CTA
-    '.newsletter-signup', '[class*="newsletter"]', '[class*="subscribe"]',
-    '[class*="cta"]', '[class*="call-to-action"]', '[class*="signup"]',
-    // Related content
-    '.related-posts', '[class*="related"]', '[class*="recommended"]',
-    '[class*="you-may-also"]', '[class*="more-stories"]',
-    // Comments
-    '.comments', '#comments', '[class*="comment"]',
-    // SVG decorations (icons, decorative elements)
-    'svg:not(img svg)',
+    // Popups, modals (precise selectors — no broad banner/overlay)
+    '[class*="popup"]', '[class*="modal"]',
+    '[class*="notification-bar"]',
+    // Banners — only known ad/promo banners
+    '.ad-banner', '.promo-banner',
+    // Social & sharing — only sharing widgets
+    '.social-share', '.share-buttons', '.share-widget',
+    // Newsletter & CTA — only forms/widgets
+    '.newsletter-signup', '[class*="newsletter"]',
+    '.subscribe-form', '.subscribe-widget',
+    '.signup-form', '.signup-widget', '.signup-cta',
+    '[class*="call-to-action"]',
+    // Related content — only explicit widgets
+    '.related-posts', '[class*="you-may-also"]', '[class*="more-stories"]',
+    // Comments — only sections/forms, not comment text
+    '.comments-section', '.comment-form', '#comments',
 ];
 /**
  * Filter HTML by including or excluding specific tags/selectors
@@ -108,6 +107,19 @@ function cleanHTML(html) {
     JUNK_SELECTORS.forEach((selector) => {
         $(selector).remove();
     });
+    // Conditionally remove header/footer — keep if they have substantial content (>200 chars)
+    $('header, [role="banner"]').each((_, el) => {
+        const text = $(el).text().trim();
+        if (text.length < 200)
+            $(el).remove();
+    });
+    $('footer, [role="contentinfo"]').each((_, el) => {
+        const text = $(el).text().trim();
+        if (text.length < 200)
+            $(el).remove();
+    });
+    // Only remove sidebar-like asides, not all aside elements
+    $('aside.sidebar, aside[role="complementary"], aside[class*="sidebar"]').remove();
     // Remove empty paragraphs and divs
     $('p:empty, div:empty').remove();
     // Remove elements with only whitespace
@@ -142,12 +154,25 @@ const MAIN_CONTENT_SELECTORS = [
  */
 export function detectMainContent(html) {
     const $ = cheerio.load(html);
+    // Helper: get visible text length (ignoring script/style/noscript)
+    function visibleTextLength(root) {
+        const clone = root.clone();
+        clone.find('script, style, noscript').remove();
+        return clone.text().trim().length;
+    }
+    const totalTextLen = visibleTextLength($.root());
     for (const selector of MAIN_CONTENT_SELECTORS) {
         const el = $(selector);
         if (el.length > 0) {
             // Check if it has meaningful content (at least 100 chars of text)
             const text = el.first().text().trim();
             if (text.length >= 100) {
+                // Text-coverage heuristic: if detected element has <50% of page text,
+                // the detection was too narrow — return full page instead
+                const candidateLen = visibleTextLength(el.first());
+                if (totalTextLen > 0 && candidateLen / totalTextLen < 0.5) {
+                    return { html, detected: false };
+                }
                 return { html: $.html(el.first()), detected: true };
             }
         }
@@ -169,6 +194,10 @@ export function detectMainContent(html) {
         }
     });
     if (bestEl && bestLen > 300) {
+        // Same coverage check for fallback
+        if (totalTextLen > 0 && bestLen / totalTextLen < 0.5) {
+            return { html, detected: false };
+        }
         return { html: $.html(bestEl), detected: true };
     }
     return { html, detected: false };

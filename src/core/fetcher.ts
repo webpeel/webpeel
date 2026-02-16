@@ -296,7 +296,12 @@ export async function simpleFetch(
   validateUrl(url);
 
   // Validate user agent if provided
-  const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
+  // SEC.gov requires a User-Agent with contact info (their documented automated access policy)
+  const hostname = new URL(url).hostname.toLowerCase();
+  const isSecGov = hostname === 'sec.gov' || hostname.endsWith('.sec.gov');
+  const validatedUserAgent = isSecGov
+    ? 'WebPeel/1.0 (support@webpeel.dev)'
+    : (userAgent ? validateUserAgent(userAgent) : getRandomUserAgent());
 
   // SECURITY: Merge custom headers with defaults, block Host header override
   const defaultHeaders: Record<string, string> = {
@@ -627,9 +632,20 @@ export async function browserFetch(
 
   try {
     const browser = stealth ? await getStealthBrowser() : await getBrowser();
-    page = await browser.newPage({
+
+    const pageOptions = {
       userAgent: validatedUserAgent,
-    });
+      ...(stealth
+        ? {
+            viewport: { width: 1920, height: 1080 },
+            locale: 'en-US',
+            timezoneId: 'America/New_York',
+            javaScriptEnabled: true,
+          }
+        : {}),
+    };
+
+    page = await browser.newPage(pageOptions);
 
     // Set custom headers if provided
     if (headers && Object.keys(headers).length > 0) {
@@ -656,8 +672,9 @@ export async function browserFetch(
       await page.context().addCookies(parsedCookies);
     }
 
-    // Block images, fonts, and other heavy resources for speed (unless screenshot is requested)
-    if (!screenshot) {
+    // Block images/fonts/etc for speed in non-stealth mode.
+    // In stealth mode, blocking common resources can be a bot-detection signal.
+    if (!screenshot && !stealth) {
       await page.route('**/*', (route) => {
         const resourceType = route.request().resourceType();
         if (['image', 'font', 'media', 'stylesheet'].includes(resourceType)) {
@@ -667,7 +684,7 @@ export async function browserFetch(
         }
       });
     } else {
-      // For screenshots, allow all resources
+      // For screenshots and stealth mode, allow all resources
       await page.route('**/*', (route) => route.continue());
     }
 
@@ -688,6 +705,12 @@ export async function browserFetch(
       const isPdf = contentTypeLower.includes('application/pdf') || urlLower.endsWith('.pdf');
       const isDocx = contentTypeLower.includes('wordprocessingml.document') || urlLower.endsWith('.docx');
       const isBinaryDoc = !!response && (isPdf || isDocx);
+
+      // Small randomized delay in stealth mode (simulate human behavior)
+      if (stealth) {
+        const extraDelayMs = 500 + Math.floor(Math.random() * 1501);
+        await page!.waitForTimeout(extraDelayMs);
+      }
 
       // Wait for additional time if requested (for dynamic content / screenshots)
       if (waitMs > 0) {

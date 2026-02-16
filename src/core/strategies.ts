@@ -5,6 +5,32 @@
 import { simpleFetch, browserFetch, retryFetch, type FetchResult } from './fetcher.js';
 import { BlockedError, NetworkError } from '../types.js';
 
+type ForcedRecommendation = { mode: 'browser' | 'stealth' };
+
+function shouldForceBrowser(url: string): ForcedRecommendation | null {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+
+    // Reddit often returns an HTML shell via simple fetch; browser rendering is needed for real content
+    if (hostname === 'reddit.com' || hostname.endsWith('.reddit.com')) {
+      return { mode: 'browser' };
+    }
+
+    // These are known to aggressively block automation; go straight to stealth
+    if (hostname === 'glassdoor.com' || hostname.endsWith('.glassdoor.com')) {
+      return { mode: 'stealth' };
+    }
+
+    if (hostname === 'bloomberg.com' || hostname.endsWith('.bloomberg.com')) {
+      return { mode: 'stealth' };
+    }
+  } catch {
+    // Ignore URL parsing errors here; validation happens inside fetchers
+  }
+
+  return null;
+}
+
 export interface StrategyOptions {
   /** Force browser mode (skip simple fetch) */
   forceBrowser?: boolean;
@@ -74,8 +100,20 @@ export async function smartFetch(url: string, options: StrategyOptions = {}): Pr
     keepPageOpen = false,
   } = options;
 
+  // Site-specific escalation overrides
+  const forced = shouldForceBrowser(url);
+  let effectiveForceBrowser = forceBrowser;
+  let effectiveStealth = stealth;
+
+  if (forced) {
+    effectiveForceBrowser = true;
+    if (forced.mode === 'stealth') {
+      effectiveStealth = true;
+    }
+  }
+
   // If stealth is requested, force browser mode (stealth requires browser)
-  const shouldUseBrowser = forceBrowser || screenshot || stealth;
+  let shouldUseBrowser = effectiveForceBrowser || screenshot || effectiveStealth;
 
   // Strategy 1: Simple fetch (unless browser is forced or screenshot is requested)
   if (!shouldUseBrowser) {
@@ -84,10 +122,24 @@ export async function smartFetch(url: string, options: StrategyOptions = {}): Pr
         () => simpleFetch(url, userAgent, timeoutMs, headers),
         3
       );
-      return {
-        ...result,
-        method: 'simple',
-      };
+
+      // Check if content is suspiciously thin (might be a JS shell page)
+      const contentTypeLower = (result.contentType || '').toLowerCase();
+      if (contentTypeLower.includes('html')) {
+        const textContent = result.html.replace(/<[^>]*>/g, '').trim();
+        if (textContent.length < 500 && result.html.length > 1000) {
+          // Shell page detected — HTML is large but text content is minimal
+          // Escalate to browser rendering
+          shouldUseBrowser = true;
+        }
+      }
+
+      if (!shouldUseBrowser) {
+        return {
+          ...result,
+          method: 'simple',
+        };
+      }
     } catch (error) {
       // If blocked, needs JS, or has TLS issues, escalate to browser
       if (error instanceof BlockedError) {
@@ -112,17 +164,17 @@ export async function smartFetch(url: string, options: StrategyOptions = {}): Pr
       screenshotFullPage,
       headers,
       cookies,
-      stealth,
+      stealth: effectiveStealth,
       actions,
       keepPageOpen,
     });
     return {
       ...result,
-      method: stealth ? 'stealth' : 'browser',
+      method: effectiveStealth ? 'stealth' : 'browser',
     };
   } catch (error) {
     // Strategy 3: If browser gets blocked, try stealth mode as fallback (unless already using stealth)
-    if (!stealth && error instanceof BlockedError) {
+    if (!effectiveStealth && error instanceof BlockedError) {
       try {
         const result = await browserFetch(url, {
           userAgent,
@@ -159,13 +211,13 @@ export async function smartFetch(url: string, options: StrategyOptions = {}): Pr
         screenshotFullPage,
         headers,
         cookies,
-        stealth, // Keep stealth setting
+        stealth: effectiveStealth, // Keep stealth setting
         actions,
         keepPageOpen,
       });
       return {
         ...result,
-        method: stealth ? 'stealth' : 'browser',
+        method: effectiveStealth ? 'stealth' : 'browser',
       };
     }
 
