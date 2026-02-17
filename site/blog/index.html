@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebPeel Blog — Web Scraping for AI Agents</title>
-  <meta name="description" content="Learn about web scraping for AI agents, LLM token optimization, MCP servers, and building efficient AI workflows with WebPeel.">
+  <meta name="description" content="Guides, benchmarks, and technical deep-dives on web scraping for AI agents. Compare tools, reduce token costs, and build reliable web fetch pipelines.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://webpeel.dev/blog/">
 
@@ -12,20 +12,19 @@
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  
-  <!-- Open Graph -->
+
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://webpeel.dev/blog/">
   <meta property="og:title" content="WebPeel Blog — Web Scraping for AI Agents">
-  <meta property="og:description" content="Learn about web scraping for AI agents, LLM token optimization, and building efficient AI workflows.">
+  <meta property="og:description" content="Guides, comparisons, and benchmarks for AI-ready web scraping.">
   <meta property="og:image" content="https://webpeel.dev/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:creator" content="@webpeel_dev">
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  
+
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     :root {
@@ -48,7 +47,6 @@
     .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
     a { color: inherit; text-decoration: none; }
 
-    /* NAV */
     nav { position: sticky; top: 0; z-index: 100; background: rgba(250,250,248,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-light); }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; }
     .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
@@ -62,27 +60,23 @@
     .nav-links a.nav-btn-primary { background: #7C3AED; color: #FFFFFF; font-weight: 600; }
     .nav-links a.nav-btn-primary:hover { background: #6D28D9; color: #FFFFFF; box-shadow: 0 0 0 3px rgba(139,92,246,0.25); }
 
-    /* HEADER */
-    .header { padding: 80px 0 60px; text-align: center; }
+    .header { padding: 80px 0 56px; text-align: center; }
     .header h1 { font-family: 'Instrument Serif', serif; font-size: clamp(36px, 5vw, 56px); line-height: 1.1; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 16px; }
-    .header p { font-size: 18px; color: var(--text-2); max-width: 600px; margin: 0 auto; }
+    .header p { font-size: 18px; color: var(--text-2); max-width: 700px; margin: 0 auto; }
 
-    /* BLOG GRID */
-    .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px; padding: 40px 0 80px; }
-    
-    .blog-card { background: white; border: 2px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: all 0.3s; display: flex; flex-direction: column; }
-    .blog-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-color: var(--accent); }
-    
-    .blog-card-content { padding: 28px; flex: 1; display: flex; flex-direction: column; }
-    .blog-meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-3); margin-bottom: 12px; }
-    .blog-card h2 { font-size: 22px; font-weight: 600; line-height: 1.3; margin-bottom: 12px; color: var(--text); }
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 22px; padding: 20px 0 80px; }
+
+    .blog-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: all 0.25s; display: flex; flex-direction: column; }
+    .blog-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-color: #D4D4D8; }
+
+    .blog-card-content { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+    .blog-meta { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-3); margin-bottom: 12px; }
+    .blog-card h2 { font-size: 21px; font-weight: 600; line-height: 1.3; margin-bottom: 12px; color: var(--text); }
     .blog-card p { font-size: 15px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; flex: 1; }
     .blog-card .read-more { font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 4px; }
     .blog-card:hover .read-more { text-decoration: underline; }
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 6px; background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 500; margin-bottom: 16px; width: fit-content; }
 
-    .tag { display: inline-block; padding: 4px 10px; border-radius: 6px; background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 500; margin-bottom: 16px; }
-
-    /* FOOTER */
     footer { border-top: 1px solid var(--border); padding: 40px 0; }
     .footer-inner { display: flex; justify-content: space-between; align-items: center; }
     .footer-left { font-size: 13px; color: var(--text-4); }
@@ -90,14 +84,13 @@
     .footer-links a { font-size: 13px; color: var(--text-3); transition: color 0.15s; }
     .footer-links a:hover { color: var(--text); }
 
-    /* RESPONSIVE */
     @media (max-width: 768px) {
       .container { padding: 0 16px; }
       .nav-links { display: none; }
       .header { padding: 60px 0 40px; }
       .header h1 { font-size: 36px; }
       .header p { font-size: 16px; }
-      .blog-grid { grid-template-columns: 1fr; gap: 20px; padding: 30px 0 60px; }
+      .blog-grid { grid-template-columns: 1fr; gap: 18px; padding: 20px 0 60px; }
       .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
       .footer-links { flex-direction: column; gap: 12px; }
     }
@@ -105,7 +98,6 @@
 </head>
 <body>
 
-  <!-- NAV -->
   <nav>
     <div class="container nav-inner">
       <a href="/" class="nav-logo">
@@ -126,74 +118,82 @@
     </div>
   </nav>
 
-  <!-- HEADER -->
   <div class="header">
     <div class="container">
       <h1>WebPeel <em class="serif" style="font-style: italic;">Blog</em></h1>
-      <p>Guides, tutorials, and best practices for web scraping with AI agents</p>
+      <p>Comparisons, benchmarks, and practical guides for building high-performance web data pipelines for AI agents.</p>
     </div>
   </div>
 
-  <!-- BLOG GRID -->
   <div class="container">
     <div class="blog-grid">
-      
-      <!-- Post 1: Token Costs -->
-      <a href="/blog/reduce-llm-token-costs.html" class="blog-card">
+
+      <a href="/blog/webpeel-vs-firecrawl-vs-tavily-vs-exa.html" class="blog-card">
         <div class="blog-card-content">
-          <span class="tag">Cost Optimization</span>
-          <div class="blog-meta">
-            <span>February 14, 2026</span>
-            <span>•</span>
-            <span>9 min read</span>
-          </div>
-          <h2>How to Reduce LLM Token Costs by 96% with Smart Web Extraction</h2>
-          <p>Web pages can cost $0.50 in tokens. Smart extraction brings that down to $0.02. Learn how with real benchmarks and implementation guides.</p>
+          <span class="tag">Comparison</span>
+          <div class="blog-meta"><span>February 16, 2026</span><span>•</span><span>12 min read</span></div>
+          <h2>WebPeel vs Firecrawl vs Tavily vs Exa: Complete Comparison (2026)</h2>
+          <p>A feature-by-feature comparison of the four biggest options, including pricing, benchmark context, and honest pros/cons for each.</p>
           <span class="read-more">Read article →</span>
         </div>
       </a>
 
-      <!-- Post 2: AI Agents Guide -->
-      <a href="/blog/web-scraping-for-ai-agents.html" class="blog-card">
+      <a href="/blog/how-webpeel-works.html" class="blog-card">
         <div class="blog-card-content">
-          <span class="tag">Complete Guide</span>
-          <div class="blog-meta">
-            <span>February 14, 2026</span>
-            <span>•</span>
-            <span>10 min read</span>
-          </div>
-          <h2>Web Scraping for AI Agents: The Complete Guide (2026)</h2>
-          <p>Everything you need to know about building AI agents that can fetch, extract, and process web content efficiently. Token optimization, stealth mode, and best practices.</p>
+          <span class="tag">Technical Deep Dive</span>
+          <div class="blog-meta"><span>February 16, 2026</span><span>•</span><span>9 min read</span></div>
+          <h2>How WebPeel's Smart Escalation Engine Works</h2>
+          <p>Inside the HTTP → browser → stealth pipeline and why smart escalation improves cost, speed, and reliability for AI agents.</p>
           <span class="read-more">Read article →</span>
         </div>
       </a>
 
-      <!-- Post 3: MCP Fetcher -->
-      <a href="/blog/best-mcp-web-fetcher.html" class="blog-card">
-        <div class="blog-card-content">
-          <span class="tag">MCP Server</span>
-          <div class="blog-meta">
-            <span>February 14, 2026</span>
-            <span>•</span>
-            <span>7 min read</span>
-          </div>
-          <h2>The Best MCP Web Fetcher for Claude Code, Cursor & Windsurf in 2026</h2>
-          <p>How to supercharge your AI coding assistant with WebPeel's MCP server. Five powerful tools (fetch, search, crawl, map, extract), zero configuration headaches.</p>
-          <span class="read-more">Read article →</span>
-        </div>
-      </a>
-
-      <!-- Post 4: Comparison -->
       <a href="/blog/webpeel-vs-firecrawl.html" class="blog-card">
         <div class="blog-card-content">
           <span class="tag">Comparison</span>
-          <div class="blog-meta">
-            <span>February 14, 2026</span>
-            <span>•</span>
-            <span>8 min read</span>
-          </div>
+          <div class="blog-meta"><span>February 16, 2026</span><span>•</span><span>10 min read</span></div>
           <h2>WebPeel vs Firecrawl: Which Web Scraper is Better for AI Agents?</h2>
-          <p>A detailed, honest comparison of two popular web scraping tools designed for AI agents. Features, pricing, licenses, and when to choose each one.</p>
+          <p>Updated comparison with latest pricing and 6-competitor benchmark context for teams evaluating a practical Firecrawl alternative.</p>
+          <span class="read-more">Read article →</span>
+        </div>
+      </a>
+
+      <a href="/blog/benchmarks.html" class="blog-card">
+        <div class="blog-card-content">
+          <span class="tag">Benchmarks</span>
+          <div class="blog-meta"><span>February 15, 2026</span><span>•</span><span>11 min read</span></div>
+          <h2>Web Scraping Benchmarks: WebPeel vs Firecrawl vs Tavily vs Raw Fetch</h2>
+          <p>Independent benchmark results across 30 URLs with detailed analysis of success rate, speed, and extraction quality.</p>
+          <span class="read-more">Read article →</span>
+        </div>
+      </a>
+
+      <a href="/blog/reduce-llm-token-costs.html" class="blog-card">
+        <div class="blog-card-content">
+          <span class="tag">Cost Optimization</span>
+          <div class="blog-meta"><span>February 14, 2026</span><span>•</span><span>9 min read</span></div>
+          <h2>How to Reduce LLM Token Costs by 96% with Smart Web Extraction</h2>
+          <p>Why raw HTML is expensive in LLM pipelines and how smart extraction dramatically lowers prompt costs.</p>
+          <span class="read-more">Read article →</span>
+        </div>
+      </a>
+
+      <a href="/blog/web-scraping-for-ai-agents.html" class="blog-card">
+        <div class="blog-card-content">
+          <span class="tag">Complete Guide</span>
+          <div class="blog-meta"><span>February 14, 2026</span><span>•</span><span>10 min read</span></div>
+          <h2>Web Scraping for AI Agents: The Complete Guide (2026)</h2>
+          <p>Architecture, best practices, and implementation strategies for agentic web retrieval at production scale.</p>
+          <span class="read-more">Read article →</span>
+        </div>
+      </a>
+
+      <a href="/blog/best-mcp-web-fetcher.html" class="blog-card">
+        <div class="blog-card-content">
+          <span class="tag">MCP Server</span>
+          <div class="blog-meta"><span>February 14, 2026</span><span>•</span><span>7 min read</span></div>
+          <h2>The Best MCP Web Fetcher for Claude Code, Cursor & Windsurf in 2026</h2>
+          <p>How to use WebPeel as an MCP server with five core tools for coding assistants and research agents.</p>
           <span class="read-more">Read article →</span>
         </div>
       </a>
@@ -201,7 +201,6 @@
     </div>
   </div>
 
-  <!-- FOOTER -->
   <footer>
     <div class="container footer-inner">
       <div class="footer-left">© 2026 WebPeel. MIT Licensed.</div>

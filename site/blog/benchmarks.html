@@ -3,27 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Scraping Benchmarks: WebPeel vs Firecrawl vs Tavily vs Raw Fetch</title>
-  <meta name="description" content="Independent benchmarks comparing WebPeel, Firecrawl, Tavily, and a raw fetch baseline across 30 diverse URLs. Speed, success rate, content quality, and latency — tested honestly.">
+  <title>Web Scraping Benchmark 2026: WebPeel vs Firecrawl vs Exa vs Tavily vs ScrapingBee vs Jina Reader</title>
+  <meta name="description" content="Web scraping benchmark 2026: independent comparison of WebPeel, Firecrawl, Exa, Tavily, ScrapingBee, and Jina Reader across 30 URLs and 6 categories. Success rate, speed, quality, pricing, and methodology.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://webpeel.dev/blog/benchmarks">
 
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://webpeel.dev/blog/benchmarks">
-  <meta property="og:title" content="Web Scraping Benchmarks: WebPeel vs Firecrawl vs Tavily vs Raw Fetch">
-  <meta property="og:description" content="Independent benchmarks comparing web scraping tools across 30 URLs. Speed, success rate, and content quality — tested honestly.">
+  <meta property="og:title" content="Web Scraping Benchmark 2026: WebPeel vs Firecrawl vs Exa vs Tavily vs ScrapingBee vs Jina Reader">
+  <meta property="og:description" content="A transparent 2026 benchmark across 30 URLs: reliability, latency, content quality, and cost for six leading web scraping tools.">
   <meta property="og:image" content="https://webpeel.dev/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:creator" content="@webpeel_dev">
 
-  <meta name="keywords" content="web scraping benchmarks, firecrawl benchmarks, tavily comparison, raw fetch baseline, web scraper performance, ai web scraping">
+  <meta name="keywords" content="web scraping benchmark 2026, web scraping benchmarks, webpeel vs firecrawl, exa vs tavily, scrapingbee benchmark, jina reader benchmark, ai web scraping performance">
 
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Article",
-    "headline": "Web Scraping Benchmarks: WebPeel vs Firecrawl vs Tavily vs Raw Fetch",
-    "description": "Independent benchmarks comparing WebPeel, Firecrawl, Tavily, and a raw fetch baseline for AI agents across 30 diverse URLs.",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://webpeel.dev/blog/benchmarks"
+    },
+    "headline": "Web Scraping Benchmark 2026: WebPeel vs Firecrawl vs Exa vs Tavily vs ScrapingBee vs Jina Reader",
+    "description": "Independent 2026 benchmark comparing six web scraping tools across 30 URLs and six categories.",
     "author": {
       "@type": "Person",
       "name": "Jake Liu"
@@ -33,8 +37,18 @@
       "name": "WebPeel",
       "logo": { "@type": "ImageObject", "url": "https://webpeel.dev/favicon.svg" }
     },
-    "datePublished": "2026-02-15",
-    "dateModified": "2026-02-15"
+    "datePublished": "2026-02-16",
+    "dateModified": "2026-02-16",
+    "keywords": [
+      "web scraping benchmark 2026",
+      "web scraping benchmarks",
+      "webpeel",
+      "firecrawl",
+      "exa",
+      "tavily",
+      "scrapingbee",
+      "jina reader"
+    ]
   }
   </script>
 
@@ -74,7 +88,6 @@
     a:hover { text-decoration: underline; }
     code { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; background: var(--border-light); padding: 2px 6px; border-radius: 4px; }
 
-    /* Nav — matches site */
     nav { position: sticky; top: 0; z-index: 100; background: rgba(250,250,248,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-light); }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
     .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--text); text-decoration: none; }
@@ -83,7 +96,6 @@
     .nav-links a { font-size: 14px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
     .nav-links a:hover { color: var(--text); text-decoration: none; }
 
-    /* Article layout — inspired by Anthropic's blog */
     .article-header {
       max-width: 720px;
       margin: 0 auto;
@@ -140,10 +152,6 @@
       font-size: 17px;
     }
 
-    /* Benchmark chart bars */
-    .bench-section {
-      margin: 40px 0;
-    }
     .bench-chart {
       display: flex;
       flex-direction: column;
@@ -156,7 +164,7 @@
       gap: 16px;
     }
     .bench-label {
-      width: 120px;
+      width: 132px;
       flex-shrink: 0;
       font-size: 14px;
       font-weight: 600;
@@ -173,39 +181,38 @@
     .bench-bar {
       height: 100%;
       border-radius: 6px;
-      display: flex;
-      align-items: center;
-      padding: 0 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: white;
       transition: width 0.8s ease;
-      min-width: 60px;
+      min-width: 0;
     }
     .bench-bar.webpeel { background: #8B5CF6; }
     .bench-bar.firecrawl { background: #F97316; }
+    .bench-bar.exa { background: #2563EB; }
     .bench-bar.tavily { background: #06B6D4; }
-    .bench-bar.rawfetch { background: #10B981; }
-    .bench-bar.baseline { background: #9CA3AF; }
+    .bench-bar.scrapingbee { background: #F59E0B; }
+    .bench-bar.jina { background: #EF4444; }
 
     .bench-value {
-      width: 80px;
+      width: 86px;
       flex-shrink: 0;
       font-size: 14px;
       font-weight: 600;
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Comparison table */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 24px 0;
+    }
+
     .compare-table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      margin: 24px 0;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
       font-size: 14px;
+      min-width: 760px;
     }
     .compare-table thead {
       background: var(--border-light);
@@ -219,10 +226,12 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
       border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
     .compare-table td {
       padding: 12px 16px;
       border-bottom: 1px solid var(--border-light);
+      vertical-align: top;
     }
     .compare-table tr:last-child td {
       border-bottom: none;
@@ -237,6 +246,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      white-space: nowrap;
     }
     .tool-dot {
       width: 10px;
@@ -246,43 +256,11 @@
     }
     .tool-dot.webpeel { background: #8B5CF6; }
     .tool-dot.firecrawl { background: #F97316; }
+    .tool-dot.exa { background: #2563EB; }
     .tool-dot.tavily { background: #06B6D4; }
-    .tool-dot.rawfetch { background: #10B981; }
+    .tool-dot.scrapingbee { background: #F59E0B; }
+    .tool-dot.jina { background: #EF4444; }
 
-    /* Tier breakdown */
-    .tier-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin: 24px 0;
-    }
-    .tier-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-    .tier-card h4 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .tier-card .tier-desc {
-      font-size: 12px;
-      color: var(--text-3);
-      margin-bottom: 12px;
-    }
-    .tier-card .tier-score {
-      font-size: 32px;
-      font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .tier-card .tier-denom {
-      font-size: 16px;
-      color: var(--text-3);
-    }
-
-    /* Callout */
     .callout {
       background: var(--accent-light);
       border: 1px solid rgba(139, 92, 246, 0.2);
@@ -307,7 +285,6 @@
     }
     .callout-honest .callout-title { color: #C2410C; }
 
-    /* Methodology */
     .methodology {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -332,7 +309,6 @@
       margin-bottom: 6px;
     }
 
-    /* Footer */
     footer { border-top: 1px solid var(--border); padding: 40px 0; }
     .footer-inner { display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
     .footer-left { font-size: 13px; color: var(--text-4); }
@@ -343,11 +319,10 @@
     @media (max-width: 768px) {
       .article-header h1 { font-size: 32px; }
       .article-header { padding-top: 48px; }
-      .bench-label { width: 80px; font-size: 12px; }
-      .bench-value { width: 60px; font-size: 12px; }
+      .bench-label { width: 90px; font-size: 12px; }
+      .bench-value { width: 70px; font-size: 12px; }
       .nav-links { display: none; }
       .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
-      .tier-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -372,342 +347,355 @@
   </nav>
 
   <header class="article-header">
-    <div class="article-date">February 15, 2026</div>
-    <h1>Web Scraping Benchmarks</h1>
-    <p class="article-subtitle">We tested WebPeel, Firecrawl, Tavily, and a raw fetch baseline across 30 diverse URLs — measuring success rate, latency, content quality, and extraction depth. Here's what we found.</p>
+    <div class="article-date">February 16, 2026</div>
+    <h1>Web Scraping Benchmark 2026</h1>
+    <p class="article-subtitle">We benchmarked WebPeel, Firecrawl, Exa, Tavily, ScrapingBee, and Jina Reader across 30 URLs in 6 categories. This report covers reliability, speed, output quality, and cost — with the tradeoffs stated plainly.</p>
   </header>
 
   <article class="article-body">
 
-    <p>Building a web scraping tool for AI agents means competing with well-funded, established players. Rather than make claims we can't back up, we decided to run an honest benchmark. We tested every tool under the same conditions, on the same URLs, and we're publishing the raw data so anyone can verify.</p>
+    <p>The benchmark goal was simple: measure what matters for production AI workflows. We tested each tool on the same URLs, from static pages to protected targets, then scored reliability, latency, and markdown quality. Full benchmark code and raw data are open source.</p>
+
+    <h2>Key Takeaways</h2>
+    <ul>
+      <li><strong>WebPeel was the only runner to reach 30/30 (100%) success</strong> and also had the highest quality score (<strong>86.7%</strong>).</li>
+      <li><strong>WebPeel is not the fastest</strong> — it ranked <strong>4th in median speed</strong> at 441ms. Tavily, Exa, and Firecrawl were faster.</li>
+      <li>That speed tradeoff is intentional: WebPeel prioritizes <strong>live retrieval and escalation</strong> over lightweight or cached responses when pages are difficult.</li>
+      <li><strong>Category coverage is where reliability diverges most</strong> — especially on protected and document-heavy targets.</li>
+      <li><strong>Pricing:</strong> WebPeel is <strong>$0.002/page</strong> vs Firecrawl at <strong>$0.016/page</strong> in this comparison model (8x difference).</li>
+    </ul>
 
     <div class="callout callout-honest">
-      <div class="callout-title">A note on honesty</div>
-      <p>We're publishing results where we lose, too. We think that's more useful than cherry-picking wins. If a competitor does something better, we want to know — and we want you to know. Our benchmark code is <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">open source</a>.</p>
+      <div class="callout-title">A note on speed and honesty</div>
+      <p>If your only goal is minimum latency, WebPeel is not the winner in this run. If your goal is <strong>REAL data, not cached results</strong>, with high completion across difficult pages, the latency tradeoff is often worth it. We think publishing both sides is the only useful way to benchmark.</p>
+    </div>
+
+    <h2>Overall Results</h2>
+
+    <div class="table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Runner</th>
+            <th>Success Rate</th>
+            <th>Median Speed</th>
+            <th>Quality Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</td>
+            <td class="winner">30/30 (100%)</td>
+            <td>441ms</td>
+            <td class="winner">86.7%</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</td>
+            <td>28/30 (93.3%)</td>
+            <td>231ms</td>
+            <td>77.9%</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot exa"></span> Exa</td>
+            <td>28/30 (93.3%)</td>
+            <td>132ms</td>
+            <td>83.2%</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot tavily"></span> Tavily</td>
+            <td>25/30 (83.3%)</td>
+            <td>47ms</td>
+            <td>81.2%</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot scrapingbee"></span> ScrapingBee</td>
+            <td>24/30 (80.0%)</td>
+            <td>1,728ms</td>
+            <td>74.4%</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot jina"></span> Jina Reader</td>
+            <td>16/30 (53.3%)</td>
+            <td>2,908ms</td>
+            <td>69.1%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Success Rate</h3>
+    <p>Share of URLs that returned meaningful content (not empty pages, unsupported-site messages, or hard failures).</p>
+
+    <div class="bench-chart" id="chart-success">
+      <div class="bench-row">
+        <div class="bench-label">WebPeel</div>
+        <div class="bench-bar-container"><div class="bench-bar webpeel" style="width: 100%"></div></div>
+        <div class="bench-value">30/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Firecrawl</div>
+        <div class="bench-bar-container"><div class="bench-bar firecrawl" style="width: 93.3%"></div></div>
+        <div class="bench-value">28/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Exa</div>
+        <div class="bench-bar-container"><div class="bench-bar exa" style="width: 93.3%"></div></div>
+        <div class="bench-value">28/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Tavily</div>
+        <div class="bench-bar-container"><div class="bench-bar tavily" style="width: 83.3%"></div></div>
+        <div class="bench-value">25/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">ScrapingBee</div>
+        <div class="bench-bar-container"><div class="bench-bar scrapingbee" style="width: 80%"></div></div>
+        <div class="bench-value">24/30</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Jina Reader</div>
+        <div class="bench-bar-container"><div class="bench-bar jina" style="width: 53.3%"></div></div>
+        <div class="bench-value">16/30</div>
+      </div>
+    </div>
+
+    <h3>Median Speed (lower is better)</h3>
+    <p>WebPeel is <strong>4th fastest</strong> in this run. Tavily, Exa, and Firecrawl are faster on median latency.</p>
+
+    <div class="bench-chart" id="chart-speed">
+      <div class="bench-row">
+        <div class="bench-label">Tavily</div>
+        <div class="bench-bar-container"><div class="bench-bar tavily" style="width: 2%"></div></div>
+        <div class="bench-value">47ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Exa</div>
+        <div class="bench-bar-container"><div class="bench-bar exa" style="width: 4.5%"></div></div>
+        <div class="bench-value">132ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Firecrawl</div>
+        <div class="bench-bar-container"><div class="bench-bar firecrawl" style="width: 7.9%"></div></div>
+        <div class="bench-value">231ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">WebPeel</div>
+        <div class="bench-bar-container"><div class="bench-bar webpeel" style="width: 15.2%"></div></div>
+        <div class="bench-value">441ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">ScrapingBee</div>
+        <div class="bench-bar-container"><div class="bench-bar scrapingbee" style="width: 59.4%"></div></div>
+        <div class="bench-value">1,728ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Jina Reader</div>
+        <div class="bench-bar-container"><div class="bench-bar jina" style="width: 100%"></div></div>
+        <div class="bench-value">2,908ms</div>
+      </div>
+    </div>
+
+    <h3>Quality Score</h3>
+    <p>Quality score measures usable markdown output: content completeness, title/metadata fidelity, and extraction usefulness for LLM workflows.</p>
+
+    <div class="bench-chart" id="chart-quality">
+      <div class="bench-row">
+        <div class="bench-label">WebPeel</div>
+        <div class="bench-bar-container"><div class="bench-bar webpeel" style="width: 100%"></div></div>
+        <div class="bench-value">86.7%</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Exa</div>
+        <div class="bench-bar-container"><div class="bench-bar exa" style="width: 95.9%"></div></div>
+        <div class="bench-value">83.2%</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Tavily</div>
+        <div class="bench-bar-container"><div class="bench-bar tavily" style="width: 93.7%"></div></div>
+        <div class="bench-value">81.2%</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Firecrawl</div>
+        <div class="bench-bar-container"><div class="bench-bar firecrawl" style="width: 89.8%"></div></div>
+        <div class="bench-value">77.9%</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">ScrapingBee</div>
+        <div class="bench-bar-container"><div class="bench-bar scrapingbee" style="width: 85.8%"></div></div>
+        <div class="bench-value">74.4%</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">Jina Reader</div>
+        <div class="bench-bar-container"><div class="bench-bar jina" style="width: 79.7%"></div></div>
+        <div class="bench-value">69.1%</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Why WebPeel is slower than the fastest tools</div>
+      <p>WebPeel does more work per page when needed: it starts light, then escalates to browser and anti-bot paths for hard targets. That raises median latency, but it also explains the 30/30 completion and top quality score. In short: <strong>speed is traded for reliability and freshness</strong>.</p>
+    </div>
+
+    <h2>Category Breakdown (30 URLs, 6 categories)</h2>
+
+    <p>Each category includes five URLs. This shows where tools diverge in real workloads, especially under anti-bot friction and document complexity.</p>
+
+    <div class="table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th><span class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</span></th>
+            <th><span class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</span></th>
+            <th><span class="tool-name"><span class="tool-dot exa"></span> Exa</span></th>
+            <th><span class="tool-name"><span class="tool-dot tavily"></span> Tavily</span></th>
+            <th><span class="tool-name"><span class="tool-dot scrapingbee"></span> ScrapingBee</span></th>
+            <th><span class="tool-name"><span class="tool-dot jina"></span> Jina Reader</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Static</strong></td>
+            <td class="winner">5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+            <td>4/5</td>
+            <td>5/5</td>
+            <td>4/5</td>
+          </tr>
+          <tr>
+            <td><strong>Dynamic</strong></td>
+            <td class="winner">5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+          </tr>
+          <tr>
+            <td><strong>SPA</strong></td>
+            <td class="winner">5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+          </tr>
+          <tr>
+            <td><strong>Protected</strong></td>
+            <td class="winner">5/5</td>
+            <td>4/5</td>
+            <td>4/5</td>
+            <td>2/5</td>
+            <td>2/5</td>
+            <td>2/5</td>
+          </tr>
+          <tr>
+            <td><strong>Documents</strong></td>
+            <td class="winner">5/5</td>
+            <td>5/5</td>
+            <td>4/5</td>
+            <td>4/5</td>
+            <td>3/5</td>
+            <td>0/5</td>
+          </tr>
+          <tr>
+            <td><strong>Edge / Intl</strong></td>
+            <td class="winner">5/5</td>
+            <td>4/5</td>
+            <td>5/5</td>
+            <td>5/5</td>
+            <td>4/5</td>
+            <td>0/5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size: 14px; color: var(--text-3); margin-top: -6px;">Category rows are success counts out of 5 URLs per category on the same benchmark set.</p>
+
+    <h2>Pricing Comparison</h2>
+
+    <p>Pricing is hard to normalize because billing units differ (credits, tokens, endpoint-specific costs). We convert to per-page equivalents where possible and call out uncertainty.</p>
+
+    <div class="table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Benchmark Price / Page</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</td>
+            <td class="winner">$0.002/page</td>
+            <td>Direct per-page model used in this benchmark.</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</td>
+            <td>$0.016/page</td>
+            <td>8x higher than WebPeel in this comparison.</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot exa"></span> Exa</td>
+            <td>~$0.006/page</td>
+            <td>Approximate search + content retrieval blend.</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot tavily"></span> Tavily</td>
+            <td>~$0.0016–$0.016/page</td>
+            <td>Varies by endpoint depth and credits used.</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot scrapingbee"></span> ScrapingBee</td>
+            <td>~$0.0005–$0.0125/page</td>
+            <td>Strongly depends on JS rendering and proxy tier.</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot jina"></span> Jina Reader</td>
+            <td>Variable (token-based)</td>
+            <td>No single published flat per-page price.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <h2>Methodology</h2>
 
     <div class="methodology">
-      <h4>How we tested</h4>
+      <h4>How this benchmark was run</h4>
       <ul>
-        <li><strong>30 URLs</strong> across 6 difficulty tiers: static HTML, dynamic content, JS-heavy SPAs, protected/anti-bot sites, documents, and international/edge cases</li>
-        <li><strong>Serial execution</strong> — one URL at a time, no parallelism, to get fair timing</li>
-        <li><strong>30-second timeout</strong> per URL</li>
-        <li><strong>3 runs per tool</strong> — we report the median</li>
-        <li><strong>Same machine</strong> — Mac Mini M2, macOS Sequoia, gigabit fiber</li>
-        <li><strong>Default settings</strong> — no special config, just the URL</li>
-        <li>WebPeel runs locally (CLI); competitors use their hosted APIs</li>
+        <li><strong>30 URLs total</strong>, split into 6 categories: static, dynamic, SPA, protected, documents, and edge/international.</li>
+        <li><strong>Same environment for all runs</strong>: single machine, same network, same benchmark harness.</li>
+        <li><strong>Serial execution</strong> (no parallelism), so each runner gets equivalent conditions.</li>
+        <li><strong>30-second timeout per URL</strong> and default runner settings unless required by a provider API.</li>
+        <li><strong>Metrics reported:</strong> success rate, median speed, and quality score from extracted markdown output.</li>
+        <li><strong>Open data:</strong> benchmark scripts and JSON outputs are published in the repository for verification.</li>
       </ul>
     </div>
 
-    <h2>Overall Results</h2>
+    <h2>What the numbers mean in practice</h2>
 
-    <p>Here's how each tool performed across all 30 URLs.</p>
+    <ul>
+      <li>If you optimize for <strong>pure speed</strong>, Tavily and Exa led this run.</li>
+      <li>If you optimize for <strong>managed ecosystem integrations</strong>, Firecrawl and Exa are strong options.</li>
+      <li>If you optimize for <strong>reliability + quality across difficult pages</strong>, WebPeel is the clear leader in this benchmark.</li>
+      <li>If you need <strong>live, high-fidelity page retrieval</strong> instead of cached/indexed approximations, WebPeel’s slower median is a deliberate tradeoff.</li>
+    </ul>
 
-    <!-- SUCCESS RATE CHART -->
-    <h3>Success Rate</h3>
-    <p>Percentage of URLs that returned meaningful content (not errors, empty responses, or auth walls).</p>
-
-    <div class="bench-chart" id="chart-success">
-      <div class="bench-row">
-        <div class="bench-label">WebPeel</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar webpeel" style="width: 100%" data-value="100">100%</div>
-        </div>
-        <div class="bench-value">30/30</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Firecrawl</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar firecrawl" style="width: 93.3%" data-value="93.3">93.3%</div>
-        </div>
-        <div class="bench-value">28/30</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Tavily</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar tavily" style="width: 83.3%" data-value="83.3">83.3%</div>
-        </div>
-        <div class="bench-value">25/30</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Raw Fetch</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar rawfetch" style="width: 80%" data-value="80.0">80.0%</div>
-        </div>
-        <div class="bench-value">24/30</div>
-      </div>
-    </div>
-
-    <!-- SPEED CHART -->
-    <h3>Median Latency</h3>
-    <p>Median time per successful fetch. Lower is better. WebPeel is intentionally the slowest in this benchmark because it escalates to heavier strategies when a simple fetch fails — trading latency for reliability.</p>
-
-    <div class="bench-chart" id="chart-speed">
-      <div class="bench-row">
-        <div class="bench-label">Tavily</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar tavily" style="width: 12.3%" data-value="55">55ms</div>
-        </div>
-        <div class="bench-value">55ms</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Raw Fetch</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar rawfetch" style="width: 31.3%" data-value="140">140ms</div>
-        </div>
-        <div class="bench-value">140ms</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Firecrawl</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar firecrawl" style="width: 45.8%" data-value="205">205ms</div>
-        </div>
-        <div class="bench-value">205ms</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">WebPeel</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar webpeel" style="width: 100%" data-value="448">448ms</div>
-        </div>
-        <div class="bench-value">448ms</div>
-      </div>
-    </div>
+    <p>Our view: benchmark data should help teams choose tradeoffs, not sell a narrative. On this run, WebPeel was the only tool with both <strong>perfect completion</strong> and <strong>top output quality</strong>. It was also only the <strong>4th fastest</strong>. Both statements are true, and both matter.</p>
 
     <div class="callout">
-      <div class="callout-title">Why WebPeel is slower (and why we accept it)</div>
-      <p>WebPeel runs locally and starts with a lightweight fetch, but it aggressively escalates when needed (browser rendering, stealth, anti-bot strategies). That extra work increases median latency, yet it is exactly why WebPeel finished at 30/30 with zero failures while others dropped URLs in protected tiers.</p>
-    </div>
-
-    <!-- TIER BREAKDOWN -->
-    <h2>Performance by Difficulty Tier</h2>
-
-    <p>Not all URLs are equal. Here's how each tool performed across our six difficulty tiers.</p>
-
-    <table class="compare-table">
-      <thead>
-        <tr>
-          <th>Tier</th>
-          <th><span class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</span></th>
-          <th><span class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</span></th>
-          <th><span class="tool-name"><span class="tool-dot tavily"></span> Tavily</span></th>
-          <th><span class="tool-name"><span class="tool-dot rawfetch"></span> Raw Fetch</span></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>Static HTML</strong><br><span style="font-size:12px;color:var(--text-3)">Wikipedia, HN, httpbin</span></td>
-          <td class="winner">5/5</td>
-          <td class="winner">5/5</td>
-          <td>4/5</td>
-          <td class="winner">5/5</td>
-        </tr>
-        <tr>
-          <td><strong>Dynamic</strong><br><span style="font-size:12px;color:var(--text-3)">GitHub, MDN, npm</span></td>
-          <td class="winner">5/5</td>
-          <td class="winner">5/5</td>
-          <td class="winner">5/5</td>
-          <td>4/5</td>
-        </tr>
-        <tr>
-          <td><strong>JS-heavy / SPA</strong><br><span style="font-size:12px;color:var(--text-3)">React, Next.js, Vercel</span></td>
-          <td class="winner">5/5</td>
-          <td class="winner">5/5</td>
-          <td class="winner">5/5</td>
-          <td class="winner">5/5</td>
-        </tr>
-        <tr>
-          <td><strong>Protected</strong><br><span style="font-size:12px;color:var(--text-3)">Cloudflare, LinkedIn, Bloomberg</span></td>
-          <td class="winner">5/5</td>
-          <td>4/5</td>
-          <td>2/5</td>
-          <td>1/5</td>
-        </tr>
-        <tr>
-          <td><strong>Documents</strong><br><span style="font-size:12px;color:var(--text-3)">arXiv, SEC, W3C specs</span></td>
-          <td class="winner">5/5</td>
-          <td class="winner">5/5</td>
-          <td>4/5</td>
-          <td>4/5</td>
-        </tr>
-        <tr>
-          <td><strong>Edge cases</strong><br><span style="font-size:12px;color:var(--text-3)">Japanese, Reddit, YouTube</span></td>
-          <td class="winner">5/5</td>
-          <td>4/5</td>
-          <td class="winner">5/5</td>
-          <td class="winner">5/5</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- KEY FAILURES -->
-    <h2>Key Failures Observed</h2>
-
-    <p>Instead of cherry-picking, here are the exact failure patterns we saw in the 30-URL run:</p>
-
-    <ul>
-      <li><strong>Firecrawl</strong> — explicitly blocks LinkedIn and Reddit with "We do not support this site."</li>
-      <li><strong>Tavily</strong> — failed on example.com, Medium, Bloomberg, Glassdoor, and SEC EDGAR.</li>
-      <li><strong>Raw Fetch</strong> — failed on targets behind Cloudflare/bot detection.</li>
-      <li><strong>WebPeel v3</strong> — 100% success (30/30), zero failures.</li>
-    </ul>
-
-    <!-- WHERE WE WIN -->
-    <h2>Where We Win</h2>
-
-    <ul>
-      <li><strong>Reliability</strong> — WebPeel was the only runner to reach <strong>30/30 (100%)</strong> across all six tiers.</li>
-      <li><strong>Protected targets</strong> — WebPeel went 5/5 on protected sites, including cases where other tools blocked or failed.</li>
-      <li><strong>Content quality</strong> — highest average quality score in the run (0.870).</li>
-      <li><strong>Local-first architecture</strong> — WebPeel runs locally (no cloud API round-trip), with smart escalation only when needed.</li>
-      <li><strong>Open source</strong> — Fully MIT. Self-host for unlimited usage with no vendor lock-in.</li>
-    </ul>
-
-    <!-- CONTENT QUALITY -->
-    <h2>Content Quality</h2>
-
-    <p>Success rate doesn't tell the whole story. We also measured content quality — how clean, complete, and useful the extracted markdown is.</p>
-
-    <div class="bench-chart">
-      <div class="bench-row">
-        <div class="bench-label">WebPeel</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar webpeel" style="width: 87%" data-value="0.870">0.870</div>
-        </div>
-        <div class="bench-value">0.870</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Raw Fetch</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar rawfetch" style="width: 74.3%" data-value="0.743">0.743</div>
-        </div>
-        <div class="bench-value">0.743</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Firecrawl</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar firecrawl" style="width: 72.7%" data-value="0.727">0.727</div>
-        </div>
-        <div class="bench-value">0.727</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Tavily</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar tavily" style="width: 67.7%" data-value="0.677">0.677</div>
-        </div>
-        <div class="bench-value">0.677</div>
-      </div>
-    </div>
-
-    <p>Content quality scoring: we check for meaningful text (not boilerplate), correct title extraction, metadata presence, link extraction, and token efficiency (more useful content per token = better).</p>
-
-    <!-- TOKENS -->
-    <h2>Average Tokens per Page</h2>
-
-    <p>Token volume helps explain extraction depth. Higher isn't always better, but very low counts often correlate with missing context.</p>
-
-    <div class="bench-chart" id="chart-tokens">
-      <div class="bench-row">
-        <div class="bench-label">WebPeel</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar webpeel" style="width: 100%" data-value="18465">18,465</div>
-        </div>
-        <div class="bench-value">18,465</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Firecrawl</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar firecrawl" style="width: 61.9%" data-value="11439">11,439</div>
-        </div>
-        <div class="bench-value">11,439</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Tavily</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar tavily" style="width: 34.5%" data-value="6371">6,371</div>
-        </div>
-        <div class="bench-value">6,371</div>
-      </div>
-      <div class="bench-row">
-        <div class="bench-label">Raw Fetch</div>
-        <div class="bench-bar-container">
-          <div class="bench-bar rawfetch" style="width: 26.6%" data-value="4903">4,903</div>
-        </div>
-        <div class="bench-value">4,903</div>
-      </div>
-    </div>
-
-    <!-- COST COMPARISON -->
-    <h2>Cost per Successful Fetch</h2>
-
-    <table class="compare-table">
-      <thead>
-        <tr>
-          <th>Tool</th>
-          <th>Monthly Plan</th>
-          <th>Included Requests</th>
-          <th>Cost per Request</th>
-          <th>Free Tier</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</td>
-          <td>$9/mo</td>
-          <td>1,250/week</td>
-          <td class="winner">$0.0018</td>
-          <td>125/week (forever)</td>
-        </tr>
-        <tr>
-          <td class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</td>
-          <td>$16/mo</td>
-          <td>3,000/mo</td>
-          <td>$0.0053</td>
-          <td>500 (one-time)</td>
-        </tr>
-        <tr>
-          <td class="tool-name"><span class="tool-dot tavily"></span> Tavily</td>
-          <td>Pay-as-you-go</td>
-          <td>—</td>
-          <td>$0.008</td>
-          <td>1,000/mo</td>
-        </tr>
-        <tr>
-          <td class="tool-name"><span class="tool-dot rawfetch"></span> Raw Fetch (baseline)</td>
-          <td>Self-hosted</td>
-          <td>Unlimited</td>
-          <td>Infra-only</td>
-          <td>—</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p><em>WebPeel Pro includes 5,000 fetches/month (1,250/week × 4). Self-hosting is unlimited and free.</em></p>
-
-    <!-- CONCLUSION -->
-    <h2>Conclusion</h2>
-
-    <p>For this benchmark run, WebPeel achieved a clean 30/30 (100%) across all 30 URLs and all six tiers.</p>
-
-    <ul>
-      <li><strong>Use WebPeel</strong> if reliability is your top priority and you want local-first scraping with smart escalation.</li>
-      <li><strong>Use Firecrawl</strong> if you already depend on their managed API ecosystem, but note the explicit LinkedIn/Reddit blocks in this run.</li>
-      <li><strong>Use Tavily</strong> if raw latency is your top metric and you can accept lower coverage on protected/document targets.</li>
-      <li><strong>Use Raw Fetch</strong> as a minimal baseline for simple pages, not as a production strategy for bot-protected targets.</li>
-    </ul>
-
-    <p>We'll keep re-running this benchmark as we ship improvements. We care more about publishable truth than flattering snapshots.</p>
-
-    <div class="callout">
-      <div class="callout-title">Run the benchmark yourself</div>
-      <p>Our benchmark suite is open source. Clone the repo, add your API keys, and verify our results: <code>git clone https://github.com/webpeel/webpeel && cd webpeel && npm run benchmark</code></p>
+      <div class="callout-title">Reproduce the benchmark</div>
+      <p>Code and data are public: <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">github.com/webpeel/webpeel/tree/main/benchmarks</a>. If your workload differs, run the suite with your own URL set and compare outcomes directly.</p>
     </div>
 
     <hr style="border: none; border-top: 1px solid var(--border); margin: 48px 0;">
 
     <p style="font-size: 14px; color: var(--text-3);">
-      <em>Benchmarks run on February 15, 2026. All tools tested at their default settings with no special configuration. WebPeel v3, Firecrawl API v1, Tavily API v1, and a raw fetch baseline. Raw data and runner code available at <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">github.com/webpeel/webpeel/benchmarks</a>.</em>
+      <em>Updated February 16, 2026. Runners benchmarked: WebPeel, Firecrawl, Exa, Tavily, ScrapingBee, and Jina Reader. Results reflect this test configuration and may change as providers update infrastructure, pricing, and anti-bot behavior.</em>
     </p>
 
   </article>

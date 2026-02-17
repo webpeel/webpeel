@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How WebPeel's Smart Escalation Engine Works</title>
+  <meta name="description" content="Technical deep dive into WebPeel's smart escalation engine: HTTP → browser → stealth. Learn how AI agents get faster, cheaper, and more reliable web fetching.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://webpeel.dev/blog/how-webpeel-works.html">
+
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://webpeel.dev/blog/how-webpeel-works.html">
+  <meta property="og:title" content="How WebPeel's Smart Escalation Engine Works">
+  <meta property="og:description" content="A technical deep-dive into WebPeel's multi-stage fetch router for AI agents.">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+
+  <meta name="keywords" content="web scraping smart escalation, ai agent web fetcher, how web scraping works, browser rendering pipeline, stealth web scraping">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How WebPeel's Smart Escalation Engine Works",
+    "description": "Technical deep-dive into WebPeel's smart escalation architecture for web scraping AI agents.",
+    "author": {
+      "@type": "Person",
+      "name": "Jake Liu"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "WebPeel",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://webpeel.dev/favicon.svg"
+      }
+    },
+    "datePublished": "2026-02-16",
+    "dateModified": "2026-02-16",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://webpeel.dev/blog/how-webpeel-works.html"
+    },
+    "keywords": ["web scraping smart escalation", "ai agent web fetcher", "how web scraping works"]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg: #FAFAF8;
+      --surface: #FFFFFF;
+      --text: #09090B;
+      --text-2: #52525B;
+      --text-3: #71717A;
+      --text-4: #A1A1AA;
+      --accent: #8B5CF6;
+      --accent-light: #EDE9FE;
+      --border: #E4E4E7;
+      --border-light: #F4F4F5;
+      --green: #16A34A;
+      --radius: 12px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    ::selection { background: rgba(139,92,246,0.15); }
+    .serif { font-family: 'Instrument Serif', Georgia, serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .container { max-width: 780px; margin: 0 auto; padding: 0 24px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(250,250,248,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-light); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--text); text-decoration: none; }
+    .nav-logo svg { width: 24px; height: 24px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; }
+    .nav-links a { font-size: 14px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-btn { display: inline-flex; align-items: center; padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; transition: all 0.15s; letter-spacing: 0.01em; }
+    .nav-btn-ghost { color: var(--text-2); }
+    .nav-btn-ghost:hover { color: var(--text); background: var(--border-light); }
+    .nav-links a.nav-btn-primary { background: #7C3AED; color: #FFFFFF; font-weight: 600; }
+    .nav-links a.nav-btn-primary:hover { background: #6D28D9; color: #FFFFFF; box-shadow: 0 0 0 3px rgba(139,92,246,0.25); }
+
+    .article-header { padding: 60px 0 40px; text-align: center; border-bottom: 1px solid var(--border-light); }
+    .article-meta { display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 14px; color: var(--text-3); margin-bottom: 20px; }
+    .article-meta a { color: var(--accent); text-decoration: none; }
+    .article-meta a:hover { text-decoration: underline; }
+    h1 { font-family: 'Instrument Serif', serif; font-size: clamp(32px, 5vw, 48px); line-height: 1.15; font-weight: 400; letter-spacing: -0.02em; color: var(--text); margin-bottom: 16px; }
+    .article-description { font-size: 18px; color: var(--text-2); max-width: 640px; margin: 0 auto; line-height: 1.6; }
+
+    article { padding: 56px 0; }
+    article h2 { font-family: 'Instrument Serif', serif; font-size: 32px; font-weight: 400; margin: 46px 0 16px; letter-spacing: -0.01em; }
+    article h3 { font-size: 22px; font-weight: 600; margin: 34px 0 12px; }
+    article p { font-size: 17px; line-height: 1.7; color: var(--text-2); margin-bottom: 20px; }
+    article ul { margin: 18px 0 20px 24px; }
+    article li { font-size: 16px; line-height: 1.7; color: var(--text-2); margin-bottom: 8px; }
+    article code { font-family: 'JetBrains Mono', monospace; font-size: 14px; background: var(--border-light); padding: 2px 6px; border-radius: 4px; color: var(--accent); }
+    article pre { background: #18181B; color: #D4D4D8; padding: 20px; border-radius: var(--radius); overflow-x: auto; margin: 24px 0; font-size: 14px; line-height: 1.6; }
+    article pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+    .flow-diagram {
+      background: linear-gradient(135deg, rgba(139,92,246,0.04) 0%, #fff 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 30px 0;
+    }
+    .flow-row {
+      display: grid;
+      grid-template-columns: 1.15fr auto 1.2fr auto 1.6fr;
+      gap: 12px;
+      align-items: center;
+    }
+    .flow-node {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: #fff;
+      text-align: center;
+    }
+    .flow-node .title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .flow-node .detail {
+      font-size: 12px;
+      color: var(--text-3);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .flow-arrow {
+      color: var(--accent);
+      font-size: 18px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .router-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 20px 0;
+    }
+    .stage-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .stage-card h4 {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .example-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 24px 0;
+    }
+    .example-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .example-card h4 { font-size: 16px; margin-bottom: 8px; }
+    .metric { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .ok { color: var(--green); }
+
+    .benefit-list {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 22px 0;
+    }
+
+    footer { border-top: 1px solid var(--border); padding: 40px 0; margin-top: 60px; }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .footer-left { font-size: 13px; color: var(--text-4); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 900px) {
+      .flow-row { grid-template-columns: 1fr; }
+      .flow-arrow { transform: rotate(90deg); }
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 16px; }
+      .nav-inner { padding: 0 16px; }
+      .nav-links { display: none; }
+      .article-header { padding: 40px 0 30px; }
+      h1 { font-size: 32px; }
+      article { padding: 40px 0; }
+      article h2 { font-size: 26px; margin-top: 34px; }
+      article h3 { font-size: 20px; }
+      article p, article li { font-size: 16px; }
+      .router-grid, .example-grid { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+      .footer-links { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="article-header">
+    <div class="container">
+      <div class="article-meta">
+        <span>February 16, 2026</span>
+        <span>•</span>
+        <span>9 min read</span>
+        <span>•</span>
+        <a href="/blog/">← Back to Blog</a>
+      </div>
+      <h1>How WebPeel's Smart Escalation Engine Works</h1>
+      <p class="article-description">A technical deep-dive into the routing system that makes WebPeel a fast, reliable <strong>AI agent web fetcher</strong>: simple HTTP first, browser when needed, stealth only when necessary.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <article>
+      <p>Most scraping tools pick one mode and run everything through it. That's expensive and slow. WebPeel uses <strong>web scraping smart escalation</strong>: it starts with the cheapest, fastest method, then escalates only when the page demands it.</p>
+
+      <h2>The Core Pipeline</h2>
+      <p>At a high level, every request runs through the same router:</p>
+
+      <div class="flow-diagram" aria-label="WebPeel request flow diagram">
+        <div class="flow-row">
+          <div class="flow-node">
+            <div class="title">URL Input</div>
+            <div class="detail">news.ycombinator.com</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="title">Smart Router</div>
+            <div class="detail">detect JS / anti-bot / failovers</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="title">Execution Tier</div>
+            <div class="detail">simple • browser • stealth</div>
+          </div>
+        </div>
+        <div class="flow-row" style="margin-top:12px;">
+          <div class="flow-node">
+            <div class="title">Structured Output</div>
+            <div class="detail">clean markdown + metadata</div>
+          </div>
+          <div class="flow-arrow">←</div>
+          <div class="flow-node">
+            <div class="title">Post-processing</div>
+            <div class="detail">boilerplate removal + token trim</div>
+          </div>
+          <div class="flow-arrow">←</div>
+          <div class="flow-node">
+            <div class="title">Content Capture</div>
+            <div class="detail">DOM / text / readability parse</div>
+          </div>
+        </div>
+      </div>
+
+      <h2>How the Router Chooses a Tier</h2>
+      <div class="router-grid">
+        <div class="stage-card">
+          <span class="badge">Tier 1</span>
+          <h4>Simple HTTP</h4>
+          <p>Default path. Fast HTML request + extraction. Lowest cost and latency.</p>
+        </div>
+        <div class="stage-card">
+          <span class="badge">Tier 2</span>
+          <h4>Browser Render</h4>
+          <p>Triggered when content is JS-rendered, incomplete, or blocked in raw HTML.</p>
+        </div>
+        <div class="stage-card">
+          <span class="badge">Tier 3</span>
+          <h4>Stealth Mode</h4>
+          <p>Final fallback for anti-bot protected pages (Cloudflare-style checks, bot walls).</p>
+        </div>
+      </div>
+
+      <p>In practical terms, this is <strong>how web scraping works</strong> in production for agent systems: don't use headless browsers unless they are actually required.</p>
+
+      <h2>Real Request Examples</h2>
+      <p><strong>Concrete example:</strong> <code>news.ycombinator.com</code> resolves in <strong>160ms via HTTP</strong>, while <code>bloomberg.com</code> automatically escalates to browser mode in around <strong>1.3s</strong>.</p>
+      <div class="example-grid">
+        <div class="example-card">
+          <h4>news.ycombinator.com</h4>
+          <div class="metric ok">160ms</div>
+          <p><strong>Chosen tier:</strong> Simple HTTP</p>
+          <p>Static HTML with clean structure. No need for browser rendering. Ideal for high-volume agent loops.</p>
+        </div>
+        <div class="example-card">
+          <h4>bloomberg.com</h4>
+          <div class="metric">1.3s</div>
+          <p><strong>Chosen tier:</strong> Browser escalation</p>
+          <p>Initial fetch lacked usable content. Router escalated to browser automatically and returned clean markdown.</p>
+        </div>
+      </div>
+
+      <h2>Why This Matters for AI Agents</h2>
+      <div class="benefit-list">
+        <ul>
+          <li><strong>Lower cost:</strong> Most pages resolve via HTTP, so you avoid paying browser overhead on every request.</li>
+          <li><strong>Lower latency:</strong> Agent chains stay responsive because easy pages return fast.</li>
+          <li><strong>Higher reliability:</strong> Hard pages still resolve through automatic fallback tiers.</li>
+          <li><strong>Less prompt bloat:</strong> Cleaner markdown means fewer irrelevant tokens sent to your LLM.</li>
+        </ul>
+      </div>
+
+      <h2>Router Logic (Simplified)</h2>
+      <pre><code>fetch(url):
+  r1 = simple_http(url)
+  if is_good(r1):
+    return clean_markdown(r1)
+
+  r2 = browser_render(url)
+  if is_good(r2):
+    return clean_markdown(r2)
+
+  r3 = stealth_render(url)
+  return clean_markdown(r3)</code></pre>
+
+      <p>The real implementation includes more nuance (timeouts, retry policy, content quality checks, domain-level heuristics), but the principle stays the same: <strong>fast path first, expensive path only when needed</strong>.</p>
+
+      <h2>Operational Benefits at Scale</h2>
+      <ul>
+        <li>Predictable performance for bulk crawling workloads</li>
+        <li>Better infrastructure utilization (fewer unnecessary browser sessions)</li>
+        <li>Higher success rates on mixed URL sets</li>
+        <li>Simpler agent code — no manual "should I render?" decision tree required</li>
+      </ul>
+
+      <h2>Final Takeaway</h2>
+      <p>If you are building autonomous systems that read the web, smart escalation is not a "nice-to-have" — it's core infrastructure. It gives your agents fast responses on easy pages and resilient fallbacks on difficult ones.</p>
+      <p>For a broader market comparison, see <a href="/blog/webpeel-vs-firecrawl-vs-tavily-vs-exa.html">WebPeel vs Firecrawl vs Tavily vs Exa</a>.</p>
+    </article>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. MIT Licensed.</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

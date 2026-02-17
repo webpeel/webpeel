@@ -32,6 +32,7 @@ type RunnerId =
   | 'jina-reader'
   | 'scrapingbee'
   | 'exa'
+  | 'linkup'
   | 'raw-fetch';
 
 interface BenchmarkUrl {
@@ -742,6 +743,73 @@ async function runExa(target: BenchmarkUrl, timeoutMs: number): Promise<{
   };
 }
 
+async function runLinkUp(target: BenchmarkUrl, timeoutMs: number): Promise<{
+  statusCode: number | null;
+  title: string;
+  content: string;
+  links: string[];
+  metadata: any;
+  method: MethodUsed;
+}> {
+  const key = process.env.LINKUP_API_KEY;
+  if (!key) throw new Error('LINKUP_API_KEY not set');
+
+  const resp = await fetchWithTimeout('https://api.linkup.so/v1/search', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      q: target.url,
+      depth: 'standard',
+      outputType: 'sourcedAnswer',
+    }),
+  }, timeoutMs);
+
+  const statusCode = resp.status;
+  let data: any;
+
+  try {
+    data = await resp.json();
+  } catch {
+    const text = await resp.text().catch(() => '');
+    if (!resp.ok) throw new Error(`HTTP ${statusCode}: ${text.slice(0, 200)}`);
+    data = { answer: text };
+  }
+
+  if (!resp.ok) {
+    const msg = data?.message || data?.error || `HTTP ${statusCode}`;
+    throw new Error(String(msg));
+  }
+
+  const sources = Array.isArray(data?.sources) ? data.sources : [];
+  const links = [...new Set(
+    sources
+      .map((s: any) => (typeof s?.url === 'string' ? s.url : ''))
+      .filter(Boolean),
+  )];
+
+  const answer = typeof data?.answer === 'string' ? data.answer : '';
+  const snippets = sources
+    .map((s: any) => (typeof s?.snippet === 'string' ? s.snippet : ''))
+    .filter(Boolean)
+    .join('\n\n');
+
+  const content = normalizeText([answer, snippets].filter(Boolean).join('\n\n'));
+  const title = normalizeText(typeof sources[0]?.name === 'string' ? sources[0].name : '');
+
+  return {
+    statusCode,
+    title,
+    content,
+    links,
+    metadata: { source_count: sources.length },
+    method: 'unknown',
+  };
+}
+
 function getRunner(runner: RunnerId) {
   switch (runner) {
     case 'webpeel-local':
@@ -758,6 +826,8 @@ function getRunner(runner: RunnerId) {
       return runScrapingBee;
     case 'exa':
       return runExa;
+    case 'linkup':
+      return runLinkUp;
     case 'raw-fetch':
       return runRawFetch;
     default: {
@@ -852,6 +922,16 @@ async function runOneRunner(params: {
       summary: summarize([]),
       skipped: true,
       skip_reason: 'EXA_API_KEY not set',
+    };
+  }
+
+  if (runner === 'linkup' && !process.env.LINKUP_API_KEY) {
+    return {
+      runner,
+      results: [],
+      summary: summarize([]),
+      skipped: true,
+      skip_reason: 'LINKUP_API_KEY not set',
     };
   }
 
@@ -951,14 +1031,14 @@ async function runOneRunner(params: {
 function parseRunnerList(input: string): RunnerId[] {
   const trimmed = input.trim();
   if (trimmed === 'all') {
-    return ['webpeel-local', 'webpeel-api', 'raw-fetch', 'firecrawl', 'tavily', 'jina-reader', 'scrapingbee', 'exa'];
+    return ['webpeel-local', 'webpeel-api', 'raw-fetch', 'firecrawl', 'tavily', 'jina-reader', 'scrapingbee', 'exa', 'linkup'];
   }
   return trimmed
     .split(',')
     .map(s => s.trim())
     .filter(Boolean)
     .map(s => {
-      const allowed: RunnerId[] = ['webpeel-local', 'webpeel-api', 'raw-fetch', 'firecrawl', 'tavily', 'jina-reader', 'scrapingbee', 'exa'];
+      const allowed: RunnerId[] = ['webpeel-local', 'webpeel-api', 'raw-fetch', 'firecrawl', 'tavily', 'jina-reader', 'scrapingbee', 'exa', 'linkup'];
       if (!allowed.includes(s as RunnerId)) {
         throw new Error(`Invalid --runner ${JSON.stringify(s)}. Allowed: ${allowed.join(', ')}, all`);
       }
@@ -985,7 +1065,7 @@ async function main() {
   program
     .name('webpeel-bench')
     .description('Benchmark web scraping runners across a fixed set of URLs')
-    .option('--runner <id>', 'Runner to use: webpeel-local | webpeel-api | raw-fetch | firecrawl | tavily | all', 'webpeel-local')
+    .option('--runner <id>', 'Runner to use: webpeel-local | webpeel-api | raw-fetch | firecrawl | tavily | jina-reader | scrapingbee | exa | linkup | all', 'webpeel-local')
     .option('--urls <preset>', 'URL set to run (currently only: all)', 'all')
     .option('--tier <tiers>', 'Comma-separated tier filter: static,dynamic,spa,protected,documents,edge (or all)', '')
     .option('--concurrency <n>', 'Concurrency per runner (default: 1)', '1')
