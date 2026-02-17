@@ -101,7 +101,7 @@ Extra usage rates: Basic $0.002, Stealth $0.01, Search $0.001
 | Search | ✅ Built-in | ❌ No | ❌ No | ❌ No |
 | Crawl | ✅ Built-in | ✅ Yes | ❌ No | ❌ No |
 | Price | Free / $9/mo | $16/mo | $10/mo | Free |
-| License | MIT | AGPL | Proprietary | MIT |
+| License | AGPL-3.0 | AGPL-3.0 | Proprietary | MIT |
 
 ## Links
 

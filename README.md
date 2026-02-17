@@ -61,8 +61,8 @@ First 25 fetches work instantly, no signup. After that, [sign up free](https://a
 | **Firecrawl-compatible** | ✅ Drop-in replacement | ✅ Native | ❌ | ❌ |
 | **Self-hosting** | ✅ Docker compose | ⚠️ Complex | ❌ | N/A |
 | **Autonomous agent** | ✅ BYOK any LLM | ⚠️ Locked | ❌ | ❌ |
-| **MCP tools** | ✅ 9 tools | 3 | 0 | 1 |
-| **License** | ✅ MIT | AGPL-3.0 | Proprietary | MIT |
+| **MCP tools** | ✅ 11 tools | 3 | 0 | 1 |
+| **License** | ✅ AGPL-3.0 | AGPL-3.0 | Proprietary | MIT |
 | **Pricing** | **Free / $9 / $29** | $0 / $16 / $83 | Custom | Free |
 
 ## Install
@@ -117,9 +117,9 @@ Zero dependencies. Pure Python 3.8+. [Full SDK docs →](python-sdk/README.md)
 
 ### MCP Server
 
-9 tools for Claude Desktop, Cursor, VS Code, and Windsurf:
+11 tools for Claude Desktop, Cursor, VS Code, and Windsurf:
 
-`webpeel_fetch` · `webpeel_search` · `webpeel_crawl` · `webpeel_map` · `webpeel_extract` · `webpeel_batch` · `webpeel_agent` · `webpeel_summarize` · `webpeel_brand`
+`webpeel_fetch` · `webpeel_search` · `webpeel_crawl` · `webpeel_map` · `webpeel_extract` · `webpeel_batch` · `webpeel_brand` · `webpeel_change_track` · `webpeel_summarize` · `webpeel_answer` · `webpeel_screenshot`
 
 ```json
 {
@@ -144,7 +144,7 @@ git clone https://github.com/webpeel/webpeel.git
 cd webpeel && docker compose up
 ```
 
-Full API at `http://localhost:3000`. MIT licensed — no restrictions.
+Full API at `http://localhost:3000`. AGPL-3.0 licensed. [Commercial licensing available](mailto:support@webpeel.dev).
 
 ## Features
 

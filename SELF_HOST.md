@@ -299,4 +299,4 @@ docker compose exec -T db psql -U webpeel webpeel < backup.sql
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+AGPL-3.0 — see [LICENSE](LICENSE) for details. [Commercial licensing available](mailto:support@webpeel.dev).

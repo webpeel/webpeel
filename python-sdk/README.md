@@ -179,7 +179,7 @@ Check status of an async job.
 |---------|---------|-----------|
 | **Pricing** | $0 local / $9-$29 cloud | $16-$333/mo |
 | **Free Tier** | 125 fetches/week | 500 credits one-time |
-| **License** | MIT | AGPL-3.0 |
+| **License** | AGPL-3.0 | AGPL-3.0 |
 | **Python SDK Deps** | Zero (pure stdlib) | httpx, pydantic |
 | **Smart Escalation** | ✅ Auto HTTP→Browser→Stealth | Manual mode selection |
 | **Token Budget** | ✅ `--max-tokens` | ❌ |
@@ -188,7 +188,7 @@ Check status of an async job.
 | **LangChain** | ✅ | ✅ |
 | **LlamaIndex** | ✅ | ✅ |
 
-**WebPeel is the free, fast, MIT-licensed alternative to Firecrawl.**
+**WebPeel is the free, fast, open-source alternative to Firecrawl.**
 
 ## Authentication
 
@@ -219,7 +219,7 @@ except WebPeelError as e:
 
 ## License
 
-MIT © Jake Liu
+AGPL-3.0 © Jake Liu
 
 ## Links
 

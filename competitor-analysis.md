@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-WebPeel competes in the "web data for AI" space against six established players. This analysis reveals that WebPeel's strongest differentiators are its **pricing** (5-20x cheaper), **true open-source MIT license**, **local-first architecture**, and **Firecrawl API compatibility**. Its biggest weaknesses are **brand recognition**, **search quality** (DuckDuckGo vs. proprietary indices), **enterprise trust signals** (SOC 2, SLAs), and **scale/reliability** relative to VC-backed competitors.
+WebPeel competes in the "web data for AI" space against six established players. This analysis reveals that WebPeel's strongest differentiators are its **pricing** (5-20x cheaper), **AGPL-3.0 open-source license**, **local-first architecture**, and **Firecrawl API compatibility**. Its biggest weaknesses are **brand recognition**, **search quality** (DuckDuckGo vs. proprietary indices), **enterprise trust signals** (SOC 2, SLAs), and **scale/reliability** relative to VC-backed competitors.
 
 **Updated Feb 16, 2026:** Added Jina Reader and ScrapingBee as competitors #5 and #6, with benchmark data.
 
@@ -70,7 +70,7 @@ LinkUp is an AI-focused web search API from a Paris-based startup. Their core va
 - Agent endpoint (autonomous research)
 - Change tracking, page actions, stealth mode, CAPTCHA solving
 - Smart escalation (HTTP → browser)
-- CLI, self-hosting, MIT open source
+- CLI, self-hosting, AGPL-3.0 open source
 - Firecrawl compatibility API
 - Branding extraction, image extraction
 - Location/language targeting for scraping
@@ -146,7 +146,7 @@ Exa is a **proprietary neural search engine** built specifically for AI. Their m
 - Screenshots, PDF parsing
 - Change tracking, branding extraction
 - Batch scrape/crawl with async jobs
-- CLI, self-hosting, MIT open source
+- CLI, self-hosting, AGPL-3.0 open source
 - BYOK AI (no vendor lock-in on AI provider)
 - Firecrawl API compatibility
 - 3-10x cheaper on basic operations
@@ -224,7 +224,7 @@ Tavily is the **default search tool for LangChain** and positions as "the search
 - CAPTCHA solving, stealth mode, smart escalation
 - Change tracking, branding extraction
 - Batch scrape with async jobs
-- CLI, self-hosting, MIT open source
+- CLI, self-hosting, AGPL-3.0 open source
 - BYOK AI for summaries/extraction
 - Firecrawl API compatibility
 - Image extraction from pages
@@ -290,7 +290,7 @@ Firecrawl is the **closest direct competitor** to WebPeel. They're a Y Combinato
 10. **Multiple search sources** — Web, news, images in one search call
 
 **What WebPeel Has That Firecrawl Doesn't:**
-- **MIT license** (vs AGPL-3.0 — huge difference for commercial use of self-hosted)
+- **AGPL-3.0 license — same as Firecrawl, with commercial licensing available)
 - **True local-first** — CLI works offline without any API key
 - **Cheaper** — WebPeel Pro $9/mo for 1,250/wk vs Firecrawl Hobby $16/mo for 3,000/mo total. WebPeel Max $29/mo for 6,250/wk (~25K/mo) vs Firecrawl Standard $83/mo for 100K/mo
 - **BYOK AI** — Use your own LLM for summaries/extraction (vs locked to Firecrawl's models)
@@ -383,7 +383,7 @@ Jina Reader is a **URL-to-markdown API** from Jina AI (Berlin), now owned by **E
 - CAPTCHA solving, stealth mode, smart escalation (HTTP→browser)
 - Change tracking, branding extraction
 - CLI (local, works offline)
-- Self-hosting (MIT license)
+- Self-hosting (AGPL-3.0, commercial licensing available)
 - BYOK AI for extraction/summaries
 - Firecrawl API compatibility
 - Agent/research endpoint
@@ -481,7 +481,7 @@ ScrapingBee is a **web scraping API** that handles headless browsers, proxy rota
 - Change tracking, branding extraction
 - PDF parsing, image extraction
 - CLI (local, works offline without API key)
-- Self-hosting (MIT open source)
+- Self-hosting (AGPL-3.0 open source)
 - BYOK AI for extraction/summaries
 - MCP server, LangChain/LlamaIndex integrations
 - Agent/research endpoint
@@ -536,8 +536,8 @@ ScrapingBee is a **web scraping API** that handles headless browsers, proxy rota
 | Python SDK | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
 | TypeScript SDK | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
 | MCP Server | ✅ (7 tools) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Self-Hostable | ✅ (MIT) | ⚠️ (AGPL) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Open Source | ✅ (MIT) | ⚠️ (AGPL) | ❌ | ❌ | ❌ | ⚠️ (Apache, not practical) | ❌ |
+| Self-Hostable | ✅ (AGPL-3.0) | ⚠️ (AGPL) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Open Source | ✅ (AGPL-3.0) | ⚠️ (AGPL) | ❌ | ❌ | ❌ | ⚠️ (Apache, not practical) | ❌ |
 | Firecrawl API Compatible | ✅ | N/A | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Integrations** | | | | | | | |
 | LangChain | ✅ | ✅ | ✅ (default!) | ✅ | ✅ | ✅ (community) | ❌ |
@@ -586,7 +586,7 @@ ScrapingBee is a **web scraping API** that handles headless browsers, proxy rota
 
 **Enterprise Readiness:** Jina Reader scores 4.5 — SOC 2 Type I & II, Elastic (NYSE) backing, massive customer logos, EU compliance mode, 100B tokens/day scale. Only misses SLA/SSO to tie Exa. ScrapingBee scores 2.0 — GDPR compliant (French) but no SOC 2, no SLA, smaller scale.
 
-**Open Source / Freedom:** WebPeel's MIT license is unmatched. Firecrawl's AGPL is viral copyleft. Jina Reader's repo is Apache-2.0 but not practically self-hostable (depends on proprietary submodule + infrastructure), so scores 1.5. ScrapingBee is fully proprietary (1.0).
+**Open Source / Freedom:** WebPeel's AGPL-3.0 license matches Firecrawl. Firecrawl's AGPL is viral copyleft. Jina Reader's repo is Apache-2.0 but not practically self-hostable (depends on proprietary submodule + infrastructure), so scores 1.5. ScrapingBee is fully proprietary (1.0).
 
 ---
 
@@ -595,7 +595,7 @@ ScrapingBee is a **web scraping API** that handles headless browsers, proxy rota
 ### Where WebPeel is STRONG 💪
 
 1. **Price/value ratio is unbeatable** — 5-20x cheaper than every competitor. The $9/mo tier offers more weekly ops than competitors' $30-80 tiers offer monthly
-2. **True MIT open source** — The only player with a genuinely business-friendly open source license. Firecrawl's AGPL is a poison pill for many commercial users
+2. **Fully open source (AGPL-3.0) — same license as Firecrawl, with commercial licensing available
 3. **Local-first / self-hostable** — CLI works without an API key, completely offline. No vendor lock-in
 4. **Firecrawl API compatibility** — Genius move. Instant migration path from the market leader. Zero switching cost
 5. **BYOK AI** — No lock-in to any AI provider. Use whatever LLM you want for extraction/summaries
@@ -628,7 +628,7 @@ ScrapingBee is a **web scraping API** that handles headless browsers, proxy rota
 
 2. **Zapier + Make integrations** — These unlock the non-developer market. Many enterprise workflows run through these. Relatively easy to build
 
-3. **GitHub star campaign** — The star count signals community trust. Launch on HN, ProductHunt, Reddit. The Firecrawl compatibility angle is a great launch hook ("drop-in replacement, MIT licensed, 5x cheaper")
+3. **GitHub star campaign** — The star count signals community trust. Launch on HN, ProductHunt, Reddit. The Firecrawl compatibility angle is a great launch hook ("drop-in replacement, AGPL-3.0 licensed, 5x cheaper")
 
 ### 🟡 Important (Next Quarter)
 
@@ -735,7 +735,7 @@ Jina Reader is a URL-to-markdown API from Jina AI, a Berlin-based AI infrastruct
 
 **Where WebPeel Wins:**
 - Self-hosted / local-first — no API dependency
-- MIT open-source — full source, modify freely
+- AGPL-3.0 open source — full source, commercial licensing available
 - No rate limits locally
 - Stealth mode / anti-bot — Jina doesn't handle protected sites well
 - Price: free locally, API far cheaper at scale
@@ -816,7 +816,7 @@ Note: JS rendering costs 5 credits/request. Google scraping costs 20 credits/req
 - **Price:** Free locally, API 10-50x cheaper at scale
 - **Speed:** 443ms median vs 1,613ms
 - **Success rate:** 96.7% vs 80.0%
-- **Open source:** MIT license, full source code
+- **Open source:** AGPL-3.0 license, full source code
 - **Local-first:** No API dependency, runs offline
 - **Protected sites:** WebPeel's stealth mode beats ScrapingBee's default mode
 
@@ -830,7 +830,7 @@ Note: JS rendering costs 5 credits/request. Google scraping costs 20 credits/req
 
 ---
 
-**WebPeel's ideal positioning:** "The open-source Firecrawl alternative that's 5x cheaper, MIT-licensed, and works locally. Plus search."
+**WebPeel's ideal positioning:** "The open-source Firecrawl alternative that's 5x cheaper, AGPL-3.0 licensed, and works locally. Plus search."
 
 **Who to target aggressively:**
 - Firecrawl users frustrated with AGPL licensing or pricing
