@@ -31,6 +31,7 @@ type RunnerId =
   | 'tavily'
   | 'jina-reader'
   | 'scrapingbee'
+  | 'exa'
   | 'raw-fetch';
 
 interface BenchmarkUrl {
@@ -692,6 +693,55 @@ async function runScrapingBee(target: BenchmarkUrl, timeoutMs: number): Promise<
   };
 }
 
+async function runExa(target: BenchmarkUrl, timeoutMs: number): Promise<{
+  statusCode: number | null;
+  title: string;
+  content: string;
+  links: string[];
+  metadata: any;
+  method: MethodUsed;
+}> {
+  const key = process.env.EXA_API_KEY;
+  if (!key) throw new Error('EXA_API_KEY not set');
+
+  const resp = await fetchWithTimeout('https://api.exa.ai/contents', {
+    method: 'POST',
+    headers: {
+      'x-api-key': key,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      urls: [target.url],
+      text: true,
+      livecrawl: 'auto',
+    }),
+  }, timeoutMs);
+
+  const statusCode = resp.status;
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`HTTP ${statusCode}: ${text.slice(0, 200)}`);
+  }
+
+  const data: any = await resp.json();
+  const result = data?.results?.[0];
+  if (!result) throw new Error('Exa: no results returned');
+
+  const title = normalizeText(result.title || '');
+  const content = normalizeText(result.text || '');
+  const links: string[] = [];
+
+  return {
+    statusCode,
+    title,
+    content,
+    links,
+    metadata: { author: result.author || null },
+    method: 'unknown',
+  };
+}
+
 function getRunner(runner: RunnerId) {
   switch (runner) {
     case 'webpeel-local':
@@ -706,6 +756,8 @@ function getRunner(runner: RunnerId) {
       return runJinaReader;
     case 'scrapingbee':
       return runScrapingBee;
+    case 'exa':
+      return runExa;
     case 'raw-fetch':
       return runRawFetch;
     default: {
@@ -790,6 +842,16 @@ async function runOneRunner(params: {
       summary: summarize([]),
       skipped: true,
       skip_reason: 'SCRAPINGBEE_API_KEY not set',
+    };
+  }
+
+  if (runner === 'exa' && !process.env.EXA_API_KEY) {
+    return {
+      runner,
+      results: [],
+      summary: summarize([]),
+      skipped: true,
+      skip_reason: 'EXA_API_KEY not set',
     };
   }
 
@@ -889,14 +951,14 @@ async function runOneRunner(params: {
 function parseRunnerList(input: string): RunnerId[] {
   const trimmed = input.trim();
   if (trimmed === 'all') {
-    return ['webpeel-local', 'webpeel-api', 'raw-fetch', 'firecrawl', 'tavily', 'jina-reader', 'scrapingbee'];
+    return ['webpeel-local', 'webpeel-api', 'raw-fetch', 'firecrawl', 'tavily', 'jina-reader', 'scrapingbee', 'exa'];
   }
   return trimmed
     .split(',')
     .map(s => s.trim())
     .filter(Boolean)
     .map(s => {
-      const allowed: RunnerId[] = ['webpeel-local', 'webpeel-api', 'raw-fetch', 'firecrawl', 'tavily', 'jina-reader', 'scrapingbee'];
+      const allowed: RunnerId[] = ['webpeel-local', 'webpeel-api', 'raw-fetch', 'firecrawl', 'tavily', 'jina-reader', 'scrapingbee', 'exa'];
       if (!allowed.includes(s as RunnerId)) {
         throw new Error(`Invalid --runner ${JSON.stringify(s)}. Allowed: ${allowed.join(', ')}, all`);
       }
