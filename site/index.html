@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebPeel — Web fetching for AI agents</title>
+  <title>WebPeel - Web fetching for AI agents</title>
   <meta name="description" content="Smart web fetcher with stealth mode and crawl mode. Auto-escalates from HTTP to headless browser. MCP server for Claude, Cursor & VS Code. Free and open source.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://webpeel.dev">
@@ -11,7 +11,7 @@
   <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://webpeel.dev">
-  <meta property="og:title" content="WebPeel — Web fetching for AI agents">
+  <meta property="og:title" content="WebPeel - Web fetching for AI agents">
   <meta property="og:description" content="Smart web fetcher with stealth mode and crawl mode. Auto-escalates from HTTP to headless browser. Free and open source.">
   <meta property="og:image" content="https://webpeel.dev/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  
+
   <!-- Structured Data -->
   <script type="application/ld+json">
   {
@@ -56,7 +56,7 @@
         "name": "What happens if I exceed my WebPeel limits?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "WebPeel enforces hard usage limits. If you hit your hourly burst limit or weekly cap, requests are blocked until the relevant window resets (hourly resets automatically; weekly resets every Monday). Paid plans work the same way with higher limits, and can add extra usage credits when needed."
+          "text": "WebPeel has two tiers: hourly burst limits (hard - returns 429) and weekly quotas (soft - degrades to HTTP-only mode instead of blocking). Hourly resets automatically; weekly resets every Monday. Paid plans have higher limits and can add extra usage credits when needed."
         }
       },
       {
@@ -86,7 +86,7 @@
     ]
   }
   </script>
-  
+
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     :root {
@@ -125,7 +125,7 @@
     .nav-btn-ghost:hover { color: var(--text); background: var(--border-light); }
     .nav-links a.nav-btn-primary { background: #7C3AED; color: #FFFFFF; font-weight: 600; }
     .nav-links a.nav-btn-primary:hover { background: #6D28D9; color: #FFFFFF; box-shadow: 0 0 0 3px rgba(139,92,246,0.25); }
-    
+
     /* MOBILE NAV */
     .nav-hamburger { display: none; padding: 8px; cursor: pointer; background: none; border: none; }
     .nav-hamburger svg { width: 24px; height: 24px; }
@@ -420,7 +420,7 @@
   <!-- HERO -->
   <section class="hero">
     <div class="container">
-      <div class="hero-badge fade-up"><span class="dot"></span> v0.7.0 — Answer endpoint, Brave Search BYOK, Hosted MCP, Playground</div>
+      <div class="hero-badge fade-up"><span class="dot"></span> v0.7.0 - Answer endpoint, Brave Search BYOK, Hosted MCP, Playground</div>
       <h1 class="fade-up delay-1">Fetch the web,<br><em>read what matters.</em></h1>
       <p class="fade-up delay-2">125 free fetches every week. No credit card. Smart escalation from HTTP to headless browser. MCP server for Claude, Cursor & VS Code.</p>
       <div class="hero-actions fade-up delay-3">
@@ -502,7 +502,7 @@
 
         <article class="benchmark-card">
           <h3>Quality Score</h3>
-          <p>Content extraction quality — clean markdown, metadata, links.</p>
+          <p>Content extraction quality - clean markdown, metadata, links.</p>
           <div class="benchmark-bars">
             <div class="benchmark-row webpeel">
               <div class="benchmark-label">WebPeel</div>
@@ -623,13 +623,13 @@
     <div class="container">
       <div class="section-header">
         <h2>Everything you <em class="serif" style="font-style:italic">need</em></h2>
-        <p>34 features at Firecrawl parity — plus 5 unique ones</p>
+        <p>34 features at Firecrawl parity - plus 5 unique ones</p>
       </div>
       <div class="steps reveal-stagger" data-reveal style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
         <div class="step-card">
           <div style="font-size: 32px; margin-bottom: 12px;">🎮</div>
           <h3>Interactive Playground</h3>
-          <p>Try scrape, search, crawl, and map — right in your browser. No signup required. Code generation included.</p>
+          <p>Try scrape, search, crawl, and map - right in your browser. No signup required. Code generation included.</p>
         </div>
         <div class="step-card">
           <div style="font-size: 32px; margin-bottom: 12px;">🔄</div>
@@ -654,7 +654,7 @@
         <div class="step-card">
           <div style="font-size: 32px; margin-bottom: 12px;">🎨</div>
           <h3>Branding Extraction</h3>
-          <p>Extract full design systems from any page — colors, fonts, logos, and brand assets in one request.</p>
+          <p>Extract full design systems from any page - colors, fonts, logos, and brand assets in one request.</p>
         </div>
         <div class="step-card">
           <div style="font-size: 32px; margin-bottom: 12px;">🐍</div>
@@ -751,7 +751,7 @@
               <div class="feature-tooltip">
                 MCP server
                 <span class="tooltip-icon">ⓘ
-                  <span class="tooltip-text">Model Context Protocol — lets AI assistants like Claude call WebPeel directly</span>
+                  <span class="tooltip-text">Model Context Protocol - lets AI assistants like Claude call WebPeel directly</span>
                 </span>
               </div>
             </td>
@@ -961,7 +961,7 @@
               <div class="feature-tooltip">
                 Self-hostable
                 <span class="tooltip-icon">ⓘ
-                  <span class="tooltip-text">Run your own instance — no vendor lock-in</span>
+                  <span class="tooltip-text">Run your own instance - no vendor lock-in</span>
                 </span>
               </div>
             </td>
@@ -1063,7 +1063,7 @@
         <h2>Simple <em class="serif" style="font-style:italic">pricing</em></h2>
         <p>All features available on all plans. Only usage limits differ. Start free, scale when ready.</p>
       </div>
-      
+
       <!-- ANNUAL/MONTHLY TOGGLE -->
       <div class="pricing-toggle">
         <div class="toggle-container">
@@ -1123,7 +1123,7 @@
         <div style="display: grid; gap: 12px; font-size: 14px; color: var(--text-2); line-height: 1.6;">
           <div style="display: flex; gap: 10px;">
             <span style="color: var(--green); font-weight: 600;">✓</span>
-            <span><strong>First 25 fetches — no account needed.</strong> Try WebPeel instantly via CLI or API.</span>
+            <span><strong>First 25 fetches - no account needed.</strong> Try WebPeel instantly via CLI or API.</span>
           </div>
           <div style="display: flex; gap: 10px;">
             <span style="color: var(--green); font-weight: 600;">✓</span>
@@ -1143,7 +1143,7 @@
       <!-- EXTRA USAGE PRICING -->
       <div style="max-width: 800px; margin: 20px auto 0; padding: 24px; background: white; border: 1px solid var(--border); border-radius: var(--radius);">
         <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text);">Extra usage pricing</h3>
-        <p style="font-size: 14px; color: var(--text-3); margin-bottom: 18px;">If you’re on Pro or Max and run out of included usage, you can purchase extra credits. Free plan has no overages — requests pause until the weekly reset.</p>
+        <p style="font-size: 14px; color: var(--text-3); margin-bottom: 18px;">If you're on Pro or Max and run out of included usage, you can purchase extra credits. Free plan has no overages - requests pause until the weekly reset.</p>
         <div style="display: grid; gap: 10px;">
           <div style="display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 10px 12px; background: #FAFAFA; border: 1px solid var(--border-light); border-radius: 10px;">
             <span style="font-size: 14px; font-weight: 500; color: var(--text);">Basic fetch</span>
@@ -1171,7 +1171,7 @@
           </div>
           <div class="faq-answer">
             <div class="faq-answer-inner">
-              WebPeel enforces hard usage limits. If you hit your hourly burst limit or weekly cap, requests are blocked until the relevant window resets (hourly resets automatically; weekly resets every Monday). Free has no overages — you’ll need to wait for the reset. Pro/Max work the same way with higher limits, and can add extra usage credits when needed.
+              WebPeel has two tiers: <strong>hourly burst limits</strong> (hard — returns 429) and <strong>weekly quotas</strong> (soft — degrades to HTTP-only mode instead of blocking). Hourly resets automatically; weekly resets every Monday. Free has no overages — wait for the reset. Pro/Max have higher limits and can add extra usage credits when needed.
             </div>
           </div>
         </div>
@@ -1275,12 +1275,12 @@
       const cached = localStorage.getItem('wp-stars');
       const cacheTime = localStorage.getItem('wp-stars-time');
       const ONE_HOUR = 3600000;
-      
+
       if (cached && cacheTime && Date.now() - parseInt(cacheTime) < ONE_HOUR) {
         updateStarCount(parseInt(cached));
         return;
       }
-      
+
       try {
         const res = await fetch('https://api.github.com/repos/webpeel/webpeel');
         if (res.ok) {
@@ -1296,7 +1296,7 @@
     function updateStarCount(count) {
       const el = document.getElementById('star-count');
       if (el) el.textContent = '· ' + (count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count);
-      
+
       const statsEl = document.getElementById('github-stars');
       if (statsEl && count > 0) {
         statsEl.textContent = count;
@@ -1307,7 +1307,7 @@
     // CODE TAB SWITCHING
     const codeTabs = document.querySelectorAll('.code-tab');
     const codeContent = document.getElementById('code-content');
-    
+
     const codeExamples = {
       cli: `<span class="hl-cm"># Install globally</span>
 <span class="hl-kw">npm</span> install -g webpeel
@@ -1397,18 +1397,18 @@ console.<span class="hl-fn">log</span>(result.markdown);`
     async function runTerminalDemo() {
       const terminalBody = document.getElementById('terminal-body');
       const demo = terminalDemos[currentDemo];
-      
+
       terminalBody.innerHTML = '';
-      
+
       const promptLine = document.createElement('div');
       promptLine.className = 'terminal-line visible';
       promptLine.innerHTML = '<span class="t-prompt">$ </span>';
       terminalBody.appendChild(promptLine);
-      
+
       await typeText(promptLine, `<span class="t-prompt">$ </span><span class="t-cmd">${demo.command}</span>`, typingSpeed);
-      
+
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       for (const line of demo.output) {
         await new Promise(resolve => setTimeout(resolve, 150));
         const outputLine = document.createElement('div');
@@ -1419,9 +1419,9 @@ console.<span class="hl-fn">log</span>(result.markdown);`
         outputLine.style.transition = 'opacity 0.3s';
         outputLine.style.opacity = '1';
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 5000));
-      
+
       currentDemo = (currentDemo + 1) % terminalDemos.length;
       runTerminalDemo();
     }
@@ -1436,7 +1436,7 @@ console.<span class="hl-fn">log</span>(result.markdown);`
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
-          
+
           // Trigger stat counters
           if (entry.target.classList.contains('stats')) {
             const statNums = entry.target.querySelectorAll('.stat-num');
@@ -1460,12 +1460,12 @@ console.<span class="hl-fn">log</span>(result.markdown);`
     function animateCounter(element, target) {
       if (element.dataset.animated) return;
       element.dataset.animated = 'true';
-      
+
       const duration = 1500;
       const start = 0;
       const increment = target / (duration / 16);
       let current = start;
-      
+
       const timer = setInterval(() => {
         current += increment;
         if (current >= target) {
@@ -1504,11 +1504,11 @@ console.<span class="hl-fn">log</span>(result.markdown);`
     function toggleFAQ(element) {
       const faqItem = element.parentElement;
       const isOpen = faqItem.classList.contains('open');
-      
+
       document.querySelectorAll('.faq-item').forEach(item => {
         item.classList.remove('open');
       });
-      
+
       if (!isOpen) {
         faqItem.classList.add('open');
       }

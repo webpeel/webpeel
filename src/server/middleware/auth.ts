@@ -104,9 +104,9 @@ export function createAuthMiddleware(authStore: AuthStore) {
             
             const tier = keyInfo?.tier || 'free';
             const upgradeHint = tier === 'free'
-              ? ' Upgrade to Pro ($9/mo) for 100/hr → https://webpeel.dev/pricing'
+              ? ' Upgrade to Pro ($9/mo) for 100/hr → https://webpeel.dev/#pricing'
               : tier === 'pro'
-              ? ' Upgrade to Max ($29/mo) for 500/hr → https://webpeel.dev/pricing'
+              ? ' Upgrade to Max ($29/mo) for 500/hr → https://webpeel.dev/#pricing'
               : '';
             res.status(429).json({
               error: 'burst_limit_exceeded',
@@ -135,7 +135,7 @@ export function createAuthMiddleware(authStore: AuthStore) {
               softLimited = true;
               res.setHeader('X-Soft-Limited', 'true');
               res.setHeader('X-Soft-Limit-Reason', 'Weekly quota exceeded. Requests degraded to HTTP-only mode.');
-              res.setHeader('X-Upgrade-URL', 'https://webpeel.dev/pricing');
+              res.setHeader('X-Upgrade-URL', 'https://webpeel.dev/#pricing');
             }
           }
 
@@ -151,7 +151,7 @@ export function createAuthMiddleware(authStore: AuthStore) {
             if (usage.percentUsed >= 80 && !softLimited && !extraUsageAvailable) {
               res.setHeader(
                 'X-Usage-Warning',
-                `You've used ${usage.percentUsed}% of your weekly quota. Consider upgrading at https://webpeel.dev/pricing`
+                `You've used ${usage.percentUsed}% of your weekly quota. Consider upgrading at https://webpeel.dev/#pricing`
               );
             }
           }
