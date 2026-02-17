@@ -65,6 +65,17 @@ First 25 fetches work instantly, no signup. After that, [sign up free](https://a
 | **License** | ✅ AGPL-3.0 | AGPL-3.0 | Proprietary | MIT |
 | **Pricing** | **Free / $9 / $29** | $0 / $16 / $83 | Custom | Free |
 
+## Benchmarks
+
+Evaluated on 30 real-world URLs across 6 categories (static, dynamic, SPA, protected, documents, international) against 6 competing web fetching APIs.
+
+| Metric | WebPeel | Next best |
+|--------|:-------:|:---------:|
+| **Success rate** | **100%** (30/30) | 93.3% (Firecrawl, Exa, LinkUp) |
+| **Content quality** | **92.3%** | 83.2% (Exa) |
+
+WebPeel is the only tool that successfully extracted content from all 30 test URLs. Full methodology and per-category breakdown: [webpeel.dev/blog/benchmarks](https://webpeel.dev/blog/benchmarks)
+
 ## Install
 
 ```bash
