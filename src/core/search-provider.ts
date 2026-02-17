@@ -183,11 +183,20 @@ export class DuckDuckGoProvider implements SearchProvider {
 
     const searchUrl = this.buildSearchUrl(query, options);
 
+    // Use realistic browser headers to avoid DDG bot detection on datacenter IPs
     const response = await undiciFetch(searchUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'Referer': 'https://duckduckgo.com/',
       },
       signal,
     });
@@ -256,6 +265,75 @@ export class DuckDuckGoProvider implements SearchProvider {
     return results;
   }
 
+  /**
+   * Fallback: DuckDuckGo Lite endpoint. Different HTML structure, sometimes
+   * works when the main HTML endpoint is temporarily blocked on datacenter IPs.
+   */
+  private async searchLite(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
+    const { count, signal } = options;
+
+    const params = new URLSearchParams();
+    params.set('q', query);
+
+    const response = await undiciFetch(`https://lite.duckduckgo.com/lite/?${params.toString()}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://lite.duckduckgo.com/',
+      },
+      signal,
+    });
+
+    if (!response.ok) return [];
+
+    const html = await response.text();
+    const $ = load(html);
+
+    const results: WebSearchResult[] = [];
+    const seen = new Set<string>();
+
+    // DDG Lite uses a table-based layout with class="result-link" for links
+    // and class="result-snippet" for snippets
+    $('a.result-link').each((_i, elem) => {
+      if (results.length >= count) return;
+
+      const $a = $(elem);
+      const title = cleanText($a.text(), { maxLen: 200 });
+      let url = $a.attr('href') || '';
+
+      if (!title || !url) return;
+
+      // Extract actual URL from DDG redirect
+      try {
+        const ddgUrl = new URL(url, 'https://lite.duckduckgo.com');
+        const uddg = ddgUrl.searchParams.get('uddg');
+        if (uddg) url = decodeURIComponent(uddg);
+      } catch { /* use raw */ }
+
+      // Validate URL
+      try {
+        const parsed = new URL(url);
+        if (!['http:', 'https:'].includes(parsed.protocol)) return;
+        url = parsed.href;
+      } catch { return; }
+
+      const dedupeKey = normalizeUrlForDedupe(url);
+      if (seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+
+      // Lite snippets are in the next <td> with class result-snippet
+      const snippet = cleanText(
+        $a.closest('tr').next('tr').find('.result-snippet').text(),
+        { maxLen: 500, stripEllipsisPadding: true },
+      );
+
+      results.push({ title, url, snippet });
+    });
+
+    return results;
+  }
+
   async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
     const attempts = this.buildQueryAttempts(query);
 
@@ -263,6 +341,14 @@ export class DuckDuckGoProvider implements SearchProvider {
     for (const q of attempts) {
       const results = await this.searchOnce(q, options);
       if (results.length > 0) return results;
+    }
+
+    // Fallback: try DDG Lite endpoint (different HTML, sometimes bypasses blocks)
+    try {
+      const liteResults = await this.searchLite(query, options);
+      if (liteResults.length > 0) return liteResults;
+    } catch {
+      // Lite also failed — return empty
     }
 
     return [];

@@ -35,6 +35,11 @@ export declare class DuckDuckGoProvider implements SearchProvider {
     private buildQueryAttempts;
     private buildSearchUrl;
     private searchOnce;
+    /**
+     * Fallback: DuckDuckGo Lite endpoint. Different HTML structure, sometimes
+     * works when the main HTML endpoint is temporarily blocked on datacenter IPs.
+     */
+    private searchLite;
     searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]>;
 }
 export declare class BraveSearchProvider implements SearchProvider {
