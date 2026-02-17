@@ -11,7 +11,7 @@
   <a href="https://github.com/webpeel/webpeel/stargazers"><img src="https://img.shields.io/github/stars/webpeel/webpeel.svg" alt="GitHub stars"></a>
   <a href="https://github.com/webpeel/webpeel/actions/workflows/ci.yml"><img src="https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.6-blue.svg" alt="TypeScript"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License"></a>
+  <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="AGPL v3 License"></a>
 </p>
 
 <p align="center">
@@ -251,7 +251,18 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT © [WebPeel](https://github.com/webpeel)
+This project is licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html).
+
+**What this means:**
+- ✅ Free to use, modify, and distribute
+- ✅ Free for personal and commercial use
+- ⚠️ If you run a modified version as a network service, you must release your source code under AGPL-3.0
+
+**Need a commercial license?** Contact us at [support@webpeel.dev](mailto:support@webpeel.dev) for proprietary/enterprise licensing.
+
+> **Note:** Versions 0.7.1 and earlier were released under MIT. Those releases remain MIT-licensed.
+
+© [WebPeel](https://github.com/webpeel)
 
 ---
 
