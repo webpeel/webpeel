@@ -2,6 +2,7 @@
  * HTML to Markdown conversion with smart cleanup
  */
 import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
 import * as cheerio from 'cheerio';
 const JUNK_SELECTORS = [
     // Scripts, styles, metadata
@@ -38,6 +39,16 @@ const JUNK_SELECTORS = [
     '[class*="resume-upload"]', '[class*="resumeUpload"]',
     '[class*="job-alert"]', '[class*="jobAlert"]',
     '[class*="sign-in-gate"]', '[class*="signin-prompt"]',
+    // Login/auth gates (specific patterns to avoid matching "navigate", "aggregate", etc.)
+    '[class*="login-wall"]', '[class*="paywall"]', '[class*="signin-gate"]',
+    '[class*="login-gate"]', '[class*="access-gate"]', '[class*="content-gate"]',
+    '[class*="registration-wall"]', '.login-prompt', '.auth-wall',
+    // Chat widgets
+    '[class*="chat-widget"]', '[class*="chatbot"]', '[class*="intercom"]',
+    '[class*="drift-"]', '[class*="zendesk"]', '[class*="crisp"]',
+    '[class*="hubspot"]', '#hubspot-messages-iframe-container',
+    // Skip links
+    '.skip-to-content', '.skip-link', '.skip-nav',
 ];
 /**
  * Filter HTML by including or excluding specific tags/selectors
@@ -151,6 +162,10 @@ const MAIN_CONTENT_SELECTORS = [
     '.post-body', '.story-body', '.page-content',
     '#content', '#main-content', '#article', '#post',
     '.content', '.main-content',
+    '.prose', '.markdown-body', '.post-text', '.article__body',
+    '.story-content', '.entry-text', '.post-entry',
+    '[itemprop="articleBody"]', '[data-article-body]',
+    '.blog-post-content', '.blog-content',
 ];
 /**
  * Try to detect the main content area of a page.
@@ -249,8 +264,8 @@ const turndownSingleton = (() => {
         emDelimiter: '_',
         strongDelimiter: '**',
     });
-    // Preserve tables
-    td.keep(['table', 'thead', 'tbody', 'tr', 'th', 'td']);
+    // Enable GFM support (tables, strikethrough, task lists)
+    td.use(gfm);
     // Custom rule: convert images to alt text or skip
     td.addRule('images', {
         filter: 'img',

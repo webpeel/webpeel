@@ -349,12 +349,21 @@ export async function simpleFetch(url, userAgent, timeoutMs = 30000, customHeade
     // SECURITY: Merge custom headers with defaults, block Host header override
     const defaultHeaders = {
         'User-Agent': validatedUserAgent,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'br, gzip, deflate',
         'DNT': '1',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
+        'Sec-CH-UA': '"Chromium";v="131", "Not_A Brand";v="24"',
+        'Sec-CH-UA-Mobile': '?0',
+        'Sec-CH-UA-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
+        'Priority': 'u=0, i',
     };
     const mergedHeaders = { ...defaultHeaders };
     if (customHeaders) {
@@ -833,7 +842,7 @@ export async function browserFetch(url, options = {}) {
             // eslint-disable-next-line @typescript-eslint/no-implied-eval
             const bodyTextLength = await page.evaluate('document.body?.innerText?.trim().length || 0').catch(() => 0);
             if (bodyTextLength < 500) {
-                await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => { });
+                await page.waitForLoadState('networkidle', { timeout: 1500 }).catch(() => { });
                 throwIfAborted();
             }
             const finalUrl = page.url();
@@ -844,8 +853,9 @@ export async function browserFetch(url, options = {}) {
             const isDocx = contentTypeLower.includes('wordprocessingml.document') || urlLower.endsWith('.docx');
             const isBinaryDoc = !!response && (isPdf || isDocx);
             // Small randomized delay in stealth mode (simulate human behavior)
+            // Keep it short — enough to look human, not enough to kill latency
             if (stealth) {
-                const extraDelayMs = 500 + Math.floor(Math.random() * 1501);
+                const extraDelayMs = 200 + Math.floor(Math.random() * 601);
                 await page.waitForTimeout(extraDelayMs);
                 throwIfAborted();
             }

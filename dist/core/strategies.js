@@ -2,9 +2,111 @@
  * Smart escalation strategy: try simple fetch first, escalate to browser if needed
  */
 import { simpleFetch, browserFetch, retryFetch } from './fetcher.js';
-import { getCached, setCached } from './cache.js';
+import { getCachedWithSWR, setCached, markRevalidating } from './cache.js';
 import { resolveAndCache } from './dns-cache.js';
 import { BlockedError, NetworkError } from '../types.js';
+const DOMAIN_INTEL_MAX = 500;
+const DOMAIN_INTEL_TTL_MS = 60 * 60 * 1000; // 1 hour
+const DOMAIN_INTEL_EMA_ALPHA = 0.3;
+const domainIntel = new Map();
+const domainMethodCounts = new Map();
+function getDomainKey(url) {
+    try {
+        return new URL(url).hostname.toLowerCase();
+    }
+    catch {
+        return '';
+    }
+}
+function pruneDomainIntel(now) {
+    for (const [key, intel] of domainIntel) {
+        if (now - intel.lastSeen > DOMAIN_INTEL_TTL_MS) {
+            domainIntel.delete(key);
+            domainMethodCounts.delete(key);
+        }
+    }
+}
+function recordDomainResult(url, method, latencyMs) {
+    const key = getDomainKey(url);
+    if (!key) {
+        return;
+    }
+    const now = Date.now();
+    pruneDomainIntel(now);
+    const existing = domainIntel.get(key);
+    const sanitizedLatency = Number.isFinite(latencyMs) && latencyMs > 0
+        ? latencyMs
+        : (existing?.avgLatencyMs ?? 0);
+    const next = existing
+        ? {
+            needsBrowser: existing.needsBrowser || method === 'browser' || method === 'stealth',
+            needsStealth: existing.needsStealth || method === 'stealth',
+            avgLatencyMs: existing.avgLatencyMs === 0
+                ? sanitizedLatency
+                : (existing.avgLatencyMs * (1 - DOMAIN_INTEL_EMA_ALPHA)) + (sanitizedLatency * DOMAIN_INTEL_EMA_ALPHA),
+            lastSeen: now,
+            sampleCount: existing.sampleCount + 1,
+        }
+        : {
+            needsBrowser: method === 'browser' || method === 'stealth',
+            needsStealth: method === 'stealth',
+            avgLatencyMs: sanitizedLatency,
+            lastSeen: now,
+            sampleCount: 1,
+        };
+    const existingCounts = domainMethodCounts.get(key) ?? { simple: 0, browser: 0, stealth: 0 };
+    existingCounts[method] += 1;
+    domainIntel.delete(key);
+    domainIntel.set(key, next);
+    domainMethodCounts.set(key, existingCounts);
+    while (domainIntel.size > DOMAIN_INTEL_MAX) {
+        const oldestKey = domainIntel.keys().next().value;
+        if (!oldestKey) {
+            break;
+        }
+        domainIntel.delete(oldestKey);
+        domainMethodCounts.delete(oldestKey);
+    }
+}
+function getDomainRecommendation(url) {
+    const key = getDomainKey(url);
+    if (!key) {
+        return null;
+    }
+    const intel = domainIntel.get(key);
+    if (!intel) {
+        return null;
+    }
+    const now = Date.now();
+    if (now - intel.lastSeen > DOMAIN_INTEL_TTL_MS) {
+        domainIntel.delete(key);
+        domainMethodCounts.delete(key);
+        return null;
+    }
+    if (intel.sampleCount <= 2) {
+        return null;
+    }
+    const counts = domainMethodCounts.get(key);
+    if (!counts) {
+        return null;
+    }
+    // LRU touch
+    domainIntel.delete(key);
+    domainIntel.set(key, intel);
+    const allStealth = counts.stealth === intel.sampleCount;
+    if (allStealth && intel.needsStealth) {
+        return { mode: 'stealth' };
+    }
+    const allBrowser = counts.simple === 0 && (counts.browser + counts.stealth === intel.sampleCount);
+    if (allBrowser && intel.needsBrowser) {
+        return { mode: 'browser' };
+    }
+    return null;
+}
+export function clearDomainIntel() {
+    domainIntel.clear();
+    domainMethodCounts.clear();
+}
 function shouldForceBrowser(url) {
     try {
         const hostname = new URL(url).hostname.toLowerCase();
@@ -139,13 +241,23 @@ async function fetchWithBrowserStrategy(url, options) {
  */
 export async function smartFetch(url, options = {}) {
     const { forceBrowser = false, stealth = false, waitMs = 0, userAgent, timeoutMs = 30000, screenshot = false, screenshotFullPage = false, headers, cookies, actions, keepPageOpen = false, noCache = false, raceTimeoutMs = 2000, } = options;
+    const fetchStartMs = Date.now();
+    const recordSuccessfulMethod = (method) => {
+        if (method === 'cached') {
+            return;
+        }
+        recordDomainResult(url, method, Date.now() - fetchStartMs);
+    };
     // Site-specific escalation overrides
+    // Hardcoded rules take priority (manually verified), domain intel is fallback
     const forced = shouldForceBrowser(url);
+    const recommended = getDomainRecommendation(url);
+    const selectedRecommendation = forced ?? recommended;
     let effectiveForceBrowser = forceBrowser;
     let effectiveStealth = stealth;
-    if (forced) {
+    if (selectedRecommendation) {
         effectiveForceBrowser = true;
-        if (forced.mode === 'stealth') {
+        if (selectedRecommendation.mode === 'stealth') {
             effectiveStealth = true;
         }
     }
@@ -161,10 +273,27 @@ export async function smartFetch(url, options = {}) {
         waitMs === 0 &&
         !userAgent;
     if (canUseCache) {
-        const cached = getCached(url);
-        if (cached) {
+        const cacheResult = getCachedWithSWR(url);
+        if (cacheResult) {
+            if (cacheResult.stale) {
+                // Stale-while-revalidate: serve stale immediately, refresh in background
+                if (markRevalidating(url)) {
+                    // Fire-and-forget background revalidation
+                    void (async () => {
+                        try {
+                            const freshResult = await simpleFetch(url, userAgent, timeoutMs);
+                            if (!looksLikeShellPage(freshResult)) {
+                                setCached(url, { ...freshResult, method: 'simple' });
+                            }
+                        }
+                        catch {
+                            // Background revalidation failed — stale entry continues serving
+                        }
+                    })();
+                }
+            }
             return {
-                ...cached,
+                ...cacheResult.value,
                 method: 'cached',
             };
         }
@@ -212,6 +341,7 @@ export async function smartFetch(url, options = {}) {
             if (canUseCache) {
                 setCached(url, strategyResult);
             }
+            recordSuccessfulMethod('simple');
             return strategyResult;
         }
         if (simpleOrTimeout.type === 'simple-error') {
@@ -251,12 +381,14 @@ export async function smartFetch(url, options = {}) {
                     if (canUseCache) {
                         setCached(url, strategyResult);
                     }
+                    recordSuccessfulMethod('simple');
                     return strategyResult;
                 }
                 simpleAbortController.abort();
                 if (canUseCache) {
                     setCached(url, winner.result);
                 }
+                recordSuccessfulMethod(winner.result.method);
                 return winner.result;
             }
             catch {
@@ -278,6 +410,7 @@ export async function smartFetch(url, options = {}) {
     if (canUseCache) {
         setCached(url, browserResult);
     }
+    recordSuccessfulMethod(browserResult.method);
     return browserResult;
 }
 //# sourceMappingURL=strategies.js.map

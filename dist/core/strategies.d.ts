@@ -2,6 +2,7 @@
  * Smart escalation strategy: try simple fetch first, escalate to browser if needed
  */
 import { type FetchResult } from './fetcher.js';
+export declare function clearDomainIntel(): void;
 export interface StrategyOptions {
     /** Force browser mode (skip simple fetch) */
     forceBrowser?: boolean;
