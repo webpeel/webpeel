@@ -249,7 +249,7 @@
 
     /* COMPARE TABLE */
     .compare-table { width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius); border: 1px solid var(--border); }
-    .compare-table th, .compare-table td { padding: 12px 16px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border-light); white-space: nowrap; }
+    .compare-table th, .compare-table td { padding: 10px 12px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border-light); white-space: nowrap; }
     .compare-table th { font-weight: 500; color: var(--text-3); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; background: #FAFAFA; }
     .compare-table td:first-child { font-weight: 500; position: relative; white-space: normal; }
     .feature-tooltip { position: relative; display: inline-flex; align-items: center; gap: 6px; }
@@ -728,6 +728,8 @@
             <th>Exa</th>
             <th>Tavily</th>
             <th>Jina Reader</th>
+            <th>ScrapingBee</th>
+            <th>LinkUp</th>
           </tr>
         </thead>
         <tbody class="reveal-stagger" data-reveal>
@@ -745,6 +747,8 @@
             <td>$10 credit</td>
             <td>1,000/mo</td>
             <td>Limited</td>
+            <td>1,000 credits</td>
+            <td>Limited</td>
           </tr>
           <tr>
             <td>
@@ -760,6 +764,8 @@
             <td><span class="check">✓</span></td>
             <td><span class="check">✓</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
           </tr>
           <tr>
             <td>
@@ -775,6 +781,8 @@
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
           </tr>
           <tr>
             <td>
@@ -786,6 +794,8 @@
               </div>
             </td>
             <td class="highlight-col"><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
@@ -805,6 +815,8 @@
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
           </tr>
           <tr>
             <td>
@@ -819,6 +831,8 @@
             <td><span class="check">✓</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
           </tr>
           <tr>
@@ -835,6 +849,8 @@
             <td><span class="check">✓</span></td>
             <td><span class="check">✓</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
           </tr>
           <tr>
             <td>
@@ -850,6 +866,8 @@
             <td><span class="check">✓</span></td>
             <td><span class="check">✓</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
           </tr>
           <tr>
             <td>
@@ -865,6 +883,8 @@
             <td><span class="check">✓</span></td>
             <td><span class="check">✓</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
           </tr>
           <tr>
             <td>
@@ -876,6 +896,8 @@
               </div>
             </td>
             <td class="highlight-col"><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
@@ -895,6 +917,8 @@
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
           </tr>
           <tr>
             <td>
@@ -910,6 +934,8 @@
             <td><span class="cross">✗</span></td>
             <td><span class="check">✓</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
           </tr>
           <tr>
             <td>
@@ -922,6 +948,8 @@
             </td>
             <td class="highlight-col"><span class="check">✓</span></td>
             <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
@@ -940,6 +968,8 @@
             <td><span class="cross">✗</span></td>
             <td><span class="check">✓</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
           </tr>
           <tr>
             <td>
@@ -952,6 +982,8 @@
             </td>
             <td class="highlight-col"><span class="check">✓</span> AGPL-3.0</td>
             <td>Partial</td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
@@ -970,6 +1002,8 @@
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
             <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
           </tr>
           <tr>
             <td>
@@ -985,6 +1019,8 @@
             <td>Pay-as-you-go</td>
             <td>Pay-as-you-go</td>
             <td>$10/mo</td>
+            <td>$49/mo</td>
+            <td>Pay-as-you-go</td>
           </tr>
         </tbody>
       </table>
