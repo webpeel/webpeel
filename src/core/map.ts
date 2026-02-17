@@ -6,6 +6,18 @@
 import { discoverSitemap } from './sitemap.js';
 import { peel } from '../index.js';
 
+/** Safely compile a user-supplied regex pattern with length limit. */
+function safeRegex(pattern: string): RegExp {
+  if (pattern.length > 200) {
+    throw new Error(`Regex pattern too long (${pattern.length} chars, max 200)`);
+  }
+  try {
+    return new RegExp(pattern);
+  } catch {
+    throw new Error(`Invalid regex pattern: ${pattern}`);
+  }
+}
+
 export interface MapOptions {
   /** Include sitemap URLs (default: true) */
   useSitemap?: boolean;
@@ -55,8 +67,8 @@ export async function mapDomain(startUrl: string, options: MapOptions = {}): Pro
   let sitemapUrls: string[] = [];
 
   // Compile filter patterns
-  const includeRegexes = includePatterns.map(p => new RegExp(p));
-  const excludeRegexes = excludePatterns.map(p => new RegExp(p));
+  const includeRegexes = includePatterns.map(p => safeRegex(p));
+  const excludeRegexes = excludePatterns.map(p => safeRegex(p));
 
   // Parse search terms
   const searchTerms = search ? search.toLowerCase().split(/\s+/).filter(t => t.length > 0) : [];
