@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Web Scraper Benchmark 2026: WebPeel vs Firecrawl vs Tavily vs Exa | WebPeel</title>
-  <meta name="description" content="Independent benchmark of 7 web scraping APIs tested on 30 real-world URLs. WebPeel achieves 100% success rate and 92.3% quality score, beating Firecrawl, Tavily, Exa, and more.">
+  <meta name="description" content="Independent benchmark of 7 web scraping APIs tested on 30 real-world URLs. WebPeel achieves 100% success rate and 92.3% quality score, beating Firecrawl, Tavily, Exa, LinkUp, ScrapingBee, and Jina Reader.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://webpeel.dev/blog/benchmarks">
 
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://webpeel.dev/blog/benchmarks">
-  <meta property="og:title" content="Web Scraping Benchmark 2026: WebPeel vs Firecrawl vs Exa vs Tavily vs ScrapingBee vs Jina Reader">
+  <meta property="og:title" content="Web Scraping Benchmark 2026: WebPeel vs Firecrawl vs Exa vs Tavily vs LinkUp vs ScrapingBee vs Jina Reader">
   <meta property="og:description" content="A transparent 2026 benchmark across 30 URLs: reliability, latency, content quality, and cost for six leading web scraping tools.">
   <meta property="og:image" content="https://webpeel.dev/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
       "@type": "WebPage",
       "@id": "https://webpeel.dev/blog/benchmarks"
     },
-    "headline": "Web Scraping Benchmark 2026: WebPeel vs Firecrawl vs Exa vs Tavily vs ScrapingBee vs Jina Reader",
+    "headline": "Web Scraping Benchmark 2026: WebPeel vs Firecrawl vs Exa vs Tavily vs LinkUp vs ScrapingBee vs Jina Reader",
     "description": "Independent 2026 benchmark comparing six web scraping tools across 30 URLs and six categories.",
     "author": {
       "@type": "Person",
@@ -221,6 +221,7 @@
     .bench-bar.firecrawl { background: #F97316; }
     .bench-bar.exa { background: #2563EB; }
     .bench-bar.tavily { background: #06B6D4; }
+    .bench-bar.linkup { background: #10B981; }
     .bench-bar.scrapingbee { background: #F59E0B; }
     .bench-bar.jina { background: #EF4444; }
 
@@ -291,6 +292,7 @@
     .tool-dot.firecrawl { background: #F97316; }
     .tool-dot.exa { background: #2563EB; }
     .tool-dot.tavily { background: #06B6D4; }
+    .tool-dot.linkup { background: #10B981; }
     .tool-dot.scrapingbee { background: #F59E0B; }
     .tool-dot.jina { background: #EF4444; }
 
@@ -382,7 +384,7 @@
   <header class="article-header">
     <div class="article-date">February 16, 2026</div>
     <h1>Web Scraping Benchmark 2026</h1>
-    <p class="article-subtitle">We benchmarked WebPeel, Firecrawl, Exa, Tavily, ScrapingBee, and Jina Reader across 30 URLs in 6 categories. This report covers reliability, speed, output quality, and cost — with the tradeoffs stated plainly.</p>
+    <p class="article-subtitle">We benchmarked WebPeel, Firecrawl, Exa, Tavily, LinkUp, ScrapingBee, and Jina Reader across 30 URLs in 6 categories. This report covers reliability, speed, output quality, and cost — with the tradeoffs stated plainly.</p>
   </header>
 
   <article class="article-body">
@@ -441,6 +443,12 @@
             <td>81.2%</td>
           </tr>
           <tr>
+            <td class="tool-name"><span class="tool-dot linkup"></span> LinkUp</td>
+            <td>28/30 (93.3%)</td>
+            <td>4,518ms</td>
+            <td>81.3%</td>
+          </tr>
+          <tr>
             <td class="tool-name"><span class="tool-dot scrapingbee"></span> ScrapingBee</td>
             <td>24/30 (80.0%)</td>
             <td>1,728ms</td>
@@ -476,6 +484,11 @@
         <div class="bench-value">28/30</div>
       </div>
       <div class="bench-row">
+        <div class="bench-label">LinkUp</div>
+        <div class="bench-bar-container"><div class="bench-bar linkup" style="width: 93.3%"></div></div>
+        <div class="bench-value">28/30</div>
+      </div>
+      <div class="bench-row">
         <div class="bench-label">Tavily</div>
         <div class="bench-bar-container"><div class="bench-bar tavily" style="width: 83.3%"></div></div>
         <div class="bench-value">25/30</div>
@@ -493,7 +506,7 @@
     </div>
 
     <h3>Median Speed (lower is better)</h3>
-    <p>WebPeel is <strong>4th fastest</strong> in this run. Tavily, Exa, and Firecrawl are faster on median latency.</p>
+    <p>WebPeel is <strong>5th fastest</strong> in this run. Tavily, Exa, and Firecrawl are faster on median latency.</p>
 
     <div class="bench-chart" id="chart-speed">
       <div class="bench-row">
@@ -518,13 +531,18 @@
       </div>
       <div class="bench-row">
         <div class="bench-label">ScrapingBee</div>
-        <div class="bench-bar-container"><div class="bench-bar scrapingbee" style="width: 59.4%"></div></div>
+        <div class="bench-bar-container"><div class="bench-bar scrapingbee" style="width: 38.3%"></div></div>
         <div class="bench-value">1,728ms</div>
       </div>
       <div class="bench-row">
         <div class="bench-label">Jina Reader</div>
-        <div class="bench-bar-container"><div class="bench-bar jina" style="width: 100%"></div></div>
+        <div class="bench-bar-container"><div class="bench-bar jina" style="width: 64.4%"></div></div>
         <div class="bench-value">2,908ms</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">LinkUp</div>
+        <div class="bench-bar-container"><div class="bench-bar linkup" style="width: 100%"></div></div>
+        <div class="bench-value">4,518ms</div>
       </div>
     </div>
 
@@ -546,6 +564,11 @@
         <div class="bench-label">Tavily</div>
         <div class="bench-bar-container"><div class="bench-bar tavily" style="width: 93.7%"></div></div>
         <div class="bench-value">81.2%</div>
+      </div>
+      <div class="bench-row">
+        <div class="bench-label">LinkUp</div>
+        <div class="bench-bar-container"><div class="bench-bar linkup" style="width: 93.6%"></div></div>
+        <div class="bench-value">81.3%</div>
       </div>
       <div class="bench-row">
         <div class="bench-label">Firecrawl</div>
@@ -582,6 +605,7 @@
             <th><span class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</span></th>
             <th><span class="tool-name"><span class="tool-dot exa"></span> Exa</span></th>
             <th><span class="tool-name"><span class="tool-dot tavily"></span> Tavily</span></th>
+            <th><span class="tool-name"><span class="tool-dot linkup"></span> LinkUp</span></th>
             <th><span class="tool-name"><span class="tool-dot scrapingbee"></span> ScrapingBee</span></th>
             <th><span class="tool-name"><span class="tool-dot jina"></span> Jina Reader</span></th>
           </tr>
@@ -594,11 +618,13 @@
             <td>5/5</td>
             <td>4/5</td>
             <td>5/5</td>
+            <td>5/5</td>
             <td>4/5</td>
           </tr>
           <tr>
             <td><strong>Dynamic</strong></td>
             <td class="winner">5/5</td>
+            <td>5/5</td>
             <td>5/5</td>
             <td>5/5</td>
             <td>5/5</td>
@@ -613,6 +639,7 @@
             <td>5/5</td>
             <td>5/5</td>
             <td>5/5</td>
+            <td>5/5</td>
           </tr>
           <tr>
             <td><strong>Protected</strong></td>
@@ -620,6 +647,7 @@
             <td>4/5</td>
             <td>4/5</td>
             <td>2/5</td>
+            <td>4/5</td>
             <td>2/5</td>
             <td>2/5</td>
           </tr>
@@ -629,6 +657,7 @@
             <td>5/5</td>
             <td>4/5</td>
             <td>4/5</td>
+            <td>4/5</td>
             <td>3/5</td>
             <td>0/5</td>
           </tr>
@@ -636,6 +665,7 @@
             <td><strong>Edge / Intl</strong></td>
             <td class="winner">5/5</td>
             <td>4/5</td>
+            <td>5/5</td>
             <td>5/5</td>
             <td>5/5</td>
             <td>4/5</td>
@@ -680,6 +710,11 @@
             <td class="tool-name"><span class="tool-dot tavily"></span> Tavily</td>
             <td>~$0.0016–$0.016/page</td>
             <td>Varies by endpoint depth and credits used.</td>
+          </tr>
+          <tr>
+            <td class="tool-name"><span class="tool-dot linkup"></span> LinkUp</td>
+            <td>~$0.01/page</td>
+            <td>Search-based pricing, varies by depth.</td>
           </tr>
           <tr>
             <td class="tool-name"><span class="tool-dot scrapingbee"></span> ScrapingBee</td>
@@ -728,7 +763,7 @@
     <hr style="border: none; border-top: 1px solid var(--border); margin: 48px 0;">
 
     <p style="font-size: 14px; color: var(--text-3);">
-      <em>Updated February 16, 2026. Runners benchmarked: WebPeel, Firecrawl, Exa, Tavily, ScrapingBee, and Jina Reader. Results reflect this test configuration and may change as providers update infrastructure, pricing, and anti-bot behavior.</em>
+      <em>Updated February 17, 2026. Runners benchmarked: WebPeel, Firecrawl, Exa, Tavily, LinkUp, ScrapingBee, and Jina Reader. Results reflect this test configuration and may change as providers update infrastructure, pricing, and anti-bot behavior.</em>
     </p>
 
   </article>
