@@ -1,61 +1,21 @@
-## Summary
+## What
 
-Describe the change in 2–5 bullets:
+Brief description of the changes.
 
-- Problem:
-- Why it matters:
-- What changed:
-- What did **not** change (scope boundary):
+## Why
 
-## Change Type (select all)
+Why are these changes needed? Link to issue if applicable.
 
-- [ ] Bug fix
-- [ ] Feature
-- [ ] Refactor
-- [ ] Docs
-- [ ] Security hardening
-- [ ] Chore/infra
+Closes #
 
-## Scope (select all touched areas)
+## How
 
-- [ ] CLI
-- [ ] Node.js library
-- [ ] Hosted API
-- [ ] MCP server
-- [ ] Python SDK
-- [ ] Dashboard / site
-- [ ] CI/CD
-
-## Linked Issue
-
-- Closes #
-- Related #
-
-## Verification
-
-### Environment
-
-- OS:
-- Node/Python version:
-- Deployment (local/hosted/self-hosted):
-
-### Steps
-
-1.
-2.
-3.
-
-### Expected
-
--
-
-### Actual
-
--
+How did you implement this? Any important design decisions?
 
 ## Checklist
 
-- [ ] Tests added/updated (or not needed)
-- [ ] Docs updated (README / docs site / SDK docs)
-- [ ] No secrets committed
-- [ ] Any security implications reviewed (SSRF, auth, rate limits)
+- [ ] Tests added/updated
+- [ ] `pnpm build` passes
+- [ ] `pnpm test` passes
+- [ ] Documentation updated (if applicable)
+- [ ] Commit messages follow conventional commits

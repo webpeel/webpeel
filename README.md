@@ -224,6 +224,29 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
 
 Extra credit costs: fetch $0.002, search $0.001, stealth $0.01. Resets every Monday. All features on all plans. [Compare with Firecrawl →](https://webpeel.dev/migrate-from-firecrawl)
 
+## Project Structure
+
+```
+webpeel/
+├── src/
+│   ├── core/           # Core library (fetcher, strategies, markdown, crawl, search)
+│   ├── mcp/            # MCP server (11 tools for AI assistants)
+│   ├── server/         # Express API server (hosted version)
+│   │   ├── routes/     # API route handlers
+│   │   ├── middleware/  # Auth, rate limiting, SSRF protection
+│   │   └── premium/    # Server-only premium features
+│   ├── tests/          # Vitest test suites
+│   ├── cli.ts          # CLI entry point
+│   ├── index.ts        # Library exports
+│   └── types.ts        # TypeScript type definitions
+├── python-sdk/         # Python SDK (PyPI: webpeel)
+├── integrations/       # LangChain, LlamaIndex, CrewAI, Dify, n8n
+├── site/               # Landing page (webpeel.dev)
+├── dashboard/          # Next.js dashboard (app.webpeel.dev)
+├── benchmarks/         # Performance comparison suite
+└── skills/             # AI agent skills (Claude Code, etc.)
+```
+
 ## Development
 
 ```bash

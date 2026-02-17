@@ -37,9 +37,14 @@ playwright/.auth/
 # OS
 Thumbs.db
 
+# Build output
+dist/
+.next/
+
 # Internal docs (business strategy, audits — NOT for public)
 .internal/
-.env
+audit/
+competitor-analysis.md
 DEPLOYMENT.md
 BUILD_SUMMARY.md
 QUICK_START.md
