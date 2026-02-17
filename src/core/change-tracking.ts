@@ -282,7 +282,10 @@ export async function clearSnapshots(urlPattern?: string): Promise<number> {
     const files = await fs.readdir(SNAPSHOTS_DIR);
     let cleared = 0;
     
-    const pattern = urlPattern ? new RegExp(urlPattern) : null;
+    const pattern = urlPattern ? (() => {
+      if (urlPattern.length > 200) throw new Error('URL pattern too long (max 200 chars)');
+      try { return new RegExp(urlPattern); } catch { throw new Error(`Invalid regex: ${urlPattern}`); }
+    })() : null;
     
     for (const file of files) {
       if (!file.endsWith('.json')) continue;

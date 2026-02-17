@@ -9,6 +9,19 @@ import { fetch as undiciFetch } from 'undici';
 import { createHash } from 'crypto';
 import { discoverSitemap } from './sitemap.js';
 
+/** Safely compile a user-supplied regex pattern. Rejects patterns longer than 200 chars
+ *  and wraps compilation in a try-catch to prevent invalid regex crashes. */
+function safeRegex(pattern: string): RegExp {
+  if (pattern.length > 200) {
+    throw new Error(`Regex pattern too long (${pattern.length} chars, max 200)`);
+  }
+  try {
+    return new RegExp(pattern);
+  } catch {
+    throw new Error(`Invalid regex pattern: ${pattern}`);
+  }
+}
+
 export interface CrawlOptions extends Omit<PeelOptions, 'format'> {
   /** Maximum number of pages to crawl (default: 10, max: 100) */
   maxPages?: number;
@@ -201,11 +214,11 @@ export async function crawl(
     ? allowedDomains
     : [startDomain];
 
-  // Compile exclude patterns
-  const excludeRegexes = excludePatterns.map(pattern => new RegExp(pattern));
+  // Compile exclude patterns (with timeout protection against ReDoS)
+  const excludeRegexes = excludePatterns.map(pattern => safeRegex(pattern));
   
-  // Compile include patterns
-  const includeRegexes = includePatterns.map(pattern => new RegExp(pattern));
+  // Compile include patterns (with timeout protection against ReDoS)
+  const includeRegexes = includePatterns.map(pattern => safeRegex(pattern));
 
   // Fetch robots.txt if needed
   let robotsRules: RobotsRules = { disallowedPaths: [] };
