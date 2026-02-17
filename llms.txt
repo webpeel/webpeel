@@ -98,7 +98,7 @@ Hosted MCP (no local install): `https://api.webpeel.dev/mcp`
 - **Anti-bot bypass**: Cloudflare, DataDome, JavaScript walls, 403s
 - **Token-optimized**: Strips navigation, ads, scripts, cookie banners
 - **SSRF protection**: Blocks private IPs, IPv6 mapped addresses, redirect attacks
-- **Open source**: MIT licensed, fully self-hostable
+- **Open source**: AGPL-3.0 licensed, fully self-hostable
 
 ## Pricing
 

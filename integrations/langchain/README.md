@@ -179,12 +179,12 @@ WebPeelLoader(
 | Feature | WebPeel | Firecrawl |
 |---------|---------|-----------|
 | **Price** | Free tier + pay-as-you-go | $500+/mo minimum |
-| **License** | MIT (open source) | Proprietary |
+| **License** | AGPL-3.0 (open source) | Proprietary |
 | **Stealth Mode** | ✅ Built-in | ❌ Not available |
 | **Zero Config** | ✅ Works without API key | ❌ Requires paid plan |
 | **Self-Hosted** | ✅ Free forever | ❌ Expensive enterprise |
 
-**WebPeel is the free, fast, MIT-licensed alternative to Firecrawl.**
+**WebPeel is the free, fast, open-source alternative to Firecrawl.**
 
 ## Links
 
@@ -195,4 +195,4 @@ WebPeelLoader(
 
 ## License
 
-MIT © Jake Liu
+AGPL-3.0 © Jake Liu

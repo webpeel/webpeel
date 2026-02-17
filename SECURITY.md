@@ -269,6 +269,6 @@ See `.internal/SECURITY-AUDIT.md` for full details.
 
 ## License
 
-This security documentation is part of WebPeel and covered under the same MIT license.
+This security documentation is part of WebPeel and covered under the same AGPL-3.0 license.
 
 **Last Updated:** 2026-02-12

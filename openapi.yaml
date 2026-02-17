@@ -18,8 +18,8 @@ info:
     email: support@webpeel.dev
     url: https://webpeel.dev
   license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+    name: AGPL-3.0-or-later
+    url: https://www.gnu.org/licenses/agpl-3.0.html
 
 servers:
   - url: https://api.webpeel.dev
