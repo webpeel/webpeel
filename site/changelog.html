@@ -134,8 +134,28 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.7.0</div>
+              <div class="release-version mono">v0.8.0</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">February 2026</div>
+          </div>
+          <ul>
+            <li><strong>License changed from MIT to AGPL-3.0</strong> — protects the project while staying open source. Commercial licensing available.</li>
+            <li>Premium server architecture — SWR cache, domain intelligence, and parallel race strategy now server-only (not shipped in npm package)</li>
+            <li>Hook-based strategy pattern for extensible fetch pipeline</li>
+            <li>Stale-while-revalidate caching with 30s revalidation timeout guard</li>
+            <li>Domain intelligence learns which sites need browser/stealth from traffic history</li>
+            <li>Chrome 131 impersonation headers for better anti-detection</li>
+            <li>GFM table conversion, enhanced content cleaning (paywall gates, chat widgets)</li>
+            <li>Benchmark v7: 100% success rate, 373ms median, 92.3% quality</li>
+            <li>Dashboard security headers hardened (HSTS, X-XSS-Protection, Permissions-Policy)</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.7.0</div>
             </div>
             <div class="release-meta">2026</div>
           </div>
@@ -237,7 +257,7 @@
 
   <footer>
     <div class="footer-inner">
-      <div class="footer-left">© 2026 WebPeel. Open source under MIT.</div>
+      <div class="footer-left">© 2026 WebPeel. Open source under AGPL-3.0.</div>
       <div class="footer-links">
         <a href="https://github.com/webpeel/webpeel">GitHub</a>
         <a href="https://app.webpeel.dev">Dashboard</a>
