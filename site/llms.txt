@@ -20,7 +20,7 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
   -H "Authorization: Bearer wp_live_your_api_key"
 ```
 
-## MCP Tools
+## MCP Tools (11)
 
 - `webpeel_fetch` — Fetch a URL, return clean markdown. Params: url (required), render, stealth, wait, format, screenshot, selector, exclude, headers, actions, maxTokens, extract
 - `webpeel_search` — Search the web via DuckDuckGo. Params: query (required), count (1-10)
@@ -28,7 +28,11 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
 - `webpeel_crawl` — Crawl a website following links. Params: url (required), maxPages, maxDepth, allowedDomains, excludePatterns, render, stealth, sitemapFirst
 - `webpeel_map` — Discover all URLs on a domain via sitemap.xml & link crawling. Params: url (required), maxUrls, includePatterns, excludePatterns
 - `webpeel_extract` — Extract structured data using CSS selectors or JSON schema. Params: url (required), selectors, schema, render
-- `webpeel_jobs` — Search job boards (LinkedIn, Indeed, Glassdoor). Params: keywords (required), location, source (glassdoor|indeed|linkedin), limit, fetchDetails, timeout
+- `webpeel_brand` — Extract branding info (colors, fonts, logos, design system). Params: url (required)
+- `webpeel_change_track` — Monitor content changes over time with diff detection. Params: url (required), selector, format
+- `webpeel_summarize` — Summarize page content. Params: url (required), maxLength, format
+- `webpeel_answer` — Answer a question about a page's content. Params: url (required), question (required)
+- `webpeel_screenshot` — Capture a page as PNG screenshot. Params: url (required), fullPage, width, height, selector
 
 ## MCP Configuration
 
@@ -52,7 +56,6 @@ For Claude Code: `claude mcp add webpeel -- npx -y webpeel mcp`
 - `GET /v1/fetch?url=<url>` — Fetch and extract content from a URL
 - `POST /v1/fetch` — Fetch with JSON body (supports inline extraction)
 - `GET /v1/search?q=<query>` — Search the web (DuckDuckGo or Brave)
-- `POST /v1/jobs` — Search job boards. Body: `{ "keywords": "...", "location": "...", "source": "linkedin", "limit": 10, "fetchDetails": 3 }`. Credits: 1 + 1 per detail page fetched.
 - `POST /v1/crawl` — Start async crawl job
 - `GET /v1/crawl/:id` — Get crawl job status / results
 
@@ -68,6 +71,8 @@ For Claude Code: `claude mcp add webpeel -- npx -y webpeel mcp`
 - **Search**: built-in DuckDuckGo integration
 - **Crawl**: follow links, respect robots.txt, rate limiting, BFS/DFS strategy, content deduplication
 - **Screenshot**: capture pages as PNG
+- **Branding extraction**: extract design systems, colors, fonts, and brand assets
+- **Change tracking**: monitor content changes over time with diff detection
 - **CSS selectors**: extract specific page sections
 - **Token-optimized**: strips navigation, ads, scripts, cookie banners
 - **Metadata extraction**: title, description, author, published date, links
