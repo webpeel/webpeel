@@ -61,6 +61,7 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
         llmProvider,
         llmApiKey,
         llmModel,
+        stream,
       } = req.body;
 
       // Validate URL
@@ -82,6 +83,7 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
         render: needsRender,
         wait: waitFor,
         timeout: timeout || 30000,
+        stream: stream === true,
         includeTags: Array.isArray(includeTags) ? includeTags : undefined,
         excludeTags: Array.isArray(excludeTags) ? excludeTags : undefined,
         raw: onlyMainContent === false,
@@ -98,6 +100,13 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
           country: location.country,
           languages: location.languages,
         };
+      }
+
+      if (options.stream) {
+        res.setHeader('X-Stream', 'true');
+        if (typeof res.flushHeaders === 'function') {
+          res.flushHeaders();
+        }
       }
 
       // Execute peel
@@ -549,6 +558,7 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
         height,
         screenshotFormat,
         quality,
+        stream,
       } = req.body;
 
       // Validate URL
@@ -597,6 +607,7 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
         render: needsRender,
         wait: waitFor,
         timeout: timeout || 30000,
+        stream: stream === true,
         includeTags: Array.isArray(includeTags) ? includeTags : undefined,
         excludeTags: Array.isArray(excludeTags) ? excludeTags : undefined,
         raw: onlyMainContent === false,
@@ -613,6 +624,13 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
           country: location.country,
           languages: location.languages,
         };
+      }
+
+      if (options.stream) {
+        res.setHeader('X-Stream', 'true');
+        if (typeof res.flushHeaders === 'function') {
+          res.flushHeaders();
+        }
       }
 
       const result = await peel(url, options);

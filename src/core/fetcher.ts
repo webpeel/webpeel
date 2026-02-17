@@ -15,6 +15,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { fetch as undiciFetch, Agent } from 'undici';
 import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types.js';
 import type { PageAction } from '../types.js';
+import { cachedLookup, startDnsWarmup } from './dns-cache.js';
 
 // Add stealth plugin to playwright-extra
 stealthChromium.use(StealthPlugin());
@@ -33,14 +34,19 @@ function getRandomUserAgent(): string {
 
 function createHttpPool(): Agent {
   return new Agent({
-    connections: 10,
-    pipelining: 1,
-    keepAliveTimeout: 30000,
+    connections: 20,
+    pipelining: 6,
+    keepAliveTimeout: 60000,
     keepAliveMaxTimeout: 60000,
+    allowH2: true,
+    connect: {
+      lookup: cachedLookup as never,
+    },
   });
 }
 
 let httpPool = createHttpPool();
+startDnsWarmup();
 
 function createAbortError(): Error {
   const error = new Error('Operation aborted');
@@ -645,6 +651,7 @@ async function recyclePooledPage(page: Page): Promise<void> {
 }
 
 export async function warmup(): Promise<void> {
+  startDnsWarmup();
   const browser = await getBrowser();
   await ensurePagePool(browser);
 }

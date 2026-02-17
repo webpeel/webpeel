@@ -42,7 +42,8 @@ export { searchJobs } from './core/jobs.js';
  */
 export async function peel(url, options = {}) {
     const startTime = Date.now();
-    let { render = false, stealth = false, wait = 0, format = 'markdown', timeout = 30000, userAgent, screenshot = false, screenshotFullPage = false, selector, exclude, includeTags, excludeTags, headers, cookies, raw = false, actions, extract, maxTokens, images: extractImagesFlag = false, location: _location, } = options;
+    let { render = false, stealth = false, wait = 0, format = 'markdown', timeout = 30000, userAgent, screenshot = false, screenshotFullPage = false, selector, exclude, includeTags, excludeTags, headers, cookies, raw = false, actions, extract, maxTokens, images: extractImagesFlag = false, location: _location, stream: _stream, } = options;
+    void _stream;
     // NOTE: PDFs/DOCX are now handled via simpleFetch + document parser.
     // No need to force browser rendering for them.
     // If screenshot is requested, force render mode
@@ -116,11 +117,6 @@ export async function peel(url, options = {}) {
             if (selector) {
                 html = selectContent(html, selector, exclude);
             }
-            // Extract metadata and title from full HTML
-            const meta = extractMetadata(html, fetchResult.url);
-            title = meta.title;
-            metadata = meta.metadata;
-            links = extractLinks(html, fetchResult.url);
             // Smart main content detection (unless raw or selector specified)
             let contentHtml = html;
             if (!raw && !selector) {
@@ -129,18 +125,30 @@ export async function peel(url, options = {}) {
                     contentHtml = detected.html;
                 }
             }
-            switch (format) {
-                case 'html':
-                    content = contentHtml;
-                    break;
-                case 'text':
-                    content = htmlToText(contentHtml);
-                    break;
-                case 'markdown':
-                default:
-                    content = htmlToMarkdown(contentHtml, { raw });
-                    break;
-            }
+            const metadataTask = Promise.resolve().then(() => {
+                const meta = extractMetadata(html, fetchResult.url);
+                return {
+                    title: meta.title,
+                    metadata: meta.metadata,
+                    links: extractLinks(html, fetchResult.url),
+                };
+            });
+            const contentTask = Promise.resolve().then(() => {
+                switch (format) {
+                    case 'html':
+                        return contentHtml;
+                    case 'text':
+                        return htmlToText(contentHtml);
+                    case 'markdown':
+                    default:
+                        return htmlToMarkdown(contentHtml, { raw });
+                }
+            });
+            const [metaResult, convertedContent] = await Promise.all([metadataTask, contentTask]);
+            title = metaResult.title;
+            metadata = metaResult.metadata;
+            links = metaResult.links;
+            content = convertedContent;
             quality = calculateQuality(content, fetchResult.html);
         }
         else if (isJSON) {

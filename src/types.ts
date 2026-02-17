@@ -78,6 +78,8 @@ export interface PeelOptions {
   format?: 'markdown' | 'text' | 'html';
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
+  /** Prepare streaming responses (API plumbing only; full SSE/chunked stream not yet implemented) */
+  stream?: boolean;
   /** Custom user agent */
   userAgent?: string;
   /** Capture a screenshot of the page */

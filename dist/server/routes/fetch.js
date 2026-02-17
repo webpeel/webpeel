@@ -21,7 +21,7 @@ export function createFetchRouter(authStore) {
     });
     router.get('/v1/fetch', async (req, res) => {
         try {
-            const { url, render, wait, format, includeTags, excludeTags, images, location, languages, onlyMainContent, actions, maxAge, storeInCache, } = req.query;
+            const { url, render, wait, format, includeTags, excludeTags, images, location, languages, onlyMainContent, actions, maxAge, storeInCache, stream, } = req.query;
             // Validate URL parameter
             if (!url || typeof url !== 'string') {
                 res.status(400).json({
@@ -87,7 +87,7 @@ export function createFetchRouter(authStore) {
             }
             // Build cache key (include new parameters)
             const actionsKey = parsedActions ? JSON.stringify(parsedActions) : '';
-            const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${actionsKey}`;
+            const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${stream}:${actionsKey}`;
             // Check cache (with maxAge support)
             const maxAgeMs = maxAge !== undefined ? parseInt(maxAge, 10) : 172800000; // Default 2 days
             const cached = cache.get(cacheKey);
@@ -127,6 +127,7 @@ export function createFetchRouter(authStore) {
                 render: (isSoftLimited && !hasExtraUsage && !hasActions) ? false : shouldRender,
                 wait: (isSoftLimited && !hasExtraUsage) ? 0 : (wait ? parseInt(wait, 10) : undefined),
                 format: format || 'markdown',
+                stream: stream === 'true',
                 includeTags: finalIncludeTags,
                 excludeTags: excludeTagsArray,
                 images: images === 'true',
@@ -155,6 +156,13 @@ export function createFetchRouter(authStore) {
                     message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
                 });
                 return;
+            }
+            const shouldStream = options.stream === true;
+            if (shouldStream) {
+                res.setHeader('X-Stream', 'true');
+                if (typeof res.flushHeaders === 'function') {
+                    res.flushHeaders();
+                }
             }
             // Fetch content
             const startTime = Date.now();
@@ -283,7 +291,7 @@ export function createFetchRouter(authStore) {
             // Inline extraction (BYOK)
             extract, llmProvider, llmApiKey, llmModel, 
             // Firecrawl-compatible formats array
-            formats, } = req.body;
+            formats, stream, } = req.body;
             // --- Validate URL -------------------------------------------------------
             if (!url || typeof url !== 'string') {
                 res.status(400).json({
@@ -399,6 +407,7 @@ export function createFetchRouter(authStore) {
                 render: (isSoftLimited && !hasExtraUsage && !postHasActions) ? false : postShouldRender,
                 wait: (isSoftLimited && !hasExtraUsage) ? 0 : resolvedWait,
                 format: resolvedFormat,
+                stream: stream === true,
                 includeTags: finalIncludeTags,
                 excludeTags: excludeTagsArray,
                 images: images === true,
@@ -410,6 +419,13 @@ export function createFetchRouter(authStore) {
             };
             if (isSoftLimited && !hasExtraUsage && render === true && !postHasActions) {
                 res.setHeader('X-Degraded', 'render=true downgraded to HTTP-only (quota exceeded)');
+            }
+            const shouldStream = options.stream === true;
+            if (shouldStream) {
+                res.setHeader('X-Stream', 'true');
+                if (typeof res.flushHeaders === 'function') {
+                    res.flushHeaders();
+                }
             }
             // --- Fetch content -------------------------------------------------------
             const startTime = Date.now();
@@ -466,7 +482,7 @@ export function createFetchRouter(authStore) {
                 }
             }
             // Cache result
-            const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}`;
+            const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${stream}`;
             if (storeFlag !== false) {
                 cache.set(cacheKey, { result, timestamp: Date.now() });
             }

@@ -47,6 +47,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         actions,
         maxAge,
         storeInCache,
+        stream,
       } = req.query;
 
       // Validate URL parameter
@@ -117,7 +118,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
 
       // Build cache key (include new parameters)
       const actionsKey = parsedActions ? JSON.stringify(parsedActions) : '';
-      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${actionsKey}`;
+      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${stream}:${actionsKey}`;
 
       // Check cache (with maxAge support)
       const maxAgeMs = maxAge !== undefined ? parseInt(maxAge as string, 10) : 172800000; // Default 2 days
@@ -163,6 +164,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         render: (isSoftLimited && !hasExtraUsage && !hasActions) ? false : shouldRender,
         wait: (isSoftLimited && !hasExtraUsage) ? 0 : (wait ? parseInt(wait as string, 10) : undefined),
         format: (format as 'markdown' | 'text' | 'html') || 'markdown',
+        stream: stream === 'true',
         includeTags: finalIncludeTags,
         excludeTags: excludeTagsArray,
         images: images === 'true',
@@ -194,6 +196,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
           message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
         });
         return;
+      }
+
+      const shouldStream = options.stream === true;
+      if (shouldStream) {
+        res.setHeader('X-Stream', 'true');
+        if (typeof res.flushHeaders === 'function') {
+          res.flushHeaders();
+        }
       }
 
       // Fetch content
@@ -363,6 +373,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         llmModel,
         // Firecrawl-compatible formats array
         formats,
+        stream,
       } = req.body as {
         url?: string;
         render?: boolean;
@@ -381,6 +392,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         llmApiKey?: string;
         llmModel?: string;
         formats?: any[];
+        stream?: boolean;
       };
 
       // --- Validate URL -------------------------------------------------------
@@ -511,6 +523,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         render: (isSoftLimited && !hasExtraUsage && !postHasActions) ? false : postShouldRender,
         wait: (isSoftLimited && !hasExtraUsage) ? 0 : resolvedWait,
         format: resolvedFormat,
+        stream: stream === true,
         includeTags: finalIncludeTags,
         excludeTags: excludeTagsArray,
         images: images === true,
@@ -523,6 +536,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
 
       if (isSoftLimited && !hasExtraUsage && render === true && !postHasActions) {
         res.setHeader('X-Degraded', 'render=true downgraded to HTTP-only (quota exceeded)');
+      }
+
+      const shouldStream = options.stream === true;
+      if (shouldStream) {
+        res.setHeader('X-Stream', 'true');
+        if (typeof res.flushHeaders === 'function') {
+          res.flushHeaders();
+        }
       }
 
       // --- Fetch content -------------------------------------------------------
@@ -595,7 +616,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
       }
 
       // Cache result
-      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}`;
+      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${stream}`;
       if (storeFlag !== false) {
         cache.set(cacheKey, { result, timestamp: Date.now() });
       }

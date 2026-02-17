@@ -2,7 +2,7 @@
  * Smart escalation strategy: try simple fetch first, escalate to browser if needed
  */
 import { simpleFetch, browserFetch, retryFetch } from './fetcher.js';
-import { getCached, setCached } from './cache.js';
+import { getCachedAsync, setCached } from './cache.js';
 import { BlockedError, NetworkError } from '../types.js';
 function shouldForceBrowser(url) {
     try {
@@ -148,7 +148,7 @@ export async function smartFetch(url, options = {}) {
         waitMs === 0 &&
         !userAgent;
     if (canUseCache) {
-        const cached = getCached(url);
+        const cached = await getCachedAsync(url);
         if (cached) {
             return {
                 ...cached,

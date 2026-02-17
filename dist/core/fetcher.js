@@ -12,6 +12,7 @@ import { chromium as stealthChromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { fetch as undiciFetch, Agent } from 'undici';
 import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types.js';
+import { cachedLookup, startDnsWarmup } from './dns-cache.js';
 // Add stealth plugin to playwright-extra
 stealthChromium.use(StealthPlugin());
 const USER_AGENTS = [
@@ -26,13 +27,18 @@ function getRandomUserAgent() {
 }
 function createHttpPool() {
     return new Agent({
-        connections: 10,
-        pipelining: 1,
-        keepAliveTimeout: 30000,
+        connections: 20,
+        pipelining: 6,
+        keepAliveTimeout: 60000,
         keepAliveMaxTimeout: 60000,
+        allowH2: true,
+        connect: {
+            lookup: cachedLookup,
+        },
     });
 }
 let httpPool = createHttpPool();
+startDnsWarmup();
 function createAbortError() {
     const error = new Error('Operation aborted');
     error.name = 'AbortError';
@@ -532,6 +538,7 @@ async function recyclePooledPage(page) {
     }
 }
 export async function warmup() {
+    startDnsWarmup();
     const browser = await getBrowser();
     await ensurePagePool(browser);
 }

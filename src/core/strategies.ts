@@ -3,7 +3,7 @@
  */
 
 import { simpleFetch, browserFetch, retryFetch, type FetchResult } from './fetcher.js';
-import { getCached, setCached } from './cache.js';
+import { getCachedAsync, setCached } from './cache.js';
 import { BlockedError, NetworkError } from '../types.js';
 
 type ForcedRecommendation = { mode: 'browser' | 'stealth' };
@@ -265,7 +265,7 @@ export async function smartFetch(url: string, options: StrategyOptions = {}): Pr
     !userAgent;
 
   if (canUseCache) {
-    const cached = getCached<StrategyResult>(url);
+    const cached = await getCachedAsync<StrategyResult>(url);
     if (cached) {
       return {
         ...cached,

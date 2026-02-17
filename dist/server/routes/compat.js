@@ -42,7 +42,7 @@ export function createCompatRouter(jobQueue) {
             const { url, formats = ['markdown'], onlyMainContent = true, // Firecrawl defaults to true
             includeTags, excludeTags, waitFor, timeout, actions, headers, location, 
             // Inline extraction (BYOK)
-            extract: extractParam, llmProvider, llmApiKey, llmModel, } = req.body;
+            extract: extractParam, llmProvider, llmApiKey, llmModel, stream, } = req.body;
             // Validate URL
             if (!url || typeof url !== 'string') {
                 res.status(400).json({
@@ -60,6 +60,7 @@ export function createCompatRouter(jobQueue) {
                 render: needsRender,
                 wait: waitFor,
                 timeout: timeout || 30000,
+                stream: stream === true,
                 includeTags: Array.isArray(includeTags) ? includeTags : undefined,
                 excludeTags: Array.isArray(excludeTags) ? excludeTags : undefined,
                 raw: onlyMainContent === false,
@@ -75,6 +76,12 @@ export function createCompatRouter(jobQueue) {
                     country: location.country,
                     languages: location.languages,
                 };
+            }
+            if (options.stream) {
+                res.setHeader('X-Stream', 'true');
+                if (typeof res.flushHeaders === 'function') {
+                    res.flushHeaders();
+                }
             }
             // Execute peel
             const result = await peel(url, options);
@@ -455,7 +462,7 @@ export function createCompatRouter(jobQueue) {
         try {
             const { url, formats = ['markdown'], onlyMainContent = true, includeTags, excludeTags, waitFor, timeout, actions, headers, location, 
             // Screenshot-specific v2 options
-            fullPage, width, height, screenshotFormat, quality, } = req.body;
+            fullPage, width, height, screenshotFormat, quality, stream, } = req.body;
             // Validate URL
             if (!url || typeof url !== 'string') {
                 res.status(400).json({
@@ -497,6 +504,7 @@ export function createCompatRouter(jobQueue) {
                 render: needsRender,
                 wait: waitFor,
                 timeout: timeout || 30000,
+                stream: stream === true,
                 includeTags: Array.isArray(includeTags) ? includeTags : undefined,
                 excludeTags: Array.isArray(excludeTags) ? excludeTags : undefined,
                 raw: onlyMainContent === false,
@@ -512,6 +520,12 @@ export function createCompatRouter(jobQueue) {
                     country: location.country,
                     languages: location.languages,
                 };
+            }
+            if (options.stream) {
+                res.setHeader('X-Stream', 'true');
+                if (typeof res.flushHeaders === 'function') {
+                    res.flushHeaders();
+                }
             }
             const result = await peel(url, options);
             const data = {
