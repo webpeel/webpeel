@@ -37,6 +37,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://webpeel.dev/blog/webpeel-vs-competitors</loc>
+    <lastmod>2026-02-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
     <loc>https://webpeel.dev/blog/benchmarks</loc>
     <lastmod>2026-02-17</lastmod>
     <changefreq>monthly</changefreq>
