@@ -49,18 +49,6 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://webpeel.dev/blog/webpeel-vs-firecrawl</loc>
-    <lastmod>2026-02-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://webpeel.dev/blog/webpeel-vs-firecrawl-vs-tavily-vs-exa</loc>
-    <lastmod>2026-02-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://webpeel.dev/blog/how-webpeel-works</loc>
     <lastmod>2026-02-17</lastmod>
     <changefreq>monthly</changefreq>
@@ -68,12 +56,6 @@
   </url>
   <url>
     <loc>https://webpeel.dev/blog/best-mcp-web-fetcher</loc>
-    <lastmod>2026-02-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://webpeel.dev/blog/web-scraping-for-ai-agents</loc>
     <lastmod>2026-02-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
