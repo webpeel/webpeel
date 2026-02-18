@@ -1,7 +1,10 @@
 {
   "redirects": [
     { "source": "/pricing", "destination": "/#pricing", "statusCode": 301 },
-    { "source": "/pricing/", "destination": "/#pricing", "statusCode": 301 }
+    { "source": "/pricing/", "destination": "/#pricing", "statusCode": 301 },
+    { "source": "/blog/webpeel-vs-firecrawl", "destination": "/blog/webpeel-vs-competitors", "statusCode": 301 },
+    { "source": "/blog/webpeel-vs-firecrawl-vs-tavily-vs-exa", "destination": "/blog/webpeel-vs-competitors", "statusCode": 301 },
+    { "source": "/blog/web-scraping-for-ai-agents", "destination": "/blog/how-webpeel-works", "statusCode": 301 }
   ],
   "rewrites": [
     { "source": "/docs", "destination": "/docs/index.html" },
@@ -19,7 +22,7 @@
         { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://api.webpeel.dev https://api.github.com; form-action 'self'"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https:; media-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://api.webpeel.dev https://api.github.com; form-action 'self'"
         }
       ]
     },
