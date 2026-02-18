@@ -76,6 +76,14 @@
     .blog-card .read-more { font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 4px; }
     .blog-card:hover .read-more { text-decoration: underline; }
     .tag { display: inline-block; padding: 4px 10px; border-radius: 6px; background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 500; margin-bottom: 16px; width: fit-content; }
+    .blog-card.featured { grid-column: 1 / -1; flex-direction: row; align-items: stretch; border: 2px solid var(--accent); }
+    .blog-card.featured .blog-card-content { flex-direction: row; align-items: flex-start; gap: 32px; padding: 28px 32px; }
+    .blog-card.featured .featured-text { flex: 1; display: flex; flex-direction: column; }
+    .blog-card.featured h2 { font-size: 24px; }
+    .blog-card.featured .featured-badge { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .blog-card.featured .tag { margin-bottom: 0; }
+    .featured-label { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); padding: 3px 10px; border-radius: 6px; }
+    @media (max-width: 768px) { .blog-card.featured { flex-direction: column; } .blog-card.featured .blog-card-content { flex-direction: column; gap: 0; padding: 20px; } }
 
     footer { border-top: 1px solid var(--border); padding: 40px 0; }
     .footer-inner { display: flex; justify-content: space-between; align-items: center; }
@@ -127,6 +135,21 @@
 
   <div class="container">
     <div class="blog-grid">
+
+      <a href="/blog/webpeel-vs-competitors" class="blog-card featured">
+        <div class="blog-card-content">
+          <div class="featured-text">
+            <div class="featured-badge">
+              <span class="featured-label">⭐ Featured</span>
+              <span class="tag">Comparison</span>
+            </div>
+            <div class="blog-meta"><span>February 17, 2026</span><span>•</span><span>18 min read</span></div>
+            <h2>WebPeel vs Every Alternative: The Complete Comparison (2026)</h2>
+            <p>One definitive guide comparing WebPeel against all 7 major web scraping APIs: Firecrawl, Exa, Tavily, LinkUp, ScrapingBee, and Jina Reader. Includes benchmark data, full feature matrix, pricing tiers, and honest recommendations for every use case.</p>
+            <span class="read-more">Read the complete comparison →</span>
+          </div>
+        </div>
+      </a>
 
       <a href="/blog/webpeel-vs-firecrawl-vs-tavily-vs-exa" class="blog-card">
         <div class="blog-card-content">

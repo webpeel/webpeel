@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebPeel vs Every Alternative: The Complete Comparison (2026) | WebPeel</title>
+  <meta name="description" content="The definitive 2026 comparison of WebPeel vs Firecrawl, Exa, Tavily, LinkUp, ScrapingBee, and Jina Reader. Benchmarks, pricing, feature matrix, and honest recommendations for every use case.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://webpeel.dev/blog/webpeel-vs-competitors">
+
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://webpeel.dev/blog/webpeel-vs-competitors">
+  <meta property="og:title" content="WebPeel vs Every Alternative: The Complete Web Scraping API Comparison (2026)">
+  <meta property="og:description" content="One page. Seven tools. Benchmarks, pricing, features, and honest recommendations. Find the best web scraping API for your use case.">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+
+  <meta name="keywords" content="firecrawl alternative, web scraping api comparison, best mcp server for web scraping, webpeel vs firecrawl, exa alternative, tavily alternative, scrapingbee alternative, jina reader alternative, web scraping benchmark 2026">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://webpeel.dev/blog/webpeel-vs-competitors"
+    },
+    "headline": "WebPeel vs Every Alternative: The Complete Web Scraping API Comparison (2026)",
+    "description": "One definitive guide comparing WebPeel against all 7 major web scraping APIs: Firecrawl, Exa, Tavily, LinkUp, ScrapingBee, and Jina Reader. Includes benchmarks, pricing, features, and honest recommendations.",
+    "author": {
+      "@type": "Person",
+      "name": "Jake Liu"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "WebPeel",
+      "logo": { "@type": "ImageObject", "url": "https://webpeel.dev/favicon.svg" }
+    },
+    "datePublished": "2026-02-17",
+    "dateModified": "2026-02-17",
+    "keywords": [
+      "firecrawl alternative",
+      "web scraping api comparison",
+      "best mcp server for web scraping",
+      "webpeel",
+      "firecrawl",
+      "exa",
+      "tavily",
+      "linkup",
+      "scrapingbee",
+      "jina reader",
+      "web scraping benchmark 2026"
+    ]
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the best Firecrawl alternative in 2026?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "WebPeel is the strongest Firecrawl alternative for most teams: it achieves a 100% success rate vs Firecrawl's 93.3%, costs ~8x less per page ($0.002 vs $0.016), and includes a native MCP server. If you need enterprise support or complex crawl-map workflows, Firecrawl remains a solid choice."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which web scraping API is fastest?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Tavily is the fastest in our benchmark at 47ms median, followed by Exa at 132ms and Firecrawl at 231ms. Both Tavily and Exa serve pre-indexed results, which explains their speed. WebPeel fetches pages live and ranks 4th at 373ms."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the best MCP server for web scraping?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "WebPeel is the most capable MCP server for web scraping, offering 11 MCP tools including fetch, crawl, search, screenshot, and structured extraction. It runs locally with zero configuration or as a hosted server, making it ideal for Claude Code, Cursor, and Windsurf integrations."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is WebPeel free to use?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. WebPeel is open-source (AGPL-3.0) and includes 125 free API fetches per week on the hosted tier. It can also be self-hosted for unlimited usage with no per-request costs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does WebPeel compare to Jina Reader?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "WebPeel significantly outperforms Jina Reader on reliability: 100% vs 53.3% success rate in our benchmark. Jina Reader's main advantage is simplicity — just prepend 'r.jina.ai/' to any URL. If you need reliable results on hard pages (anti-bot, PDFs, SPAs), WebPeel is far more capable."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which tool should I use for AI agents?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "For most AI agent workflows, WebPeel is the best default: it has the highest reliability (100%), best content quality (92.3%), a native MCP server, and affordable pricing. If you specifically need neural/semantic search, Exa is the best search-first option. If you're in the LangChain ecosystem, Tavily integrates seamlessly."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAFAF8;
+      --surface: #FFFFFF;
+      --text: #09090B;
+      --text-2: #52525B;
+      --text-3: #71717A;
+      --text-4: #A1A1AA;
+      --accent: #8B5CF6;
+      --accent-light: #EDE9FE;
+      --border: #E4E4E7;
+      --border-light: #F4F4F5;
+      --green: #16A34A;
+      --green-bg: #F0FDF4;
+      --green-border: #BBF7D0;
+      --blue: #2563EB;
+      --blue-bg: #EFF6FF;
+      --red: #DC2626;
+      --yellow: #EAB308;
+      --radius: 12px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    ::selection { background: rgba(139,92,246,0.15); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; background: var(--border-light); padding: 2px 6px; border-radius: 4px; }
+
+    /* ── Nav ─────────────────────────────────────── */
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(250,250,248,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-light); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--text); text-decoration: none; }
+    .nav-logo svg { width: 24px; height: 24px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; }
+    .nav-links a { font-size: 14px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-btn { display: inline-flex; align-items: center; padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; transition: all 0.15s; letter-spacing: 0.01em; }
+    .nav-btn-ghost { color: var(--text-2); }
+    .nav-btn-ghost:hover { color: var(--text); background: var(--border-light); }
+    .nav-links a.nav-btn-primary { background: #7C3AED; color: #FFFFFF; font-weight: 600; }
+    .nav-links a.nav-btn-primary:hover { background: #6D28D9; color: #FFFFFF; box-shadow: 0 0 0 3px rgba(139,92,246,0.25); }
+
+    /* ── Article Header ──────────────────────────── */
+    .article-header { padding: 60px 0 40px; text-align: center; border-bottom: 1px solid var(--border-light); }
+    .article-meta { display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 14px; color: var(--text-3); margin-bottom: 20px; }
+    .article-meta a { color: var(--accent); }
+    .article-meta a:hover { text-decoration: underline; }
+    h1 { font-family: 'Instrument Serif', serif; font-size: clamp(32px, 5vw, 52px); line-height: 1.1; font-weight: 400; letter-spacing: -0.02em; color: var(--text); margin-bottom: 16px; }
+    .article-description { font-size: 18px; color: var(--text-2); max-width: 680px; margin: 0 auto; line-height: 1.6; }
+
+    /* ── Article Body ────────────────────────────── */
+    .container { max-width: 780px; margin: 0 auto; padding: 0 24px; }
+    article { padding: 56px 0 80px; }
+    article h2 { font-family: 'Instrument Serif', serif; font-size: 32px; font-weight: 400; margin: 52px 0 16px; letter-spacing: -0.01em; }
+    article h2:first-child { margin-top: 0; }
+    article h3 { font-size: 20px; font-weight: 600; margin: 36px 0 12px; }
+    article p { font-size: 17px; line-height: 1.7; color: var(--text-2); margin-bottom: 20px; }
+    article ul, article ol { margin: 18px 0 20px 24px; }
+    article li { font-size: 16px; line-height: 1.7; color: var(--text-2); margin-bottom: 8px; }
+    article strong { color: var(--text); }
+    hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+    /* ── Callouts ────────────────────────────────── */
+    .callout {
+      background: linear-gradient(135deg, rgba(139,92,246,0.06) 0%, #fff 100%);
+      border: 2px solid var(--accent-light);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin: 30px 0;
+    }
+    .callout p { margin: 0; font-size: 16px; }
+    .callout-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; color: #6D28D9; }
+    .callout-honest {
+      background: #FFF7ED;
+      border-color: rgba(249,115,22,0.25);
+    }
+    .callout-honest .callout-title { color: #C2410C; }
+    .callout-guide {
+      background: linear-gradient(135deg, #F0FDF4, #fff);
+      border: 2px solid var(--green-border);
+    }
+    .callout-guide .callout-title { color: var(--green); }
+    .callout-guide a { color: var(--green); font-weight: 600; }
+
+    /* ── Tables ──────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin: 28px 0; }
+    .compare-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: 14px;
+      min-width: 700px;
+      background: #fff;
+    }
+    .compare-table thead { background: var(--border-light); }
+    .compare-table th {
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .compare-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: middle;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table .winner {
+      background: var(--green-bg);
+      font-weight: 600;
+      color: var(--green);
+    }
+    .compare-table .tool-name {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    .compare-table .highlight-col { background: rgba(139,92,246,0.04); }
+
+    /* ── Tool Dots ───────────────────────────────── */
+    .tool-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    .tool-dot.webpeel   { background: #8B5CF6; }
+    .tool-dot.firecrawl { background: #F97316; }
+    .tool-dot.exa       { background: #2563EB; }
+    .tool-dot.tavily    { background: #06B6D4; }
+    .tool-dot.linkup    { background: #10B981; }
+    .tool-dot.scrapingbee { background: #F59E0B; }
+    .tool-dot.jina      { background: #EF4444; }
+
+    /* ── Bench Charts ────────────────────────────── */
+    .bench-chart { display: flex; flex-direction: column; gap: 12px; margin: 24px 0; }
+    .bench-row { display: flex; align-items: center; gap: 16px; }
+    .bench-label { width: 136px; flex-shrink: 0; font-size: 14px; font-weight: 600; text-align: right; color: var(--text); }
+    .bench-bar-container { flex: 1; height: 36px; background: var(--border-light); border-radius: 6px; overflow: hidden; position: relative; }
+    .bench-bar { height: 100%; border-radius: 6px; min-width: 2px; }
+    .bench-bar.webpeel   { background: #8B5CF6; }
+    .bench-bar.firecrawl { background: #F97316; }
+    .bench-bar.exa       { background: #2563EB; }
+    .bench-bar.tavily    { background: #06B6D4; }
+    .bench-bar.linkup    { background: #10B981; }
+    .bench-bar.scrapingbee { background: #F59E0B; }
+    .bench-bar.jina      { background: #EF4444; }
+    .bench-value { width: 86px; flex-shrink: 0; font-size: 14px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+
+    /* ── TL;DR Table ─────────────────────────────── */
+    .tldr-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: #fff; }
+    .tldr-table th { padding: 11px 14px; background: var(--border-light); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--text-2); text-align: left; border-bottom: 1px solid var(--border); }
+    .tldr-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-light); font-size: 14px; vertical-align: middle; }
+    .tldr-table tr:last-child td { border-bottom: none; }
+    .tldr-table .verdict-cell { font-style: italic; color: var(--text-2); }
+
+    /* ── When-to-Choose Cards ────────────────────── */
+    .choose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 28px 0; }
+    .choose-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .choose-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .choose-card-header h3 { font-size: 17px; font-weight: 600; margin: 0; color: var(--text); }
+    .choose-card p { font-size: 14px; color: var(--text-2); margin-bottom: 10px; line-height: 1.5; }
+    .choose-card ul { margin: 0 0 0 18px; padding: 0; }
+    .choose-card li { font-size: 13px; color: var(--text-2); margin-bottom: 5px; }
+
+    /* ── Pricing Table ───────────────────────────── */
+    .pricing-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: #fff; min-width: 620px; }
+    .pricing-table th { padding: 11px 14px; background: var(--border-light); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--text-2); text-align: left; border-bottom: 1px solid var(--border); }
+    .pricing-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-light); font-size: 14px; vertical-align: top; }
+    .pricing-table tr:last-child td { border-bottom: none; }
+    .pricing-table .tool-col { font-weight: 600; color: var(--text); }
+
+    /* ── Methodology Box ─────────────────────────── */
+    .methodology { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin: 32px 0; }
+    .methodology h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 12px; }
+    .methodology ul { padding-left: 20px; margin: 0; }
+    .methodology li { font-size: 15px; color: var(--text-2); margin-bottom: 6px; }
+
+    /* ── Footer ──────────────────────────────────── */
+    footer { border-top: 1px solid var(--border); padding: 40px 0; margin-top: 20px; }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .footer-left { font-size: 13px; color: var(--text-4); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--text-3); transition: color 0.15s; text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── Responsive ──────────────────────────────── */
+    @media (max-width: 768px) {
+      .container { padding: 0 16px; }
+      .nav-inner { padding: 0 16px; }
+      .nav-links { display: none; }
+      .article-header { padding: 40px 0 30px; }
+      h1 { font-size: 30px; }
+      article { padding: 40px 0 60px; }
+      article h2 { font-size: 26px; }
+      .bench-label { width: 92px; font-size: 12px; }
+      .bench-value { width: 70px; font-size: 12px; }
+      .choose-grid { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+      .footer-links { flex-wrap: wrap; justify-content: center; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="article-header">
+    <div class="container">
+      <div class="article-meta">
+        <span>February 17, 2026</span>
+        <span>·</span>
+        <span>18 min read</span>
+        <span>·</span>
+        <a href="/blog/">← Back to Blog</a>
+      </div>
+      <h1>WebPeel vs Every Alternative: The Complete Comparison (2026)</h1>
+      <p class="article-description">One page. Seven tools. <strong>Firecrawl, Exa, Tavily, LinkUp, ScrapingBee, and Jina Reader</strong> — all compared with benchmark data, honest tradeoffs, and clear recommendations for every use case.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <article>
+
+      <p>The web scraping API market has matured quickly. There are now at least seven viable tools for AI agent developers, each making different bets on speed vs reliability, search vs fetch, and simplicity vs depth. This guide maps out the entire landscape with real data, so you can make an informed choice rather than defaulting to whichever tool you saw on Hacker News.</p>
+
+      <div class="callout">
+        <div class="callout-title">How to use this page</div>
+        <p>Jump to <a href="#tldr">TL;DR</a> for the one-line verdict on each tool, <a href="#big-table">The Big Table</a> for the feature matrix, <a href="#benchmarks">Benchmarks</a> for performance data, or <a href="#when-to-choose">When to Choose Each</a> for decision guidance. All benchmark data is <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">open source and reproducible</a>.</p>
+      </div>
+
+      <!-- ── TL;DR ─────────────────────────────── -->
+      <h2 id="tldr">TL;DR — Quick Verdict</h2>
+
+      <p>For teams that need a two-sentence answer per tool:</p>
+
+      <div class="table-wrap">
+        <table class="tldr-table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Best For</th>
+              <th>One-Line Verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</td>
+              <td>General-purpose AI agents</td>
+              <td class="verdict-cell">Best overall: highest reliability, top content quality, MCP-native, and genuinely affordable.</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</td>
+              <td>Enterprise crawl pipelines</td>
+              <td class="verdict-cell">Mature feature set for complex workflows; costlier and no auto-escalation.</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot exa"></span> Exa</td>
+              <td>Semantic / neural search</td>
+              <td class="verdict-cell">Best-in-class for search-first discovery; not built for arbitrary URL fetching.</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot tavily"></span> Tavily</td>
+              <td>Fast research loops</td>
+              <td class="verdict-cell">Fastest median latency (47ms); ideal for LangChain agents that query more than they scrape.</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot linkup"></span> LinkUp</td>
+              <td>Factual / financial data</td>
+              <td class="verdict-cell">Strong accuracy on structured knowledge; very slow (4.5s median) and opaque pricing.</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot scrapingbee"></span> ScrapingBee</td>
+              <td>Residential proxies, geo-targeting</td>
+              <td class="verdict-cell">Best proxy infrastructure; weakest content quality, complex credit model.</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot jina"></span> Jina Reader</td>
+              <td>Minimal friction URL-to-markdown</td>
+              <td class="verdict-cell">Simplest integration (prepend r.jina.ai/); only 53.3% success on harder pages.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── Big Comparison Table ──────────────── -->
+      <h2 id="big-table">The Big Comparison Table</h2>
+
+      <p>Every major capability across all seven tools. Checkmarks are based on published documentation and independent testing.</p>
+
+      <div class="table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Capability</th>
+              <th class="highlight-col"><span class="tool-dot webpeel" style="margin-right:5px;"></span>WebPeel</th>
+              <th><span class="tool-dot firecrawl" style="margin-right:5px;"></span>Firecrawl</th>
+              <th><span class="tool-dot exa" style="margin-right:5px;"></span>Exa</th>
+              <th><span class="tool-dot tavily" style="margin-right:5px;"></span>Tavily</th>
+              <th><span class="tool-dot linkup" style="margin-right:5px;"></span>LinkUp</th>
+              <th><span class="tool-dot scrapingbee" style="margin-right:5px;"></span>ScrapingBee</th>
+              <th><span class="tool-dot jina" style="margin-right:5px;"></span>Jina Reader</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Free tier</strong></td>
+              <td class="highlight-col winner">125/wk, recurring</td>
+              <td>500 credits, one-time</td>
+              <td>1,000/mo</td>
+              <td>1,000/mo</td>
+              <td>Trial only</td>
+              <td>1,000 credits</td>
+              <td>Free tier (limited)</td>
+            </tr>
+            <tr>
+              <td><strong>JS rendering</strong></td>
+              <td class="highlight-col">✅ Auto-escalation</td>
+              <td>✅ Manual flag</td>
+              <td>⚠️ Limited</td>
+              <td>⚠️ Limited</td>
+              <td>⚠️ Limited</td>
+              <td>✅ Manual flag</td>
+              <td>⚠️ Partial</td>
+            </tr>
+            <tr>
+              <td><strong>Stealth / anti-bot</strong></td>
+              <td class="highlight-col">✅ Auto-escalation</td>
+              <td>✅</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅ Proxy tiers</td>
+              <td>❌</td>
+            </tr>
+            <tr>
+              <td><strong>MCP tools</strong></td>
+              <td class="highlight-col">✅ 11 tools (local + hosted)</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+            </tr>
+            <tr>
+              <td><strong>Crawl / site map</strong></td>
+              <td class="highlight-col">✅</td>
+              <td>✅</td>
+              <td>⚠️ Partial</td>
+              <td>⚠️ Partial</td>
+              <td>❌</td>
+              <td>✅</td>
+              <td>❌</td>
+            </tr>
+            <tr>
+              <td><strong>Search (web)</strong></td>
+              <td class="highlight-col">✅</td>
+              <td>⚠️ Via integration</td>
+              <td>✅ Neural/semantic</td>
+              <td>✅ Core product</td>
+              <td>✅ Core product</td>
+              <td>❌</td>
+              <td>⚠️ Via DeepSearch</td>
+            </tr>
+            <tr>
+              <td><strong>Structured extraction</strong></td>
+              <td class="highlight-col">✅ LLM-guided</td>
+              <td>✅ LLM extraction</td>
+              <td>⚠️ Limited</td>
+              <td>⚠️ Limited</td>
+              <td>⚠️ Limited</td>
+              <td>✅ CSS selectors</td>
+              <td>❌</td>
+            </tr>
+            <tr>
+              <td><strong>Screenshot / PDF</strong></td>
+              <td class="highlight-col">✅</td>
+              <td>✅</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+              <td>❌</td>
+            </tr>
+            <tr>
+              <td><strong>Self-hosting</strong></td>
+              <td class="highlight-col">✅ Open source (AGPL)</td>
+              <td>✅ Open source (AGPL)</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>⚠️ Partial (reader only)</td>
+            </tr>
+            <tr>
+              <td><strong>SDK languages</strong></td>
+              <td class="highlight-col">Node, Python, REST</td>
+              <td>Node, Python, Go, Rust, REST</td>
+              <td>Node, Python, REST</td>
+              <td>Node, Python, REST</td>
+              <td>Python, REST</td>
+              <td>Python, Node, Ruby, REST</td>
+              <td>REST (URL-based)</td>
+            </tr>
+            <tr>
+              <td><strong>License</strong></td>
+              <td class="highlight-col">AGPL-3.0</td>
+              <td>AGPL-3.0</td>
+              <td>Proprietary</td>
+              <td>Proprietary</td>
+              <td>Proprietary</td>
+              <td>Proprietary</td>
+              <td>Apache 2.0 (reader)</td>
+            </tr>
+            <tr>
+              <td><strong>Entry-level paid</strong></td>
+              <td class="highlight-col">$9/mo (1,250/wk)</td>
+              <td>$16/mo</td>
+              <td>$25/mo</td>
+              <td>$50/mo</td>
+              <td>Custom</td>
+              <td>$49/mo</td>
+              <td>$10/mo</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-3); margin-top: -12px;">⚠️ = limited or indirect support. Last verified February 2026. Refer to each provider's current documentation for accuracy.</p>
+
+      <!-- ── Benchmark Results ──────────────────── -->
+      <h2 id="benchmarks">Benchmark Results</h2>
+
+      <p>We ran all seven tools against the same 30 URLs across six categories: static pages, dynamic sites, SPAs, protected pages, documents (PDFs), and edge/international content. Every run used the same machine, network, and 30-second timeout. <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">Methodology and raw data are public.</a></p>
+
+      <div class="callout callout-honest">
+        <div class="callout-title">Honest caveat on benchmarks</div>
+        <p>Benchmarks are a snapshot. Providers continuously update infrastructure, anti-bot strategies, and caching. Tavily and Exa are fast partly because they serve pre-indexed content — which means freshness tradeoffs that don't show up in a speed chart. Run the suite against your own URL set before making a final decision.</p>
+      </div>
+
+      <h3>Overall Results</h3>
+
+      <div class="table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Success Rate</th>
+              <th>Median Speed</th>
+              <th>Quality Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="tool-name"><span class="tool-dot webpeel"></span> WebPeel</td>
+              <td class="winner">30/30 (100%)</td>
+              <td>373ms</td>
+              <td class="winner">92.3%</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot firecrawl"></span> Firecrawl</td>
+              <td>28/30 (93.3%)</td>
+              <td>231ms</td>
+              <td>77.9%</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot exa"></span> Exa</td>
+              <td>28/30 (93.3%)</td>
+              <td class="winner">132ms</td>
+              <td>83.2%</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot tavily"></span> Tavily</td>
+              <td>25/30 (83.3%)</td>
+              <td class="winner">47ms</td>
+              <td>81.2%</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot linkup"></span> LinkUp</td>
+              <td>28/30 (93.3%)</td>
+              <td>4,518ms</td>
+              <td>81.3%</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot scrapingbee"></span> ScrapingBee</td>
+              <td>24/30 (80.0%)</td>
+              <td>1,728ms</td>
+              <td>74.4%</td>
+            </tr>
+            <tr>
+              <td class="tool-name"><span class="tool-dot jina"></span> Jina Reader</td>
+              <td>16/30 (53.3%)</td>
+              <td>2,908ms</td>
+              <td>69.1%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Success Rate (higher is better)</h3>
+      <p>Share of URLs that returned meaningful content — not empty pages, error messages, or unsupported-site failures.</p>
+
+      <div class="bench-chart">
+        <div class="bench-row">
+          <div class="bench-label">WebPeel</div>
+          <div class="bench-bar-container"><div class="bench-bar webpeel" style="width:100%"></div></div>
+          <div class="bench-value">100% ✓</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Firecrawl</div>
+          <div class="bench-bar-container"><div class="bench-bar firecrawl" style="width:93.3%"></div></div>
+          <div class="bench-value">93.3%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Exa</div>
+          <div class="bench-bar-container"><div class="bench-bar exa" style="width:93.3%"></div></div>
+          <div class="bench-value">93.3%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">LinkUp</div>
+          <div class="bench-bar-container"><div class="bench-bar linkup" style="width:93.3%"></div></div>
+          <div class="bench-value">93.3%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Tavily</div>
+          <div class="bench-bar-container"><div class="bench-bar tavily" style="width:83.3%"></div></div>
+          <div class="bench-value">83.3%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">ScrapingBee</div>
+          <div class="bench-bar-container"><div class="bench-bar scrapingbee" style="width:80%"></div></div>
+          <div class="bench-value">80.0%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Jina Reader</div>
+          <div class="bench-bar-container"><div class="bench-bar jina" style="width:53.3%"></div></div>
+          <div class="bench-value">53.3%</div>
+        </div>
+      </div>
+
+      <h3>Content Quality Score (higher is better)</h3>
+      <p>Measures completeness, title/metadata fidelity, and markdown usefulness for LLM workflows. Scored on extracted output against the ground-truth page content.</p>
+
+      <div class="bench-chart">
+        <div class="bench-row">
+          <div class="bench-label">WebPeel</div>
+          <div class="bench-bar-container"><div class="bench-bar webpeel" style="width:100%"></div></div>
+          <div class="bench-value">92.3% ✓</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Exa</div>
+          <div class="bench-bar-container"><div class="bench-bar exa" style="width:90.1%"></div></div>
+          <div class="bench-value">83.2%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">LinkUp</div>
+          <div class="bench-bar-container"><div class="bench-bar linkup" style="width:88.1%"></div></div>
+          <div class="bench-value">81.3%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Tavily</div>
+          <div class="bench-bar-container"><div class="bench-bar tavily" style="width:88.0%"></div></div>
+          <div class="bench-value">81.2%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Firecrawl</div>
+          <div class="bench-bar-container"><div class="bench-bar firecrawl" style="width:84.4%"></div></div>
+          <div class="bench-value">77.9%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">ScrapingBee</div>
+          <div class="bench-bar-container"><div class="bench-bar scrapingbee" style="width:80.6%"></div></div>
+          <div class="bench-value">74.4%</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Jina Reader</div>
+          <div class="bench-bar-container"><div class="bench-bar jina" style="width:74.9%"></div></div>
+          <div class="bench-value">69.1%</div>
+        </div>
+      </div>
+
+      <h3>Median Speed — lower is better</h3>
+      <p>WebPeel ranks 4th. Tavily and Exa are faster because they often serve indexed or pre-fetched content. WebPeel fetches every page live and escalates to browser rendering when needed — that's why it's slower and more reliable.</p>
+
+      <div class="bench-chart">
+        <div class="bench-row">
+          <div class="bench-label">Tavily</div>
+          <div class="bench-bar-container"><div class="bench-bar tavily" style="width:2.0%"></div></div>
+          <div class="bench-value">47ms ✓</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Exa</div>
+          <div class="bench-bar-container"><div class="bench-bar exa" style="width:4.5%"></div></div>
+          <div class="bench-value">132ms</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Firecrawl</div>
+          <div class="bench-bar-container"><div class="bench-bar firecrawl" style="width:7.9%"></div></div>
+          <div class="bench-value">231ms</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">WebPeel</div>
+          <div class="bench-bar-container"><div class="bench-bar webpeel" style="width:15.2%"></div></div>
+          <div class="bench-value">373ms</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">ScrapingBee</div>
+          <div class="bench-bar-container"><div class="bench-bar scrapingbee" style="width:38.3%"></div></div>
+          <div class="bench-value">1,728ms</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">Jina Reader</div>
+          <div class="bench-bar-container"><div class="bench-bar jina" style="width:64.4%"></div></div>
+          <div class="bench-value">2,908ms</div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-label">LinkUp</div>
+          <div class="bench-bar-container"><div class="bench-bar linkup" style="width:100%"></div></div>
+          <div class="bench-value">4,518ms</div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="callout-title">Why WebPeel is slower than Tavily and Exa</div>
+        <p>WebPeel fetches pages live, every time. No index, no cache, no pre-crawled snapshots. When a page needs JavaScript, WebPeel escalates to a headless browser automatically. When it needs anti-bot evasion, it escalates again. This pipeline takes longer but produces real, current data — which is why it leads on reliability and quality scores.</p>
+      </div>
+
+      <h3>Category Breakdown</h3>
+      <p>30 URLs split across 6 categories (5 URLs each). This shows where tools diverge most — especially on protected pages and PDFs.</p>
+
+      <div class="table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="highlight-col">WebPeel</th>
+              <th>Firecrawl</th>
+              <th>Exa</th>
+              <th>Tavily</th>
+              <th>LinkUp</th>
+              <th>ScrapingBee</th>
+              <th>Jina</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Static</strong></td>
+              <td class="highlight-col winner">5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>4/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>4/5</td>
+            </tr>
+            <tr>
+              <td><strong>Dynamic / JS</strong></td>
+              <td class="highlight-col winner">5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+            </tr>
+            <tr>
+              <td><strong>SPA</strong></td>
+              <td class="highlight-col winner">5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+            </tr>
+            <tr>
+              <td><strong>Protected / anti-bot</strong></td>
+              <td class="highlight-col winner">5/5</td>
+              <td>4/5</td>
+              <td>4/5</td>
+              <td>2/5</td>
+              <td>4/5</td>
+              <td>2/5</td>
+              <td>2/5</td>
+            </tr>
+            <tr>
+              <td><strong>Documents (PDF)</strong></td>
+              <td class="highlight-col winner">5/5</td>
+              <td>5/5</td>
+              <td>4/5</td>
+              <td>4/5</td>
+              <td>4/5</td>
+              <td>3/5</td>
+              <td>0/5</td>
+            </tr>
+            <tr>
+              <td><strong>Edge / International</strong></td>
+              <td class="highlight-col winner">5/5</td>
+              <td>4/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>4/5</td>
+              <td>0/5</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-3); margin-top: -12px;">Jina Reader scores 0/5 on PDFs and international edge pages — its URL-forwarding approach has fundamental limits on non-HTML content.</p>
+
+      <!-- ── Pricing ────────────────────────────── -->
+      <h2 id="pricing">Pricing Comparison</h2>
+
+      <p>Pricing models differ significantly — per-page, per-credit, per-search, and subscription bundles don't map cleanly against each other. We show published tiers with our best per-page equivalents where calculable.</p>
+
+      <div class="table-wrap">
+        <table class="pricing-table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Free Tier</th>
+              <th>Entry Paid</th>
+              <th>Mid Tier</th>
+              <th>Est. $/page</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="tool-col"><span class="tool-dot webpeel" style="margin-right:7px;"></span>WebPeel</td>
+              <td>125 fetches/wk (recurring)</td>
+              <td>$9/mo — 1,250/wk</td>
+              <td>$29/mo — 6,250/wk</td>
+              <td style="color:var(--green);font-weight:600;">~$0.002</td>
+            </tr>
+            <tr>
+              <td class="tool-col"><span class="tool-dot firecrawl" style="margin-right:7px;"></span>Firecrawl</td>
+              <td>500 credits (one-time)</td>
+              <td>$16/mo — Hobby</td>
+              <td>$83/mo — Standard / $333 Growth</td>
+              <td>~$0.016</td>
+            </tr>
+            <tr>
+              <td class="tool-col"><span class="tool-dot exa" style="margin-right:7px;"></span>Exa</td>
+              <td>1,000 searches/mo</td>
+              <td>$25/mo — Pro</td>
+              <td>Usage-based above Pro</td>
+              <td>~$0.006</td>
+            </tr>
+            <tr>
+              <td class="tool-col"><span class="tool-dot tavily" style="margin-right:7px;"></span>Tavily</td>
+              <td>1,000 credits/mo</td>
+              <td>$50/mo — Pro</td>
+              <td>Usage-based above Pro</td>
+              <td>~$0.002–$0.016</td>
+            </tr>
+            <tr>
+              <td class="tool-col"><span class="tool-dot linkup" style="margin-right:7px;"></span>LinkUp</td>
+              <td>Limited free trial</td>
+              <td>Custom pricing</td>
+              <td>Custom pricing</td>
+              <td>~$0.01 (est.)</td>
+            </tr>
+            <tr>
+              <td class="tool-col"><span class="tool-dot scrapingbee" style="margin-right:7px;"></span>ScrapingBee</td>
+              <td>1,000 API credits</td>
+              <td>$49/mo — Freelance</td>
+              <td>$149/mo — Startup</td>
+              <td>~$0.0005–$0.013</td>
+            </tr>
+            <tr>
+              <td class="tool-col"><span class="tool-dot jina" style="margin-right:7px;"></span>Jina Reader</td>
+              <td>Free tier (rate limited)</td>
+              <td>$10/mo — Pro</td>
+              <td>Token-based usage above Pro</td>
+              <td>Variable (token-based)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>WebPeel's free tier is the only one that <strong>resets every week</strong> rather than being a one-time credit grant. For low-volume users building and testing, that's a meaningful difference. Firecrawl's 500 credits disappear quickly; WebPeel's 125/week keeps coming back.</p>
+
+      <p>ScrapingBee pricing is highly variable — JavaScript rendering consumes 5 credits per page, and residential proxy usage multiplies further. Simple fetches can be cheap; complex use cases can be expensive. WebPeel's flat per-fetch pricing is more predictable.</p>
+
+      <!-- ── When to Choose Each ────────────────── -->
+      <h2 id="when-to-choose">When to Choose Each Tool</h2>
+
+      <p>This is the most useful section. We're going to give honest, specific guidance — including cases where a competitor is genuinely the better choice.</p>
+
+      <div class="choose-grid">
+        <div class="choose-card">
+          <div class="choose-card-header">
+            <span class="tool-dot webpeel" style="width:14px;height:14px;"></span>
+            <h3>Choose WebPeel</h3>
+          </div>
+          <p>The best default for most AI agent and automation use cases.</p>
+          <ul>
+            <li>You want free recurring access (125/wk forever)</li>
+            <li>You need 100% reliable fetching on difficult pages</li>
+            <li>You're building with Claude, Cursor, or Windsurf via MCP</li>
+            <li>You want live content, not indexed/cached snapshots</li>
+            <li>You want to self-host with no per-request cost</li>
+            <li>You care about output quality for LLM prompts</li>
+          </ul>
+        </div>
+
+        <div class="choose-card">
+          <div class="choose-card-header">
+            <span class="tool-dot firecrawl" style="width:14px;height:14px;"></span>
+            <h3>Choose Firecrawl</h3>
+          </div>
+          <p>The mature choice for complex, large-scale crawl operations.</p>
+          <ul>
+            <li>You run enterprise crawl-map-extract pipelines</li>
+            <li>You need a large ecosystem of pre-built integrations</li>
+            <li>You want dedicated enterprise support contracts</li>
+            <li>You already have Firecrawl workflows and switching cost is high</li>
+            <li>You need fine-grained extraction schema control</li>
+          </ul>
+        </div>
+
+        <div class="choose-card">
+          <div class="choose-card-header">
+            <span class="tool-dot exa" style="width:14px;height:14px;"></span>
+            <h3>Choose Exa</h3>
+          </div>
+          <p>The best tool if search and discovery are your primary workflow.</p>
+          <ul>
+            <li>You need neural/semantic search over the web</li>
+            <li>You want to find high-quality sources, not scrape known URLs</li>
+            <li>You're building research agents that need relevance ranking</li>
+            <li>You combine Exa's search with a separate content fetcher</li>
+            <li>You value Exa's company/research-focused index quality</li>
+          </ul>
+        </div>
+
+        <div class="choose-card">
+          <div class="choose-card-header">
+            <span class="tool-dot tavily" style="width:14px;height:14px;"></span>
+            <h3>Choose Tavily</h3>
+          </div>
+          <p>The fastest option for LangChain-ecosystem research loops.</p>
+          <ul>
+            <li>You're already deep in the LangChain / LangGraph ecosystem</li>
+            <li>Your workflow is query → summarize (not scrape → process)</li>
+            <li>Latency is your primary constraint (47ms is unbeatable)</li>
+            <li>You don't need content from anti-bot–protected pages</li>
+            <li>You want native LangChain tool integration out of the box</li>
+          </ul>
+        </div>
+
+        <div class="choose-card">
+          <div class="choose-card-header">
+            <span class="tool-dot linkup" style="width:14px;height:14px;"></span>
+            <h3>Choose LinkUp</h3>
+          </div>
+          <p>Best for factual, structured knowledge retrieval where accuracy matters more than speed.</p>
+          <ul>
+            <li>You need verified factual or financial data</li>
+            <li>Accuracy is paramount and 4.5s latency is acceptable</li>
+            <li>You're building research tools for high-stakes domains</li>
+            <li>Your team can negotiate custom enterprise pricing</li>
+          </ul>
+        </div>
+
+        <div class="choose-card">
+          <div class="choose-card-header">
+            <span class="tool-dot scrapingbee" style="width:14px;height:14px;"></span>
+            <h3>Choose ScrapingBee</h3>
+          </div>
+          <p>The best proxy infrastructure if geo-targeting or residential IPs are required.</p>
+          <ul>
+            <li>You need residential or mobile proxy pools</li>
+            <li>You require geo-specific content at scale</li>
+            <li>You're doing e-commerce price monitoring by region</li>
+            <li>You have existing teams familiar with ScrapingBee's API</li>
+          </ul>
+        </div>
+
+        <div class="choose-card" style="grid-column: 1 / -1;">
+          <div class="choose-card-header">
+            <span class="tool-dot jina" style="width:14px;height:14px;"></span>
+            <h3>Choose Jina Reader</h3>
+          </div>
+          <p>The lowest-friction option when simplicity is the only requirement and the target pages are straightforward.</p>
+          <ul>
+            <li>You want the absolute simplest integration (just prepend <code>r.jina.ai/</code> to any URL)</li>
+            <li>Your pages are simple, publicly accessible HTML — no anti-bot, no JS-heavy apps</li>
+            <li>You're prototyping and need zero setup</li>
+            <li><strong>Avoid if:</strong> you need PDFs, international pages, SPAs, or any site with bot protection (53.3% success rate in our tests)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ── Methodology ────────────────────────── -->
+      <h2 id="methodology">Methodology</h2>
+
+      <div class="methodology">
+        <h4>How this benchmark was run</h4>
+        <ul>
+          <li><strong>30 URLs total</strong>, across 6 categories: static, dynamic, SPA, protected, documents (PDF), and edge/international.</li>
+          <li><strong>Same environment for all runners</strong>: single machine, same network, same benchmark harness. No parallelism — every tool gets equivalent conditions.</li>
+          <li><strong>30-second timeout per URL</strong>. Default runner settings unless the provider API requires specific configuration.</li>
+          <li><strong>Success</strong> = meaningful content returned (not empty, not an error page, not an unsupported-site message).</li>
+          <li><strong>Quality score</strong> = rubric-based evaluation of markdown completeness, title accuracy, and LLM usefulness.</li>
+          <li><strong>Speed</strong> = median wall-clock time from request to content-ready response.</li>
+          <li><strong>Open data:</strong> all benchmark scripts and raw JSON results are published in the <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">WebPeel repository</a>.</li>
+        </ul>
+      </div>
+
+      <!-- ── FAQ ───────────────────────────────── -->
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>What is the best Firecrawl alternative?</h3>
+      <p>WebPeel is the strongest Firecrawl alternative for most teams. It achieves a <strong>100% success rate</strong> vs Firecrawl's 93.3%, costs ~8x less per page (<strong>$0.002 vs $0.016</strong>), includes a native MCP server with 11 tools, and is open-source under the same AGPL-3.0 license. If you need enterprise support contracts or very complex crawl-map workflows, Firecrawl remains a valid choice. See our <a href="/blog/webpeel-vs-firecrawl">detailed WebPeel vs Firecrawl comparison</a>.</p>
+
+      <h3>Which web scraping API is the fastest?</h3>
+      <p>Tavily at <strong>47ms</strong> is the fastest by a wide margin, followed by Exa at <strong>132ms</strong> and Firecrawl at <strong>231ms</strong>. Both Tavily and Exa are fast partly because they serve pre-indexed content, which means you may not get the live, freshest version of a page. WebPeel ranks 4th at 373ms — it's slower because it always fetches live content.</p>
+
+      <h3>What is the best MCP server for web scraping?</h3>
+      <p>WebPeel is the most complete MCP server for web scraping, offering <strong>11 MCP tools</strong>: <code>fetch</code>, <code>search</code>, <code>crawl</code>, <code>screenshot</code>, <code>extract</code>, and more. It runs locally with a single <code>npx</code> command or as a hosted server, with zero configuration required. Firecrawl, Exa, and Tavily also have MCP integrations, but with fewer tools and no local-first option. See <a href="/blog/best-mcp-web-fetcher">our full MCP server comparison</a>.</p>
+
+      <h3>Is WebPeel free?</h3>
+      <p>Yes on two counts. The <strong>hosted tier</strong> includes 125 free fetches per week, every week — not a one-time credit grant. The <strong>self-hosted version</strong> is fully open-source (AGPL-3.0) and free to run with no per-request costs, just your own infrastructure. For comparison, Firecrawl's free tier is 500 credits that don't reset.</p>
+
+      <h3>How does WebPeel compare to Jina Reader?</h3>
+      <p>WebPeel significantly outperforms Jina Reader on reliability: <strong>100% vs 53.3%</strong> success rate in our benchmark. Jina Reader scored 0/5 on both PDF documents and international/edge pages. Its main advantage is zero-friction setup — just prepend <code>r.jina.ai/</code> to any URL. For prototyping on simple pages, that simplicity is real. For production use on real-world content, WebPeel is far more capable.</p>
+
+      <h3>Can I use these tools together?</h3>
+      <p>Yes, and it often makes sense. A common pattern: use <strong>Exa or Tavily</strong> for fast search-based discovery of relevant URLs, then feed those URLs to <strong>WebPeel</strong> for reliable live content extraction. WebPeel's MCP server makes this kind of composition easy from within Claude Code, Cursor, or any MCP-compatible agent framework.</p>
+
+      <hr>
+
+      <p style="font-size: 14px; color: var(--text-3);">
+        <em>Last updated February 17, 2026. Benchmark data reflects a specific test run; provider performance, pricing, and features change frequently. Refer to each provider's documentation for current information. Raw benchmark data and scripts are available at <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">github.com/webpeel/webpeel/tree/main/benchmarks</a>.</em>
+      </p>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. AGPL-3.0 Licensed.</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
