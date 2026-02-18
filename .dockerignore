@@ -13,11 +13,8 @@ integrations/
 *.md
 !SELF_HOST.md
 
-# Source files (dist/ is what we need)
-src/
-*.ts
-!*.d.ts
-tsconfig.json
+# TypeScript declaration maps (not needed in container)
+*.tsbuildinfo
 
 # Internal/development files
 .internal/

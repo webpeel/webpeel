@@ -34,6 +34,10 @@ COPY package*.json ./
 # Install ALL dependencies (including optionalDependencies for server)
 RUN npm ci --include=optional
 
+# Copy source and build
+COPY . .
+RUN npx tsc
+
 # Install Playwright browsers (Chromium only for production)
 RUN npx playwright install --with-deps chromium
 
@@ -77,7 +81,7 @@ COPY --from=builder --chown=webpeel:webpeel /root/.cache/ms-playwright /home/web
 
 # Copy application files
 COPY --chown=webpeel:webpeel package*.json ./
-COPY --chown=webpeel:webpeel dist ./dist
+COPY --from=builder --chown=webpeel:webpeel /app/dist ./dist
 
 # Switch to non-root user
 USER webpeel
