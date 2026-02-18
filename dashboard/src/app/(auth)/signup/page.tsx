@@ -25,6 +25,11 @@ export default function SignupPage() {
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) { const err = await res.json(); toast.error(err.message || 'Registration failed'); setLoading(false); return; }
+      const data = await res.json();
+      // Save the API key for the onboarding modal — it's only shown once
+      if (data.apiKey) {
+        localStorage.setItem('webpeel_first_api_key', data.apiKey);
+      }
       const result = await signIn('credentials', { email, password, redirect: false });
       if (result?.error) { toast.error('Please sign in manually.'); window.location.href = '/login'; }
       else { toast.success('Welcome to WebPeel!'); window.location.href = '/dashboard'; }

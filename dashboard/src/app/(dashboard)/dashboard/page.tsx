@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +40,12 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const token = (session as any)?.apiToken;
   const [copied, setCopied] = useState(false);
+  const [storedApiKey, setStoredApiKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const key = localStorage.getItem('webpeel_first_api_key');
+    if (key) setStoredApiKey(key);
+  }, []);
 
   const { data: usage, isLoading: usageLoading, mutate: refreshUsage } = useSWR<Usage>(
     token ? ['/v1/usage', token] : null,
@@ -65,7 +71,10 @@ export default function DashboardPage() {
   );
 
   const primaryKey = keys?.keys?.[0];
-  const apiKey = primaryKey ? `${primaryKey.prefix}_${primaryKey.id}` : 'YOUR_API_KEY';
+  // Use session.apiKey (OAuth) or localStorage (email signup) — the real key is only available once at creation
+  const sessionApiKey = (session as any)?.apiKey;
+  const realApiKey = sessionApiKey || storedApiKey || null;
+  const displayApiKey = realApiKey || 'YOUR_API_KEY';
   const userName = session?.user?.name?.split(' ')[0] || session?.user?.email?.split('@')[0] || 'there';
 
   // Calculate stats
@@ -84,16 +93,16 @@ export default function DashboardPage() {
   // Code examples for different languages
   const codeExamples = {
     curl: `curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \\
-  -H "Authorization: Bearer ${apiKey}"`,
+  -H "Authorization: Bearer ${displayApiKey}"`,
     node: `const response = await fetch(
   'https://api.webpeel.dev/v1/fetch?url=https://example.com',
-  { headers: { 'Authorization': 'Bearer ${apiKey}' } }
+  { headers: { 'Authorization': 'Bearer ${displayApiKey}' } }
 );
 const data = await response.json();`,
     python: `from webpeel import WebPeel
 
 # Zero dependencies, pure stdlib
-client = WebPeel(api_key='${apiKey}')
+client = WebPeel(api_key='${displayApiKey}')
 result = client.scrape('https://example.com')
 
 # Get clean markdown
@@ -103,7 +112,7 @@ print(result.markdown)`
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
       {/* Onboarding Modal */}
-      <OnboardingModal apiKey={apiKey} />
+      <OnboardingModal sessionApiKey={sessionApiKey} />
       
       {/* Hero Section */}
       <div>
@@ -291,9 +300,9 @@ print(result.markdown)`
           <div className="space-y-3">
             <label className="text-sm font-semibold text-zinc-900">Your API Key</label>
             <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg font-mono text-sm">
-              <code className="flex-1 truncate text-zinc-700">{apiKey}</code>
+              <code className="flex-1 truncate text-zinc-700">{displayApiKey}</code>
               <button
-                onClick={() => handleCopy(apiKey)}
+                onClick={() => handleCopy(displayApiKey)}
                 className="p-2 hover:bg-zinc-200 rounded-md transition-colors"
               >
                 {copied ? (
@@ -303,13 +312,12 @@ print(result.markdown)`
                 )}
               </button>
             </div>
-            {!primaryKey && (
+            {!realApiKey && (
               <p className="text-xs text-zinc-500">
-                No API key found.{' '}
-                <a href="/keys" className="text-violet-600 hover:underline">
-                  Create one
-                </a>{' '}
-                to get started.
+                Replace <code className="font-mono bg-zinc-100 px-1 rounded">YOUR_API_KEY</code> with your key from the{' '}
+                <a href="/dashboard/keys" className="text-violet-600 hover:underline">
+                  Keys page
+                </a>.
               </p>
             )}
           </div>

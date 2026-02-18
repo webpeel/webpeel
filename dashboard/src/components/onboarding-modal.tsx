@@ -4,27 +4,33 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle2, Copy, Sparkles, Code, Rocket } from 'lucide-react';
+import { CheckCircle2, Copy, Sparkles, Code, Rocket, AlertTriangle } from 'lucide-react';
 
 interface OnboardingModalProps {
-  apiKey?: string;
+  sessionApiKey?: string;
 }
 
-export function OnboardingModal({ apiKey = 'YOUR_API_KEY' }: OnboardingModalProps) {
+export function OnboardingModal({ sessionApiKey }: OnboardingModalProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user has been onboarded
     const onboarded = localStorage.getItem('webpeel_onboarded');
     if (!onboarded) {
+      // Try to get the real API key: localStorage (from signup) or session
+      const storedKey = localStorage.getItem('webpeel_first_api_key');
+      setApiKey(storedKey || sessionApiKey || null);
       setOpen(true);
     }
-  }, []);
+  }, [sessionApiKey]);
 
   const handleComplete = () => {
     localStorage.setItem('webpeel_onboarded', 'true');
+    // Clean up the stored key — it's been shown to the user
+    localStorage.removeItem('webpeel_first_api_key');
     setOpen(false);
   };
 
@@ -34,9 +40,11 @@ export function OnboardingModal({ apiKey = 'YOUR_API_KEY' }: OnboardingModalProp
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const displayKey = apiKey || 'YOUR_API_KEY';
+
   const exampleCode = `const response = await fetch(
   'https://api.webpeel.dev/v1/fetch?url=https://example.com',
-  { headers: { 'Authorization': 'Bearer ${apiKey}' } }
+  { headers: { 'Authorization': 'Bearer ${displayKey}' } }
 );
 const data = await response.json();
 console.log(data.content);`;
@@ -79,18 +87,21 @@ console.log(data.content);`;
     {
       title: 'Your API Key',
       icon: Code,
-      content: (
+      content: apiKey ? (
         <div className="space-y-4">
-          <p className="text-zinc-600">
-            Your API key is your access token. Keep it secure and never share it publicly.
-          </p>
+          <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">
+              <strong>Save this key now!</strong> For security, we only show it once and cannot recover it. Copy it before continuing.
+            </p>
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-semibold text-zinc-900">API Key</label>
             <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
-              <code className="flex-1 truncate text-sm font-mono text-zinc-700">{apiKey}</code>
+              <code className="flex-1 text-sm font-mono text-zinc-700 break-all">{apiKey}</code>
               <button
                 onClick={() => handleCopy(apiKey)}
-                className="p-2 hover:bg-zinc-200 rounded-md transition-colors"
+                className="p-2 hover:bg-zinc-200 rounded-md transition-colors flex-shrink-0"
               >
                 {copied ? (
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -102,7 +113,27 @@ console.log(data.content);`;
           </div>
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-xs text-amber-800">
-              <strong>Tip:</strong> You can manage your API keys from the Keys page.
+              <strong>Tip:</strong> Store this in a password manager or environment variable. You can create additional keys on the <a href="/dashboard/keys" className="underline font-medium">Keys page</a>.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-zinc-600">
+            Your API key grants access to the WebPeel API. You can create and manage keys on the Keys page.
+          </p>
+          <div className="p-4 bg-violet-50 border border-violet-200 rounded-lg flex items-start gap-3">
+            <Code className="h-5 w-5 text-violet-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-violet-900">Create your first API key</p>
+              <p className="text-xs text-violet-700 mt-1">
+                Head to the <a href="/dashboard/keys" className="underline font-medium">Keys page</a> to generate your API key. Keep it safe — we only show it once!
+              </p>
+            </div>
+          </div>
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-xs text-amber-800">
+              <strong>Security tip:</strong> Never share your API key publicly. Store it in environment variables, not source code.
             </p>
           </div>
         </div>
