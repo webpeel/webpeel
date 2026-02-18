@@ -183,6 +183,160 @@
     article strong { color: var(--text); }
     hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
 
+    /* ── Table of Contents ────────────────────────── */
+    .toc {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin: 32px 0;
+    }
+    .toc-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+      letter-spacing: -0.01em;
+    }
+    .toc-list {
+      margin: 0;
+      padding: 0 0 0 20px;
+      counter-reset: toc;
+    }
+    .toc-list li {
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text-2);
+      counter-increment: toc;
+    }
+    .toc-list li::marker {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .toc-list a {
+      color: var(--text-2);
+      transition: color 0.15s;
+    }
+    .toc-list a:hover {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* ── Code Blocks ─────────────────────────────── */
+    .code-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 28px 0;
+    }
+    @media (max-width: 768px) {
+      .code-compare { grid-template-columns: 1fr; }
+    }
+    .code-block {
+      background: #1a1a2e;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .code-block-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+    }
+    .code-block pre {
+      padding: 16px;
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #e0e0e0;
+      overflow-x: auto;
+      background: transparent;
+    }
+    .code-block pre .comment { color: #6a6a8a; }
+    .code-block pre .string { color: #a5d6ff; }
+    .code-block pre .keyword { color: #ff7b72; }
+    .code-block pre .fn { color: #d2a8ff; }
+    .code-block pre .const { color: #79c0ff; }
+    .code-block.full-width { grid-column: 1 / -1; }
+
+    /* ── CTA Section ─────────────────────────────── */
+    .cta-section {
+      background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      margin: 48px 0;
+      text-align: center;
+      color: #fff;
+    }
+    .cta-section h2 {
+      font-family: 'Instrument Serif', serif !important;
+      color: #fff !important;
+      margin: 0 0 12px !important;
+      font-size: 32px !important;
+    }
+    .cta-section p {
+      color: rgba(255,255,255,0.85) !important;
+      font-size: 16px !important;
+      margin-bottom: 24px !important;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .cta-buttons {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none !important;
+      transition: all 0.2s;
+    }
+    .cta-btn-white {
+      background: #fff;
+      color: #6D28D9;
+    }
+    .cta-btn-white:hover {
+      background: #f5f3ff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .cta-btn-outline {
+      background: transparent;
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.4);
+    }
+    .cta-btn-outline:hover {
+      border-color: #fff;
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-1px);
+    }
+    .cta-code {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 14px 20px;
+      margin: 24px auto 0;
+      max-width: 400px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
+
     /* ── Callouts ────────────────────────────────── */
     .callout {
       background: linear-gradient(135deg, rgba(139,92,246,0.06) 0%, #fff 100%);
@@ -365,7 +519,7 @@
       <div class="article-meta">
         <span>February 17, 2026</span>
         <span>·</span>
-        <span>18 min read</span>
+        <span>22 min read</span>
         <span>·</span>
         <a href="/blog/">← Back to Blog</a>
       </div>
@@ -377,11 +531,29 @@
   <div class="container">
     <article>
 
-      <p>The web scraping API market has matured quickly. There are now at least seven viable tools for AI agent developers, each making different bets on speed vs reliability, search vs fetch, and simplicity vs depth. This guide maps out the entire landscape with real data, so you can make an informed choice rather than defaulting to whichever tool you saw on Hacker News.</p>
+      <p>You're building an AI agent that needs to read the web. You search "best web scraping API" and find seven different tools, each claiming to be the best. Some are fast but fail on hard pages. Some are reliable but expensive. Some are free but limited. <strong>This is the page that saves you 40 hours of testing them all.</strong></p>
+
+      <p>We ran all seven tools against the same 30 URLs — static pages, SPAs, anti-bot sites, PDFs, international content — and measured everything: success rate, speed, content quality, and cost per page. Then we wrote up honest recommendations, including cases where a competitor genuinely beats WebPeel.</p>
+
+      <!-- ── Table of Contents ──────────────────── -->
+      <nav class="toc" aria-label="Table of contents">
+        <div class="toc-title">📑 In This Guide</div>
+        <ol class="toc-list">
+          <li><a href="#tldr">TL;DR — Quick Verdict</a></li>
+          <li><a href="#big-table">The Big Comparison Table</a></li>
+          <li><a href="#code-comparison">Code Comparison</a></li>
+          <li><a href="#benchmarks">Benchmark Results</a></li>
+          <li><a href="#pricing">Pricing Comparison</a></li>
+          <li><a href="#when-to-choose">When to Choose Each Tool</a></li>
+          <li><a href="#get-started">Get Started</a></li>
+          <li><a href="#methodology">Methodology</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ol>
+      </nav>
 
       <div class="callout">
-        <div class="callout-title">How to use this page</div>
-        <p>Jump to <a href="#tldr">TL;DR</a> for the one-line verdict on each tool, <a href="#big-table">The Big Table</a> for the feature matrix, <a href="#benchmarks">Benchmarks</a> for performance data, or <a href="#when-to-choose">When to Choose Each</a> for decision guidance. All benchmark data is <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">open source and reproducible</a>.</p>
+        <div class="callout-title">All benchmark data is open source</div>
+        <p>Every number on this page is backed by reproducible benchmark code and raw JSON results in <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">our public repository</a>. Run the suite yourself against your own URLs before making a decision.</p>
       </div>
 
       <!-- ── TL;DR ─────────────────────────────── -->
@@ -584,6 +756,103 @@
 
       <p style="font-size: 13px; color: var(--text-3); margin-top: -12px;">⚠️ = limited or indirect support. Last verified February 2026. Refer to each provider's current documentation for accuracy.</p>
 
+      <!-- ── Code Comparison ────────────────────── -->
+      <h2 id="code-comparison">Code Comparison</h2>
+
+      <p>Feature tables are useful, but what does using each tool actually look like? Here's the same task — fetch a web page and get clean markdown — across four popular tools.</p>
+
+      <h3>CLI / One-liner</h3>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-block-header"><span class="tool-dot webpeel" style="margin-right:4px"></span> WebPeel</div>
+          <pre><span class="comment"># Install nothing — runs via npx</span>
+<span class="keyword">npx</span> webpeel <span class="string">"https://example.com"</span>
+
+<span class="comment"># With search</span>
+<span class="keyword">npx</span> webpeel search <span class="string">"best AI frameworks 2026"</span>
+
+<span class="comment"># Screenshot</span>
+<span class="keyword">npx</span> webpeel screenshot <span class="string">"https://example.com"</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="tool-dot firecrawl" style="margin-right:4px"></span> Firecrawl</div>
+          <pre><span class="comment"># Requires API key</span>
+<span class="keyword">curl</span> -X POST https://api.firecrawl.dev/v1/scrape \
+  -H <span class="string">"Authorization: Bearer fc-..."</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{"url":"https://example.com"}'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="tool-dot jina" style="margin-right:4px"></span> Jina Reader</div>
+          <pre><span class="comment"># Simplest possible — just prepend URL</span>
+<span class="keyword">curl</span> <span class="string">"https://r.jina.ai/https://example.com"</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="tool-dot tavily" style="margin-right:4px"></span> Tavily</div>
+          <pre><span class="comment"># Search-first API, requires key</span>
+<span class="keyword">curl</span> -X POST https://api.tavily.com/search \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{"api_key":"tvly-...","query":"..."}'</span></pre>
+        </div>
+      </div>
+
+      <h3>Node.js SDK</h3>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-block-header"><span class="tool-dot webpeel" style="margin-right:4px"></span> WebPeel</div>
+          <pre><span class="keyword">import</span> { <span class="fn">peel</span> } <span class="keyword">from</span> <span class="string">'webpeel'</span>;
+
+<span class="comment">// One function — handles everything</span>
+<span class="keyword">const</span> result = <span class="keyword">await</span> <span class="fn">peel</span>(<span class="string">'https://example.com'</span>);
+console.log(result.markdown);
+console.log(result.metadata.title);
+
+<span class="comment">// Structured extraction with LLM</span>
+<span class="keyword">const</span> data = <span class="keyword">await</span> <span class="fn">peel</span>(<span class="string">'https://example.com'</span>, {
+  extract: { schema: { title: <span class="string">'string'</span>, price: <span class="string">'number'</span> } }
+});</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="tool-dot firecrawl" style="margin-right:4px"></span> Firecrawl</div>
+          <pre><span class="keyword">import</span> FirecrawlApp <span class="keyword">from</span> <span class="string">'@mendable/firecrawl-js'</span>;
+
+<span class="keyword">const</span> app = <span class="keyword">new</span> <span class="fn">FirecrawlApp</span>({
+  apiKey: <span class="string">'fc-...'</span>
+});
+
+<span class="keyword">const</span> result = <span class="keyword">await</span> app.<span class="fn">scrapeUrl</span>(
+  <span class="string">'https://example.com'</span>,
+  { formats: [<span class="string">'markdown'</span>] }
+);
+console.log(result.markdown);</pre>
+        </div>
+      </div>
+
+      <h3>MCP Server (Claude Code / Cursor)</h3>
+      <div class="code-compare">
+        <div class="code-block full-width">
+          <div class="code-block-header"><span class="tool-dot webpeel" style="margin-right:4px"></span> WebPeel — Zero-config MCP setup</div>
+          <pre><span class="comment">// Add to your MCP config (claude_desktop_config.json / .cursor/mcp.json)</span>
+{
+  <span class="string">"mcpServers"</span>: {
+    <span class="string">"webpeel"</span>: {
+      <span class="string">"command"</span>: <span class="string">"npx"</span>,
+      <span class="string">"args"</span>: [<span class="string">"webpeel"</span>, <span class="string">"--mcp"</span>]
+    }
+  }
+}
+
+<span class="comment">// That's it. 11 tools instantly available:</span>
+<span class="comment">// fetch, search, crawl, map, extract, screenshot,</span>
+<span class="comment">// batch, brand, summarize, answer, change_track</span></pre>
+        </div>
+      </div>
+
+      <div class="callout callout-guide">
+        <div class="callout-title">💡 WebPeel works without an API key</div>
+        <p>Unlike Firecrawl, Tavily, and Exa, WebPeel runs locally by default. No signup, no API key, no billing dashboard. The CLI, library, and MCP server all work out of the box with <code>npx webpeel</code>. Need more than 125 fetches/week? <a href="https://app.webpeel.dev/signup">Sign up for a free hosted key.</a></p>
+      </div>
+
       <!-- ── Benchmark Results ──────────────────── -->
       <h2 id="benchmarks">Benchmark Results</h2>
 
@@ -736,7 +1005,7 @@
       </div>
 
       <h3>Median Speed — lower is better</h3>
-      <p>WebPeel ranks 4th. Tavily and Exa are faster because they often serve indexed or pre-fetched content. WebPeel fetches every page live and escalates to browser rendering when needed — that's why it's slower and more reliable.</p>
+      <p>WebPeel ranks 4th at 373ms median (p95: 1,855ms). Tavily and Exa are faster because they often serve indexed or pre-fetched content. WebPeel fetches every page live and escalates to browser rendering when needed — that's why it's slower and more reliable.</p>
 
       <div class="bench-chart">
         <div class="bench-row">
@@ -958,6 +1227,7 @@
             <li>You want live content, not indexed/cached snapshots</li>
             <li>You want to self-host with no per-request cost</li>
             <li>You care about output quality for LLM prompts</li>
+            <li>You're <a href="/docs/migrate-from-firecrawl">switching from Firecrawl</a> and want a drop-in alternative</li>
           </ul>
         </div>
 
@@ -1049,6 +1319,18 @@
         </div>
       </div>
 
+      <!-- ── Get Started ───────────────────────── -->
+      <div class="cta-section" id="get-started">
+        <h2>Ready to Try WebPeel?</h2>
+        <p>100% success rate. 11 MCP tools. Open source. No API key required to start.</p>
+        <div class="cta-buttons">
+          <a href="https://app.webpeel.dev/signup" class="cta-btn cta-btn-white">Get Free API Key →</a>
+          <a href="https://github.com/webpeel/webpeel" class="cta-btn cta-btn-outline">⭐ Star on GitHub</a>
+          <a href="/docs/" class="cta-btn cta-btn-outline">Read the Docs</a>
+        </div>
+        <div class="cta-code">$ npx webpeel "https://any-url.com"</div>
+      </div>
+
       <!-- ── Methodology ────────────────────────── -->
       <h2 id="methodology">Methodology</h2>
 
@@ -1091,6 +1373,38 @@
       <p style="font-size: 14px; color: var(--text-3);">
         <em>Last updated February 17, 2026. Benchmark data reflects a specific test run; provider performance, pricing, and features change frequently. Refer to each provider's documentation for current information. Raw benchmark data and scripts are available at <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">github.com/webpeel/webpeel/tree/main/benchmarks</a>.</em>
       </p>
+
+      <hr>
+
+      <!-- ── Related Reading ────────────────────── -->
+      <h2 id="related">Related Reading</h2>
+
+      <div class="choose-grid" style="margin-top: 20px;">
+        <a href="/blog/benchmarks" style="text-decoration: none;">
+          <div class="choose-card" style="cursor: pointer; transition: all 0.2s;">
+            <h3 style="font-size: 16px; margin: 0 0 6px; color: var(--text);">📊 Full Benchmark Report</h3>
+            <p style="margin: 0; font-size: 14px; color: var(--text-2);">Deep dive into the 30-URL benchmark across 6 categories with methodology details.</p>
+          </div>
+        </a>
+        <a href="/blog/webpeel-vs-firecrawl" style="text-decoration: none;">
+          <div class="choose-card" style="cursor: pointer; transition: all 0.2s;">
+            <h3 style="font-size: 16px; margin: 0 0 6px; color: var(--text);">🔥 WebPeel vs Firecrawl</h3>
+            <p style="margin: 0; font-size: 14px; color: var(--text-2);">Detailed 1v1 comparison with migration guide for teams switching from Firecrawl.</p>
+          </div>
+        </a>
+        <a href="/blog/best-mcp-web-fetcher" style="text-decoration: none;">
+          <div class="choose-card" style="cursor: pointer; transition: all 0.2s;">
+            <h3 style="font-size: 16px; margin: 0 0 6px; color: var(--text);">🔌 Best MCP Web Fetcher</h3>
+            <p style="margin: 0; font-size: 14px; color: var(--text-2);">How to use WebPeel's 11 MCP tools with Claude Code, Cursor, and Windsurf.</p>
+          </div>
+        </a>
+        <a href="/blog/how-webpeel-works" style="text-decoration: none;">
+          <div class="choose-card" style="cursor: pointer; transition: all 0.2s;">
+            <h3 style="font-size: 16px; margin: 0 0 6px; color: var(--text);">⚙️ How WebPeel Works</h3>
+            <p style="margin: 0; font-size: 14px; color: var(--text-2);">Inside the smart escalation engine: HTTP → browser → stealth pipeline.</p>
+          </div>
+        </a>
+      </div>
 
     </article>
   </div>
