@@ -199,13 +199,14 @@
       background: #fff;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px 20px;
-      margin: 28px 0;
+      padding: 24px 28px;
+      margin: 32px 0;
     }
     .toc-title {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       color: var(--text);
+      margin-bottom: 0;
       letter-spacing: -0.01em;
       cursor: pointer;
       display: flex;
@@ -222,25 +223,23 @@
     .toc[open] .toc-title::after {
       transform: rotate(180deg);
     }
+    .toc[open] .toc-title {
+      margin-bottom: 14px;
+    }
     .toc-list {
-      margin: 10px 0 0;
-      padding: 0;
-      list-style: none;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 16px;
+      margin: 0;
+      padding: 0 0 0 20px;
+      counter-reset: toc;
     }
     .toc-list li {
-      font-size: 13px;
-      line-height: 1.6;
+      font-size: 15px;
+      line-height: 1.8;
       color: var(--text-2);
-    }
-    .toc-list li::before {
-      content: counter(toc) '. ';
       counter-increment: toc;
+    }
+    .toc-list li::marker {
       color: var(--accent);
       font-weight: 600;
-      font-size: 12px;
     }
     .toc-list a {
       color: var(--text-2);
@@ -605,14 +604,14 @@
 
       <!-- ── Table of Contents ──────────────────── -->
       <details class="toc" open>
-        <summary class="toc-title">📑 Jump to section</summary>
-        <ol class="toc-list" style="counter-reset: toc;">
-          <li><a href="#tldr">TL;DR</a></li>
-          <li><a href="#big-table">Feature Table</a></li>
-          <li><a href="#code-comparison">Code</a></li>
-          <li><a href="#benchmarks">Benchmarks</a></li>
-          <li><a href="#pricing">Pricing</a></li>
-          <li><a href="#when-to-choose">Recommendations</a></li>
+        <summary class="toc-title">📑 In This Guide</summary>
+        <ol class="toc-list">
+          <li><a href="#tldr">TL;DR — Quick Verdict</a></li>
+          <li><a href="#big-table">The Big Comparison Table</a></li>
+          <li><a href="#code-comparison">Code Comparison</a></li>
+          <li><a href="#benchmarks">Benchmark Results</a></li>
+          <li><a href="#pricing">Pricing Comparison</a></li>
+          <li><a href="#when-to-choose">When to Choose Each Tool</a></li>
           <li><a href="#get-started">Get Started</a></li>
           <li><a href="#methodology">Methodology</a></li>
           <li><a href="#faq">FAQ</a></li>
