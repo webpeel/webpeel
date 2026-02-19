@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [0.11.0] - 2026-02-19
+
+### 🚀 Features
+
+- **JSON Schema Extraction** — `--extract-schema '{"products":[{"name":"","price":""}]}'` for structured LLM extraction. Supports both simple example objects (auto-converted) and full JSON Schema. Firecrawl-compatible `POST /v1/extract` API endpoint.
+- **Remote Hosted MCP** — `https://api.webpeel.dev/v2/mcp` or `https://api.webpeel.dev/{key}/v2/mcp` (Firecrawl-style). No npm install needed — paste a URL into Cursor, Claude Desktop, or Windsurf.
+- **MCP HTTP Transport** — MCP server now supports HTTP Streamable transport (set `MCP_HTTP_MODE=true`), in addition to the default stdio.
+- **Proxy Support** — `--proxy http://host:port` or `--proxy socks5://user:pass@host:port`. Works with both simple HTTP fetches (undici ProxyAgent) and browser rendering (Playwright proxy).
+
+### 📚 Documentation
+
+- One-click Cursor deep-link install button.
+- Claude Desktop, Windsurf, and remote URL config snippets in CLI docs.
+- `llms.txt` documentation index for LLM discovery.
+- MCP tools reference table in docs.
+
+### 🧪 Tests
+
+- 523 tests (520 pass, 3 skipped) — 26 new tests for schema extraction and proxy.
+
+---
+
 ## [0.10.0] - 2026-02-19
 
 ### 🚀 Features
@@ -446,6 +468,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stealth mode with playwright-extra
 - Zero-config setup
 
+[0.11.0]: https://github.com/webpeel/webpeel/releases/tag/v0.11.0
 [0.10.0]: https://github.com/webpeel/webpeel/releases/tag/v0.10.0
 [0.9.0]: https://github.com/webpeel/webpeel/releases/tag/v0.9.0
 [0.8.1]: https://github.com/webpeel/webpeel/releases/tag/v0.8.1

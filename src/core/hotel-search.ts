@@ -30,6 +30,8 @@ export interface HotelSearchOptions {
   stealth?: boolean;
   /** Suppress progress output */
   silent?: boolean;
+  /** Proxy URL for requests (http://host:port, socks5://user:pass@host:port) */
+  proxy?: string;
 }
 
 export interface HotelResult {
@@ -376,6 +378,7 @@ export async function searchHotels(options: HotelSearchOptions): Promise<HotelSe
   const limit = options.limit ?? 20;
   const allowedSources = new Set((options.sources ?? DEFAULT_SOURCES).map(s => s.toLowerCase()));
   const useGlobalStealth = options.stealth ?? false;
+  const proxyUrl = options.proxy;
 
   // ── Build source URLs ──────────────────────────────────────────────────────
   const allSourceUrls = buildSourceUrls(destination, checkin, checkout).filter(s =>
@@ -404,6 +407,7 @@ export async function searchHotels(options: HotelSearchOptions): Promise<HotelSe
         stealth: useStealth,
         timeout,
         ...(actions ? { actions } : {}),
+        ...(proxyUrl ? { proxy: proxyUrl } : {}),
       });
 
       // Prefer CSS schema extraction when a schema is available for this source

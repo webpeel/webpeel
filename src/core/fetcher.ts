@@ -13,7 +13,7 @@ import { chromium, type Browser, type Page } from 'playwright';
 import { chromium as stealthChromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { getRealisticUserAgent, getSecCHUA, getSecCHUAPlatform } from './user-agents.js';
-import { fetch as undiciFetch, Agent, type Response } from 'undici';
+import { fetch as undiciFetch, Agent, ProxyAgent, type Response } from 'undici';
 import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types.js';
 import type { PageAction } from '../types.js';
 import { getCached } from './cache.js';
@@ -521,7 +521,8 @@ export async function simpleFetch(
   userAgent?: string,
   timeoutMs: number = 30000,
   customHeaders?: Record<string, string>,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  proxy?: string
 ): Promise<FetchResult> {
   // SECURITY: Validate URL to prevent SSRF
   validateUrl(url);
@@ -610,10 +611,13 @@ export async function simpleFetch(
         requestHeaders['If-Modified-Since'] = validators.lastModified;
       }
 
+      // Use proxy if provided, otherwise use shared connection pool
+      const dispatcher = proxy ? new ProxyAgent(proxy) : httpPool;
+
       const response = await undiciFetch(currentUrl, {
         headers: requestHeaders,
         signal,
-        dispatcher: httpPool,
+        dispatcher,
         redirect: 'manual', // SECURITY: Manual redirect handling
       });
 
@@ -1056,6 +1060,13 @@ export async function browserFetch(
      * than --user-data-dir for session injection.
      */
     storageState?: any;
+    /**
+     * Proxy URL for routing browser requests through a proxy server.
+     * Supports HTTP, HTTPS, and SOCKS5 proxies.
+     * Format: protocol://[user:pass@]host:port
+     * Examples: 'http://proxy.example.com:8080', 'socks5://user:pass@host:1080'
+     */
+    proxy?: string;
   } = {}
 ): Promise<FetchResult> {
   // SECURITY: Validate URL to prevent SSRF
@@ -1076,6 +1087,7 @@ export async function browserFetch(
     profileDir,
     headed = false,
     storageState,
+    proxy,
   } = options;
 
   // Validate user agent if provided
@@ -1133,8 +1145,8 @@ export async function browserFetch(
         ? await getStealthBrowser()
         : await getBrowser();
 
-    // Only use the shared page pool for non-stealth, non-profile, non-keepOpen, non-storageState fetches
-    const shouldUsePagePool = !stealth && !userAgent && !keepPageOpen && !usingProfileBrowser && !storageState;
+    // Only use the shared page pool for non-stealth, non-profile, non-keepOpen, non-storageState, non-proxy fetches
+    const shouldUsePagePool = !stealth && !userAgent && !keepPageOpen && !usingProfileBrowser && !storageState && !proxy;
     if (shouldUsePagePool) {
       page = takePooledPage();
       usingPooledPage = !!page;
@@ -1159,7 +1171,30 @@ export async function browserFetch(
           : {}),
       };
 
-      if (storageState) {
+      if (proxy) {
+        // Parse proxy URL to extract auth credentials for Playwright
+        let playwrightProxy: { server: string; username?: string; password?: string };
+        try {
+          const proxyUrl = new URL(proxy);
+          playwrightProxy = {
+            server: `${proxyUrl.protocol}//${proxyUrl.host}`,
+            username: proxyUrl.username || undefined,
+            password: proxyUrl.password || undefined,
+          };
+        } catch {
+          // Fallback: use proxy string as-is
+          playwrightProxy = { server: proxy };
+        }
+
+        // Create an isolated context with the proxy and optional storageState
+        ownedContext = await browser.newContext({
+          ...pageOptions,
+          proxy: playwrightProxy,
+          viewport: { width: fetchVp.width, height: fetchVp.height },
+          ...(storageState ? { storageState } : {}),
+        });
+        page = await ownedContext.newPage();
+      } else if (storageState) {
         // Create an isolated context with the injected storage state (cookies + localStorage)
         ownedContext = await browser.newContext({
           ...pageOptions,

@@ -142,6 +142,7 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     profileDir,
     headed = false,
     storageState,
+    proxy,
   } = options;
   void _stream;
 
@@ -186,6 +187,7 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       profileDir,
       headed,
       storageState,
+      proxy,
     });
 
     // Detect content type from the response

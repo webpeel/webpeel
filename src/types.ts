@@ -135,6 +135,16 @@ export interface PeelOptions {
    */
   budget?: number;
   /**
+   * Proxy URL for routing requests through a proxy server.
+   * Supports HTTP, HTTPS, and SOCKS5 proxies.
+   * Format: protocol://[user:pass@]host:port
+   * Examples:
+   *   'http://proxy.example.com:8080'
+   *   'http://user:pass@proxy.example.com:8080'
+   *   'socks5://user:pass@proxy.example.com:1080'
+   */
+  proxy?: string;
+  /**
    * Path to a persistent Chrome user-data-dir directory.
    * When set, cookies, history, and login sessions survive between fetch calls
    * in the same process. Each unique profileDir gets its own browser instance.

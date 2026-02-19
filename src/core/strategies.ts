@@ -191,6 +191,12 @@ export interface StrategyOptions {
    * Loaded from a named profile by the CLI profile system.
    */
   storageState?: any;
+  /**
+   * Proxy URL for routing requests through a proxy server.
+   * Supports HTTP, HTTPS, and SOCKS5 proxies.
+   * Format: protocol://[user:pass@]host:port
+   */
+  proxy?: string;
 }
 
 /* ---------- browser-level fetch helper ---------------------------------- */
@@ -210,6 +216,7 @@ interface BrowserStrategyOptions {
   profileDir?: string;
   headed?: boolean;
   storageState?: any;
+  proxy?: string;
 }
 
 async function fetchWithBrowserStrategy(
@@ -231,6 +238,7 @@ async function fetchWithBrowserStrategy(
     profileDir,
     headed,
     storageState,
+    proxy,
   } = options;
 
   try {
@@ -248,6 +256,7 @@ async function fetchWithBrowserStrategy(
       signal,
       profileDir,
       headed,
+      proxy,
       storageState,
     });
 
@@ -275,6 +284,7 @@ async function fetchWithBrowserStrategy(
         profileDir,
         headed,
         storageState,
+        proxy,
       });
       return { ...result, method: 'stealth' };
     }
@@ -298,6 +308,7 @@ async function fetchWithBrowserStrategy(
         signal,
         profileDir,
         headed,
+        proxy,
       });
       return { ...result, method: effectiveStealth ? 'stealth' : 'browser' };
     }
@@ -335,6 +346,7 @@ export async function smartFetch(
     profileDir,
     headed = false,
     storageState,
+    proxy,
   } = options;
 
   const hooks = getStrategyHooks();
@@ -374,7 +386,8 @@ export async function smartFetch(
     !headers &&
     !cookies &&
     waitMs === 0 &&
-    !userAgent;
+    !userAgent &&
+    !proxy;
 
   /* ---- hook-based cache check (premium) -------------------------------- */
 
@@ -385,7 +398,7 @@ export async function smartFetch(
         // Background revalidation — fire-and-forget
         void (async () => {
           try {
-            const fresh = await simpleFetch(url, userAgent, timeoutMs);
+            const fresh = await simpleFetch(url, userAgent, timeoutMs, undefined, undefined, proxy);
             if (!looksLikeShellPage(fresh)) {
               hooks.setCache?.(url, { ...fresh, method: 'simple' as const });
             }
@@ -436,6 +449,7 @@ export async function smartFetch(
     profileDir,
     headed,
     storageState,
+    proxy,
   };
 
   /* ---- Strategy: simple fetch (with optional race) --------------------- */
@@ -451,6 +465,7 @@ export async function smartFetch(
           timeoutMs,
           headers,
           simpleAbortController.signal,
+          proxy,
         ),
       3,
     ).then((result) => {

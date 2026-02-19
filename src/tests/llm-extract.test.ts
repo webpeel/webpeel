@@ -9,6 +9,8 @@ import {
   parseItems,
   estimateCost,
   extractWithLLM,
+  convertSimpleToJsonSchema,
+  isFullJsonSchema,
   type LLMExtractionOptions,
 } from '../core/llm-extract.js';
 
@@ -28,6 +30,124 @@ function makeMockFetch(items: Array<Record<string, any>>, usage = { prompt_token
     text: async () => body,
   });
 }
+
+// ---------------------------------------------------------------------------
+// convertSimpleToJsonSchema
+// ---------------------------------------------------------------------------
+
+describe('convertSimpleToJsonSchema', () => {
+  it('converts a simple flat object with string values', () => {
+    const example = { name: '', price: '', url: '' };
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.type).toBe('object');
+    expect(schema.properties.name).toEqual({ type: 'string' });
+    expect(schema.properties.price).toEqual({ type: 'string' });
+    expect(schema.properties.url).toEqual({ type: 'string' });
+  });
+
+  it('converts an array of objects', () => {
+    const example = [{ name: '', price: '', url: '' }];
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.type).toBe('array');
+    expect(schema.items.type).toBe('object');
+    expect(schema.items.properties.name).toEqual({ type: 'string' });
+  });
+
+  it('converts nested objects', () => {
+    const example = { product: { name: '', price: 0 }, rating: 4.5 };
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.type).toBe('object');
+    expect(schema.properties.product.type).toBe('object');
+    expect(schema.properties.product.properties.name).toEqual({ type: 'string' });
+    expect(schema.properties.product.properties.price).toEqual({ type: 'integer' });
+    expect(schema.properties.rating).toEqual({ type: 'number' });
+  });
+
+  it('converts integer values correctly', () => {
+    const example = { count: 0 };
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.properties.count).toEqual({ type: 'integer' });
+  });
+
+  it('converts float values correctly', () => {
+    const example = { rating: 4.5 };
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.properties.rating).toEqual({ type: 'number' });
+  });
+
+  it('handles boolean values', () => {
+    const example = { inStock: false };
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.properties.inStock).toEqual({ type: 'boolean' });
+  });
+
+  it('handles arrays with objects containing nested arrays', () => {
+    const example = { products: [{ name: '', tags: [''] }] };
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.properties.products.type).toBe('array');
+    expect(schema.properties.products.items.properties.name).toEqual({ type: 'string' });
+    expect(schema.properties.products.items.properties.tags.type).toBe('array');
+  });
+
+  it('handles empty objects', () => {
+    const example = {};
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.type).toBe('object');
+    expect(schema.properties).toEqual({});
+  });
+
+  it('handles empty arrays', () => {
+    const example: unknown[] = [];
+    const schema = convertSimpleToJsonSchema(example as any) as any;
+    expect(schema.type).toBe('array');
+  });
+
+  it('converts the Firecrawl-style example correctly', () => {
+    const example = { products: [{ name: '', price: '', url: '' }] };
+    const schema = convertSimpleToJsonSchema(example) as any;
+    expect(schema.type).toBe('object');
+    expect(schema.properties.products.type).toBe('array');
+    expect(schema.properties.products.items.type).toBe('object');
+    expect(Object.keys(schema.properties.products.items.properties)).toEqual(['name', 'price', 'url']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isFullJsonSchema
+// ---------------------------------------------------------------------------
+
+describe('isFullJsonSchema', () => {
+  it('returns true for a full JSON Schema object', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        price: { type: 'number' },
+      },
+    };
+    expect(isFullJsonSchema(schema)).toBe(true);
+  });
+
+  it('returns false for a simple example object', () => {
+    const example = { name: '', price: '' };
+    expect(isFullJsonSchema(example)).toBe(false);
+  });
+
+  it('returns false for an array example', () => {
+    const example = [{ name: '' }];
+    expect(isFullJsonSchema(example as any)).toBe(false);
+  });
+
+  it('returns false when type is missing but properties is present', () => {
+    const schema = { properties: { name: { type: 'string' } } };
+    expect(isFullJsonSchema(schema)).toBe(false);
+  });
+
+  it('returns false when type is object but properties is missing', () => {
+    const schema = { type: 'object' };
+    expect(isFullJsonSchema(schema)).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // buildUserMessage
@@ -62,6 +182,19 @@ describe('buildUserMessage', () => {
     const msg = buildUserMessage('content', 'focus on hotels', schema);
     expect(msg).toContain('focus on hotels');
     expect(msg).toContain('Extract data matching this schema:');
+  });
+
+  it('includes a full JSON Schema in the user message', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        price: { type: 'number' },
+      },
+    };
+    const msg = buildUserMessage('content', undefined, schema);
+    expect(msg).toContain('"properties"');
+    expect(msg).toContain('"name"');
   });
 });
 
@@ -132,6 +265,28 @@ describe('parseItems', () => {
 
   it('throws on completely invalid JSON', () => {
     expect(() => parseItems('not json at all!!!!')).toThrow();
+  });
+
+  it('parses schema-shaped response (object with schema keys)', () => {
+    const schemaResponse = { products: [{ name: 'Widget', price: '$9.99' }] };
+    const result = parseItems(JSON.stringify(schemaResponse));
+    // single object wrapped in array
+    expect(Array.isArray(result)).toBe(true);
+    expect(result[0]!.products).toBeDefined();
+  });
+
+  it('handles JSON embedded in text (with preamble)', () => {
+    const text = 'Sure, here is the JSON:\n[{"title":"Item A"}]';
+    const result = parseItems(text);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.title).toBe('Item A');
+  });
+
+  it('handles JSON object embedded in text', () => {
+    const text = 'Here is the result:\n{"name":"Widget","price":"$5"}';
+    const result = parseItems(text);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result[0]!.name).toBe('Widget');
   });
 });
 
@@ -333,5 +488,213 @@ describe('extractWithLLM', () => {
 
     const userContent = capturedBody.messages[1].content;
     expect(userContent).toContain('only extract hotel names');
+  });
+
+  // -------------------------------------------------------------------------
+  // Schema-aware tests (new)
+  // -------------------------------------------------------------------------
+
+  it('uses schema-aware system prompt when schema is provided', async () => {
+    let capturedBody: any = {};
+
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({ name: 'Widget', price: '$5' }) } }],
+          usage: { prompt_tokens: 100, completion_tokens: 50 },
+          model: 'gpt-4o-mini',
+        }),
+        text: async () => '{}',
+      };
+    });
+
+    await extractWithLLM({
+      content: 'Widget is $5',
+      apiKey: 'sk-test',
+      schema: { type: 'object', properties: { name: { type: 'string' }, price: { type: 'string' } } },
+    });
+
+    const systemPrompt = capturedBody.messages[0].content;
+    expect(systemPrompt).toContain('EXACTLY matches the provided schema');
+    expect(systemPrompt).not.toContain('Return a JSON array');
+  });
+
+  it('uses generic system prompt when NO schema is provided', async () => {
+    let capturedBody: any = {};
+
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: '[]' } }],
+          usage: { prompt_tokens: 10, completion_tokens: 5 },
+          model: 'gpt-4o-mini',
+        }),
+        text: async () => '[]',
+      };
+    });
+
+    await extractWithLLM({ content: 'test', apiKey: 'sk-test' });
+
+    const systemPrompt = capturedBody.messages[0].content;
+    expect(systemPrompt).toContain('Return a JSON array');
+  });
+
+  it('uses json_schema response_format for full JSON Schema', async () => {
+    let capturedBody: any = {};
+
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({ name: 'Widget', price: '$5' }) } }],
+          usage: { prompt_tokens: 100, completion_tokens: 50 },
+          model: 'gpt-4o-mini',
+        }),
+        text: async () => '{}',
+      };
+    });
+
+    const fullSchema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        price: { type: 'string' },
+      },
+    };
+
+    await extractWithLLM({
+      content: 'Widget - $5',
+      apiKey: 'sk-test',
+      schema: fullSchema,
+    });
+
+    expect(capturedBody.response_format.type).toBe('json_schema');
+    expect(capturedBody.response_format.json_schema.name).toBe('extraction');
+    expect(capturedBody.response_format.json_schema.strict).toBe(true);
+  });
+
+  it('uses json_object response_format for simple example schema', async () => {
+    let capturedBody: any = {};
+
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: '{"products":[{"name":"Widget","price":"$5"}]}' } }],
+          usage: { prompt_tokens: 100, completion_tokens: 50 },
+          model: 'gpt-4o-mini',
+        }),
+        text: async () => '{}',
+      };
+    });
+
+    // Simple example schema (no type/properties)
+    const simpleSchema = { products: [{ name: '', price: '' }] };
+
+    await extractWithLLM({
+      content: 'Widget - $5',
+      apiKey: 'sk-test',
+      schema: simpleSchema,
+    });
+
+    // Simple schemas get converted to full JSON Schema internally, which has type+properties
+    // so they now use json_schema format
+    expect(capturedBody.response_format.type).toBeDefined();
+  });
+
+  it('auto-converts simple schema to full JSON Schema before sending', async () => {
+    let capturedBody: any = {};
+
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: '{"name":"Widget"}' } }],
+          usage: { prompt_tokens: 100, completion_tokens: 50 },
+          model: 'gpt-4o-mini',
+        }),
+        text: async () => '{}',
+      };
+    });
+
+    const simpleSchema = { name: '', price: '' };
+
+    await extractWithLLM({
+      content: 'Widget - $5',
+      apiKey: 'sk-test',
+      schema: simpleSchema,
+    });
+
+    // The user message should contain the CONVERTED schema (with type/properties)
+    const userMsg = capturedBody.messages[1].content;
+    expect(userMsg).toContain('"type"');
+    expect(userMsg).toContain('"properties"');
+  });
+
+  it('passes schema in user message when schema is provided', async () => {
+    let capturedBody: any = {};
+
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: '[]' } }],
+          usage: { prompt_tokens: 10, completion_tokens: 5 },
+          model: 'gpt-4o-mini',
+        }),
+        text: async () => '[]',
+      };
+    });
+
+    const schema = {
+      type: 'object',
+      properties: { name: { type: 'string' } },
+    };
+
+    await extractWithLLM({
+      content: 'some content',
+      apiKey: 'sk-test',
+      schema,
+    });
+
+    const userContent = capturedBody.messages[1].content;
+    expect(userContent).toContain('Extract data matching this schema:');
+    expect(userContent).toContain('"name"');
+  });
+
+  it('works with both schema and instruction together', async () => {
+    let capturedBody: any = {};
+
+    global.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: '{"name":"Widget","price":"$5"}' } }],
+          usage: { prompt_tokens: 100, completion_tokens: 50 },
+          model: 'gpt-4o-mini',
+        }),
+        text: async () => '{}',
+      };
+    });
+
+    await extractWithLLM({
+      content: 'Widget for $5',
+      apiKey: 'sk-test',
+      instruction: 'Focus on product details',
+      schema: { type: 'object', properties: { name: { type: 'string' }, price: { type: 'string' } } },
+    });
+
+    const userContent = capturedBody.messages[1].content;
+    expect(userContent).toContain('Focus on product details');
+    expect(userContent).toContain('Extract data matching this schema:');
   });
 });

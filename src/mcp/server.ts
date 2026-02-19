@@ -1715,10 +1715,59 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  
-  console.error('WebPeel MCP server running on stdio');
+  const isHttpMode =
+    process.env.MCP_HTTP_MODE === 'true' ||
+    process.env.HTTP_STREAMABLE_SERVER === 'true';
+
+  if (isHttpMode) {
+    // HTTP Streamable transport — start a minimal Express server
+    const { StreamableHTTPServerTransport } = await import(
+      '@modelcontextprotocol/sdk/server/streamableHttp.js'
+    );
+    const express = await import('express');
+    const httpApp = express.default();
+
+    // Parse JSON bodies so req.body is available for the transport
+    httpApp.use(express.default.json({ limit: '1mb' }));
+
+    httpApp.post('/v2/mcp', async (req: any, res: any) => {
+      try {
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined, // stateless
+        });
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+        transport.close().catch(() => {});
+      } catch (err) {
+        console.error('MCP HTTP error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: '2.0',
+            error: { code: -32603, message: 'Internal error' },
+            id: null,
+          });
+        }
+      }
+    });
+
+    httpApp.get('/v2/mcp', (_req: any, res: any) => {
+      res.status(405).json({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'Use POST to send MCP messages.' },
+        id: null,
+      });
+    });
+
+    const port = parseInt(process.env.MCP_PORT || '3100', 10);
+    httpApp.listen(port, () => {
+      console.error(`WebPeel MCP server (HTTP) listening on port ${port}`);
+    });
+  } else {
+    // Default: stdio transport
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error('WebPeel MCP server running on stdio');
+  }
 }
 
 main().catch((error) => {

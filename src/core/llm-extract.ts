@@ -28,11 +28,77 @@ const MODEL_COSTS: Record<string, [number, number]> = {
   'gpt-4o': [2.50, 10.0],
 };
 
-const SYSTEM_PROMPT = `You are a data extraction assistant. Extract structured data from the provided web content.
+const GENERIC_SYSTEM_PROMPT = `You are a data extraction assistant. Extract structured data from the provided web content.
 Return a JSON array of objects. Each object represents one item/listing found on the page.
 Always include these fields when available: title, price, link, rating, description, image.
 If the user provides additional instructions, follow them.
 Return ONLY valid JSON — no markdown, no explanation, just the array.`;
+
+const SCHEMA_SYSTEM_PROMPT = `You are a data extraction assistant. Extract structured data from the web content below.
+Return a JSON object that EXACTLY matches the provided schema structure.
+Fill in the values from the page content. Use null for fields you can't find.
+Return ONLY valid JSON matching the schema — no markdown, no explanation.`;
+
+/**
+ * Detect if schema is a "full" JSON Schema (has type:"object" and properties).
+ */
+export function isFullJsonSchema(schema: object): boolean {
+  const s = schema as Record<string, any>;
+  return s['type'] === 'object' && typeof s['properties'] === 'object';
+}
+
+/**
+ * Convert a simple example object to a proper JSON Schema.
+ * 
+ * Supports:
+ *   - Primitive values: "" → { type: "string" }, 0 → { type: "number" }
+ *   - Arrays of objects: [{name:"", price:""}] → { type: "array", items: { type: "object", properties: {...} } }
+ *   - Nested objects
+ */
+export function convertSimpleToJsonSchema(example: object): object {
+  return buildSchemaFromValue(example);
+}
+
+function buildSchemaFromValue(value: unknown): object {
+  if (value === null || value === undefined) {
+    return { type: 'string' };
+  }
+
+  if (typeof value === 'string') {
+    return { type: 'string' };
+  }
+
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? { type: 'integer' } : { type: 'number' };
+  }
+
+  if (typeof value === 'boolean') {
+    return { type: 'boolean' };
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return { type: 'array', items: {} };
+    }
+    // Use the first element as the template for item schema
+    const itemSchema = buildSchemaFromValue(value[0]);
+    return { type: 'array', items: itemSchema };
+  }
+
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    const properties: Record<string, object> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      properties[key] = buildSchemaFromValue(val);
+    }
+    return {
+      type: 'object',
+      properties,
+    };
+  }
+
+  return { type: 'string' };
+}
 
 /**
  * Build the user message from content + optional instruction + optional schema.
@@ -68,8 +134,9 @@ export function estimateCost(model: string, inputTokens: number, outputTokens: n
 /**
  * Parse the LLM response text into an items array.
  * Handles both `{ "items": [...] }` and `[...]` formats.
+ * When a schema is provided, also handles single-object responses.
  */
-export function parseItems(text: string): Array<Record<string, any>> {
+export function parseItems(text: string, _schema?: object): Array<Record<string, any>> {
   const trimmed = text.trim();
 
   // Try to parse as-is first
@@ -109,13 +176,69 @@ export function parseItems(text: string): Array<Record<string, any>> {
 }
 
 /**
+ * Validate that a parsed result roughly matches the expected schema shape.
+ * Logs a warning if the top-level keys don't match, but returns the result anyway.
+ */
+function validateSchemaShape(result: Array<Record<string, any>>, schema: object): void {
+  if (result.length === 0) return;
+
+  const schemaObj = schema as Record<string, any>;
+
+  // For full JSON Schema: check that the object has the expected top-level properties
+  if (isFullJsonSchema(schema)) {
+    const expectedKeys = Object.keys(schemaObj['properties'] || {});
+    if (expectedKeys.length > 0 && result[0]) {
+      const actualKeys = Object.keys(result[0]);
+      const missingKeys = expectedKeys.filter(k => !actualKeys.includes(k));
+      if (missingKeys.length > 0) {
+        console.warn(`[webpeel] Schema validation warning: response missing expected keys: ${missingKeys.join(', ')}`);
+      }
+    }
+    return;
+  }
+
+  // For simple example schema: check top-level keys exist
+  const expectedTopLevelKeys = Object.keys(schemaObj);
+  if (expectedTopLevelKeys.length > 0 && result[0]) {
+    const actualKeys = Object.keys(result[0]);
+    const missingKeys = expectedTopLevelKeys.filter(k => !actualKeys.includes(k));
+    if (missingKeys.length > 0) {
+      console.warn(`[webpeel] Schema validation warning: response missing expected keys: ${missingKeys.join(', ')}`);
+    }
+  }
+}
+
+/**
+ * Build the response_format parameter for the OpenAI API call.
+ */
+function buildResponseFormat(schema?: object): object {
+  if (!schema) {
+    return { type: 'json_object' };
+  }
+
+  // Use structured output only for full JSON Schema (has type:"object" and properties)
+  if (isFullJsonSchema(schema)) {
+    return {
+      type: 'json_schema',
+      json_schema: {
+        name: 'extraction',
+        strict: true,
+        schema,
+      },
+    };
+  }
+
+  // For simple example schemas, fall back to json_object
+  return { type: 'json_object' };
+}
+
+/**
  * Extract structured data from content using an LLM.
  */
 export async function extractWithLLM(options: LLMExtractionOptions): Promise<LLMExtractionResult> {
   const {
     content,
     instruction,
-    schema,
     baseUrl = 'https://api.openai.com/v1',
     model = 'gpt-4o-mini',
     maxTokens = 4000,
@@ -130,7 +253,18 @@ export async function extractWithLLM(options: LLMExtractionOptions): Promise<LLM
     );
   }
 
-  const userMessage = buildUserMessage(content, instruction, schema);
+  // Resolve schema: convert simple schemas to full JSON Schema if needed
+  let resolvedSchema = options.schema;
+  if (resolvedSchema && !isFullJsonSchema(resolvedSchema)) {
+    resolvedSchema = convertSimpleToJsonSchema(resolvedSchema);
+  }
+
+  // Choose system prompt based on whether a schema is provided
+  const systemPrompt = resolvedSchema ? SCHEMA_SYSTEM_PROMPT : GENERIC_SYSTEM_PROMPT;
+
+  const userMessage = buildUserMessage(content, instruction, resolvedSchema ?? options.schema);
+
+  const responseFormat = buildResponseFormat(resolvedSchema);
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
@@ -141,12 +275,12 @@ export async function extractWithLLM(options: LLMExtractionOptions): Promise<LLM
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ],
       temperature: 0,
       max_tokens: maxTokens,
-      response_format: { type: 'json_object' },
+      response_format: responseFormat,
     }),
   });
 
@@ -168,7 +302,12 @@ export async function extractWithLLM(options: LLMExtractionOptions): Promise<LLM
   };
 
   const rawText = data.choices?.[0]?.message?.content ?? '';
-  const items = parseItems(rawText);
+  const items = parseItems(rawText, resolvedSchema);
+
+  // Validate schema shape and warn if mismatch
+  if (resolvedSchema) {
+    validateSchemaShape(items, resolvedSchema);
+  }
 
   const inputTokens = data.usage?.prompt_tokens ?? 0;
   const outputTokens = data.usage?.completion_tokens ?? 0;

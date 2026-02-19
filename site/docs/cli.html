@@ -972,6 +972,75 @@ cat urls.json | jq -r '.urls[]' > urls.txt
 
 # Batch download
 npx webpeel batch urls.txt -o docs/ --selector "article"</code></pre>
+
+      <h2 id="mcp-server">MCP Server</h2>
+      <p>WebPeel exposes an <a href="https://modelcontextprotocol.io" target="_blank">MCP (Model Context Protocol)</a> server so AI assistants like Claude, Cursor, and Windsurf can fetch, search, and crawl the web on your behalf.</p>
+
+      <h3>Remote URL — No Install Needed</h3>
+      <p>The fastest way to connect. Paste this into your AI client's MCP config — no <code>npm install</code> required:</p>
+      <pre><code class="language-json">{
+  "mcpServers": {
+    "webpeel": {
+      "url": "https://api.webpeel.dev/v2/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR-API-KEY"
+      }
+    }
+  }
+}</code></pre>
+      <p>Or use the Firecrawl-style key-in-URL format (works with clients that don't support custom headers):</p>
+      <pre><code class="language-json">{
+  "mcpServers": {
+    "webpeel": {
+      "url": "https://api.webpeel.dev/YOUR-API-KEY/v2/mcp"
+    }
+  }
+}</code></pre>
+
+      <h3>One-Click Install for Cursor</h3>
+      <p>
+        <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=webpeel&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIndlYnBlZWwiLCItLW1jcCJdLCJlbnYiOnsiV0VCUEVFTF9BUElfS0VZIjoiWU9VUi1BUEktS0VZIn19"
+           style="display:inline-block;padding:8px 16px;background:#5865F2;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
+          ➕ Add WebPeel to Cursor
+        </a>
+      </p>
+      <p>After clicking, replace <code>YOUR-API-KEY</code> in Cursor's MCP settings with your actual key from <a href="https://app.webpeel.dev" target="_blank">app.webpeel.dev</a>.</p>
+
+      <h3>Claude Desktop Config</h3>
+      <p>Add to <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> (macOS) or <code>%APPDATA%\Claude\claude_desktop_config.json</code> (Windows):</p>
+      <pre><code class="language-json">{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "--mcp"],
+      "env": {
+        "WEBPEEL_API_KEY": "YOUR-API-KEY"
+      }
+    }
+  }
+}</code></pre>
+
+      <h3>Windsurf Config</h3>
+      <pre><code class="language-json">{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "--mcp"]
+    }
+  }
+}</code></pre>
+      <p>Set your API key via <code>npx webpeel login</code> or <code>WEBPEEL_API_KEY</code> environment variable.</p>
+
+      <h3>Available MCP Tools</h3>
+      <ul>
+        <li><strong>webpeel_fetch</strong> — Fetch any URL → clean Markdown</li>
+        <li><strong>webpeel_search</strong> — Search the web, get titles/URLs/snippets</li>
+        <li><strong>webpeel_crawl</strong> — Crawl a site following links</li>
+        <li><strong>webpeel_map</strong> — Discover all URLs on a domain</li>
+        <li><strong>webpeel_extract</strong> — Extract structured data via CSS selectors or AI</li>
+        <li><strong>webpeel_batch</strong> — Fetch multiple URLs concurrently</li>
+        <li><strong>webpeel_agent</strong> — Autonomous web research agent (BYOK)</li>
+      </ul>
     </main>
   </div>
 

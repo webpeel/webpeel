@@ -31,6 +31,7 @@ import { createMcpRouter } from './routes/mcp.js';
 import { createScreenshotRouter } from './routes/screenshot.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
+import { createExtractRouter } from './routes/extract.js';
 import { createSentryHooks } from './sentry.js';
 import { warmup, cleanup as cleanupFetcher } from '../core/fetcher.js';
 import { registerPremiumHooks } from './premium/index.js';
@@ -136,6 +137,7 @@ export function createApp(config: ServerConfig = {}): Express {
   // Apply rate limiting middleware globally
   app.use(createRateLimitMiddleware(rateLimiter));
   app.use(createCompatRouter(jobQueue));
+  app.use(createExtractRouter());
   app.use(createFetchRouter(authStore));
   app.use(createScreenshotRouter(authStore));
   app.use(createSearchRouter(authStore));
@@ -148,7 +150,7 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createBatchRouter(jobQueue));
   app.use(createAgentRouter());
   app.use(createAnswerRouter());
-  app.use(createMcpRouter());
+  app.use(createMcpRouter(authStore));
 
   // 404 handler
   app.use((req: Request, res: Response) => {

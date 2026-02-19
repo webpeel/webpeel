@@ -1,16 +1,19 @@
 /**
- * Hosted MCP endpoint — POST /mcp
+ * Hosted MCP endpoint — POST /mcp, POST /v2/mcp, POST /:apiKey/v2/mcp
  *
  * Accepts MCP Streamable HTTP transport (JSON-RPC over HTTP).
- * Users connect with: { "url": "https://api.webpeel.dev/mcp" }
+ * Users connect with:
+ *   { "url": "https://api.webpeel.dev/mcp" }
+ *   { "url": "https://api.webpeel.dev/v2/mcp" }
+ *   { "url": "https://api.webpeel.dev/<API_KEY>/v2/mcp" }  ← key in URL (Firecrawl-style)
  *
  * Each request creates a stateless MCP server, processes the JSON-RPC
- * message(s), and returns the response.  This mirrors what Exa does at
- * mcp.exa.ai/mcp.
+ * message(s), and returns the response.
  */
 
 import { Router, Request, Response } from 'express';
 import { IncomingMessage, ServerResponse } from 'node:http';
+import type { AuthStore } from '../auth-store.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
@@ -395,59 +398,129 @@ function createMcpServer(): Server {
 // Express router
 // ---------------------------------------------------------------------------
 
-export function createMcpRouter(): Router {
+// ---------------------------------------------------------------------------
+// Shared MCP handler logic
+// ---------------------------------------------------------------------------
+
+async function handleMcpPost(req: Request, res: Response): Promise<void> {
+  try {
+    const server = createMcpServer();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // stateless
+    });
+
+    // Connect server ↔ transport
+    await server.connect(transport);
+
+    // Delegate to transport — it reads the JSON-RPC body and writes the response.
+    // We pass req.body as the pre-parsed body (Express already parsed JSON).
+    await transport.handleRequest(
+      req as unknown as IncomingMessage & { auth?: any },
+      res as unknown as ServerResponse,
+      req.body,
+    );
+
+    // Clean up (don't await — fire and forget)
+    transport.close().catch(() => {});
+    server.close().catch(() => {});
+  } catch (error: any) {
+    console.error('MCP endpoint error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        jsonrpc: '2.0',
+        error: { code: -32603, message: 'Internal error' },
+        id: null,
+      });
+    }
+  }
+}
+
+function mcpMethodNotAllowed(_req: Request, res: Response): void {
+  res.status(405).json({
+    jsonrpc: '2.0',
+    error: {
+      code: -32000,
+      message: 'Method not allowed. Use POST to send MCP JSON-RPC messages.',
+    },
+    id: null,
+  });
+}
+
+function mcpDeleteOk(_req: Request, res: Response): void {
+  res.status(200).json({ ok: true });
+}
+
+// ---------------------------------------------------------------------------
+// Express router
+// ---------------------------------------------------------------------------
+
+export function createMcpRouter(authStore?: AuthStore): Router {
   const router = Router();
 
-  // POST /mcp — MCP Streamable HTTP transport
-  router.post('/mcp', async (req: Request, res: Response) => {
-    try {
-      const server = createMcpServer();
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined, // stateless
+  // POST /mcp — legacy path, MCP Streamable HTTP transport
+  router.post('/mcp', handleMcpPost);
+  router.get('/mcp', mcpMethodNotAllowed);
+  router.delete('/mcp', mcpDeleteOk);
+
+  // POST /v2/mcp — canonical v2 path; auth via Authorization: Bearer <key> header
+  // The global auth middleware already validates the Bearer token, so no extra
+  // validation is needed here.
+  router.post('/v2/mcp', handleMcpPost);
+  router.get('/v2/mcp', mcpMethodNotAllowed);
+  router.delete('/v2/mcp', mcpDeleteOk);
+
+  // POST /:apiKey/v2/mcp — Firecrawl-style: API key embedded in URL path
+  // e.g. https://api.webpeel.dev/wbp_abc123/v2/mcp
+  // Validate the key ourselves since the global middleware only reads headers.
+  router.post('/:apiKey/v2/mcp', async (req: Request, res: Response) => {
+    const { apiKey } = req.params;
+
+    // Basic format guard — reject obviously malformed keys early
+    if (!apiKey || apiKey.length < 8) {
+      res.status(401).json({
+        jsonrpc: '2.0',
+        error: { code: -32001, message: 'Invalid API key' },
+        id: null,
       });
+      return;
+    }
 
-      // Connect server ↔ transport
-      await server.connect(transport);
-
-      // Delegate to transport — it reads the JSON-RPC body and writes the response.
-      // We pass req.body as the pre-parsed body (Express already parsed JSON).
-      await transport.handleRequest(
-        req as unknown as IncomingMessage & { auth?: any },
-        res as unknown as ServerResponse,
-        req.body,
-      );
-
-      // Clean up (don't await — fire and forget)
-      transport.close().catch(() => {});
-      server.close().catch(() => {});
-    } catch (error: any) {
-      console.error('MCP endpoint error:', error);
-      if (!res.headersSent) {
+    // If we have an authStore, validate the key
+    if (authStore) {
+      try {
+        const keyInfo = await authStore.validateKey(String(apiKey));
+        if (!keyInfo) {
+          res.status(401).json({
+            jsonrpc: '2.0',
+            error: { code: -32001, message: 'Invalid or expired API key' },
+            id: null,
+          });
+          return;
+        }
+        // Inject auth info so downstream tools can use it
+        req.auth = {
+          keyInfo,
+          tier: (keyInfo.tier ?? 'free') as 'free' | 'starter' | 'pro' | 'enterprise' | 'max',
+          rateLimit: 100,
+          softLimited: false,
+          extraUsageAvailable: false,
+        };
+      } catch (err) {
+        console.error('MCP auth error:', err);
         res.status(500).json({
           jsonrpc: '2.0',
           error: { code: -32603, message: 'Internal error' },
           id: null,
         });
+        return;
       }
     }
+
+    return handleMcpPost(req, res);
   });
 
-  // GET /mcp — some MCP clients probe with GET for SSE connection
-  router.get('/mcp', (_req: Request, res: Response) => {
-    res.status(405).json({
-      jsonrpc: '2.0',
-      error: {
-        code: -32000,
-        message: 'Method not allowed. Use POST to send MCP JSON-RPC messages.',
-      },
-      id: null,
-    });
-  });
-
-  // DELETE /mcp — session teardown (no-op for stateless)
-  router.delete('/mcp', (_req: Request, res: Response) => {
-    res.status(200).json({ ok: true });
-  });
+  router.get('/:apiKey/v2/mcp', mcpMethodNotAllowed);
+  router.delete('/:apiKey/v2/mcp', mcpDeleteOk);
 
   return router;
 }

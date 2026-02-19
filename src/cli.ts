@@ -139,6 +139,7 @@ program
   .argument('[url]', 'URL to fetch')
   .option('-r, --render', 'Use headless browser (for JS-heavy sites)')
   .option('--stealth', 'Use stealth mode to bypass bot detection (auto-enables --render)')
+  .option('--proxy <url>', 'Proxy URL for requests (http://host:port, socks5://user:pass@host:port)')
   .option('-w, --wait <ms>', 'Wait time after page load (ms)', parseInt)
   .option('--html', 'Output raw HTML instead of markdown')
   .option('--text', 'Output plain text instead of markdown')
@@ -164,6 +165,7 @@ program
   .option('--action <actions...>', 'Page actions before scraping (e.g., "click:.btn" "wait:2000" "scroll:bottom")')
   .option('--extract <json>', 'Extract structured data using CSS selectors (JSON object of field:selector pairs)')
   .option('--llm-extract [instruction]', 'Extract structured data using LLM (optional instruction, e.g. "extract hotel names and prices")')
+  .option('--extract-schema <schema>', 'JSON schema for structured extraction (requires LLM key). Pass inline JSON or @file.json')
   .option('--llm-key <key>', 'LLM API key for AI features (or use OPENAI_API_KEY env var)')
   .option('--llm-model <model>', 'LLM model to use (default: gpt-4o-mini)')
   .option('--llm-base-url <url>', 'LLM API base URL (default: https://api.openai.com/v1)')
@@ -309,7 +311,7 @@ program
           (cachedResult as any).tokens = Math.ceil(cachedResult.content.length / 4);
         }
         // LLM extraction from cached content
-        if (options.llmExtract) {
+        if (options.llmExtract || options.extractSchema) {
           const { extractWithLLM } = await import('./core/llm-extract.js');
           const llmCfgCached = loadConfig();
           const llmApiKeyCached = options.llmKey || llmCfgCached.llm?.apiKey || process.env.OPENAI_API_KEY;
@@ -320,9 +322,24 @@ program
           const llmModelCached = options.llmModel || llmCfgCached.llm?.model || process.env.WEBPEEL_LLM_MODEL || 'gpt-4o-mini';
           const llmBaseUrlCached = options.llmBaseUrl || llmCfgCached.llm?.baseUrl || process.env.WEBPEEL_LLM_BASE_URL || 'https://api.openai.com/v1';
           const llmInstructionCached = typeof options.llmExtract === 'string' ? options.llmExtract : undefined;
+          // Parse schema if provided
+          let llmSchemaCached: object | undefined;
+          if (options.extractSchema) {
+            let schemaStr: string = options.extractSchema;
+            if (schemaStr.startsWith('@')) {
+              schemaStr = readFileSync(schemaStr.slice(1), 'utf-8');
+            }
+            try {
+              llmSchemaCached = JSON.parse(schemaStr);
+            } catch {
+              console.error('Error: --extract-schema must be valid JSON or a valid @file.json path');
+              process.exit(1);
+            }
+          }
           const llmResultCached = await extractWithLLM({
             content: cachedResult.content,
             instruction: llmInstructionCached,
+            schema: llmSchemaCached,
             apiKey: llmApiKeyCached,
             model: llmModelCached,
             baseUrl: llmBaseUrlCached,
@@ -373,9 +390,14 @@ program
         }
       }
 
+      // --extract-schema auto-enables JSON output
+      if (options.extractSchema) {
+        options.json = true;
+      }
+
       // Parse extract
       let extract: any;
-      if (options.llmExtract) {
+      if (options.llmExtract || options.extractSchema) {
         // LLM-based extraction is handled post-fetch (after peel returns markdown).
         // Early-validate that an API key is available so we fail fast.
         const llmCfg = loadConfig();
@@ -496,6 +518,7 @@ program
         profileDir: resolvedProfileDir,
         headed: options.headed || false,
         storageState: resolvedStorageState,
+        proxy: options.proxy as string | undefined,
       };
 
       // Add summary option if requested
@@ -597,7 +620,7 @@ program
       }
 
       // --- LLM-based extraction (post-peel) ---
-      if (options.llmExtract) {
+      if (options.llmExtract || options.extractSchema) {
         const { extractWithLLM } = await import('./core/llm-extract.js');
         const llmCfg = loadConfig();
         const llmApiKey = options.llmKey || llmCfg.llm?.apiKey || process.env.OPENAI_API_KEY;
@@ -606,9 +629,24 @@ program
 
         const llmInstruction = typeof options.llmExtract === 'string' ? options.llmExtract : undefined;
 
+        // Parse --extract-schema if provided
+        let llmSchema: object | undefined;
+        if (options.extractSchema) {
+          let schemaStr: string = options.extractSchema;
+          if (schemaStr.startsWith('@')) {
+            schemaStr = readFileSync(schemaStr.slice(1), 'utf-8');
+          }
+          try {
+            llmSchema = JSON.parse(schemaStr);
+          } catch {
+            exitWithJsonError('--extract-schema must be valid JSON or a valid @file.json path', 'FETCH_FAILED');
+          }
+        }
+
         const llmResult = await extractWithLLM({
           content: result.content,
           instruction: llmInstruction,
+          schema: llmSchema,
           apiKey: llmApiKey,
           model: llmModel,
           baseUrl: llmBaseUrl,
@@ -844,6 +882,7 @@ program
   .option('--csv', 'Output site-search results as CSV (requires --site)')
   .option('--budget <n>', 'Token budget for site-search result content', parseInt)
   .option('-s, --silent', 'Silent mode')
+  .option('--proxy <url>', 'Proxy URL for requests (http://host:port, socks5://user:pass@host:port)')
   .option('--agent', 'Agent mode: sets --json, --silent, and --budget 4000 (override with --budget N)')
   .action(async (query: string, options) => {
     // --agent sets sensible defaults for AI agents; explicit flags override
@@ -876,6 +915,7 @@ program
         const htmlResult = await peel(siteResult.url, {
           format: 'html',
           timeout: 30000,
+          proxy: options.proxy as string | undefined,
         });
 
         if (spinner) {
@@ -3187,6 +3227,7 @@ program
   .option('--source <name...>', 'Only use specific source(s): kayak, booking, google (repeatable)')
   .option('--json', 'Output as JSON')
   .option('--stealth', 'Use stealth mode for all sources')
+  .option('--proxy <url>', 'Proxy URL for requests (http://host:port, socks5://user:pass@host:port)')
   .option('-s, --silent', 'Suppress progress messages')
   .action(async (destination: string, options) => {
     const isJson = options.json as boolean;
@@ -3243,6 +3284,7 @@ program
         sources,
         stealth: options.stealth as boolean | undefined,
         silent: isSilent,
+        proxy: options.proxy as string | undefined,
       });
 
       if (searchSpinner) searchSpinner.stop();
