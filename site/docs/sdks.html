@@ -424,29 +424,38 @@ except WebPeelError as e:
 
       <h2>Framework Integrations</h2>
 
-      <h3>LangChain</h3>
-      <pre><code class="language-python">from langchain_community.document_loaders import WebPeelLoader
+      <p style="background: var(--bg-2); padding: 12px 16px; border-radius: 8px; border-left: 3px solid var(--accent);">
+        <strong>Coming soon:</strong> Native integrations for LangChain and LlamaIndex are in development. 
+        In the meantime, use the Python SDK directly — it works with any framework.
+      </p>
 
-loader = WebPeelLoader(
-    url="https://example.com",
-    api_key="your-api-key",
-    render=True
+      <h3>Use with LangChain</h3>
+      <pre><code class="language-python">from webpeel import WebPeel
+from langchain.schema import Document
+
+client = WebPeel(api_key="your-api-key")
+result = client.scrape("https://example.com", render=True)
+
+# Convert to LangChain Document
+doc = Document(
+    page_content=result["content"],
+    metadata=result.get("metadata", {})
 )
-documents = loader.load()
+print(doc.page_content)</code></pre>
 
-for doc in documents:
-    print(doc.page_content)
-    print(doc.metadata)</code></pre>
+      <h3>Use with LlamaIndex</h3>
+      <pre><code class="language-python">from webpeel import WebPeel
+from llama_index.core.schema import TextNode
 
-      <h3>LlamaIndex</h3>
-      <pre><code class="language-python">from llama_index.readers.webpeel import WebPeelReader
+client = WebPeel(api_key="your-api-key")
+result = client.scrape("https://example.com")
 
-reader = WebPeelReader(api_key="your-api-key")
-documents = reader.load_data(url="https://example.com")
-
-for doc in documents:
-    print(doc.text)
-    print(doc.metadata)</code></pre>
+# Convert to LlamaIndex node
+node = TextNode(
+    text=result["content"],
+    metadata=result.get("metadata", {})
+)
+print(node.text)</code></pre>
 
       <h2>Advanced Examples</h2>
 
