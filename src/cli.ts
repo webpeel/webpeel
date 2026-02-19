@@ -176,7 +176,16 @@ program
   .option('--pages <n>', 'Follow pagination "Next" links for N pages (max 10)', (v: string) => parseInt(v, 10))
   .option('--profile <path>', 'Use a persistent browser profile directory (cookies/sessions survive between calls)')
   .option('--headed', 'Run browser in headed (visible) mode — useful for profile setup and debugging')
+  .option('--agent', 'Agent mode: sets --json, --silent, --extract-all, and --budget 4000 (override with --budget N)')
   .action(async (url: string | undefined, options) => {
+    // --agent sets sensible defaults for AI agents; explicit flags override
+    if (options.agent) {
+      if (!options.json) options.json = true;
+      if (!options.silent) options.silent = true;
+      if (!options.extractAll) options.extractAll = true;
+      if (options.budget === undefined) options.budget = 4000;
+    }
+
     const isJson = options.json;
 
     // --- #5: Concise error for missing URL (no help dump) ---
@@ -473,8 +482,11 @@ program
       }
 
       // Apply smart budget distillation AFTER caching (cache always stores full content)
+      // When --agent is set, always apply budget even with --extract-all (listings will be budgeted
+      // separately, but if no listings are found the content itself still needs trimming).
+      const skipBudgetForExtract = (options.extractAll || options.scrollExtract !== undefined) && !options.agent;
       let contentTruncated = false;
-      if (options.budget && options.budget > 0 && !options.extractAll && options.scrollExtract === undefined) {
+      if (options.budget && options.budget > 0 && !skipBudgetForExtract) {
         const budgetFormat: 'markdown' | 'text' | 'json' =
           peelOptions.format === 'text' ? 'text' : 'markdown';
         const distilled = distillToBudget(result.content, options.budget, budgetFormat);
@@ -661,13 +673,17 @@ program
 // Search command
 program
   .command('search <query>')
-  .description('Search the web (DuckDuckGo by default, or Brave with --provider brave)')
+  .description('Search the web (DuckDuckGo by default, or use --site for site-specific search)')
   .option('-n, --count <n>', 'Number of results (1-10)', '5')
   .option('--top <n>', 'Limit results (alias for --count)')
   .option('--provider <provider>', 'Search provider: duckduckgo (default) or brave')
   .option('--search-api-key <key>', 'API key for the search provider (or env WEBPEEL_BRAVE_API_KEY)')
+  .option('--site <site>', 'Search a specific site (e.g. ebay, amazon, github). Run "webpeel sites" for full list.')
   .option('--json', 'Output as JSON')
   .option('--urls-only', 'Output only URLs, one per line (pipe-friendly)')
+  .option('--table', 'Output site-search results as a formatted table (requires --site)')
+  .option('--csv', 'Output site-search results as CSV (requires --site)')
+  .option('--budget <n>', 'Token budget for site-search result content', parseInt)
   .option('-s, --silent', 'Silent mode')
   .action(async (query: string, options) => {
     const isJson = options.json;
@@ -680,6 +696,97 @@ program
     if (!usageCheck.allowed) {
       console.error(usageCheck.message);
       process.exit(1);
+    }
+
+    // ── --site: site-specific structured search ───────────────────────────
+    if (options.site) {
+      const spinner = isSilent ? null : ora(`Searching ${options.site}...`).start();
+      try {
+        const { buildSiteSearchUrl } = await import('./core/site-search.js');
+        const siteResult = buildSiteSearchUrl(options.site, query);
+
+        // Fetch the raw HTML (needed for listing extraction)
+        const htmlResult = await peel(siteResult.url, {
+          format: 'html',
+          timeout: 30000,
+        });
+
+        if (spinner) {
+          spinner.succeed(`Fetched ${siteResult.site} in ${htmlResult.elapsed}ms`);
+        }
+
+        // Extract listings from the HTML
+        const { extractListings } = await import('./core/extract-listings.js');
+        let listings = extractListings(htmlResult.content, siteResult.url);
+
+        // Apply budget if requested
+        if (options.budget && options.budget > 0 && listings.length > 0) {
+          const { budgetListings } = await import('./core/budget.js');
+          const { maxItems } = budgetListings(listings.length, options.budget);
+          listings = listings.slice(0, maxItems);
+        }
+
+        // Show usage footer
+        if (usageCheck.usageInfo && !isSilent) {
+          showUsageFooter(usageCheck.usageInfo, usageCheck.isAnonymous || false, false);
+        }
+
+        // Output
+        if (options.csv) {
+          const rows = listings.map(item => {
+            const row: Record<string, string | undefined> = {};
+            for (const [k, v] of Object.entries(item)) {
+              if (v !== undefined) row[k] = v;
+            }
+            return row;
+          });
+          await writeStdout(formatListingsCsv(rows));
+        } else if (options.table) {
+          const { formatTable } = await import('./core/table-format.js');
+          const rows = listings.map(item => {
+            const row: Record<string, string | undefined> = {};
+            for (const [k, v] of Object.entries(item)) {
+              if (v !== undefined) row[k] = v;
+            }
+            return row;
+          });
+          await writeStdout(formatTable(rows) + '\n');
+        } else if (isJson) {
+          const envelope = {
+            site: siteResult.site,
+            query: siteResult.query,
+            url: siteResult.url,
+            count: listings.length,
+            items: listings,
+            elapsed: htmlResult.elapsed,
+          };
+          await writeStdout(JSON.stringify(envelope, null, 2) + '\n');
+        } else {
+          if (listings.length === 0) {
+            await writeStdout('No listings found.\n');
+          } else {
+            await writeStdout(`Found ${listings.length} listings on ${siteResult.site}:\n\n`);
+            for (const [i, item] of listings.entries()) {
+              const pricePart = item.price ? ` — ${item.price}` : '';
+              process.stdout.write(`${i + 1}. ${item.title}${pricePart}\n`);
+              if (item.link) process.stdout.write(`   ${item.link}\n`);
+              process.stdout.write('\n');
+            }
+          }
+        }
+
+        await cleanup();
+        process.exit(0);
+      } catch (error) {
+        if (spinner) spinner.fail('Site search failed');
+        if (error instanceof Error) {
+          console.error(`\nError: ${error.message}`);
+        } else {
+          console.error('\nError: Unknown error occurred');
+        }
+        await cleanup();
+        process.exit(1);
+      }
     }
     
     const spinner = isSilent ? null : ora('Searching...').start();
@@ -750,6 +857,51 @@ program
 
       process.exit(1);
     }
+  });
+
+// Sites command — list all supported site templates
+program
+  .command('sites')
+  .description('List all sites supported by "webpeel search --site <site>"')
+  .option('--json', 'Output as JSON')
+  .option('--category <cat>', 'Filter by category (shopping, social, tech, jobs, general, real-estate, food)')
+  .action(async (options) => {
+    const { listSites } = await import('./core/site-search.js');
+    let sites = listSites();
+
+    if (options.category) {
+      sites = sites.filter(s => s.category === options.category);
+    }
+
+    if (options.json) {
+      await writeStdout(JSON.stringify(sites, null, 2) + '\n');
+      process.exit(0);
+    }
+
+    // Group by category for pretty output
+    const byCategory = new Map<string, typeof sites>();
+    for (const site of sites) {
+      if (!byCategory.has(site.category)) byCategory.set(site.category, []);
+      byCategory.get(site.category)!.push(site);
+    }
+
+    const categoryOrder = ['shopping', 'general', 'social', 'tech', 'jobs', 'real-estate', 'food'];
+    const sortedCategories = categoryOrder.filter(c => byCategory.has(c));
+
+    console.log('\nWebPeel Site-Aware Search — supported sites\n');
+    console.log('Usage: webpeel search --site <id> "<query>"\n');
+
+    for (const cat of sortedCategories) {
+      const catSites = byCategory.get(cat)!;
+      const label = cat.charAt(0).toUpperCase() + cat.slice(1);
+      console.log(`  ${label}:`);
+      for (const s of catSites) {
+        console.log(`    ${s.id.padEnd(16)} ${s.name}`);
+      }
+      console.log('');
+    }
+
+    process.exit(0);
   });
 
 // Batch command

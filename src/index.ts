@@ -111,6 +111,12 @@ export {
 export async function peel(url: string, options: PeelOptions = {}): Promise<PeelResult> {
   const startTime = Date.now();
 
+  // Apply agent-mode defaults (can be overridden by explicit options)
+  if (options.agentMode) {
+    if (options.budget === undefined) options.budget = 4000;
+    if (options.format === undefined) options.format = 'markdown';
+  }
+
   let {
     render = false,
     stealth = false,

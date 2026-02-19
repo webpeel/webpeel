@@ -12,7 +12,7 @@ dns.setDefaultResultOrder('ipv4first');
 import { chromium, type Browser, type Page } from 'playwright';
 import { chromium as stealthChromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { getRealisticUserAgent } from './user-agents.js';
+import { getRealisticUserAgent, getSecCHUA, getSecCHUAPlatform } from './user-agents.js';
 import { fetch as undiciFetch, Agent, type Response } from 'undici';
 import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types.js';
 import type { PageAction } from '../types.js';
@@ -453,9 +453,9 @@ export async function simpleFetch(
     'DNT': '1',
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
-    'Sec-CH-UA': '"Chromium";v="131", "Not_A Brand";v="24"',
+    'Sec-CH-UA': getSecCHUA(validatedUserAgent),
     'Sec-CH-UA-Mobile': '?0',
-    'Sec-CH-UA-Platform': '"macOS"',
+    'Sec-CH-UA-Platform': getSecCHUAPlatform(validatedUserAgent),
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-Site': 'none',

@@ -826,6 +826,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         actions: normalizedActions,
         maxTokens,
         extract,
+        // Agent-friendly default: cap tokens at 4000 when no explicit limit is set.
+        // This prevents agents from receiving 30K+ token pages they can't use.
+        budget: maxTokens === undefined ? 4000 : undefined,
       };
 
       // SECURITY: Wrap in timeout (60 seconds max)
