@@ -16,6 +16,12 @@ import type { FetchResult } from './fetcher.js';
 
 export interface StrategyResult extends FetchResult {
   method: 'simple' | 'browser' | 'stealth' | 'cached';
+  /**
+   * Set to true when the final response still appears to be a bot-challenge
+   * page after all escalation attempts have been exhausted.
+   * Consumers should warn the user when this is true.
+   */
+  challengeDetected?: boolean;
 }
 
 export interface DomainRecommendation {

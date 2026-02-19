@@ -11,6 +11,7 @@ import { simpleFetch, browserFetch, retryFetch, type FetchResult } from './fetch
 import { getCached, setCached as setBasicCache } from './cache.js';
 import { resolveAndCache } from './dns-cache.js';
 import { BlockedError, NetworkError } from '../types.js';
+import { detectChallenge } from './challenge-detection.js';
 import {
   getStrategyHooks,
   type StrategyResult,
@@ -26,29 +27,65 @@ function shouldForceBrowser(url: string): DomainRecommendation | null {
   try {
     const hostname = new URL(url).hostname.toLowerCase();
 
-    // Reddit often returns an HTML shell via simple fetch
-    if (hostname === 'reddit.com' || hostname.endsWith('.reddit.com')) {
-      return { mode: 'browser' };
+    // Sites that return HTML shells / need JS rendering (browser mode)
+    const browserDomains = [
+      'reddit.com',       // HTML shell via simple fetch
+      'npmjs.com',        // 403 on simple fetch
+      'x.com',            // SPA, login wall
+      'twitter.com',      // SPA, login wall
+      'instagram.com',    // SPA, login wall
+      'facebook.com',     // SPA, heavy JS
+      'tiktok.com',       // SPA, JS-rendered
+      'pinterest.com',    // SPA, JS-rendered
+      'airbnb.com',       // heavy SPA
+      'medium.com',       // JS-rendered, sometimes login wall
+      'substack.com',     // JS-rendered
+      'notion.so',        // SPA
+      'figma.com',        // SPA
+      'canva.com',        // SPA
+      'vercel.app',       // Could be any SPA
+    ];
+    for (const domain of browserDomains) {
+      if (hostname === domain || hostname.endsWith(`.${domain}`)) {
+        return { mode: 'browser' };
+      }
     }
 
-    // npmjs blocks simple fetch with 403 frequently
-    if (
-      hostname === 'npmjs.com' ||
-      hostname === 'www.npmjs.com' ||
-      hostname.endsWith('.npmjs.com')
-    ) {
-      return { mode: 'browser' };
-    }
-
-    // These are known to aggressively block automation
-    if (hostname === 'glassdoor.com' || hostname.endsWith('.glassdoor.com')) {
-      return { mode: 'stealth' };
-    }
-    if (hostname === 'bloomberg.com' || hostname.endsWith('.bloomberg.com')) {
-      return { mode: 'stealth' };
-    }
-    if (hostname === 'indeed.com' || hostname.endsWith('.indeed.com')) {
-      return { mode: 'stealth' };
+    // These are known to aggressively block automation — stealth mode required
+    const stealthDomains = [
+      'glassdoor.com',
+      'bloomberg.com',
+      'indeed.com',
+      'amazon.com',       // captcha wall on simple/browser fetch
+      'zillow.com',       // aggressive bot detection
+      'ticketmaster.com', // Distil Networks / PerimeterX
+      'stubhub.com',      // PerimeterX / CAPTCHA
+      'walmart.com',      // Akamai Bot Manager
+      'target.com',       // Akamai Bot Manager
+      'bestbuy.com',      // Akamai Bot Manager
+      'homedepot.com',    // Akamai Bot Manager
+      'lowes.com',        // Akamai Bot Manager
+      'costco.com',       // Akamai Bot Manager
+      'nike.com',         // Akamai / Shape Security
+      'footlocker.com',   // PerimeterX / DataDome
+      'realtor.com',      // aggressive bot detection
+      'redfin.com',       // aggressive bot detection
+      'cloudflare.com',   // Cloudflare challenge pages
+      'ebay.com',         // challenge page on simple fetch
+      'linkedin.com',     // aggressive bot detection + login walls
+      'craigslist.org',   // occasionally blocks automated access
+      'etsy.com',         // Akamai protection
+      'wayfair.com',      // Akamai protection
+      'newegg.com',       // bot detection
+      'zappos.com',       // Amazon subsidiary, same protection
+      'chewy.com',        // Amazon subsidiary
+      'aliexpress.com',   // anti-bot
+      'wish.com',         // anti-bot
+    ];
+    for (const domain of stealthDomains) {
+      if (hostname === domain || hostname.endsWith(`.${domain}`)) {
+        return { mode: 'stealth' };
+      }
     }
   } catch {
     // Ignore URL parsing errors; validation happens inside fetchers.
@@ -437,15 +474,25 @@ export async function smartFetch(
       if (shouldEscalateForLowContent(simpleOrTimeout.result)) {
         shouldUseBrowser = true;
       } else {
-        const strategyResult: StrategyResult = {
-          ...simpleOrTimeout.result,
-          method: 'simple',
-        };
-        if (canUseCache) {
-          hooks.setCache?.(url, strategyResult) ?? setBasicCache(url, strategyResult);
+        // Check whether the response is a bot-challenge page (e.g. Cloudflare, PerimeterX)
+        const challengeCheck = detectChallenge(
+          simpleOrTimeout.result.html,
+          simpleOrTimeout.result.statusCode,
+        );
+        if (challengeCheck.isChallenge && challengeCheck.confidence >= 0.7) {
+          // Escalate — the browser/stealth path will handle it below
+          shouldUseBrowser = true;
+        } else {
+          const strategyResult: StrategyResult = {
+            ...simpleOrTimeout.result,
+            method: 'simple',
+          };
+          if (canUseCache) {
+            hooks.setCache?.(url, strategyResult) ?? setBasicCache(url, strategyResult);
+          }
+          recordMethod('simple');
+          return strategyResult;
         }
-        recordMethod('simple');
-        return strategyResult;
       }
     }
 
@@ -531,15 +578,24 @@ export async function smartFetch(
           if (shouldEscalateForLowContent(simpleResult.result)) {
             shouldUseBrowser = true;
           } else {
-            const strategyResult: StrategyResult = {
-              ...simpleResult.result,
-              method: 'simple',
-            };
-            if (canUseCache) {
-              hooks.setCache?.(url, strategyResult) ?? setBasicCache(url, strategyResult);
+            // Check whether the response is a bot-challenge page
+            const challengeCheck = detectChallenge(
+              simpleResult.result.html,
+              simpleResult.result.statusCode,
+            );
+            if (challengeCheck.isChallenge && challengeCheck.confidence >= 0.7) {
+              shouldUseBrowser = true;
+            } else {
+              const strategyResult: StrategyResult = {
+                ...simpleResult.result,
+                method: 'simple',
+              };
+              if (canUseCache) {
+                hooks.setCache?.(url, strategyResult) ?? setBasicCache(url, strategyResult);
+              }
+              recordMethod('simple');
+              return strategyResult;
             }
-            recordMethod('simple');
-            return strategyResult;
           }
         } else {
           if (!shouldEscalateSimpleError(simpleResult.error)) {
@@ -551,14 +607,60 @@ export async function smartFetch(
     }
   }
 
-  /* ---- browser / stealth fallback -------------------------------------- */
+  /* ---- browser / stealth fallback with challenge-detection cascade ----- */
 
-  const browserResult = await fetchWithBrowserStrategy(url, browserOptions);
-  if (canUseCache) {
-    hooks.setCache?.(url, browserResult) ?? setBasicCache(url, browserResult);
+  // Attempt 1: browser (or stealth, if already forced)
+  let finalResult = await fetchWithBrowserStrategy(url, browserOptions);
+
+  // Check if the browser result is itself a bot-challenge page
+  const browserChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+
+  if (browserChallengeCheck.isChallenge && browserChallengeCheck.confidence >= 0.7) {
+    if (!browserOptions.effectiveStealth) {
+      // Attempt 2: escalate to stealth
+      const stealthOptions: BrowserStrategyOptions = {
+        ...browserOptions,
+        effectiveStealth: true,
+      };
+      finalResult = await fetchWithBrowserStrategy(url, stealthOptions);
+
+      const stealthChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+
+      if (stealthChallengeCheck.isChallenge && stealthChallengeCheck.confidence >= 0.7) {
+        // Attempt 3: stealth + 5s extra wait
+        const stealthExtraOptions: BrowserStrategyOptions = {
+          ...stealthOptions,
+          waitMs: stealthOptions.waitMs + 5000,
+        };
+        finalResult = await fetchWithBrowserStrategy(url, stealthExtraOptions);
+
+        const finalChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+        if (finalChallengeCheck.isChallenge && finalChallengeCheck.confidence >= 0.7) {
+          // Give up — return with warning flag
+          finalResult = { ...finalResult, challengeDetected: true };
+        }
+      }
+    } else {
+      // Already in stealth mode; retry with 5s extra wait
+      const stealthExtraOptions: BrowserStrategyOptions = {
+        ...browserOptions,
+        waitMs: browserOptions.waitMs + 5000,
+      };
+      finalResult = await fetchWithBrowserStrategy(url, stealthExtraOptions);
+
+      const finalChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+      if (finalChallengeCheck.isChallenge && finalChallengeCheck.confidence >= 0.7) {
+        // Give up — return with warning flag
+        finalResult = { ...finalResult, challengeDetected: true };
+      }
+    }
   }
-  recordMethod(browserResult.method);
-  return browserResult;
+
+  if (canUseCache && !finalResult.challengeDetected) {
+    hooks.setCache?.(url, finalResult) ?? setBasicCache(url, finalResult);
+  }
+  recordMethod(finalResult.method);
+  return finalResult;
 }
 
 /* ---------- legacy export for tests ------------------------------------- */

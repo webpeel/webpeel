@@ -148,6 +148,14 @@ export interface PeelOptions {
    * Only meaningful when `render` or `stealth` is true.
    */
   headed?: boolean;
+  /**
+   * Enable agent-friendly defaults:
+   * - budget: 4000 tokens (unless already set)
+   * - format: 'markdown' (unless already set)
+   *
+   * Mirrors the CLI `--agent` flag for programmatic use.
+   */
+  agentMode?: boolean;
 }
 
 export interface ImageInfo {
