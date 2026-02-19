@@ -21,40 +21,54 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught:', error, errorInfo);
+    console.error('[ErrorBoundary]', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <div style={{
-          padding: '40px',
-          textAlign: 'center',
-          fontFamily: 'system-ui, sans-serif',
-        }}>
-          <h2 style={{ marginBottom: '12px' }}>Something went wrong</h2>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      return (
+        <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+          <div className="mb-6">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
+              fill="none"
+              className="mx-auto text-zinc-300"
+              aria-hidden="true"
+            >
+              <circle cx="24" cy="24" r="22" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M24 14v12M24 32v2"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <h2 className="mb-2 text-xl font-semibold text-zinc-900">Something went wrong</h2>
+          <p className="mb-6 max-w-sm text-sm text-zinc-500">
             {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
+
           <button
             onClick={() => {
               this.setState({ hasError: false, error: undefined });
               window.location.reload();
             }}
-            style={{
-              padding: '8px 20px',
-              borderRadius: '6px',
-              border: '1px solid #ddd',
-              background: '#fff',
-              cursor: 'pointer',
-              fontSize: '14px',
-            }}
+            className="inline-flex items-center justify-center rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-colors"
           >
             Reload page
           </button>
         </div>
       );
     }
+
     return this.props.children;
   }
 }

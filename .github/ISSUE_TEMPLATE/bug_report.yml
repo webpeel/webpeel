@@ -16,7 +16,7 @@ body:
     attributes:
       label: WebPeel Version
       description: Run `webpeel --version` or check package.json
-      placeholder: "0.9.0"
+      placeholder: "0.10.0"
     validations:
       required: true
   - type: dropdown

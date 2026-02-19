@@ -134,8 +134,28 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.9.0</div>
+              <div class="release-version mono">v0.10.0</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">February 19, 2026</div>
+          </div>
+          <ul>
+            <li><strong>Browser profiles:</strong> <code>webpeel profile create|list|show|delete</code> — persist cookies &amp; auth across sessions. Use <code>--profile &lt;name&gt;</code> on fetch/search.</li>
+            <li><strong>CSS schema extraction:</strong> 6 bundled schemas (Booking.com, Amazon, eBay, Yelp, Walmart, HN) — auto-detected by domain. Use <code>--schema &lt;name&gt;</code> or <code>--list-schemas</code>.</li>
+            <li><strong>LLM extraction:</strong> <code>--llm-extract [instruction]</code> — structured data from any page using OpenAI-compatible BYOK. Includes per-request cost tracking.</li>
+            <li><strong>Hotel search:</strong> <code>webpeel hotels "destination" --checkin DATE --sort price</code> — multi-source parallel search. Expedia now works via Stealth v2.</li>
+            <li><strong>Stealth v2:</strong> Fixed viewport fingerprint, <code>__pwInitScripts</code> injection artifacts, and Chrome branding leaks. PerimeterX bypass confirmed reliable.</li>
+            <li><strong>Challenge detection end-to-end:</strong> <code>detectChallenge()</code> now runs after every fetch. 17 new signals added. PerimeterX/DataDome errors include <code>vendor</code> + <code>confidence</code> fields.</li>
+            <li><strong>PostgreSQL TLS secure-by-default:</strong> <code>DB_SSL_REJECT_UNAUTHORIZED</code> defaults to <code>true</code>. Timing oracle and OAuth per-IP rate limiter also fixed.</li>
+            <li>Title cleaning: strips Google Travel price suffixes, "Opens in new window", and ad prefix artifacts.</li>
+            <li>Multi-cluster extraction: improved listings on diverse pages (HN threads, mixed-media).</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.9.0</div>
             </div>
             <div class="release-meta">February 18, 2026</div>
           </div>

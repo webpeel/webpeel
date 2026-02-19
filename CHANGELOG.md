@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [0.10.0] - 2026-02-19
+
+### 🚀 Features
+
+- **Browser Profiles** — `webpeel profile create|list|show|delete` manages persistent browser sessions. Pass `--profile <name>` on `fetch` or `search` to reuse cookies, localStorage, and auth state across requests.
+- **CSS Schema Extraction** — 6 bundled schemas: Booking.com, Amazon, eBay, Yelp, Walmart, and Hacker News. Use `--schema <name>` to apply a schema or `--list-schemas` to see all available. Domains auto-detected when no flag is provided.
+- **LLM Extraction** — `--llm-extract [instruction]` extracts structured data from any page using an OpenAI-compatible endpoint (BYOK). Supports custom instructions, multiple output formats, and tracks token cost per request.
+- **Hotel Search** — `webpeel hotels "destination" --checkin YYYY-MM-DD --checkout YYYY-MM-DD --sort price` runs parallel multi-source hotel searches and merges results. Expedia now works thanks to Stealth v2.
+
+### 🛡️ Stealth
+
+- **Stealth v2** — Fixed viewport fingerprint leaks, suppressed `__pwInitScripts` injection artifacts, and removed Chrome branding leaks from `navigator.userAgentData`. PerimeterX bypass is now reliable; Expedia confirmed working.
+- **Challenge Detection wired end-to-end** — `detectChallenge()` now runs automatically after every fetch (not just on escalation). Added 17 new detection signals. PerimeterX and DataDome errors now include `vendor` and `confidence` fields.
+
+### 🔒 Security
+
+- **PostgreSQL TLS secure-by-default** — `DB_SSL_REJECT_UNAUTHORIZED` now defaults to `true`; opt-out required for dev/self-hosted environments.
+- **Timing oracle fix** — Login path uses constant-time comparison with a dummy bcrypt hash to prevent user-enumeration via response timing.
+- **OAuth rate limiter per-IP** — Rate limiting on OAuth routes is now per source IP address (was per provider), preventing a single abuser from triggering a global DoS.
+
+### 🐛 Fixes
+
+- **Title cleaning** — Strip Google Travel price suffixes (e.g. "· $149"), remove "Opens in new window" artifacts, and filter ad-network prefixes from page titles.
+- **Multi-cluster extraction** — Improved listing extraction on pages with diverse content (e.g. Hacker News threads, mixed-media pages) by segmenting DOM clusters before scoring.
+
+### 📚 Documentation
+
+- CLI reference updated: `webpeel profile`, `webpeel hotels`, `--schema`, `--list-schemas`, `--llm-extract`, `--profile` flag documented.
+- README Quick Start updated with hotel search and LLM extraction examples.
+- Feature comparison table updated to reflect v0.10.0 capabilities.
+
+---
+
 ## [0.9.0] - 2026-02-18
 
 ### Added
@@ -413,6 +446,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stealth mode with playwright-extra
 - Zero-config setup
 
+[0.10.0]: https://github.com/webpeel/webpeel/releases/tag/v0.10.0
+[0.9.0]: https://github.com/webpeel/webpeel/releases/tag/v0.9.0
 [0.8.1]: https://github.com/webpeel/webpeel/releases/tag/v0.8.1
 [0.8.0]: https://github.com/webpeel/webpeel/releases/tag/v0.8.0
 [0.7.0]: https://github.com/webpeel/webpeel/releases/tag/v0.7.0

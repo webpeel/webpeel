@@ -74,7 +74,7 @@
       </div>
 
       <h1>CLI Reference</h1>
-      <p class="lead">Command-line interface for WebPeel. 18+ commands for web scraping, searching, and crawling.</p>
+      <p class="lead">Command-line interface for WebPeel. 20+ commands for web scraping, searching, crawling, and hotel search.</p>
 
       <h2>Installation</h2>
       <pre><code class="language-bash">npm install -g webpeel</code></pre>
@@ -96,7 +96,22 @@ npx webpeel search "AI news"
 npx webpeel search "AI news" --provider brave --search-api-key $BRAVE_KEY
 
 # Get a cited answer (BYOK)
-npx webpeel answer "What is MCP?" --llm openai --llm-api-key $OPENAI_API_KEY</code></pre>
+npx webpeel answer "What is MCP?" --llm openai --llm-api-key $OPENAI_API_KEY
+
+# v0.10.0: CSS schema extraction (auto-detected by domain)
+npx webpeel https://www.amazon.com/s?k=keyboard --json
+npx webpeel https://news.ycombinator.com --schema hn --json
+npx webpeel --list-schemas
+
+# v0.10.0: LLM extraction (BYOK)
+npx webpeel https://example.com/product --llm-extract "title, price, rating" --json
+
+# v0.10.0: Hotel search
+npx webpeel hotels "Paris" --checkin 2026-03-01 --checkout 2026-03-05 --sort price
+
+# v0.10.0: Browser profiles
+npx webpeel profile create myprofile
+npx webpeel https://example.com --profile myprofile --stealth</code></pre>
 
       <h2>Global Options</h2>
       <table>
@@ -165,7 +180,18 @@ npx webpeel https://example.com --extract-all --table
 npx webpeel https://example.com --extract-all --csv
 
 # v0.9.0: Token budget
-npx webpeel https://example.com --budget 4000</code></pre>
+npx webpeel https://example.com --budget 4000
+
+# v0.10.0: CSS schema extraction
+npx webpeel https://www.amazon.com/s?k=laptop --schema amazon --json
+npx webpeel --list-schemas
+
+# v0.10.0: LLM extraction (BYOK — uses OPENAI_API_KEY / WEBPEEL_LLM_BASE_URL)
+npx webpeel https://example.com/product --llm-extract "title, price, in-stock" --json
+npx webpeel https://example.com --llm-extract --json
+
+# v0.10.0: Browser profile
+npx webpeel https://example.com --profile myprofile</code></pre>
 
       <h4>Options</h4>
       <table>
@@ -307,6 +333,26 @@ npx webpeel https://example.com --budget 4000</code></pre>
             <td>number</td>
             <td>Infinite scroll extraction <span class="badge">v0.9.0</span></td>
           </tr>
+          <tr>
+            <td><code>--schema &lt;name&gt;</code></td>
+            <td>string</td>
+            <td>Apply a CSS extraction schema (e.g. <code>amazon</code>, <code>booking</code>, <code>ebay</code>, <code>yelp</code>, <code>walmart</code>, <code>hn</code>). Auto-detected by domain if omitted. <span class="badge">v0.10.0</span></td>
+          </tr>
+          <tr>
+            <td><code>--list-schemas</code></td>
+            <td>boolean</td>
+            <td>List all bundled CSS extraction schemas and exit <span class="badge">v0.10.0</span></td>
+          </tr>
+          <tr>
+            <td><code>--llm-extract [instruction]</code></td>
+            <td>string</td>
+            <td>Extract structured data using an LLM (BYOK). Optional natural-language instruction, e.g. <code>"title, price, rating"</code>. Uses <code>WEBPEEL_LLM_BASE_URL</code> / <code>OPENAI_API_KEY</code>. <span class="badge">v0.10.0</span></td>
+          </tr>
+          <tr>
+            <td><code>--profile &lt;name&gt;</code></td>
+            <td>string</td>
+            <td>Load a saved browser profile (cookies, localStorage, auth). Create profiles with <code>webpeel profile create</code>. <span class="badge">v0.10.0</span></td>
+          </tr>
         </tbody>
       </table>
 
@@ -374,6 +420,10 @@ npx webpeel sites</code></pre>
           <tr>
             <td><code>--csv</code></td>
             <td>Output site-search results as CSV <span class="badge">v0.9.0</span></td>
+          </tr>
+          <tr>
+            <td><code>--profile &lt;name&gt;</code></td>
+            <td>Load a saved browser profile for site-aware searches <span class="badge">v0.10.0</span></td>
           </tr>
           <tr>
             <td><code>-s, --silent</code></td>
@@ -732,6 +782,117 @@ npx webpeel summarize https://example.com \
       <p>Get job status.</p>
 
       <pre><code class="language-bash">npx webpeel job crawl_abc123 --json</code></pre>
+
+      <h3><code>webpeel profile &lt;action&gt; [name]</code> <span class="badge">v0.10.0</span></h3>
+      <p>Manage persistent browser profiles. Profiles save cookies, localStorage, and auth state so you can reuse logged-in sessions across requests.</p>
+
+      <pre><code class="language-bash"># Create a new profile
+npx webpeel profile create myprofile
+
+# List all saved profiles
+npx webpeel profile list
+
+# Show details for a specific profile
+npx webpeel profile show myprofile
+
+# Delete a profile
+npx webpeel profile delete myprofile</code></pre>
+
+      <p>Use a profile when fetching:</p>
+      <pre><code class="language-bash"># Fetch using a saved profile (cookies + auth preserved)
+npx webpeel https://example.com --profile myprofile --stealth
+
+# Search using a profile
+npx webpeel search --site amazon "laptop stand" --profile myprofile --json</code></pre>
+
+      <h4>Subcommands</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Subcommand</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>create &lt;name&gt;</code></td>
+            <td>Create and initialize a new browser profile</td>
+          </tr>
+          <tr>
+            <td><code>list</code></td>
+            <td>List all saved profiles</td>
+          </tr>
+          <tr>
+            <td><code>show &lt;name&gt;</code></td>
+            <td>Show profile metadata (created date, domain list, cookie count)</td>
+          </tr>
+          <tr>
+            <td><code>delete &lt;name&gt;</code></td>
+            <td>Delete a saved profile</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><code>webpeel hotels &lt;destination&gt;</code> <span class="badge">v0.10.0</span></h3>
+      <p>Search for hotels across multiple sources in parallel. Results are merged, deduplicated, and sorted. Expedia is supported thanks to Stealth v2.</p>
+
+      <pre><code class="language-bash"># Basic hotel search
+npx webpeel hotels "Paris"
+
+# With check-in and check-out dates
+npx webpeel hotels "New York" --checkin 2026-04-10 --checkout 2026-04-14
+
+# Sort by price (cheapest first)
+npx webpeel hotels "Tokyo" --checkin 2026-05-01 --checkout 2026-05-05 --sort price
+
+# Sort by rating
+npx webpeel hotels "London" --checkin 2026-06-01 --checkout 2026-06-03 --sort rating
+
+# JSON output for AI agents
+npx webpeel hotels "Barcelona" --checkin 2026-07-01 --checkout 2026-07-07 --json
+
+# Limit results
+npx webpeel hotels "Berlin" --checkin 2026-08-01 -n 10 --json</code></pre>
+
+      <h4>Options</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--checkin &lt;date&gt;</code></td>
+            <td>Check-in date in <code>YYYY-MM-DD</code> format</td>
+          </tr>
+          <tr>
+            <td><code>--checkout &lt;date&gt;</code></td>
+            <td>Check-out date in <code>YYYY-MM-DD</code> format</td>
+          </tr>
+          <tr>
+            <td><code>--sort &lt;field&gt;</code></td>
+            <td>Sort results: <code>price</code>, <code>rating</code>, or <code>relevance</code> (default)</td>
+          </tr>
+          <tr>
+            <td><code>-n, --count &lt;n&gt;</code></td>
+            <td>Max results to return (default: 10)</td>
+          </tr>
+          <tr>
+            <td><code>--json</code></td>
+            <td>Output as JSON array</td>
+          </tr>
+          <tr>
+            <td><code>--table</code></td>
+            <td>Output as formatted table</td>
+          </tr>
+          <tr>
+            <td><code>-s, --silent</code></td>
+            <td>Silent mode (no spinner)</td>
+          </tr>
+        </tbody>
+      </table>
 
       <h2>Environment Variables</h2>
       <table>

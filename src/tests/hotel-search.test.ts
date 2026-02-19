@@ -108,12 +108,13 @@ describe('buildSourceUrls', () => {
   const checkin = '2026-02-20';
   const checkout = '2026-02-21';
 
-  it('returns kayak, booking, and google URLs', () => {
+  it('returns kayak, booking, google, and expedia URLs', () => {
     const urls = buildSourceUrls('Manhattan', checkin, checkout);
     const names = urls.map(u => u.name);
     expect(names).toContain('kayak');
     expect(names).toContain('booking');
     expect(names).toContain('google');
+    expect(names).toContain('expedia');
   });
 
   it('builds correct Kayak URL', () => {
@@ -151,6 +152,22 @@ describe('buildSourceUrls', () => {
     const urls = buildSourceUrls('New York City', checkin, checkout);
     const google = urls.find(u => u.name === 'google');
     expect(google!.url).toContain('New+York+City');
+  });
+
+  it('builds correct Expedia URL', () => {
+    const urls = buildSourceUrls('Manhattan', checkin, checkout);
+    const expedia = urls.find(u => u.name === 'expedia');
+    expect(expedia).toBeDefined();
+    expect(expedia!.url).toContain('expedia.com/Hotel-Search');
+    expect(expedia!.url).toContain('startDate=' + checkin);
+    expect(expedia!.url).toContain('endDate=' + checkout);
+    expect(expedia!.url).toContain('sort=PRICE_LOW_TO_HIGH');
+  });
+
+  it('encodes destination in Expedia URL', () => {
+    const urls = buildSourceUrls('New York City', checkin, checkout);
+    const expedia = urls.find(u => u.name === 'expedia');
+    expect(expedia!.url).toContain('New%20York%20City');
   });
 });
 

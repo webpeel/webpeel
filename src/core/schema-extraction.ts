@@ -159,6 +159,23 @@ const HACKERNEWS_SCHEMA: ExtractionSchema = {
   ],
 };
 
+const EXPEDIA_COM_SCHEMA: ExtractionSchema = {
+  name: 'Expedia Hotel Search',
+  version: '1.0',
+  domains: ['expedia.com', 'www.expedia.com'],
+  urlPatterns: ['Hotel-Search', 'hotel-search'],
+  baseSelector: "[data-stid='property-listing'], li.uitk-spacing[class*='uitk-spacing'], [data-stid='lodging-card-responsive']",
+  fields: [
+    { name: 'title', selector: "[data-stid='content-hotel-title'], .uitk-heading-5, .uitk-heading-6, h3[class*='uitk-heading']", type: 'text' },
+    { name: 'price', selector: "[data-stid='price-summary'] .uitk-type-500, [data-stid='price-summary-message-total'], .uitk-type-500", type: 'text', transform: 'trim' },
+    { name: 'rating', selector: "[data-stid='star-rating-msg'], .uitk-badge-base, [aria-label*='out of']", type: 'text' },
+    { name: 'reviewCount', selector: "[data-stid='review-info-text'], .uitk-type-200", type: 'text' },
+    { name: 'location', selector: "[data-stid='location-info'], [data-stid='neighborhood-name']", type: 'text' },
+    { name: 'link', selector: "a[data-stid='open-hotel-information'], a[href*='/h/'], a.uitk-card-link", type: 'attribute', attribute: 'href' },
+    { name: 'image', selector: "img[data-stid='image'], .uitk-image-media img", type: 'attribute', attribute: 'src' },
+  ],
+};
+
 /** All bundled schemas in priority order */
 const BUNDLED_SCHEMAS: ExtractionSchema[] = [
   BOOKING_COM_SCHEMA,
@@ -167,6 +184,7 @@ const BUNDLED_SCHEMAS: ExtractionSchema[] = [
   YELP_COM_SCHEMA,
   WALMART_COM_SCHEMA,
   HACKERNEWS_SCHEMA,
+  EXPEDIA_COM_SCHEMA,
 ];
 
 /* ------------------------------------------------------------------ */

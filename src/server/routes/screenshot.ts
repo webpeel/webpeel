@@ -34,16 +34,16 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       // --- Validate URL --------------------------------------------------
       if (!url || typeof url !== 'string') {
         res.status(400).json({
-          success: false,
-          error: 'Missing or invalid "url" parameter',
+          error: 'invalid_request',
+          message: 'Missing or invalid "url" parameter',
         });
         return;
       }
 
       if (url.length > 2048) {
         res.status(400).json({
-          success: false,
-          error: 'URL too long (max 2048 characters)',
+          error: 'invalid_url',
+          message: 'URL too long (max 2048 characters)',
         });
         return;
       }
@@ -52,15 +52,15 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         const parsed = new URL(url);
         if (!['http:', 'https:'].includes(parsed.protocol)) {
           res.status(400).json({
-            success: false,
-            error: 'Only HTTP and HTTPS protocols are allowed',
+            error: 'invalid_url',
+            message: 'Only HTTP and HTTPS protocols are allowed',
           });
           return;
         }
       } catch {
         res.status(400).json({
-          success: false,
-          error: 'Invalid URL format',
+          error: 'invalid_url',
+          message: 'Invalid URL format',
         });
         return;
       }
@@ -70,8 +70,8 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       } catch (error) {
         if (error instanceof SSRFError) {
           res.status(400).json({
-            success: false,
-            error: 'Cannot fetch localhost, private networks, or non-HTTP URLs',
+            error: 'ssrf_blocked',
+            message: 'Cannot fetch localhost, private networks, or non-HTTP URLs',
           });
           return;
         }
@@ -81,40 +81,40 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       // --- Validate options -----------------------------------------------
       if (format !== undefined && !['png', 'jpeg', 'jpg'].includes(format)) {
         res.status(400).json({
-          success: false,
-          error: 'Invalid format: must be "png", "jpeg", or "jpg"',
+          error: 'invalid_request',
+          message: 'Invalid format: must be "png", "jpeg", or "jpg"',
         });
         return;
       }
 
       if (width !== undefined && (typeof width !== 'number' || width < 100 || width > 5000)) {
         res.status(400).json({
-          success: false,
-          error: 'Invalid width: must be between 100 and 5000',
+          error: 'invalid_request',
+          message: 'Invalid width: must be between 100 and 5000',
         });
         return;
       }
 
       if (height !== undefined && (typeof height !== 'number' || height < 100 || height > 5000)) {
         res.status(400).json({
-          success: false,
-          error: 'Invalid height: must be between 100 and 5000',
+          error: 'invalid_request',
+          message: 'Invalid height: must be between 100 and 5000',
         });
         return;
       }
 
       if (quality !== undefined && (typeof quality !== 'number' || quality < 1 || quality > 100)) {
         res.status(400).json({
-          success: false,
-          error: 'Invalid quality: must be between 1 and 100',
+          error: 'invalid_request',
+          message: 'Invalid quality: must be between 1 and 100',
         });
         return;
       }
 
       if (waitFor !== undefined && (typeof waitFor !== 'number' || waitFor < 0 || waitFor > 60000)) {
         res.status(400).json({
-          success: false,
-          error: 'Invalid waitFor: must be between 0 and 60000ms',
+          error: 'invalid_request',
+          message: 'Invalid waitFor: must be between 0 and 60000ms',
         });
         return;
       }
@@ -126,8 +126,8 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
           normalizedActions = normalizeActions(actions);
         } catch (e) {
           res.status(400).json({
-            success: false,
-            error: `Invalid actions: ${(e as Error).message}`,
+            error: 'invalid_request',
+            message: `Invalid actions: ${(e as Error).message}`,
           });
           return;
         }
@@ -246,13 +246,13 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       if (error.code) {
         const safeMessage = error.message.replace(/[<>"']/g, '');
         res.status(500).json({
-          success: false,
-          error: safeMessage,
+          error: 'screenshot_error',
+          message: safeMessage,
         });
       } else {
         res.status(500).json({
-          success: false,
-          error: 'An unexpected error occurred while taking the screenshot',
+          error: 'internal_error',
+          message: 'An unexpected error occurred while taking the screenshot',
         });
       }
     }

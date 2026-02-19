@@ -139,8 +139,8 @@ describe('POST /v1/screenshot', () => {
       .send({});
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error).toContain('url');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('url');
   });
 
   it('returns 400 for non-string URL', async () => {
@@ -149,7 +149,7 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 123 });
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBeDefined();
   });
 
   it('returns 400 for invalid format', async () => {
@@ -158,8 +158,8 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 'https://example.com', format: 'gif' });
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error).toContain('format');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('format');
   });
 
   it('returns 400 for invalid width', async () => {
@@ -168,8 +168,8 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 'https://example.com', width: 50 });
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error).toContain('width');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('width');
   });
 
   it('returns 400 for invalid height', async () => {
@@ -178,8 +178,8 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 'https://example.com', height: 99999 });
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error).toContain('height');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('height');
   });
 
   it('returns 400 for invalid quality', async () => {
@@ -188,8 +188,8 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 'https://example.com', quality: 0 });
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error).toContain('quality');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('quality');
   });
 
   it('returns 400 for invalid waitFor', async () => {
@@ -198,8 +198,8 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 'https://example.com', waitFor: 99999 });
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error).toContain('waitFor');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('waitFor');
   });
 
   it('blocks SSRF — localhost', async () => {
@@ -208,8 +208,8 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 'http://localhost:3000' });
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error).toContain('localhost');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('localhost');
   });
 
   it('blocks non-HTTP protocols', async () => {
@@ -218,7 +218,7 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 'ftp://example.com/file' });
 
     expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBeDefined();
   });
 
   it('returns 500 on internal error', async () => {
@@ -229,7 +229,7 @@ describe('POST /v1/screenshot', () => {
       .send({ url: 'https://example.com' });
 
     expect(res.status).toBe(500);
-    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBeDefined();
   });
 
   it('sets usage headers', async () => {

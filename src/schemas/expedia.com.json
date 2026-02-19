@@ -1,0 +1,16 @@
+{
+  "name": "Expedia Hotel Search",
+  "version": "1.0",
+  "domains": ["expedia.com", "www.expedia.com"],
+  "urlPatterns": ["Hotel-Search", "hotel-search"],
+  "baseSelector": "[data-stid='property-listing'], li.uitk-spacing[class*='uitk-spacing'], [data-stid='lodging-card-responsive']",
+  "fields": [
+    {"name": "title", "selector": "[data-stid='content-hotel-title'], .uitk-heading-5, .uitk-heading-6, h3[class*='uitk-heading']", "type": "text"},
+    {"name": "price", "selector": "[data-stid='price-summary'] .uitk-type-500, .uitk-type-500[class*='uitk-type'], [data-stid='price-summary-message-total'], .uitk-type-300.is-visually-hidden ~ .uitk-type-500", "type": "text", "transform": "trim"},
+    {"name": "rating", "selector": "[data-stid='star-rating-msg'], .uitk-badge-base[class*='uitk-badge'], [aria-label*='out of']", "type": "text"},
+    {"name": "reviewCount", "selector": "[data-stid='review-info-text'], .uitk-type-200[class*='uitk-type']", "type": "text"},
+    {"name": "location", "selector": "[data-stid='location-info'], .uitk-text.uitk-type-200.uitk-type-inverse-alt, [data-stid='neighborhood-name']", "type": "text"},
+    {"name": "link", "selector": "a[data-stid='open-hotel-information'], a[href*='/h/'], a.uitk-card-link", "type": "attribute", "attribute": "href"},
+    {"name": "image", "selector": "img[data-stid='image'], .uitk-image-media img, img[class*='uitk-image']", "type": "attribute", "attribute": "src"}
+  ]
+}

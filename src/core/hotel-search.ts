@@ -8,6 +8,8 @@
 
 import { peel } from '../index.js';
 import { extractListings } from './extract-listings.js';
+import { findSchemaForUrl, extractWithSchema } from './schema-extraction.js';
+import type { PageAction } from '../types.js';
 
 // ── Public Types ──────────────────────────────────────────────────────────────
 
@@ -157,6 +159,8 @@ export function buildSourceUrls(
   const bookingDest = encodeURIComponent(destination);
   const googleDest = destination.replace(/\s+/g, '+');
 
+  const expediaDest = encodeURIComponent(destination);
+
   return [
     {
       name: 'kayak',
@@ -169,6 +173,10 @@ export function buildSourceUrls(
     {
       name: 'google',
       url: `https://www.google.com/travel/hotels/${googleDest}`,
+    },
+    {
+      name: 'expedia',
+      url: `https://www.expedia.com/Hotel-Search?destination=${expediaDest}&startDate=${checkin}&endDate=${checkout}&sort=PRICE_LOW_TO_HIGH`,
     },
   ];
 }
@@ -347,9 +355,10 @@ export function sortHotels(hotels: HotelResult[], sort: 'price' | 'rating' | 'va
 
 // ── Main Function ─────────────────────────────────────────────────────────────
 
-const DEFAULT_SOURCES = ['kayak', 'booking', 'google'];
+const DEFAULT_SOURCES = ['kayak', 'booking', 'google', 'expedia'];
 const SIMPLE_TIMEOUT = 15_000;
 const BROWSER_TIMEOUT = 30_000;
+const EXPEDIA_TIMEOUT = 60_000;
 
 /**
  * Search multiple travel sites for hotels and return sorted, deduplicated results.
@@ -378,24 +387,52 @@ export async function searchHotels(options: HotelSearchOptions): Promise<HotelSe
     allSourceUrls.map(async (src) => {
       const isKayak = src.name === 'kayak';
       const isBooking = src.name === 'booking';
+      const isExpedia = src.name === 'expedia';
 
-      const useStealth = useGlobalStealth || isKayak;
+      const useStealth = useGlobalStealth || isKayak || isExpedia;
       const useRender = useStealth || isBooking;
-      const timeout = useRender ? BROWSER_TIMEOUT : SIMPLE_TIMEOUT;
+      const timeout = isExpedia ? EXPEDIA_TIMEOUT : (useRender ? BROWSER_TIMEOUT : SIMPLE_TIMEOUT);
+
+      // Expedia is a SPA — wait for property listings to appear before extracting
+      const actions: PageAction[] | undefined = isExpedia
+        ? [{ type: 'waitForSelector', selector: "[data-stid='property-listing'], li.uitk-spacing" }]
+        : undefined;
 
       const result = await peel(src.url, {
         format: 'html',
         render: useRender,
         stealth: useStealth,
         timeout,
+        ...(actions ? { actions } : {}),
       });
 
-      const listings = extractListings(result.content, src.url);
+      // Prefer CSS schema extraction when a schema is available for this source
+      const schema = findSchemaForUrl(src.url);
       const hotels: HotelResult[] = [];
 
-      for (const item of listings) {
-        const hotel = normaliseToHotelResult(item, src.name);
-        if (hotel) hotels.push(hotel);
+      if (schema) {
+        const schemaItems = extractWithSchema(result.content, schema, src.url);
+        for (const item of schemaItems) {
+          const mapped = {
+            title: typeof item.title === 'string' ? item.title : undefined,
+            price: typeof item.price === 'string' ? item.price : undefined,
+            rating: typeof item.rating === 'string' ? item.rating : undefined,
+            link: typeof item.link === 'string' ? item.link : undefined,
+            image: typeof item.image === 'string' ? item.image : undefined,
+            description: typeof item.location === 'string' ? item.location : undefined,
+          };
+          const hotel = normaliseToHotelResult(mapped, src.name);
+          if (hotel) hotels.push(hotel);
+        }
+      }
+
+      // Fall back to generic extraction if schema yielded nothing
+      if (hotels.length === 0) {
+        const listings = extractListings(result.content, src.url);
+        for (const item of listings) {
+          const hotel = normaliseToHotelResult(item, src.name);
+          if (hotel) hotels.push(hotel);
+        }
       }
 
       return { name: src.name, hotels };

@@ -43,6 +43,24 @@ npx webpeel https://example.com --agent
 npx webpeel search --site ebay "charizard card"
 npx webpeel search --site amazon "laptop stand" --table
 
+# CSS schema extraction — auto-detected by domain
+npx webpeel https://www.amazon.com/s?k=keyboard --json
+npx webpeel https://www.booking.com/searchresults.html --schema booking --json
+npx webpeel --list-schemas
+
+# LLM extraction — structured data from any page (BYOK)
+npx webpeel https://example.com/product --llm-extract "title, price, rating" --json
+npx webpeel https://hn.algolia.com --llm-extract "top 5 posts with scores" --llm-key $OPENAI_API_KEY
+
+# Hotel search — multi-source parallel search
+npx webpeel hotels "Paris" --checkin 2026-03-01 --checkout 2026-03-05 --sort price
+npx webpeel hotels "New York" --checkin 2026-04-10 --json
+
+# Browser profiles — persistent sessions across requests
+npx webpeel profile create myprofile
+npx webpeel https://protected-site.com --profile myprofile --stealth
+npx webpeel profile list
+
 # Stealth mode (auto-detects & bypasses bot protection)
 npx webpeel https://protected-site.com --stealth
 
@@ -66,7 +84,11 @@ First 25 fetches work instantly, no signup. After that, [sign up free](https://a
 | **Smart escalation** | ✅ HTTP→Browser→Stealth | Manual | ❌ | ❌ |
 | **Challenge detection** | ✅ 7 vendors auto-detected | ❌ | ❌ | ❌ |
 | **Site search** | ✅ 27 sites built-in | ❌ | ❌ | ❌ |
-| **Stealth mode** | ✅ All plans | ✅ | ⚠️ Limited | ❌ |
+| **Stealth mode** | ✅ v2, all plans | ✅ | ⚠️ Limited | ❌ |
+| **Browser profiles** | ✅ Persistent sessions | ❌ | ❌ | ❌ |
+| **Hotel search** | ✅ Multi-source parallel | ❌ | ❌ | ❌ |
+| **CSS schema extraction** | ✅ 6 bundled + auto-detect | ❌ | ❌ | ❌ |
+| **LLM extraction** | ✅ BYOK, cost tracking | ⚠️ Cloud only | ❌ | ❌ |
 | **Firecrawl-compatible** | ✅ Drop-in replacement | ✅ Native | ❌ | ❌ |
 | **Self-hosting** | ✅ Docker compose | ⚠️ Complex | ❌ | N/A |
 | **Autonomous agent** | ✅ BYOK any LLM | ⚠️ Locked | ❌ | ❌ |
@@ -207,6 +229,10 @@ npx webpeel agent "Compare pricing of Notion vs Coda" --llm-key sk-...
 | Feature | CLI | Node.js | Python | API |
 |---------|:---:|:-------:|:------:|:---:|
 | Structured extraction | ✅ | ✅ | ✅ | ✅ |
+| CSS schema extraction | ✅ | ✅ | — | ✅ |
+| LLM extraction (BYOK) | ✅ | ✅ | — | ✅ |
+| Browser profiles | ✅ | ✅ | — | — |
+| Hotel search | ✅ | — | — | — |
 | Screenshots | ✅ | ✅ | — | ✅ |
 | Branding extraction | ✅ | ✅ | — | — |
 | Change tracking | ✅ | ✅ | — | — |

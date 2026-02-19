@@ -1,8 +1,14 @@
 /**
  * Firecrawl API Compatibility Layer
- * 
+ *
  * Drop-in replacement for Firecrawl's API - users can switch by ONLY changing the base URL.
  * This is our killer acquisition feature.
+ *
+ * NOTE: Error responses in this file intentionally use Firecrawl's format:
+ *   { success: false, error: "Human-readable message" }
+ * This is required for Firecrawl drop-in compatibility and differs from the
+ * standard WebPeel API error format: { error: "error_code", message: "description" }.
+ * Do NOT change this format — it would break Firecrawl-compatible integrations.
  * 
  * Implements Firecrawl endpoints:
  * - POST /v1/scrape
