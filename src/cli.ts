@@ -3175,6 +3175,155 @@ profileCmd
     }
   });
 
+// ── Hotels command ─────────────────────────────────────────────────────────────
+
+program
+  .command('hotels <destination>')
+  .description('Search multiple travel sites for hotels (Kayak, Booking.com, Google Travel)')
+  .option('--checkin <date>', 'Check-in date (ISO or relative, e.g. "tomorrow", "2026-02-20"). Default: tomorrow')
+  .option('--checkout <date>', 'Check-out date (ISO or relative). Default: checkin + 1 day')
+  .option('--sort <method>', 'Sort by: price, rating, value (default: price)', 'price')
+  .option('--limit <n>', 'Max results (default: 20)', '20')
+  .option('--source <name...>', 'Only use specific source(s): kayak, booking, google (repeatable)')
+  .option('--json', 'Output as JSON')
+  .option('--stealth', 'Use stealth mode for all sources')
+  .option('-s, --silent', 'Suppress progress messages')
+  .action(async (destination: string, options) => {
+    const isJson = options.json as boolean;
+    const isSilent = options.silent as boolean;
+
+    // Build checkin/checkout
+    const { parseDate, addDays: hotelAddDays } = await import('./core/hotel-search.js');
+    let checkinStr: string;
+    let checkoutStr: string;
+    try {
+      checkinStr = parseDate(options.checkin ?? 'tomorrow');
+      checkoutStr = options.checkout
+        ? parseDate(options.checkout)
+        : hotelAddDays(checkinStr, 1);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (isJson) {
+        await writeStdout(JSON.stringify({ error: msg, code: 'INVALID_DATE' }) + '\n');
+      } else {
+        console.error(`Error: ${msg}`);
+      }
+      process.exit(1);
+    }
+
+    const sortMethod = (['price', 'rating', 'value'].includes(options.sort as string)
+      ? options.sort
+      : 'price') as 'price' | 'rating' | 'value';
+
+    const limit = Math.max(1, parseInt(options.limit as string, 10) || 20);
+
+    const sources: string[] | undefined = options.source
+      ? (Array.isArray(options.source) ? options.source : [options.source]) as string[]
+      : undefined;
+
+    // Spinner per-source progress (non-silent, non-JSON)
+    let searchSpinner: import('ora').Ora | null = null;
+    if (!isSilent && !isJson) {
+      searchSpinner = ora(`Searching hotels in ${destination}...`).start();
+    } else if (!isSilent && !isJson) {
+      console.error(`⏳ Searching kayak.com...`);
+      console.error(`⏳ Searching booking.com...`);
+      console.error(`⏳ Searching google.com...`);
+    }
+
+    try {
+      const { searchHotels } = await import('./core/hotel-search.js');
+
+      const result = await searchHotels({
+        destination,
+        checkin: checkinStr!,
+        checkout: checkoutStr!,
+        sort: sortMethod,
+        limit,
+        sources,
+        stealth: options.stealth as boolean | undefined,
+        silent: isSilent,
+      });
+
+      if (searchSpinner) searchSpinner.stop();
+
+      // Show per-source status
+      if (!isSilent && !isJson) {
+        for (const src of result.sources) {
+          if (src.status === 'ok') {
+            console.error(`✅ ${src.name}: ${src.count} hotels found`);
+          } else {
+            console.error(`❌ ${src.name}: ${src.status}${src.error ? ' — ' + src.error : ''}`);
+          }
+        }
+      }
+
+      if (isJson) {
+        await writeStdout(JSON.stringify(result, null, 2) + '\n');
+        await cleanup();
+        process.exit(0);
+      }
+
+      // Human-readable table output
+      const { formatDate: fmtDate } = {
+        formatDate: (iso: string): string => {
+          const d = new Date(iso + 'T12:00:00Z');
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+        },
+      };
+
+      const ci = fmtDate(result.checkin);
+      const co = fmtDate(result.checkout);
+
+      console.log(`\n🏨 Hotels in ${result.destination}`);
+      console.log(`   ${ci} → ${co} | Sorted by ${sortMethod}\n`);
+
+      if (result.results.length === 0) {
+        console.log('   No hotels found.\n');
+      } else {
+        const colNum = 3;
+        const colName = 42;
+        const colPrice = 8;
+        const colRating = 8;
+        const colSource = 10;
+        const padEnd = (s: string, w: number) => s.length > w ? s.slice(0, w - 1) + '…' : s.padEnd(w);
+        const padStart = (s: string, w: number) => s.padStart(w);
+
+        console.log(
+          ` ${padStart('#', colNum)}  ${padEnd('Hotel', colName)}  ${padEnd('Price', colPrice)}  ${padEnd('Rating', colRating)}  ${padEnd('Source', colSource)}`
+        );
+
+        result.results.forEach((hotel, i) => {
+          const priceStr = hotel.priceDisplay || '—';
+          const ratingStr = hotel.rating !== null ? String(hotel.rating) : '—';
+          console.log(
+            ` ${padStart(String(i + 1), colNum)}  ${padEnd(hotel.name, colName)}  ${padEnd(priceStr, colPrice)}  ${padEnd(ratingStr, colRating)}  ${padEnd(hotel.source, colSource)}`
+          );
+        });
+
+        console.log('');
+        const sourceSummary = result.sources
+          .map(s => `${s.name} (${s.count} ${s.status === 'ok' ? '✅' : s.status === 'blocked' ? '🚫' : '❌'})`)
+          .join(' | ');
+        console.log(`Sources: ${sourceSummary}`);
+      }
+
+      console.log('');
+      await cleanup();
+      process.exit(0);
+    } catch (error) {
+      if (searchSpinner) searchSpinner.fail('Hotel search failed');
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      if (isJson) {
+        await writeStdout(JSON.stringify({ error: msg, code: 'FETCH_FAILED' }) + '\n');
+      } else {
+        console.error(`\nError: ${msg}`);
+      }
+      await cleanup();
+      process.exit(1);
+    }
+  });
+
 program.parse();
 
 // ============================================================

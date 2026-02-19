@@ -35,6 +35,8 @@ function getRandomUserAgent(): string {
 /**
  * Common Chromium launch arguments for anti-bot-detection.
  * Applied to BOTH regular and stealth browser instances.
+ * NOTE: --window-size is intentionally omitted here; it is added dynamically
+ * per browser launch using a random realistic viewport (see getRandomViewport()).
  */
 const ANTI_DETECTION_ARGS: readonly string[] = [
   '--disable-blink-features=AutomationControlled',
@@ -43,9 +45,100 @@ const ANTI_DETECTION_ARGS: readonly string[] = [
   '--no-sandbox',
   '--disable-setuid-sandbox',
   '--disable-gpu',
-  '--window-size=1920,1080',
   '--start-maximized',
+  // Chrome branding / stealth hardening
+  '--disable-features=ChromeUserAgentDataBranding',
+  '--disable-component-extensions-with-background-pages',
+  '--disable-default-apps',
+  '--disable-extensions',
+  '--disable-hang-monitor',
+  '--disable-popup-blocking',
+  '--disable-prompt-on-repost',
+  '--disable-sync',
+  '--metrics-recording-only',
+  '--no-first-run',
 ];
+
+/**
+ * Returns a random realistic viewport weighted by real-world market share.
+ * Used to avoid the telltale Playwright default of 1280×720.
+ */
+function getRandomViewport(): { width: number; height: number } {
+  // Common real-world resolutions weighted by market share
+  const viewports = [
+    { width: 1920, height: 1080, weight: 35 }, // Full HD
+    { width: 1366, height: 768,  weight: 20 }, // Laptop
+    { width: 1536, height: 864,  weight: 15 }, // Scaled laptop
+    { width: 1440, height: 900,  weight: 10 }, // MacBook
+    { width: 1680, height: 1050, weight: 8  }, // Large laptop
+    { width: 2560, height: 1440, weight: 7  }, // QHD
+    { width: 1280, height: 800,  weight: 5  }, // Older laptop
+  ];
+  const total = viewports.reduce((s, v) => s + v.weight, 0);
+  let r = Math.random() * total;
+  for (const v of viewports) {
+    r -= v.weight;
+    if (r <= 0) return { width: v.width, height: v.height };
+  }
+  return { width: 1920, height: 1080 };
+}
+
+/**
+ * Apply stealth init scripts to a page to reduce bot-detection signals:
+ * 1. Hides the `window.__pwInitScripts` Playwright leak.
+ * 2. Patches `navigator.userAgentData.brands` to include "Google Chrome"
+ *    (Chrome for Testing only ships "Chromium" which is a known detection signal).
+ */
+async function applyStealthScripts(page: Page): Promise<void> {
+  // 1. Hide Playwright's __pwInitScripts marker
+  // Uses string form to avoid TypeScript DOM-lib requirements (tsconfig has no DOM lib).
+  await page.addInitScript(`
+    Object.defineProperty(window, '__pwInitScripts', {
+      get: () => undefined,
+      set: () => {},
+      configurable: true,
+    });
+  `);
+
+  // 2. Patch userAgentData brands to include "Google Chrome"
+  // Chrome for Testing only ships "Chromium" — a well-known bot-detection signal.
+  await page.addInitScript(`
+    (function () {
+      var uad = navigator.userAgentData;
+      if (!uad) return;
+      var originalBrands = uad.brands || [];
+      var hasChromeEntry = originalBrands.some(function(b) { return b.brand === 'Google Chrome'; });
+      if (hasChromeEntry) return;
+
+      var chromiumEntry = originalBrands.find(function(b) { return b.brand === 'Chromium'; });
+      var version = (chromiumEntry && chromiumEntry.version) || '136';
+      var patchedBrands = [
+        { brand: 'Chromium', version: version },
+        { brand: 'Google Chrome', version: version },
+        { brand: 'Not=A?Brand', version: '99' },
+      ];
+
+      Object.defineProperty(navigator, 'userAgentData', {
+        get: function() {
+          return {
+            brands: patchedBrands,
+            mobile: false,
+            platform: uad.platform || 'Windows',
+            getHighEntropyValues: uad.getHighEntropyValues ? uad.getHighEntropyValues.bind(uad) : undefined,
+            toJSON: function() {
+              return {
+                brands: patchedBrands,
+                mobile: false,
+                platform: uad.platform || 'Windows',
+              };
+            },
+          };
+        },
+        configurable: true,
+      });
+    })();
+  `);
+}
 
 function createHttpPool(): Agent {
   return new Agent({
@@ -779,7 +872,9 @@ async function ensurePagePool(browser?: Browser): Promise<void> {
     while (pooledPages.size < PAGE_POOL_SIZE) {
       const pooledPage = await activeBrowser.newPage({
         userAgent: getRandomUserAgent(),
+        viewport: null, // Use browser window size (set via --window-size at launch)
       });
+      await applyStealthScripts(pooledPage);
       pooledPages.add(pooledPage);
       idlePagePool.push(pooledPage);
     }
@@ -849,9 +944,10 @@ async function getBrowser(): Promise<Browser> {
   idlePagePool.length = 0;
   pagePoolFillPromise = null;
 
+  const vp = getRandomViewport();
   sharedBrowser = await chromium.launch({
     headless: true,
-    args: [...ANTI_DETECTION_ARGS],
+    args: [...ANTI_DETECTION_ARGS, `--window-size=${vp.width},${vp.height}`],
   });
   void ensurePagePool(sharedBrowser).catch(() => {});
   return sharedBrowser;
@@ -870,9 +966,10 @@ async function getStealthBrowser(): Promise<Browser> {
     }
   }
 
+  const stealthVp = getRandomViewport();
   const stealthBrowser = await stealthChromium.launch({
     headless: true,
-    args: [...ANTI_DETECTION_ARGS],
+    args: [...ANTI_DETECTION_ARGS, `--window-size=${stealthVp.width},${stealthVp.height}`],
   });
   if (!stealthBrowser) throw new Error('Failed to launch stealth browser');
   sharedStealthBrowser = stealthBrowser;
@@ -906,10 +1003,12 @@ async function getProfileBrowser(
     profileBrowsers.delete(profileDir);
   }
 
+  const profileVp = getRandomViewport();
   const launchOptions = {
     headless: !headed,
     args: [
       ...ANTI_DETECTION_ARGS,
+      `--window-size=${profileVp.width},${profileVp.height}`,
       `--user-data-dir=${profileDir}`,
     ],
   };
@@ -1045,13 +1144,14 @@ export async function browserFetch(
     }
 
     if (!page) {
+      const fetchVp = getRandomViewport();
       const pageOptions = {
         userAgent: validatedUserAgent,
+        // viewport: null lets the browser use its natural window size (set via --window-size),
+        // avoiding the telltale Playwright default of 1280×720.
+        viewport: null as null,
         ...(stealth
           ? {
-              // viewport: null lets the browser use its natural (system) viewport,
-              // avoiding the telltale Playwright default of 1280×720.
-              viewport: null as null,
               locale: 'en-US',
               timezoneId: 'America/New_York',
               javaScriptEnabled: true,
@@ -1061,11 +1161,16 @@ export async function browserFetch(
 
       if (storageState) {
         // Create an isolated context with the injected storage state (cookies + localStorage)
-        ownedContext = await browser.newContext({ ...pageOptions, storageState });
+        ownedContext = await browser.newContext({
+          ...pageOptions,
+          storageState,
+          viewport: { width: fetchVp.width, height: fetchVp.height },
+        });
         page = await ownedContext.newPage();
       } else {
         page = await browser.newPage(pageOptions);
       }
+      await applyStealthScripts(page);
       usingPooledPage = false;
     } else {
       await page.setViewportSize({ width: 1280, height: 720 }).catch(() => {});
@@ -1465,8 +1570,9 @@ export async function browserScreenshot(
         viewport: width || height ? {
           width: width || 1280,
           height: height || 720,
-        } : undefined,
+        } : null, // Use browser window size when no explicit dimensions requested
       });
+      await applyStealthScripts(page);
       usingPooledPage = false;
     } else {
       await page.setViewportSize({
