@@ -14,10 +14,15 @@ jobs:
   deploy:
     name: Trigger Render Deploy
     runs-on: ubuntu-latest
-    # Only run if we have the deploy hook secret
-    if: ${{ vars.RENDER_DEPLOY_HOOK_URL != '' || secrets.RENDER_DEPLOY_HOOK_URL != '' }}
     steps:
       - name: Trigger Render deployment
+        env:
+          HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          curl -s "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" || echo "Deploy hook not configured"
-          echo "Deploy triggered — Render will rebuild from latest npm version"
+          if [ -z "$HOOK_URL" ]; then
+            echo "⚠️ RENDER_DEPLOY_HOOK_URL secret not configured — skipping deploy"
+            echo "Set the secret in repo Settings → Secrets to enable auto-deploy"
+            exit 0
+          fi
+          curl -s "$HOOK_URL"
+          echo "✅ Deploy triggered — Render will rebuild from latest npm version"
