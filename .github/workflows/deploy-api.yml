@@ -1,0 +1,23 @@
+name: Deploy API to Render
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'Dockerfile.api'
+      - 'render.yaml'
+
+jobs:
+  deploy:
+    name: Trigger Render Deploy
+    runs-on: ubuntu-latest
+    # Only run if we have the deploy hook secret
+    if: ${{ vars.RENDER_DEPLOY_HOOK_URL != '' || secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+    steps:
+      - name: Trigger Render deployment
+        run: |
+          curl -s "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" || echo "Deploy hook not configured"
+          echo "Deploy triggered — Render will rebuild from latest npm version"

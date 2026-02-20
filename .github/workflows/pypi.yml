@@ -29,10 +29,10 @@ jobs:
         run: pip install build
 
       - name: Build package
-        working-directory: python-sdk
+        working-directory: sdks/python
         run: python -m build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: python-sdk/dist/
+          packages-dir: sdks/python/dist/

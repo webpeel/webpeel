@@ -274,8 +274,8 @@ console.log(data);</code></pre>
       <pre><code class="language-bash">pip install webpeel</code></pre>
 
       <div class="callout callout-info">
-        <div class="callout-title">Zero Dependencies</div>
-        The Python SDK uses only the standard library — no external dependencies!
+        <div class="callout-title">Lightweight</div>
+        Only one dependency: <code>httpx</code> for modern HTTP. Supports sync and async.
       </div>
 
       <h3>Quick Start</h3>
@@ -292,10 +292,16 @@ print(result.content)
 # With options
 result = client.scrape(
     "https://example.com",
-    formats=["markdown"],
+    format="markdown",
     render=True,
-    stealth=True
-)</code></pre>
+    budget=4000
+)
+
+# Deep research
+report = client.research("best web scraping tools 2025", max_sources=5)
+for source in report.sources:
+    print(f"[{source.relevance:.0%}] {source.title}")
+</code></pre>
 
       <h3>Core Methods</h3>
 
