@@ -318,7 +318,7 @@ npx webpeel agent "Compare pricing of Notion vs Coda" --llm-key sk-...
 
 ## Integrations
 
-Works with **LangChain**, **LlamaIndex**, **CrewAI**, **Dify**, and **n8n**. [Integration docs →](https://webpeel.dev/docs)
+Works with **CrewAI**, **Dify**, and **n8n** via the Firecrawl-compatible API. LangChain & LlamaIndex integrations coming soon. [Integration docs →](https://webpeel.dev/docs)
 
 ## Hosted API
 

@@ -134,8 +134,40 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.10.0</div>
+              <div class="release-version mono">v0.12.0</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">February 20, 2026</div>
+          </div>
+          <ul>
+            <li><strong>Deep Research Agent:</strong> <code>webpeel research "&lt;query&gt;"</code> — autonomous 5-phase pipeline: Search → Fetch → BM25 Extract → Follow Links → Synthesize. MCP tool included.</li>
+            <li><strong>Content Pruner v2:</strong> Two-pass architecture (semantic removal + density scoring). Real-world token savings: 15-33% on most sites. Enabled by default.</li>
+            <li><strong>BM25 Relevance Scoring:</strong> <code>computeRelevanceScore()</code> for document-level relevance. Used by research agent and <code>--focus</code> filtering.</li>
+            <li><strong>Python SDK:</strong> <code>pip install webpeel</code> — full client with sync + async support. scrape, search, batch, crawl, map, extract, screenshot, research.</li>
+            <li><strong>Smart Infinite Scroll:</strong> <code>--scroll-extract</code> auto-detects content loading via height stabilization. Stops when page is fully loaded.</li>
+            <li><strong>Token Efficiency Pipeline:</strong> BM25 query filtering (<code>--focus</code>), smart chunking (<code>--chunk</code>), content pruning. Combined: up to 77% savings.</li>
+            <li>654 Node.js + 39 Python = 693 tests. 13 MCP tools. 7 CSS schemas.</li>
+          </ul>
+        </div>
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.11.0</div>
+            </div>
+            <div class="release-meta">February 19, 2026</div>
+          </div>
+          <ul>
+            <li><strong>JSON Schema Extraction:</strong> <code>--extract-schema</code> for structured LLM extraction. Accepts example objects (auto-converted) or full JSON Schema. Firecrawl-compatible <code>POST /v1/extract</code>.</li>
+            <li><strong>Remote Hosted MCP:</strong> <code>https://api.webpeel.dev/v2/mcp</code> — no npm install needed. One-click Cursor deep-link, Claude Desktop &amp; Windsurf configs.</li>
+            <li><strong>MCP HTTP Transport:</strong> Streamable HTTP transport (<code>MCP_HTTP_MODE=true</code>), in addition to default stdio.</li>
+            <li><strong>Proxy Support:</strong> <code>--proxy http://host:port</code> or <code>--proxy socks5://user:pass@host:port</code>. Works with HTTP and browser rendering.</li>
+            <li>538 tests, 0 type errors.</li>
+          </ul>
+        </div>
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.10.0</div>
             </div>
             <div class="release-meta">February 19, 2026</div>
           </div>
@@ -263,7 +295,7 @@
             <div class="release-meta">February 13, 2026</div>
           </div>
           <ul>
-            <li>MCP server with 11 tools</li>
+            <li>MCP server with 13 tools</li>
             <li>Python SDK (zero deps)</li>
             <li>LangChain &amp; LlamaIndex integrations</li>
           </ul>
