@@ -182,7 +182,8 @@ program
   .option('--extract-all', 'Auto-detect and extract repeated listing items (e.g., search results)')
   .option('--schema <name>', 'Force a specific extraction schema by name or domain (e.g., "booking.com", "amazon")')
   .option('--list-schemas', 'List all available extraction schemas and their supported domains')
-  .option('--scroll-extract [count]', 'Scroll page N times to load lazy content, then extract (implies --render)', (v: string) => parseInt(v, 10))
+  .option('--scroll-extract [count]', 'Scroll page N times to load lazy content (bare flag = smart auto-scroll until stable), then extract (implies --render)', (v: string) => parseInt(v, 10))
+  .option('--scroll-extract-timeout <ms>', 'Total timeout in ms for auto-scroll (default: 30000, only used with bare --scroll-extract)', parseInt)
   .option('--csv', 'Output extraction results as CSV')
   .option('--table', 'Output extraction results as a formatted table')
   .option('--pages <n>', 'Follow pagination "Next" links for N pages (max 10)', (v: string) => parseInt(v, 10))
@@ -483,11 +484,18 @@ program
       // --stealth auto-enables --render (stealth requires browser)
       // --action auto-enables --render (actions require browser)
       // --scroll-extract implies --render (needs browser)
-      const scrollExtractCount = options.scrollExtract !== undefined
-        ? (typeof options.scrollExtract === 'number' ? options.scrollExtract : 3)
-        : 0;
-      const useRender = options.render || options.stealth || (actions && actions.length > 0) || scrollExtractCount > 0 || false;
-      // Inject scroll actions when --scroll-extract is used
+      //
+      // Bare --scroll-extract (no number) → smart autoScroll (detects stable height)
+      // --scroll-extract N (with number) → legacy fixed N scrolls via actions
+      const scrollExtractRaw = options.scrollExtract;
+      const isAutoScroll = scrollExtractRaw !== undefined && typeof scrollExtractRaw !== 'number';
+      const scrollExtractCount = isAutoScroll
+        ? 0
+        : (scrollExtractRaw !== undefined ? scrollExtractRaw : 0);
+
+      const useRender = options.render || options.stealth || (actions && actions.length > 0) || scrollExtractCount > 0 || isAutoScroll || false;
+
+      // Inject scroll actions when --scroll-extract N (fixed count) is used
       if (scrollExtractCount > 0) {
         const scrollActions: PageAction[] = [];
         for (let i = 0; i < scrollExtractCount; i++) {
@@ -525,6 +533,10 @@ program
         storageState: resolvedStorageState,
         proxy: options.proxy as string | undefined,
         fullPage: options.fullContent || false,
+        // Smart auto-scroll (bare --scroll-extract flag)
+        autoScroll: isAutoScroll
+          ? { timeout: options.scrollExtractTimeout }
+          : undefined,
       };
 
       // Add summary option if requested

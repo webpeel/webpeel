@@ -178,6 +178,22 @@ const tools: Tool[] = [
           },
           description: 'Page actions to execute before extraction. Auto-enables browser rendering. Examples: [{type: "click", selector: ".load-more"}, {type: "wait", milliseconds: 2000}, {type: "scroll", direction: "down", amount: 500}]',
         },
+        autoScroll: {
+          oneOf: [
+            { type: 'boolean', description: 'Use default auto-scroll settings (up to 20 scrolls, 30s timeout)' },
+            {
+              type: 'object',
+              description: 'Custom auto-scroll configuration',
+              properties: {
+                maxScrolls: { type: 'number', description: 'Maximum scroll iterations (default: 20)' },
+                scrollDelay: { type: 'number', description: 'Milliseconds to wait between scrolls (default: 1000)' },
+                timeout: { type: 'number', description: 'Total timeout in milliseconds (default: 30000)' },
+                waitForSelector: { type: 'string', description: 'CSS selector to wait for after each scroll' },
+              },
+            },
+          ],
+          description: 'Intelligently scroll the page to load all lazy/infinite-scroll content before extracting. Set to true for defaults or provide an object to customize. Auto-enables browser rendering.',
+        },
         maxTokens: {
           type: 'number',
           description: 'Maximum token count for output (truncates if exceeded)',
@@ -778,6 +794,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         llmProvider,
         llmApiKey,
         llmModel,
+        autoScroll: autoScrollParam,
       } = args as {
         url: string;
         render?: boolean;
@@ -794,6 +811,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         location?: string;
         headers?: Record<string, string>;
         actions?: any[];
+        autoScroll?: boolean | { maxScrolls?: number; scrollDelay?: number; timeout?: number; waitForSelector?: string };
         maxTokens?: number;
         extract?: any;
         inlineExtract?: { schema?: Record<string, any>; prompt?: string };
@@ -868,7 +886,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const hasActions = normalizedActions && normalizedActions.length > 0;
 
       const options: PeelOptions = {
-        render: render || hasActions || false,
+        render: render || hasActions || !!autoScrollParam || false,
         stealth: stealth || false,
         wait: wait || 0,
         format: format || 'markdown',
@@ -882,6 +900,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         location: location ? { country: location } : undefined,
         headers,
         actions: normalizedActions,
+        autoScroll: autoScrollParam,
         maxTokens,
         extract,
         // Agent-friendly default: cap tokens at 4000 when no explicit limit is set.

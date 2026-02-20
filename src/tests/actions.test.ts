@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { normalizeActions, DEFAULT_ACTION_TIMEOUT_MS, MAX_TOTAL_ACTIONS_MS } from '../core/actions.js';
+import { normalizeActions, DEFAULT_ACTION_TIMEOUT_MS, MAX_TOTAL_ACTIONS_MS, autoScroll } from '../core/actions.js';
 
 // ─── normalizeActions ────────────────────────────────────────────────────────
 
@@ -156,6 +156,112 @@ describe('action constants', () => {
 
   it('has correct max total timeout', () => {
     expect(MAX_TOTAL_ACTIONS_MS).toBe(30000);
+  });
+});
+
+// ─── autoScroll ──────────────────────────────────────────────────────────────
+
+describe('autoScroll', () => {
+  function makeMockPage(heights: number[]) {
+    let callIndex = 0;
+    return {
+      evaluate: vi.fn(async (expr: string) => {
+        if (typeof expr === 'string' && expr.includes('scrollHeight')) {
+          const h = heights[Math.min(callIndex++, heights.length - 1)];
+          return h;
+        }
+        // scrollTo call — ignore
+        return undefined;
+      }),
+      waitForSelector: vi.fn().mockResolvedValue(undefined),
+    };
+  }
+
+  it('stops when height stabilizes (2 consecutive stable checks)', async () => {
+    // Heights: 1000 (initial), 1000 (after scroll 1 — no grow, stableCount=1),
+    //          1000 (after scroll 2 — no grow, stableCount=2, stop)
+    const page = makeMockPage([1000, 1000, 1000]);
+    const result = await autoScroll(page as any, { scrollDelay: 0, maxScrolls: 20, timeout: 10000 });
+
+    expect(result.contentGrew).toBe(false);
+    expect(result.finalHeight).toBe(1000);
+    // Should have scrolled 2 times (stableCount hits threshold=2)
+    expect(result.scrollCount).toBe(2);
+  });
+
+  it('grows content on each scroll and eventually stabilizes', async () => {
+    // Heights: 1000 (initial), 2000 (grew), 3000 (grew), 3000 (stable 1), 3000 (stable 2)
+    const page = makeMockPage([1000, 2000, 3000, 3000, 3000]);
+    const result = await autoScroll(page as any, { scrollDelay: 0, maxScrolls: 20, timeout: 10000 });
+
+    expect(result.contentGrew).toBe(true);
+    expect(result.finalHeight).toBe(3000);
+    expect(result.scrollCount).toBe(4);
+  });
+
+  it('stops at maxScrolls limit', async () => {
+    // Always growing — never stabilizes
+    let h = 1000;
+    const page = {
+      evaluate: vi.fn(async (expr: string) => {
+        if (typeof expr === 'string' && expr.includes('scrollHeight')) {
+          h += 1000;
+          return h;
+        }
+        return undefined;
+      }),
+      waitForSelector: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const result = await autoScroll(page as any, { maxScrolls: 5, scrollDelay: 0, timeout: 60000 });
+
+    expect(result.scrollCount).toBe(5);
+    expect(result.contentGrew).toBe(true);
+  });
+
+  it('stops when timeout is exceeded', async () => {
+    // Use a very short timeout
+    let h = 1000;
+    const page = {
+      evaluate: vi.fn(async (expr: string) => {
+        if (typeof expr === 'string' && expr.includes('scrollHeight')) {
+          h += 1000;
+          return h;
+        }
+        return undefined;
+      }),
+      waitForSelector: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const result = await autoScroll(page as any, { maxScrolls: 100, scrollDelay: 0, timeout: 1 });
+
+    // Should stop very quickly due to timeout
+    expect(result.scrollCount).toBeLessThan(100);
+  });
+
+  it('returns correct scrollCount and finalHeight', async () => {
+    // 1000 initial, 1500 after scroll 1, 1500 (stable 1), 1500 (stable 2)
+    const page = makeMockPage([1000, 1500, 1500, 1500]);
+    const result = await autoScroll(page as any, { scrollDelay: 0, maxScrolls: 20, timeout: 10000 });
+
+    expect(result.scrollCount).toBe(3);
+    expect(result.finalHeight).toBe(1500);
+    expect(result.contentGrew).toBe(true);
+  });
+
+  it('calls waitForSelector after each scroll when provided', async () => {
+    const page = makeMockPage([1000, 1000, 1000]);
+    await autoScroll(page as any, { scrollDelay: 0, maxScrolls: 20, timeout: 10000, waitForSelector: '.loaded' });
+
+    expect(page.waitForSelector).toHaveBeenCalledWith('.loaded', expect.any(Object));
+  });
+
+  it('returns contentGrew=false when height never changes', async () => {
+    const page = makeMockPage([500, 500, 500]);
+    const result = await autoScroll(page as any, { scrollDelay: 0 });
+
+    expect(result.contentGrew).toBe(false);
+    expect(result.finalHeight).toBe(500);
   });
 });
 
@@ -314,5 +420,69 @@ describe('POST /v1/fetch with actions', () => {
         ]),
       }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// autoScroll
+// ---------------------------------------------------------------------------
+
+describe('autoScroll', () => {
+  it('stops when height stabilizes', async () => {
+    const { autoScroll } = await import('../core/actions.js');
+    let callCount = 0;
+    const mockPage = {
+      evaluate: vi.fn().mockImplementation((expr: string) => {
+        if (expr === 'document.body.scrollHeight') {
+          callCount++;
+          // Height grows for 3 scrolls then stabilizes
+          return Promise.resolve(callCount <= 3 ? callCount * 1000 : 3000);
+        }
+        return Promise.resolve();
+      }),
+      waitForTimeout: vi.fn().mockResolvedValue(undefined),
+      waitForSelector: vi.fn().mockResolvedValue(undefined),
+    } as any;
+
+    const result = await autoScroll(mockPage, { maxScrolls: 10, scrollDelay: 10 });
+    expect(result.scrollCount).toBeGreaterThanOrEqual(3);
+    expect(result.scrollCount).toBeLessThan(10);
+    expect(result.finalHeight).toBe(3000);
+  });
+
+  it('stops at maxScrolls limit', async () => {
+    const { autoScroll } = await import('../core/actions.js');
+    let callCount = 0;
+    const mockPage = {
+      evaluate: vi.fn().mockImplementation((expr: string) => {
+        if (expr === 'document.body.scrollHeight') {
+          callCount++;
+          return Promise.resolve(callCount * 500); // always growing
+        }
+        return Promise.resolve();
+      }),
+      waitForTimeout: vi.fn().mockResolvedValue(undefined),
+    } as any;
+
+    const result = await autoScroll(mockPage, { maxScrolls: 5, scrollDelay: 10 });
+    expect(result.scrollCount).toBe(5);
+    expect(result.contentGrew).toBe(true);
+  });
+
+  it('returns correct result for no growth', async () => {
+    const { autoScroll } = await import('../core/actions.js');
+    const mockPage = {
+      evaluate: vi.fn().mockImplementation((expr: string) => {
+        if (expr === 'document.body.scrollHeight') return Promise.resolve(800);
+        return Promise.resolve();
+      }),
+      waitForTimeout: vi.fn().mockResolvedValue(undefined),
+    } as any;
+
+    const result = await autoScroll(mockPage, { maxScrolls: 10, scrollDelay: 10 });
+    expect(result.contentGrew).toBe(false);
+    expect(result.finalHeight).toBe(800);
+    // Should stop after 2 stable checks (threshold)
+    expect(result.scrollCount).toBeLessThanOrEqual(3);
   });
 });

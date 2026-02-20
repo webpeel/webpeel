@@ -87,12 +87,16 @@ First 25 fetches work instantly, no signup. After that, [sign up free](https://a
 | **Stealth mode** | ✅ v2, all plans | ✅ | ⚠️ Limited | ❌ |
 | **Browser profiles** | ✅ Persistent sessions | ❌ | ❌ | ❌ |
 | **Hotel search** | ✅ Multi-source parallel | ❌ | ❌ | ❌ |
-| **CSS schema extraction** | ✅ 6 bundled + auto-detect | ❌ | ❌ | ❌ |
+| **CSS schema extraction** | ✅ 7 bundled + auto-detect | ❌ | ❌ | ❌ |
 | **LLM extraction** | ✅ BYOK, cost tracking | ⚠️ Cloud only | ❌ | ❌ |
 | **Firecrawl-compatible** | ✅ Drop-in replacement | ✅ Native | ❌ | ❌ |
 | **Self-hosting** | ✅ Docker compose | ⚠️ Complex | ❌ | N/A |
 | **Autonomous agent** | ✅ BYOK any LLM | ⚠️ Locked | ❌ | ❌ |
-| **MCP tools** | ✅ 11 tools | 3 | 0 | 1 |
+| **Deep research** | ✅ Multi-source + BM25 | ⚠️ Cloud only | ❌ | ❌ |
+| **Content pruning** | ✅ 2-pass, 15-33% savings | ❌ | ❌ | ❌ |
+| **BM25 filtering** | ✅ Query-focused | ❌ | ❌ | ❌ |
+| **Python SDK** | ✅ `pip install` | ✅ | ❌ | ❌ |
+| **MCP tools** | ✅ 13 tools | ~6 | 0 | 1 |
 | **License** | ✅ AGPL-3.0 | AGPL-3.0 | Proprietary | MIT |
 | **Pricing** | **Free / $9 / $29** | $0 / $16 / $83 | Custom | Free |
 
@@ -249,6 +253,36 @@ npx webpeel crawl https://docs.example.com --max-pages 100
 npx webpeel map https://example.com --max-urls 5000
 ```
 
+### 🔬 Deep Research
+
+Multi-source research with BM25 relevance ranking. No API key needed for sources mode.
+
+```bash
+# Get ranked sources with relevance scores
+npx webpeel research "best web scraping tools 2025" --max-sources 5
+
+# Full synthesis with LLM (BYOK)
+npx webpeel research "compare Firecrawl vs Crawl4AI" --llm-key sk-...
+```
+
+### 🧹 Token Efficiency
+
+Save 15-77% on AI tokens automatically.
+
+```bash
+# Content pruning (default ON — strips nav/footer/sidebar)
+npx webpeel https://en.wikipedia.org/wiki/Web_scraping
+
+# Query-focused filtering (BM25)
+npx webpeel https://en.wikipedia.org/wiki/Web_scraping --focus "legal issues"
+
+# Token budget (hard cap)
+npx webpeel https://en.wikipedia.org/wiki/Web_scraping --budget 3000
+
+# Combined: prune → focus → budget = 77% savings
+npx webpeel https://en.wikipedia.org/wiki/Web_scraping --focus "legal" --budget 3000
+```
+
 ### 🤖 Autonomous Agent (BYOK)
 
 Give it a prompt, it researches the web using your own LLM key.
@@ -261,17 +295,23 @@ npx webpeel agent "Compare pricing of Notion vs Coda" --llm-key sk-...
 
 | Feature | CLI | Node.js | Python | API |
 |---------|:---:|:-------:|:------:|:---:|
+| Web scraping | ✅ | ✅ | ✅ | ✅ |
+| Deep research | ✅ | ✅ | ✅ | ✅ |
+| Content pruning | ✅ | ✅ | ✅ | ✅ |
+| BM25 query filtering | ✅ | ✅ | — | ✅ |
 | Structured extraction | ✅ | ✅ | ✅ | ✅ |
 | CSS schema extraction | ✅ | ✅ | — | ✅ |
-| LLM extraction (BYOK) | ✅ | ✅ | — | ✅ |
+| LLM extraction (BYOK) | ✅ | ✅ | ✅ | ✅ |
+| Page actions | ✅ | ✅ | ✅ | ✅ |
 | Browser profiles | ✅ | ✅ | — | — |
+| Screenshots | ✅ | ✅ | ✅ | ✅ |
+| Crawling | ✅ | ✅ | ✅ | ✅ |
+| Batch fetching | ✅ | ✅ | ✅ | ✅ |
 | Hotel search | ✅ | — | — | — |
-| Screenshots | ✅ | ✅ | — | ✅ |
+| Token budget | ✅ | ✅ | ✅ | ✅ |
+| Smart chunking | ✅ | ✅ | — | — |
 | Branding extraction | ✅ | ✅ | — | — |
 | Change tracking | ✅ | ✅ | — | — |
-| Token budget | ✅ | ✅ | ✅ | ✅ |
-| Tag filtering | ✅ | ✅ | ✅ | ✅ |
-| Image extraction | ✅ | ✅ | — | ✅ |
 | AI summarization | ✅ | ✅ | — | ✅ |
 | Batch processing | — | ✅ | — | ✅ |
 | PDF extraction | ✅ | ✅ | — | — |

@@ -15,6 +15,26 @@ import { TimeoutError, WebPeelError } from '../types.js';
 export const DEFAULT_ACTION_TIMEOUT_MS = 5_000;
 export const MAX_TOTAL_ACTIONS_MS = 30_000;
 
+export interface AutoScrollOptions {
+  /** Maximum number of scroll iterations (default: 20) */
+  maxScrolls?: number;
+  /** Milliseconds to wait between scrolls (default: 1000) */
+  scrollDelay?: number;
+  /** Total timeout in milliseconds (default: 30000) */
+  timeout?: number;
+  /** Optional: wait for this CSS selector after each scroll */
+  waitForSelector?: string;
+}
+
+export interface AutoScrollResult {
+  /** Number of scroll iterations performed */
+  scrollCount: number;
+  /** Final document height in pixels */
+  finalHeight: number;
+  /** Whether the page content grew during scrolling */
+  contentGrew: boolean;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -118,6 +138,86 @@ export function normalizeActions(input?: unknown): PageAction[] | undefined {
         return { ...raw } as PageAction;
     }
   });
+}
+
+/**
+ * Intelligently scroll the page to load all lazy/infinite-scroll content.
+ *
+ * Scrolls to the bottom repeatedly, detecting height changes to determine
+ * when new content has loaded. Stops when:
+ * - Page height is stable for 2 consecutive checks
+ * - maxScrolls limit is reached
+ * - Total timeout is exceeded
+ */
+export async function autoScroll(page: Page, options: AutoScrollOptions = {}): Promise<AutoScrollResult> {
+  const {
+    maxScrolls = 20,
+    scrollDelay = 1000,
+    timeout = 30_000,
+    waitForSelector,
+  } = options;
+
+  const startTime = Date.now();
+  let scrollCount = 0;
+  let stableCount = 0;
+  const stableThreshold = 2;
+
+  const getHeight = (): Promise<number> =>
+    page.evaluate('document.body.scrollHeight') as Promise<number>;
+
+  const initialHeight = await getHeight();
+  let lastHeight = initialHeight;
+  let finalHeight = initialHeight;
+
+  while (scrollCount < maxScrolls) {
+    // Check timeout
+    if (Date.now() - startTime >= timeout) {
+      break;
+    }
+
+    // Scroll to bottom
+    await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
+    scrollCount++;
+
+    // Wait for new content
+    const remainingTime = timeout - (Date.now() - startTime);
+    const waitMs = Math.min(scrollDelay, Math.max(remainingTime, 0));
+    if (waitMs > 0) {
+      await sleep(waitMs);
+    }
+
+    // Optionally wait for a specific selector
+    if (waitForSelector) {
+      try {
+        const selectorTimeout = Math.min(scrollDelay, timeout - (Date.now() - startTime));
+        if (selectorTimeout > 0) {
+          await page.waitForSelector(waitForSelector, { timeout: selectorTimeout }).catch(() => {});
+        }
+      } catch {
+        // Selector not found — continue anyway
+      }
+    }
+
+    // Check if page grew
+    const currentHeight = await getHeight();
+    finalHeight = currentHeight;
+
+    if (currentHeight <= lastHeight) {
+      stableCount++;
+      if (stableCount >= stableThreshold) {
+        break;
+      }
+    } else {
+      stableCount = 0;
+      lastHeight = currentHeight;
+    }
+  }
+
+  return {
+    scrollCount,
+    finalHeight,
+    contentGrew: finalHeight > initialHeight,
+  };
 }
 
 export async function executeActions(

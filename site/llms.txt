@@ -1,6 +1,18 @@
 # WebPeel Documentation
 
-WebPeel is an open-source web scraping and data extraction tool. It converts any webpage into clean, AI-ready Markdown, supports browser rendering for JavaScript-heavy sites, and offers web search, crawling, batch fetching, and an MCP server for AI assistants.
+WebPeel is an open-source web scraping, data extraction, and research tool. It converts any webpage into clean, AI-ready Markdown with automatic content pruning (15-33% token savings), supports browser rendering for JavaScript-heavy sites, and offers web search, crawling, batch fetching, deep research, and an MCP server with 13 tools for AI assistants.
+
+## Key Features
+- Web scraping with smart escalation (HTTP → browser → stealth)
+- Content density pruning (automatic chrome removal)
+- BM25 query-focused filtering
+- Deep research agent (multi-source, synthesized reports)
+- Page actions (click, scroll, type, fill, wait)
+- JSON Schema extraction (LLM-powered)
+- Browser profiles (persistent login sessions)
+- 7 CSS schemas for structured extraction
+- Proxy support (HTTP/HTTPS/SOCKS5)
+- Smart chunking (semantic/fixed/paragraph)
 
 ## Getting Started
 https://webpeel.dev/docs/getting-started
@@ -11,11 +23,20 @@ https://webpeel.dev/docs/cli
 ## API Reference
 https://webpeel.dev/docs/api-reference
 
-## MCP Server
+## MCP Server (13 tools)
 https://webpeel.dev/docs/mcp
 
+## Deep Research
+https://webpeel.dev/docs/research
+
+## Token Efficiency
+https://webpeel.dev/docs/token-efficiency
+
 ## SDKs & Integrations
-https://webpeel.dev/docs/sdks
+- Node.js: `npm install webpeel`
+- Python: `pip install webpeel`
+- MCP: stdio or HTTP Streamable transport
+- Firecrawl-compatible API at `/v2/scrape`
 
 ## Self-Hosting
 https://webpeel.dev/docs/self-hosting

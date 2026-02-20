@@ -11,6 +11,7 @@ import { pruneContent } from './core/content-pruner.js';
 import { distillToBudget } from './core/budget.js';
 import { extractMetadata, extractLinks, extractImages } from './core/metadata.js';
 import { cleanup, warmup, closePool, scrollAndWait, closeProfileBrowser } from './core/fetcher.js';
+import { autoScroll as runAutoScroll, type AutoScrollOptions } from './core/actions.js';
 import { extractStructured } from './core/extract.js';
 import { isPdfContentType, isDocxContentType, extractDocumentToFormat } from './core/documents.js';
 import type { PeelOptions, PeelResult, ImageInfo } from './types.js';
@@ -145,8 +146,14 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     storageState,
     proxy,
     fullPage = false,
+    autoScroll: autoScrollOption,
   } = options;
   void _stream;
+
+  // Normalize autoScroll option
+  const autoScrollOpts: AutoScrollOptions | undefined = autoScrollOption
+    ? (typeof autoScrollOption === 'boolean' ? {} : autoScrollOption)
+    : undefined;
 
   // NOTE: PDFs/DOCX are now handled via simpleFetch + document parser.
   // No need to force browser rendering for them.
@@ -171,9 +178,15 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     render = true;
   }
 
+  // If autoScroll is requested, force render mode
+  if (autoScrollOpts) {
+    render = true;
+  }
+
   try {
-    // Fetch the page (keep browser open if branding extraction is needed)
+    // Fetch the page (keep browser open if branding extraction or autoScroll is needed)
     const needsBranding = options.branding && render;
+    const needsAutoScroll = !!autoScrollOpts && render;
     const fetchResult = await smartFetch(url, {
       forceBrowser: render,
       stealth,
@@ -185,12 +198,34 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       headers,
       cookies,
       actions,
-      keepPageOpen: needsBranding,
+      keepPageOpen: needsBranding || needsAutoScroll,
       profileDir,
       headed,
       storageState,
       proxy,
     });
+
+    // Auto-scroll to load lazy content, then grab fresh HTML
+    if (needsAutoScroll && fetchResult.page) {
+      try {
+        await runAutoScroll(fetchResult.page, autoScrollOpts);
+        // Capture refreshed HTML after scrolling
+        fetchResult.html = await fetchResult.page.content();
+      } catch {
+        // If autoScroll fails, continue with whatever HTML we have
+      } finally {
+        // Close page unless branding also needs it
+        if (!needsBranding) {
+          try {
+            await fetchResult.page.close().catch(() => {});
+            if (fetchResult.browser && !needsBranding) {
+              await fetchResult.browser.close().catch(() => {});
+            }
+          } catch { /* ignore cleanup errors */ }
+          fetchResult.page = undefined;
+        }
+      }
+    }
 
     // Detect content type from the response
     const ct = (fetchResult.contentType || '').toLowerCase();

@@ -179,6 +179,19 @@ export interface PeelOptions {
    * Set to true to opt out and receive the complete page.
    */
   fullPage?: boolean;
+  /**
+   * Intelligently scroll the page to load all lazy/infinite-scroll content
+   * before extracting. Set to `true` for default settings or an object to
+   * configure scroll behavior. Auto-enables browser rendering.
+   *
+   * @example
+   * // Simple (use defaults: up to 20 scrolls, 30s timeout)
+   * { autoScroll: true }
+   *
+   * // Customized
+   * { autoScroll: { maxScrolls: 10, scrollDelay: 2000, timeout: 60000 } }
+   */
+  autoScroll?: boolean | import('./core/actions.js').AutoScrollOptions;
 }
 
 export interface ImageInfo {

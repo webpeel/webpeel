@@ -4,18 +4,45 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
-## [0.12.0] - 2026-02-19
+## [0.12.0] - 2026-02-20
 
-### 🧠 Token Efficiency (Save Users 30-96% on AI Tokens)
+### 🔬 Deep Research Agent
 
-- **Content Density Pruning** — Automatically scores HTML blocks by text density, link density, tag importance, and position. Removes low-value content (sidebars, footers, navigation, ads) before markdown conversion. **Enabled by default** — opt out with `--full-content`. Real-world savings: GitHub 45%, NYT 29%, Wikipedia 8%.
-- **BM25 Query-Focused Filtering** (`--focus "query"`) — Only returns content paragraphs relevant to your query using BM25 ranking. "Find hotel prices" → strips everything except pricing content. 23-70% additional savings on focused tasks.
-- **Smart Chunking** (`--chunk <size>`) — Splits content into LLM-friendly chunks with overlap. Three strategies: `semantic` (default, breaks at headings/paragraphs), `fixed` (character count), `paragraph`. `--chunk-overlap` and `--chunk-strategy` for fine control.
-- **Combined pipeline**: Prune → Focus → Budget. Wikipedia AI article: 99,427 tokens → 3,867 tokens (96% savings).
+- **`webpeel research "<query>"`** — Autonomous 5-phase research pipeline: Search → Fetch → BM25 Extract → Follow Links → Synthesize. Finds sources, fetches content, filters by relevance, follows promising links, and optionally synthesizes with LLM.
+- **CLI options**: `--max-sources`, `--max-depth`, `--format` (report/sources), `--timeout`, `--llm-key`, `--llm-model`.
+- **MCP tool**: `webpeel_research` for Claude Desktop / Cursor integration.
+- **Graceful degradation**: No LLM key? Returns ranked sources with BM25-filtered findings.
+- **Real-world quality**: 85% average relevance, 5/5 source success rate, ~5s per query.
+
+### 🧹 Content Pruner v2 (Complete Rewrite)
+
+- **Two-pass architecture**: Pass 1 removes semantic chrome (nav, footer, aside, cookie banners, sidebars by class/id patterns). Pass 2 scores remaining blocks by text density, link density, and tag importance.
+- **Real-world HTML reduction**: Wikipedia 64%, MDN 80%, GitHub 31%, StackOverflow 32%, BBC 26%.
+- **End-to-end token savings**: 15-33% on most sites with quality verified across all test sites.
+- **Heading protection**: h1-h6, p, pre, code, blockquote are never removed by density scoring.
+- **Enabled by default** — opt out with `--full-content`.
+
+### 📊 BM25 Relevance Scoring
+
+- **`computeRelevanceScore()`** — Document-level BM25 scoring with sigmoid normalization. Returns 0-1 relevance score for any content against a query.
+- **Calibrated output**: Relevant content 70-94%, irrelevant 0%, partial match 25-50%.
+- **Used by**: Deep Research agent for source ranking, `--focus` for content filtering.
+
+### 🧠 Token Efficiency Pipeline
+
+- **BM25 Query-Focused Filtering** (`--focus "query"`) — 54% reduction on targeted queries.
+- **Smart Chunking** (`--chunk <size>`) — Semantic, fixed, and paragraph strategies with configurable overlap.
+- **Combined pipeline**: Prune → Focus → Budget. Wikipedia: 12,794 → 2,966 tokens (77% savings).
+
+### 🐍 Python SDK
+
+- **`pip install webpeel`** — Full-featured Python client wrapping the REST API.
+- Methods: `scrape()`, `search()`, `batch()`, `crawl()`, `map()`, `extract()`, `screenshot()`, `research()`.
+- Type hints, dataclass results, sync + async support, env var configuration.
 
 ### 🧪 Tests
 
-- 625 tests (622 pass, 3 skipped) — 87 new tests for pruning, BM25, and chunking.
+- 647+ tests (644 pass, 3 skipped) — 22 new tests for research, relevance scoring, and pruner.
 
 ---
 
