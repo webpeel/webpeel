@@ -248,7 +248,7 @@
       <pre><code class="language-bash">npx @smithery/cli install @webpeel/mcp</code></pre>
 
       <h2 id="available-tools">Available Tools</h2>
-      <p>WebPeel provides 11 core MCP tools (supported by the hosted MCP endpoint): <code>webpeel_fetch</code>, <code>webpeel_search</code>, <code>webpeel_crawl</code>, <code>webpeel_map</code>, <code>webpeel_extract</code>, <code>webpeel_batch</code>, <code>webpeel_agent</code>, <code>webpeel_screenshot</code>, <code>webpeel_brand</code>, <code>webpeel_summarize</code>, <code>webpeel_answer</code>.</p>
+      <p>WebPeel provides 13 MCP tools: <code>webpeel_fetch</code>, <code>webpeel_search</code>, <code>webpeel_crawl</code>, <code>webpeel_map</code>, <code>webpeel_extract</code>, <code>webpeel_batch</code>, <code>webpeel_agent</code>, <code>webpeel_research</code>, <code>webpeel_screenshot</code>, <code>webpeel_brand</code>, <code>webpeel_summarize</code>, <code>webpeel_answer</code>, <code>webpeel_hotels</code>.</p>
       <p>The local MCP server may expose additional tools depending on your WebPeel version.</p>
 
       <h3 id="webpeel_fetch">webpeel_fetch</h3>
@@ -395,6 +395,25 @@
       <h4>Example</h4>
       <pre><code class="language-javascript">// Ask your AI assistant:
 "Use webpeel_agent to research the current best practices for SSE in Node.js.\nDepth: thorough. Topic: technical. Return JSON with fields: summary, pitfalls, and examples."</code></pre>
+
+      <h3 id="webpeel_research">webpeel_research</h3>
+      <p>Multi-source deep research with BM25 relevance ranking. Searches the web, fetches top sources, filters by relevance, and optionally synthesizes with LLM. No API key needed for sources mode.</p>
+
+      <h4>Parameters</h4>
+      <ul>
+        <li><code>query</code> (string, <strong>required</strong>) — Research question</li>
+        <li><code>maxSources</code> (number) — Max sources to fetch (default: 5)</li>
+        <li><code>maxDepth</code> (number) — Link follow depth (1=no follow, default: 2)</li>
+        <li><code>outputFormat</code> (string) — <code>report</code> (LLM synthesis) or <code>sources</code> (raw)</li>
+        <li><code>apiKey</code> (string) — OpenAI API key for synthesis</li>
+        <li><code>model</code> (string) — LLM model for synthesis</li>
+        <li><code>timeout</code> (number) — Total timeout in ms</li>
+      </ul>
+
+      <h4>Example</h4>
+      <pre><code class="language-javascript">// Ask your AI assistant:
+"Use webpeel_research to find the best practices for web scraping in 2025.
+Max 5 sources. Return sources with relevance scores."</code></pre>
 
       <hr style="margin: 32px 0; border: none; border-top: 1px solid #E4E4E7;" />
       <p style="color: #71717A; font-size: 14px;">Additional tools (local MCP server only, if enabled):</p>

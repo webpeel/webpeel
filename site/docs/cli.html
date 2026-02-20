@@ -736,8 +736,67 @@ npx webpeel serve -p 8080</code></pre>
       <pre><code class="language-bash">npx webpeel mcp
 # Runs on stdio for Claude Desktop / Cursor integration</code></pre>
 
+      <h3><code>webpeel research &lt;query&gt;</code></h3>
+      <p>Multi-source deep research with BM25 relevance ranking. No LLM key needed for sources mode.</p>
+
+      <pre><code class="language-bash"># Get ranked sources with relevance scores
+npx webpeel research "best web scraping tools 2025" --max-sources 5
+
+# Full synthesis with LLM
+npx webpeel research "compare Firecrawl vs Crawl4AI" --llm-key $OPENAI_API_KEY
+
+# JSON output
+npx webpeel research "AI trends" --format sources --json</code></pre>
+
+      <table>
+        <tr><th>Flag</th><th>Description</th><th>Default</th></tr>
+        <tr><td><code>--max-sources</code></td><td>Max sources to fetch</td><td>5</td></tr>
+        <tr><td><code>--max-depth</code></td><td>Link-following depth (1=no follow)</td><td>2</td></tr>
+        <tr><td><code>--format</code></td><td><code>report</code> (LLM synthesis) or <code>sources</code> (raw)</td><td>report</td></tr>
+        <tr><td><code>--timeout</code></td><td>Total timeout in ms</td><td>60000</td></tr>
+        <tr><td><code>--llm-key</code></td><td>OpenAI API key for synthesis</td><td>—</td></tr>
+        <tr><td><code>--llm-model</code></td><td>Model for synthesis</td><td>gpt-4o-mini</td></tr>
+      </table>
+
+      <h3>Token Efficiency Flags</h3>
+      <p>Save 15-77% on AI tokens. These flags work with any fetch command.</p>
+
+      <pre><code class="language-bash"># BM25 query-focused filtering — keep only relevant content
+npx webpeel https://en.wikipedia.org/wiki/AI --focus "machine learning"
+
+# Smart chunking — split into LLM-friendly pieces
+npx webpeel https://example.com --chunk 2000 --chunk-strategy semantic
+
+# Disable content pruning (on by default)
+npx webpeel https://example.com --full-content
+
+# Combined: prune → focus → budget = max savings
+npx webpeel https://example.com --focus "pricing" --budget 3000</code></pre>
+
+      <table>
+        <tr><th>Flag</th><th>Description</th><th>Default</th></tr>
+        <tr><td><code>--focus &lt;query&gt;</code></td><td>BM25 query filter — keeps relevant blocks only</td><td>—</td></tr>
+        <tr><td><code>--chunk &lt;tokens&gt;</code></td><td>Split output into chunks of N tokens</td><td>—</td></tr>
+        <tr><td><code>--chunk-strategy</code></td><td><code>semantic</code>, <code>fixed</code>, or <code>paragraph</code></td><td>semantic</td></tr>
+        <tr><td><code>--chunk-overlap &lt;n&gt;</code></td><td>Overlap tokens between chunks</td><td>0</td></tr>
+        <tr><td><code>--full-content</code></td><td>Disable content pruning</td><td>pruning ON</td></tr>
+        <tr><td><code>--budget &lt;tokens&gt;</code></td><td>Hard token cap on output</td><td>—</td></tr>
+      </table>
+
+      <h3>Infinite Scroll</h3>
+      <p>Automatically scroll to load all lazy content before extracting.</p>
+
+      <pre><code class="language-bash"># Smart auto-scroll (detects when page stops growing)
+npx webpeel https://example.com --scroll-extract
+
+# Fixed number of scrolls
+npx webpeel https://example.com --scroll-extract 10
+
+# With timeout
+npx webpeel https://example.com --scroll-extract --scroll-extract-timeout 15000</code></pre>
+
       <h3><code>webpeel agent &lt;prompt&gt;</code></h3>
-      <p>Run autonomous web research agent.</p>
+      <p>Run autonomous web research agent (BYOK LLM).</p>
 
       <pre><code class="language-bash"># Basic agent
 npx webpeel agent "Find the top 5 AI coding tools" --llm-key $OPENAI_API_KEY
