@@ -3410,6 +3410,93 @@ program
     }
   });
 
+// ============================================================
+// research command — autonomous multi-step web research
+// ============================================================
+
+program
+  .command('research <query>')
+  .description('Conduct autonomous multi-step web research on a topic and synthesize a report')
+  .option('--max-sources <n>', 'Maximum sources to consult (default: 5)', '5')
+  .option('--max-depth <n>', 'Link-following depth (default: 1)', '1')
+  .option('--format <f>', 'Output format: report (default) or sources', 'report')
+  .option('--llm-key <key>', 'LLM API key for synthesis (or env OPENAI_API_KEY)')
+  .option('--llm-model <model>', 'LLM model for synthesis (default: gpt-4o-mini)')
+  .option('--llm-base-url <url>', 'LLM API base URL (default: https://api.openai.com/v1)')
+  .option('--timeout <ms>', 'Max research time in ms (default: 60000)', '60000')
+  .option('--json', 'Output result as JSON')
+  .option('-s, --silent', 'Suppress progress output')
+  .action(async (query: string, options) => {
+    const isSilent = !!options.silent;
+    const isJson = !!options.json;
+    const maxSources = parseInt(options.maxSources) || 5;
+    const maxDepth = parseInt(options.maxDepth) || 1;
+    const timeout = parseInt(options.timeout) || 60000;
+    const outputFormat = options.format === 'sources' ? 'sources' : 'report';
+    const apiKey = options.llmKey || process.env.OPENAI_API_KEY;
+    const model = options.llmModel;
+    const baseUrl = options.llmBaseUrl;
+
+    const phaseIcons: Record<string, string> = {
+      searching: '🔍',
+      fetching: '📄',
+      extracting: '🧠',
+      following: '🔗',
+      synthesizing: '✍️',
+    };
+
+    try {
+      const { research } = await import('./core/research.js');
+
+      const result = await research({
+        query,
+        maxSources,
+        maxDepth,
+        timeout,
+        outputFormat: outputFormat as 'report' | 'sources',
+        apiKey,
+        model,
+        baseUrl,
+        onProgress: (step) => {
+          if (!isSilent && !isJson) {
+            const icon = phaseIcons[step.phase] ?? '⚙️';
+            const extra = step.sourcesFound !== undefined
+              ? ` (found ${step.sourcesFound})`
+              : step.sourcesFetched !== undefined
+                ? ` (${step.sourcesFetched} fetched)`
+                : '';
+            process.stderr.write(`${icon} ${step.message}${extra}...\n`);
+          }
+        },
+      });
+
+      if (isJson) {
+        await writeStdout(JSON.stringify(result, null, 2) + '\n');
+      } else {
+        await writeStdout(result.report + '\n');
+        if (!isSilent) {
+          const elapsed = (result.elapsed / 1000).toFixed(1);
+          const cost = result.cost !== undefined ? ` | cost: $${result.cost.toFixed(4)}` : '';
+          process.stderr.write(
+            `\n📊 ${result.sourcesConsulted} sources consulted (${result.totalSourcesFound} found) | ${elapsed}s${cost}\n`,
+          );
+        }
+      }
+
+      await cleanup();
+      process.exit(0);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      if (isJson) {
+        await writeStdout(JSON.stringify({ error: msg, code: 'RESEARCH_FAILED' }) + '\n');
+      } else {
+        console.error(`\nError: ${msg}`);
+      }
+      await cleanup();
+      process.exit(1);
+    }
+  });
+
 program.parse();
 
 // ============================================================

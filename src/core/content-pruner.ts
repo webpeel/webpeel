@@ -1,17 +1,22 @@
 /**
  * Content Density Pruner
  *
- * Scores HTML block elements by text quality and removes low-value blocks
- * (sidebars, footers, navigation, ads) that CSS selectors miss.
+ * Two-pass pruning to reduce HTML before markdown conversion:
  *
- * Inspired by Crawl4AI's fit_markdown approach — typical 40-60% token savings.
+ *   Pass 1 — Semantic removal: strip elements whose tag or class/id clearly
+ *            mark them as page chrome (nav, footer, sidebar, cookie banners, ads).
+ *
+ *   Pass 2 — Density scoring: score remaining block elements by text density,
+ *            link density, tag importance, and word count. Remove low-scorers.
+ *
+ * Inspired by Crawl4AI's PruningContentFilter — targets 40-60% token savings.
  */
 
 import * as cheerio from 'cheerio';
 import type { AnyNode, Element } from 'domhandler';
 
 export interface PruneOptions {
-  /** Score threshold (0-1). Blocks below this are removed. Default: 0.4 */
+  /** Score threshold (0-1). Blocks below this are removed. Default: 0.3 */
   threshold?: number;
   /** Minimum word count for a block to be considered. Default: 3 */
   minWords?: number;
@@ -28,193 +33,221 @@ export interface PruneResult {
   reductionPercent: number;
 }
 
-/** Block-level elements we score */
-const BLOCK_ELEMENTS = new Set([
-  'div', 'section', 'article', 'aside', 'nav', 'footer', 'header',
-  'main', 'p', 'ul', 'ol', 'table', 'blockquote', 'figure', 'form', 'details',
+// -----------------------------------------------------------------------
+// Pass 1 — Semantic removal: tags and class/id patterns
+// -----------------------------------------------------------------------
+
+/** Tags that are almost always page chrome, not article content. */
+const CHROME_TAGS = new Set([
+  'nav', 'footer', 'aside', 'noscript',
 ]);
 
 /**
- * Elements that should NEVER be removed — they are content containers.
- * Scoring them would be wrong: if we remove <main>, we lose everything.
+ * Class/id patterns that indicate page chrome.
+ * Tested against lowercased class/id strings.
  */
-const PROTECTED_ELEMENTS = new Set(['main', 'article', 'body']);
+const CHROME_PATTERNS = [
+  /\bsidebar\b/,
+  /\bcookie/,
+  /\bbanner\b/,
+  /\b(ad|ads|advert)\b/,
+  /\bpopup\b/,
+  /\bmodal\b/,
+  /\boverlay\b/,
+  /\bsocial/,
+  /\bshare\b/,
+  /\bbreadcrumb/,
+  /\bskip-?link/,
+  /\bfootnote/,
+  /\brelated-?(post|article)/,
+  /\bnewsletter/,
+  /\bsubscri/,
+  /\bcomment/,
+  /\b(sign-?up|sign-?in|log-?in)\b/,
+  /\btoc\b/,
+  /\btable-?of-?contents\b/,
+  /\bgdpr\b/,
+  /\bconsent\b/,
+];
 
 /**
- * Tag importance scores (-2 to +3).
- * These reflect semantic value of the element type.
+ * Tags we never remove (they likely wrap main content).
+ * We recurse into them but never strip the element itself.
  */
+const PROTECTED_TAGS = new Set(['main', 'article', 'body']);
+
+/**
+ * Tags we never remove during density scoring (Pass 2).
+ * Headings, paragraphs, and semantic content elements should survive
+ * even if they're small — they carry essential meaning.
+ */
+const DENSITY_SAFE_TAGS = new Set([
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'p', 'pre', 'code', 'blockquote', 'figcaption',
+  'main', 'article', 'body',
+]);
+
+/**
+ * Class/id patterns that protect an element from removal.
+ */
+const CONTENT_PATTERNS = [
+  /\barticle/,
+  /\bpost-?content/,
+  /\bentry-?content/,
+  /\bmain-?content/,
+  /\bstory/,
+  /\bblog/,
+  /\bpage-?content/,
+  /\bcontent-?area/,
+];
+
+function isChromeBySemantic(el: Element, $: cheerio.CheerioAPI): boolean {
+  const tagName = el.tagName?.toLowerCase() ?? '';
+  if (CHROME_TAGS.has(tagName)) return true;
+
+  const cls = ($(el).attr('class') ?? '').toLowerCase();
+  const id = ($(el).attr('id') ?? '').toLowerCase();
+  const combined = cls + ' ' + id;
+
+  // Don't remove if it matches a content pattern
+  for (const p of CONTENT_PATTERNS) {
+    if (p.test(combined)) return false;
+  }
+
+  for (const p of CHROME_PATTERNS) {
+    if (p.test(combined)) return true;
+  }
+
+  // Role attribute
+  const role = ($(el).attr('role') ?? '').toLowerCase();
+  if (['navigation', 'banner', 'complementary', 'contentinfo', 'search'].includes(role)) {
+    return true;
+  }
+
+  return false;
+}
+
+// -----------------------------------------------------------------------
+// Pass 2 — Density scoring
+// -----------------------------------------------------------------------
+
+/** Tag importance scores for density scoring (-2 to +3) */
 const TAG_IMPORTANCE: Record<string, number> = {
-  article: 3,
-  main: 3,
-  p: 2,
-  h1: 2, h2: 2, h3: 2, h4: 2, h5: 2, h6: 2,
-  blockquote: 2,
-  pre: 2,
-  code: 2,
-  figure: 2,
-  figcaption: 2,
-  section: 1,
-  td: 1,
-  th: 1,
-  li: 1,
-  dd: 1,
-  dt: 1,
-  div: 0,
-  span: 0,
-  aside: -1,
-  header: -1,
-  form: -1,
-  nav: -2,
-  footer: -2,
+  article: 3, main: 3,
+  p: 2, h1: 2, h2: 2, h3: 2, h4: 2, h5: 2, h6: 2,
+  blockquote: 2, pre: 2, code: 2, figure: 2, figcaption: 2,
+  section: 1, td: 1, th: 1, li: 1, dd: 1, dt: 1,
+  div: 0, span: 0, table: 0, ul: 0, ol: 0, dl: 0,
+  aside: -1, header: -1, form: -1,
+  nav: -2, footer: -2,
 };
 
-/** Normalize tag importance (-2..+3) to 0..1 range */
 function normalizeTagScore(rawScore: number): number {
-  // Range is 5 units (-2 to +3), shift by +2 and divide
-  return (rawScore + 2) / 5;
+  return (rawScore + 2) / 5; // -2..+3 → 0..1
 }
 
-function getTagImportance(tagName: string): number {
-  return TAG_IMPORTANCE[tagName.toLowerCase()] ?? 0;
-}
-
-/** Word count bonus using log scale (0-1) */
-function wordCountBonus(text: string): number {
-  const words = text.trim().split(/\s+/).filter((w) => w.length > 0);
-  if (words.length === 0) return 0;
-  return Math.min(Math.log(words.length + 1) / Math.log(1000), 1.0);
-}
-
-/**
- * Position weight based on normalized position in document (0-1).
- * Middle 60% of the page (0.2–0.8) scores 1.0.
- * Top/bottom 20% scores linearly from 0 to 1.
- */
-function positionWeight(normalizedPos: number): number {
-  if (normalizedPos >= 0.2 && normalizedPos <= 0.8) return 1.0;
-  if (normalizedPos < 0.2) return normalizedPos / 0.2;
-  // normalizedPos > 0.8
-  return (1.0 - normalizedPos) / 0.2;
-}
-
-/** Intermediate data for a scored block element */
-interface BlockData {
-  element: AnyNode;
+interface ScoredBlock {
+  element: Element;
   tagName: string;
   htmlLength: number;
   visibleText: string;
-  textDensity: number;
-  linkDensity: number;
-  normalizedTagScore: number;
-  wordBonus: number;
-  score: number; // calculated after all blocks found (needs position)
-}
-
-/** Max HTML length for a "leaf" block — blocks larger than this are recursed into */
-const MAX_LEAF_BLOCK_HTML = 5000;
-
-/**
- * Score a single element and return its BlockData.
- */
-function scoreElement(
-  $: cheerio.CheerioAPI,
-  el: Element,
-): BlockData {
-  const tagName = el.tagName?.toLowerCase() ?? '';
-  const $el = $(el);
-  const outerHtml = $.html($el) ?? '';
-
-  // Clone to compute visible text (strip scripts/styles)
-  const clone = $el.clone();
-  clone.find('script, style, noscript').remove();
-  const visibleText = clone.text() ?? '';
-  const visibleTextLen = visibleText.trim().length;
-  const totalHtmlLen = Math.max(outerHtml.length, 1);
-
-  // Text density: ratio of visible text to total HTML length
-  const textDensity = Math.min(visibleTextLen / totalHtmlLen, 1.0);
-
-  // Link density: ratio of link text to visible text
-  let linkTextLen = 0;
-  $el.find('a').each((_i, aEl) => {
-    linkTextLen += ($(aEl).text() ?? '').trim().length;
-  });
-  const linkDensity = visibleTextLen > 0
-    ? Math.min(linkTextLen / visibleTextLen, 1.0)
-    : 0;
-
-  return {
-    element: el,
-    tagName,
-    htmlLength: outerHtml.length,
-    visibleText,
-    textDensity,
-    linkDensity,
-    normalizedTagScore: normalizeTagScore(getTagImportance(tagName)),
-    wordBonus: wordCountBonus(visibleText),
-    score: 0,
-  };
+  score: number;
 }
 
 /**
- * Recursively collect block elements for scoring.
- * 
- * Key insight: if a block is very large (>MAX_LEAF_BLOCK_HTML chars), we recurse
- * into its children instead of treating it as one unit. This handles sites like HN
- * (table-based layout) and sites wrapped in a single <div>.
- * 
- * Protected elements (main, article, body) are always recursed into.
+ * Collect scoreable blocks from a DOM tree.
+ *
+ * Strategy: walk the tree top-down. For each element:
+ *   - If it's a "leaf-ish" block (< threshold size), score it as one unit.
+ *   - If it's large and a wrapper (div/section/table), recurse into children.
+ *   - Protected elements are always recursed.
+ *
+ * This finds the right granularity: not scoring a 200KB wrapper div,
+ * but scoring the divs/sections/p's nested 3-4 levels deep that carry
+ * actual content or chrome.
  */
 function collectBlocks(
   $: cheerio.CheerioAPI,
   parent: AnyNode,
-  blocks: BlockData[],
-  totalHtmlLength: number,
-  depth: number = 0,
+  blocks: ScoredBlock[],
+  maxLeafSize: number,
 ): void {
   const children = 'children' in parent ? (parent.children as AnyNode[]) : [];
+
   for (const child of children) {
     if (child.type !== 'tag') continue;
     const el = child as Element;
     const tagName = el.tagName?.toLowerCase() ?? '';
 
-    if (BLOCK_ELEMENTS.has(tagName)) {
-      const data = scoreElement($, el);
-      
-      // Recurse into large blocks, protected elements, and layout containers
-      // to find the actual content sub-blocks
-      const isLarge = data.htmlLength > MAX_LEAF_BLOCK_HTML;
-      const isProtected = PROTECTED_ELEMENTS.has(tagName);
-      const isLayoutContainer = tagName === 'div' || tagName === 'section' || tagName === 'table';
-      
-      if ((isLarge && isLayoutContainer) || isProtected) {
-        // Recurse into children to find sub-blocks
-        collectBlocks($, el, blocks, totalHtmlLength, depth + 1);
-      } else {
-        // Score this block as a leaf
-        blocks.push(data);
-      }
-    } else if (tagName === 'tr' || tagName === 'td' || tagName === 'th' || tagName === 'tbody' || tagName === 'thead') {
-      // Table layout elements — recurse through them to find block content
-      collectBlocks($, el, blocks, totalHtmlLength, depth + 1);
-    } else {
-      // Non-block element — recurse to find nested blocks
-      collectBlocks($, el, blocks, totalHtmlLength, depth + 1);
+    // Skip script/style
+    if (tagName === 'script' || tagName === 'style' || tagName === 'link' || tagName === 'meta') continue;
+
+    const $el = $(el);
+    const outerHtml = $.html($el) ?? '';
+    const htmlLen = outerHtml.length;
+
+    // Skip extremely tiny elements (bare tags like <br>)
+    if (htmlLen < 10) continue;
+
+    const isProtected = PROTECTED_TAGS.has(tagName);
+    const isWrapper = ['div', 'section', 'table', 'tbody', 'thead', 'tr',
+                       'center', 'details', 'summary'].includes(tagName);
+
+    if (isProtected || (isWrapper && htmlLen > maxLeafSize)) {
+      // Too large or protected — recurse deeper
+      collectBlocks($, el, blocks, maxLeafSize);
+    } else if (htmlLen > 0) {
+      // Score this element
+      const clone = $el.clone();
+      clone.find('script, style, noscript, svg, path').remove();
+      const visibleText = clone.text() ?? '';
+      const visibleTextLen = visibleText.trim().length;
+
+      const textDensity = Math.min(visibleTextLen / Math.max(htmlLen, 1), 1.0);
+
+      let linkTextLen = 0;
+      $el.find('a').each((_i, a) => {
+        linkTextLen += ($(a).text() ?? '').trim().length;
+      });
+      const linkDensity = visibleTextLen > 0
+        ? Math.min(linkTextLen / visibleTextLen, 1.0)
+        : 0;
+
+      const rawTagScore = TAG_IMPORTANCE[tagName] ?? 0;
+      const normalizedTag = normalizeTagScore(rawTagScore);
+
+      const words = visibleText.trim().split(/\s+/).filter(w => w.length > 0);
+      const wordBonus = words.length > 0
+        ? Math.min(Math.log(words.length + 1) / Math.log(1000), 1.0)
+        : 0;
+
+      const score = (
+        textDensity * 0.35 +
+        (1 - linkDensity) * 0.25 +
+        normalizedTag * 0.2 +
+        wordBonus * 0.1 +
+        0.1 // baseline position score (removed position bias — not useful for deep nesting)
+      );
+
+      blocks.push({
+        element: el,
+        tagName,
+        htmlLength: htmlLen,
+        visibleText,
+        score,
+      });
     }
   }
 }
 
-/**
- * Compute the max of an array of numbers.
- */
-function maxValue(values: number[]): number {
-  if (values.length === 0) return 0;
-  return Math.max(...values);
-}
+// -----------------------------------------------------------------------
+// Main export
+// -----------------------------------------------------------------------
 
 /**
- * Prune low-value HTML blocks using content density scoring.
+ * Prune low-value HTML blocks using two-pass approach:
+ *   1. Semantic tag/class removal
+ *   2. Density scoring of remaining blocks
  *
  * @param html - Raw HTML to prune
  * @param options - Pruning configuration
@@ -222,91 +255,120 @@ function maxValue(values: number[]): number {
  */
 export function pruneContent(html: string, options: PruneOptions = {}): PruneResult {
   const {
-    threshold = 0.4,
+    threshold = 0.3,
     minWords = 3,
     dynamic = true,
   } = options;
 
   const originalLength = html.length;
-
   if (!html.trim()) {
     return { html, nodesRemoved: 0, reductionPercent: 0 };
   }
 
   const $ = cheerio.load(html);
+  let nodesRemoved = 0;
 
-  // Collect top-level block elements from the body
-  const blocks: BlockData[] = [];
-  const bodyEl = $('body').get(0);
-  if (bodyEl) {
-    collectBlocks($, bodyEl, blocks, originalLength);
-  }
+  // =====================================================================
+  // Pass 1: Semantic removal
+  // =====================================================================
+  // Walk top-down; remove entire subtrees that are clearly chrome.
+  // We look at direct children of body, and one level deeper, to catch
+  // both <body> <nav> and <body> <div> <nav> patterns.
+  const toRemoveSemantic: Element[] = [];
 
-  // If no blocks found (very sparse HTML), return as-is
-  if (blocks.length === 0) {
-    return { html, nodesRemoved: 0, reductionPercent: 0 };
-  }
+  function walkForChrome(parent: AnyNode, depth: number): void {
+    const children = 'children' in parent ? (parent.children as AnyNode[]) : [];
+    for (const child of children) {
+      if (child.type !== 'tag') continue;
+      const el = child as Element;
+      const tagName = el.tagName?.toLowerCase() ?? '';
+      if (tagName === 'script' || tagName === 'style') continue;
 
-  // Assign position weights and compute composite scores
-  const n = blocks.length;
-  for (let i = 0; i < n; i++) {
-    const block = blocks[i]!;
-    const normalizedPos = n > 1 ? i / (n - 1) : 0.5;
-    const posWeight = positionWeight(normalizedPos);
+      if (PROTECTED_TAGS.has(tagName)) {
+        // Recurse into protected — there might be chrome inside <article>
+        walkForChrome(el, depth + 1);
+        continue;
+      }
 
-    block.score = (
-      block.textDensity * 0.35 +
-      (1 - block.linkDensity) * 0.25 +
-      block.normalizedTagScore * 0.2 +
-      block.wordBonus * 0.1 +
-      posWeight * 0.1
-    );
-  }
+      if (isChromeBySemantic(el, $)) {
+        toRemoveSemantic.push(el);
+        continue; // don't recurse into something we'll remove
+      }
 
-  // Determine effective threshold
-  let effectiveThreshold = threshold;
-  if (dynamic) {
-    // Use the best-block score as the reference: remove blocks that score below
-    // 40% of the highest-quality block. This handles the common bimodal case
-    // (one great article block + several low-quality nav/sidebar blocks) much
-    // better than median/mean approaches.
-    const scores = blocks.map((b) => b.score);
-    const best = maxValue(scores);
-    effectiveThreshold = best * 0.4;
-  }
-
-  // Safety floor: we must retain at least 30% of the original HTML
-  const minRetainLength = Math.ceil(originalLength * 0.3);
-
-  // Sort ascending by score so we remove worst blocks first
-  const sortedAsc = [...blocks].sort((a, b) => a.score - b.score);
-
-  const toRemove = new Set<AnyNode>();
-  let removedLength = 0;
-
-  for (const block of sortedAsc) {
-    // Never remove protected containers
-    if (PROTECTED_ELEMENTS.has(block.tagName)) continue;
-
-    const words = block.visibleText.trim().split(/\s+/).filter((w) => w.length > 0);
-    const isTinyBlock = words.length < minWords;
-    const isLowScore = block.score < effectiveThreshold;
-
-    // Keep blocks that pass both checks
-    if (!isTinyBlock && !isLowScore) continue;
-
-    // Always check safety floor before removing — even for empty blocks.
-    // This prevents over-pruning when every block is low quality.
-    const remainingLength = originalLength - (removedLength + block.htmlLength);
-    if (remainingLength >= minRetainLength) {
-      toRemove.add(block.element);
-      removedLength += block.htmlLength;
+      // Recurse up to a reasonable depth
+      if (depth < 6) {
+        walkForChrome(el, depth + 1);
+      }
     }
   }
 
-  // Remove selected elements from the DOM
-  for (const el of toRemove) {
+  const body = $('body').get(0);
+  if (body) {
+    walkForChrome(body, 0);
+  }
+
+  for (const el of toRemoveSemantic) {
     $(el).remove();
+    nodesRemoved++;
+  }
+
+  // =====================================================================
+  // Pass 2: Density scoring (on the remaining HTML)
+  // =====================================================================
+  const postPass1Html = $.html();
+  const postPass1Length = postPass1Html.length;
+
+  // Run density scoring on remaining content
+  if (postPass1Length > 100 && body) {
+    const blocks: ScoredBlock[] = [];
+    // Max leaf size: ~5KB or 30% of remaining content (whichever is smaller)
+    // This ensures we find leaf blocks even in small documents.
+    const maxLeafSize = Math.min(5000, Math.ceil(postPass1Length * 0.3));
+    collectBlocks($, body, blocks, maxLeafSize);
+
+    if (blocks.length >= 2) {
+      const scores = blocks.map(b => b.score);
+      const bestScore = Math.max(...scores);
+
+      let effectiveThreshold = threshold;
+      if (dynamic) {
+        // Blocks scoring below 50% of the best block are candidates for removal
+        effectiveThreshold = bestScore * 0.5;
+      }
+
+      // Safety: retain at least 40% of post-pass1 content
+      const minRetainLength = Math.ceil(postPass1Length * 0.4);
+
+      // Sort ascending by score — remove worst first
+      const sorted = blocks
+        .map((b, i) => ({ b, i, score: b.score }))
+        .sort((a, b) => a.score - b.score);
+
+      const toRemoveDensity = new Set<Element>();
+      let removedLength = 0;
+
+      for (const { b } of sorted) {
+        if (PROTECTED_TAGS.has(b.tagName) || DENSITY_SAFE_TAGS.has(b.tagName)) continue;
+
+        const words = b.visibleText.trim().split(/\s+/).filter(w => w.length > 0);
+        const isTiny = words.length < minWords;
+        const isLow = b.score < effectiveThreshold;
+
+        if (!isTiny && !isLow) continue;
+
+        // Check safety floor
+        const remaining = postPass1Length - (removedLength + b.htmlLength);
+        if (remaining < minRetainLength) continue;
+
+        toRemoveDensity.add(b.element);
+        removedLength += b.htmlLength;
+      }
+
+      for (const el of toRemoveDensity) {
+        $(el).remove();
+        nodesRemoved++;
+      }
+    }
   }
 
   const resultHtml = $.html() ?? html;
@@ -317,7 +379,7 @@ export function pruneContent(html: string, options: PruneOptions = {}): PruneRes
 
   return {
     html: resultHtml,
-    nodesRemoved: toRemove.size,
+    nodesRemoved,
     reductionPercent,
   };
 }

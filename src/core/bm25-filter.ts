@@ -226,6 +226,52 @@ export function scoreBM25(blocks: ContentBlock[], queryTerms: string[]): number[
 }
 
 // ---------------------------------------------------------------------------
+// Relevance scoring (document-level)
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a normalized relevance score (0-1) for content against a query.
+ * Uses BM25 at the block level and returns the weighted average score,
+ * normalized by query term count for comparability across queries.
+ *
+ * This is more meaningful than `reductionPercent` for ranking search results,
+ * because it measures actual term overlap and importance rather than how much
+ * content was filtered out.
+ */
+export function computeRelevanceScore(content: string, query: string): number {
+  if (!content || !query || !query.trim()) return 0;
+
+  const blocks = splitIntoBlocks(content);
+  if (blocks.length === 0) return 0;
+
+  const queryTerms = tokenize(query);
+  if (queryTerms.length === 0) return 0;
+
+  const scores = scoreBM25(blocks, queryTerms);
+
+  // Compute weighted average score — weight by block length to avoid
+  // short blocks (e.g. headers) dominating the score
+  const blockTexts = blocks.map(b => stripMarkdown(b.raw));
+  const blockLens = blockTexts.map(t => t.length);
+  const totalLen = blockLens.reduce((s, l) => s + l, 0) || 1;
+
+  let weightedSum = 0;
+  for (let i = 0; i < scores.length; i++) {
+    weightedSum += scores[i] * (blockLens[i] / totalLen);
+  }
+
+  // Normalize: divide by query term count to make scores comparable
+  // across queries with different numbers of terms, then apply sigmoid
+  // to squash to [0, 1] range. The constant 8 is tuned so that a
+  // well-matching document scores ~0.6-0.9 and a poor match ~0.0-0.2.
+  // perTermScore typical range: 0 (no match) to ~0.5+ (strong match)
+  const perTermScore = weightedSum / queryTerms.length;
+  const normalized = 2 / (1 + Math.exp(-perTermScore * 8)) - 1;
+
+  return Math.max(0, Math.min(1, normalized));
+}
+
+// ---------------------------------------------------------------------------
 // Main filter function
 // ---------------------------------------------------------------------------
 

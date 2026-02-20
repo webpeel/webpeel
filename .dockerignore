@@ -1,47 +1,20 @@
-# Dependencies
 node_modules
-
-# Git
 .git
-.gitignore
-
-# Documentation and marketing
-dashboard/
-site/
-python-sdk/
-integrations/
+src
+tests
+*.test.ts
+.env*
+coverage
+dashboard
+site
+docs
+benchmarks
+audit
+migrations
+scripts
+python-sdk
+integrations
+.internal
 *.md
-!SELF_HOST.md
-
-# TypeScript declaration maps (not needed in container)
-*.tsbuildinfo
-
-# Internal/development files
-.internal/
-.vscode/
-.idea/
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-
-# Testing
-coverage/
-.nyc_output/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Build artifacts
-*.tsbuildinfo
-
-# Temporary files
-tmp/
-temp/
+!README.md
+!CHANGELOG.md

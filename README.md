@@ -179,7 +179,27 @@ Zero dependencies. Pure Python 3.8+. [Full SDK docs →](python-sdk/README.md)
 
 > **Where to add this config:** Claude Desktop → `~/Library/Application Support/Claude/claude_desktop_config.json` · Cursor → Settings → MCP Servers · VS Code → `~/.vscode/mcp.json` · Windsurf → `~/.codeium/windsurf/mcp_config.json`
 
-### Docker (Self-Hosted)
+### Docker
+
+**MCP Server (stdio — for Claude Desktop, Cursor, Windsurf):**
+
+```bash
+docker run -i webpeel/mcp
+```
+
+**MCP Server (HTTP Streamable transport):**
+
+```bash
+docker run -e MCP_HTTP_MODE=true -p 3100:3100 webpeel/mcp
+```
+
+**API Server (Firecrawl-compatible REST API):**
+
+```bash
+docker run -p 3000:3000 webpeel/api
+```
+
+**Self-Hosted (full stack with database):**
 
 ```bash
 git clone https://github.com/webpeel/webpeel.git
@@ -187,6 +207,19 @@ cd webpeel && docker compose up
 ```
 
 Full API at `http://localhost:3000`. AGPL-3.0 licensed. [Commercial licensing available](mailto:support@webpeel.dev).
+
+**MCP config for Docker:**
+
+```json
+{
+  "mcpServers": {
+    "webpeel": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "webpeel/mcp"]
+    }
+  }
+}
+```
 
 ## Features
 

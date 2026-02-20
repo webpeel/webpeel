@@ -687,6 +687,64 @@ const tools: Tool[] = [
       required: ['url'],
     },
   },
+  {
+    name: 'webpeel_research',
+    description: 'Conduct autonomous multi-step web research on a topic. Searches the web, fetches top sources, extracts relevant content using BM25, optionally follows promising links, and synthesizes a comprehensive report with citations. Returns a markdown report and structured source list. Requires LLM API key for synthesis; without one it returns raw extracted source content.',
+    annotations: {
+      title: 'Deep Research Agent',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Research question or topic to investigate',
+        },
+        maxSources: {
+          type: 'number',
+          description: 'Maximum number of sources to consult (default: 5)',
+          default: 5,
+          minimum: 1,
+          maximum: 20,
+        },
+        maxDepth: {
+          type: 'number',
+          description: 'Link-following depth: 1 = search results only, 2+ = follow links within top sources (default: 1)',
+          default: 1,
+          minimum: 1,
+          maximum: 3,
+        },
+        llmApiKey: {
+          type: 'string',
+          description: 'LLM API key for synthesis (falls back to OPENAI_API_KEY env var)',
+        },
+        llmModel: {
+          type: 'string',
+          description: 'LLM model to use for synthesis (default: gpt-4o-mini)',
+        },
+        llmBaseUrl: {
+          type: 'string',
+          description: 'LLM API base URL (default: https://api.openai.com/v1)',
+        },
+        outputFormat: {
+          type: 'string',
+          enum: ['report', 'sources'],
+          description: 'Output format: "report" = synthesized markdown report (needs LLM key), "sources" = raw extracted source content (default: report)',
+          default: 'report',
+        },
+        timeout: {
+          type: 'number',
+          description: 'Maximum research time in milliseconds (default: 60000)',
+          default: 60000,
+        },
+      },
+      required: ['query'],
+    },
+  },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -1691,6 +1749,58 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: 'text',
             text: resultText,
+          },
+        ],
+      };
+    }
+
+    if (name === 'webpeel_research') {
+      const {
+        query,
+        maxSources,
+        maxDepth,
+        llmApiKey,
+        llmModel,
+        llmBaseUrl,
+        outputFormat,
+        timeout,
+      } = args as {
+        query: string;
+        maxSources?: number;
+        maxDepth?: number;
+        llmApiKey?: string;
+        llmModel?: string;
+        llmBaseUrl?: string;
+        outputFormat?: 'report' | 'sources';
+        timeout?: number;
+      };
+
+      const { research } = await import('../core/research.js');
+
+      const result = await research({
+        query,
+        maxSources: maxSources ?? 5,
+        maxDepth: maxDepth ?? 1,
+        apiKey: llmApiKey,
+        model: llmModel,
+        baseUrl: llmBaseUrl,
+        outputFormat: outputFormat ?? 'report',
+        timeout: timeout ?? 60000,
+      });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              report: result.report,
+              sources: result.sources,
+              totalSourcesFound: result.totalSourcesFound,
+              sourcesConsulted: result.sourcesConsulted,
+              elapsed: result.elapsed,
+              tokensUsed: result.tokensUsed,
+              cost: result.cost,
+            }, null, 2),
           },
         ],
       };

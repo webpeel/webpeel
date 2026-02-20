@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { filterByRelevance, splitIntoBlocks, scoreBM25 } from '../core/bm25-filter.js';
+import { filterByRelevance, splitIntoBlocks, scoreBM25, computeRelevanceScore } from '../core/bm25-filter.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -444,5 +444,73 @@ describe('filterByRelevance — edge cases', () => {
     const result = filterByRelevance(content, { query: 'price room' });
     expect(result.kept).toBeGreaterThan(0);
     expect(result.kept).toBeLessThanOrEqual(result.total);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeRelevanceScore
+// ---------------------------------------------------------------------------
+
+describe('computeRelevanceScore', () => {
+  it('returns 0 for empty content', () => {
+    expect(computeRelevanceScore('', 'test query')).toBe(0);
+  });
+
+  it('returns 0 for empty query', () => {
+    expect(computeRelevanceScore('Some content here.', '')).toBe(0);
+  });
+
+  it('returns high score for highly relevant content', () => {
+    const score = computeRelevanceScore(
+      'Python is the best programming language for AI and machine learning in 2025.',
+      'best programming languages 2025',
+    );
+    expect(score).toBeGreaterThan(0.5);
+  });
+
+  it('returns low/zero score for completely irrelevant content', () => {
+    const score = computeRelevanceScore(
+      'This is a recipe for chocolate cake. You need flour, sugar, and eggs.',
+      'best programming languages 2025',
+    );
+    expect(score).toBeLessThan(0.1);
+  });
+
+  it('ranks relevant content higher than irrelevant', () => {
+    const relevant = computeRelevanceScore(
+      'JavaScript and Python are top programming languages to learn in 2025 for web development.',
+      'best programming languages 2025',
+    );
+    const irrelevant = computeRelevanceScore(
+      'The weather forecast shows sunny skies with temperatures around 75 degrees.',
+      'best programming languages 2025',
+    );
+    expect(relevant).toBeGreaterThan(irrelevant);
+  });
+
+  it('returns value between 0 and 1', () => {
+    const score = computeRelevanceScore(
+      'Cloudflare uses bot detection with machine learning models and JavaScript challenges.',
+      'how does cloudflare bot detection work',
+    );
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(1);
+  });
+
+  it('scores larger relevant documents higher', () => {
+    const short = computeRelevanceScore(
+      'Python is a programming language.',
+      'best programming languages',
+    );
+    const long = computeRelevanceScore(
+      [
+        'Python is the best programming language for AI.',
+        'JavaScript leads web programming.',
+        'Rust is a fast systems programming language.',
+        'Go is great for cloud programming.',
+      ].join('\n\n'),
+      'best programming languages',
+    );
+    expect(long).toBeGreaterThanOrEqual(short);
   });
 });
