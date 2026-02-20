@@ -1,7 +1,7 @@
-# WebPeel API Server — Self-Hosted REST API
-# Exposes the full Firecrawl-compatible REST API on port 3000
+# WebPeel API Server — Hosted REST API (Render/Docker)
+# Installs from npm (pre-compiled) and runs the Express server.
 # Build: docker build -f Dockerfile.api -t webpeel/api .
-# Run:   docker run -p 3000:3000 webpeel/api
+# Run:   docker run -p 3000:3000 -e DATABASE_URL=... webpeel/api
 
 FROM node:22-slim
 
@@ -10,14 +10,8 @@ RUN npx --yes playwright install --with-deps chromium
 
 WORKDIR /app
 
-# Copy manifests first for layer caching
-COPY package*.json ./
-
-# Production deps only (no devDependencies)
-RUN npm ci --production
-
-# Copy compiled output
-COPY dist/ ./dist/
+# Install WebPeel from npm (includes compiled dist/)
+RUN npm install webpeel@latest
 
 # Non-root user for security
 RUN groupadd -r webpeel && useradd -r -g webpeel webpeel \
@@ -29,4 +23,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1
 
-CMD ["node", "dist/server/app.js"]
+# Run the API server from the npm-installed package
+CMD ["node", "node_modules/webpeel/dist/server/app.js"]
