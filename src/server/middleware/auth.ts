@@ -4,9 +4,14 @@
  * Philosophy: Never fully block users. When weekly limits are exceeded,
  * degrade to HTTP-only mode instead of returning 429.
  * BURST limits (hourly) are HARD limits and return 429.
+ * 
+ * Dual auth: Accepts both API keys AND JWT session tokens.
+ * API keys are validated via the auth store; JWTs are verified with JWT_SECRET.
+ * Dashboard pages use JWT tokens; CLI/SDK users use API keys.
  */
 
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { AuthStore, ApiKeyInfo } from '../auth-store.js';
 import { PostgresAuthStore } from '../pg-auth-store.js';
 
@@ -82,6 +87,36 @@ export function createAuthMiddleware(authStore: AuthStore) {
       if (apiKey) {
         keyInfo = await authStore.validateKey(apiKey);
         if (!keyInfo) {
+          // API key not found — try JWT session token as fallback.
+          // Dashboard uses JWT tokens (from /v1/auth/login or /v1/auth/oauth),
+          // while CLI/SDK users use API keys. Support both seamlessly.
+          const jwtSecret = process.env.JWT_SECRET;
+          if (jwtSecret) {
+            try {
+              const payload = jwt.verify(apiKey, jwtSecret) as {
+                userId?: string;
+                email?: string;
+                tier?: string;
+              };
+              if (payload.userId) {
+                // Valid JWT — treat as authenticated session user.
+                // Set req.auth with null keyInfo (no API key) and attach
+                // the JWT payload so routes can use req.user.userId.
+                req.auth = {
+                  keyInfo: null,
+                  tier: (payload.tier as any) || 'free',
+                  rateLimit: 25,
+                  softLimited: false,
+                  extraUsageAvailable: false,
+                };
+                (req as any).user = payload;
+                return next();
+              }
+            } catch {
+              // Not a valid JWT either — fall through to 401
+            }
+          }
+
           res.status(401).json({
             error: 'invalid_key',
             message: 'Invalid or expired API key. Check your key at https://app.webpeel.dev/keys or generate a new one.',

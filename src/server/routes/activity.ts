@@ -11,16 +11,15 @@ export function createActivityRouter(authStore: AuthStore): Router {
 
   router.get('/v1/activity', async (req: Request, res: Response) => {
     try {
-      // Require authentication
-      if (!req.auth?.keyInfo) {
+      // Require authentication (API key or JWT session token)
+      const userId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+      if (!userId) {
         res.status(401).json({
           error: 'unauthorized',
-          message: 'Valid API key required',
+          message: 'Authentication required',
         });
         return;
       }
-
-      const userId = req.auth.keyInfo.accountId; // accountId maps to user_id in DB
 
       // Only works with PostgreSQL backend
       if (!(authStore instanceof PostgresAuthStore)) {
