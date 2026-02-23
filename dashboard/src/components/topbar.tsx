@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { LogOut, Settings, ChevronDown, Menu } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { checkApiHealth } from '@/lib/api';
 
 interface TopbarProps {
@@ -18,15 +18,27 @@ interface TopbarProps {
 export function Topbar({ user, tier = 'free', onMenuClick }: TopbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [apiOnline, setApiOnline] = useState(true);
+  const prevOnline = useRef(true);
+  const { data: session, update } = useSession();
 
   useEffect(() => {
-    const check = () => {
-      checkApiHealth().then(({ healthy }) => setApiOnline(healthy));
+    const check = async () => {
+      const { healthy } = await checkApiHealth();
+      const wasOffline = !prevOnline.current;
+      prevOnline.current = healthy;
+      setApiOnline(healthy);
+
+      // When API transitions offline → online and session has an error,
+      // trigger a session refresh to auto-recover the JWT
+      if (healthy && wasOffline && (session as any)?.apiError) {
+        update();
+      }
     };
     check();
-    const interval = setInterval(check, 60000);
+    // Check more frequently (30s) to detect recovery faster
+    const interval = setInterval(check, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [(session as any)?.apiError, update]);
 
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase()

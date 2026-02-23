@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
 import { ApiErrorBanner } from '@/components/api-error-banner';
@@ -13,8 +13,9 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [recovering, setRecovering] = useState(false);
 
   // Pre-warm the API on dashboard mount — fire and forget.
   // By pinging /health now we ensure the connection is established before
@@ -22,6 +23,44 @@ export default function DashboardLayout({
   useEffect(() => {
     checkApiHealth().catch(() => { /* silent — this is best-effort */ });
   }, []);
+
+  const hasApiError = (session as any)?.apiError === true;
+  const hasToken = !!(session as any)?.apiToken;
+  const showRecoveryBanner = hasApiError || !hasToken;
+
+  // -------------------------------------------------------------------
+  // Auto-recovery: when the session has apiError, periodically refresh
+  // the session which re-runs the jwt callback (which now auto-retries
+  // the API registration). Once the API is back, the session heals
+  // silently and the banner disappears.
+  // -------------------------------------------------------------------
+  const attemptRecovery = useCallback(async () => {
+    if (!showRecoveryBanner) return;
+    setRecovering(true);
+    try {
+      // Check if API is back first to avoid unnecessary jwt retries
+      const { healthy } = await checkApiHealth();
+      if (healthy) {
+        // API is back — trigger session refresh which re-runs jwt callback
+        await update();
+      }
+    } catch {
+      // silent
+    } finally {
+      setRecovering(false);
+    }
+  }, [showRecoveryBanner, update]);
+
+  useEffect(() => {
+    if (!showRecoveryBanner) return;
+
+    // Try immediately
+    attemptRecovery();
+
+    // Then poll every 30 seconds
+    const interval = setInterval(attemptRecovery, 30_000);
+    return () => clearInterval(interval);
+  }, [showRecoveryBanner, attemptRecovery]);
 
   if (status === 'loading') {
     return (
@@ -36,13 +75,6 @@ export default function DashboardLayout({
   }
 
   const tier = (session as any)?.tier || 'free';
-
-  // Show a recovery banner when:
-  //   1. The OAuth back-end call set apiError = true, OR
-  //   2. The session exists but has no apiToken (same root cause)
-  const hasApiError = (session as any)?.apiError === true;
-  const hasToken = !!(session as any)?.apiToken;
-  const showRecoveryBanner = hasApiError || !hasToken;
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -62,7 +94,12 @@ export default function DashboardLayout({
             <div className="mb-6">
               <ApiErrorBanner
                 title="API Connection Issue"
-                message="We couldn't connect to the API during sign-in. Please sign out and sign back in to restore full access."
+                message={
+                  recovering
+                    ? "Reconnecting to the WebPeel API..."
+                    : "We couldn't connect to the API during sign-in. Retrying automatically — or you can sign out and try again."
+                }
+                reconnecting={recovering}
               />
             </div>
           )}

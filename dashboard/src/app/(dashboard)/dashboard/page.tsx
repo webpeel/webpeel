@@ -76,12 +76,15 @@ export default function DashboardPage() {
 
   // Show a clear error state when the session is loaded but no API token was
   // issued (typically because the OAuth backend call failed during sign-in).
+  // The layout's auto-recovery will handle reconnection — this just shows
+  // a placeholder so the dashboard doesn't render with missing data.
   if (status === 'authenticated' && !token) {
     return (
       <div className="mx-auto max-w-6xl">
         <ApiErrorBanner
           title="API Connection Issue"
-          message="We couldn't connect your account to the WebPeel API. This can happen if the API was temporarily unavailable during sign-in. Please sign out and try again."
+          message="We couldn't connect your account to the WebPeel API. This can happen if the API was temporarily unavailable during sign-in. Reconnecting automatically..."
+          reconnecting
         />
       </div>
     );

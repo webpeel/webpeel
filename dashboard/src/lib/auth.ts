@@ -108,13 +108,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // For OAuth providers, auto-register / login with our backend
       if (account && (account.provider === 'github' || account.provider === 'google')) {
-        try {
-          // Send the OAuth token for server-side verification
-          // GitHub: access_token, Google: id_token
-          const accessToken = account.provider === 'github'
-            ? account.access_token
-            : account.id_token;
+        // Send the OAuth token for server-side verification
+        // GitHub: access_token, Google: id_token
+        const accessToken = account.provider === 'github'
+          ? account.access_token
+          : account.id_token;
 
+        // Save credentials in the encrypted JWT so we can retry if API is down
+        token.oauthCredentials = {
+          provider: account.provider,
+          accessToken,
+          name: token.name,
+          avatar: token.picture,
+        };
+
+        try {
           const res = await retryFetch(
             `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/oauth`,
             {
@@ -135,6 +143,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.tier = data.user.tier;
             token.userId = data.user.id;
             token.apiKey = data.apiKey;
+            // Success — clean up stored credentials
+            delete token.oauthCredentials;
           } else {
             // Non-ok response even after retries (e.g. 5xx or unexpected 4xx)
             console.error('OAuth API registration returned non-ok status:', res.status);
@@ -144,6 +154,53 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           // Network error or timeout after all retries
           console.error('OAuth API registration failed after all retries:', e);
           token.apiError = true;
+        }
+      }
+
+      // ---------------------------------------------------------------
+      // Auto-recovery: retry API registration on subsequent session
+      // checks when the initial sign-in failed due to API downtime.
+      // Throttled to once per 30 seconds to avoid hammering.
+      // ---------------------------------------------------------------
+      if (token.apiError && token.oauthCredentials && !token.apiToken) {
+        const now = Date.now();
+        const lastRetry = (token.apiRetryAt as number) || 0;
+
+        if (now - lastRetry > 30_000) {
+          token.apiRetryAt = now;
+          const creds = token.oauthCredentials as {
+            provider: string;
+            accessToken: string;
+            name: string;
+            avatar: string;
+          };
+
+          try {
+            const res = await retryFetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/oauth`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(creds),
+              },
+              2 // fewer retries for background recovery
+            );
+
+            if (res.ok) {
+              const data = await res.json();
+              token.apiToken = data.token;
+              token.tier = data.user.tier;
+              token.userId = data.user.id;
+              token.apiKey = data.apiKey;
+              // Recovered — clear error state and stored credentials
+              delete token.apiError;
+              delete token.oauthCredentials;
+              delete token.apiRetryAt;
+              console.log('Auto-recovered API session for:', token.email);
+            }
+          } catch {
+            // Still failing — will retry on next session check
+          }
         }
       }
 
