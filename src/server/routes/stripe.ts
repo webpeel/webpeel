@@ -12,7 +12,7 @@ const { Pool } = pg;
  * Tier configuration (weekly usage model)
  */
 const TIER_LIMITS = {
-  free: { weekly_limit: 125, burst_limit: 25, rate_limit: 10 },
+  free: { weekly_limit: 500, burst_limit: 50, rate_limit: 10 },
   pro: { weekly_limit: 1250, burst_limit: 100, rate_limit: 60 },
   max: { weekly_limit: 6250, burst_limit: 500, rate_limit: 200 },
 };

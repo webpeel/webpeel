@@ -67,12 +67,12 @@ export function createAuthMiddleware(authStore: AuthStore) {
       }
       
       if (!apiKey) {
-        // Allow anonymous free-tier access (125/week, 25/hr burst)
+        // Allow anonymous free-tier access (500/week, 50/hr burst)
         // This enables the playground and basic usage without signup
         req.auth = {
           keyInfo: null,
           tier: 'free',
-          rateLimit: 25,  // requests per minute for anonymous
+          rateLimit: 50,  // requests per minute for anonymous
           softLimited: false,
           extraUsageAvailable: false,
         };

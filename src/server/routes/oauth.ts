@@ -283,7 +283,7 @@ export function createOAuthRouter(): Router {
             const newUserResult = await client.query(
               `INSERT INTO users 
                (email, password_hash, tier, weekly_limit, burst_limit, rate_limit, name, avatar_url)
-               VALUES ($1, NULL, 'free', 125, 25, 10, $2, $3)
+               VALUES ($1, NULL, 'free', 500, 50, 10, $2, $3)
                RETURNING id`,
               [email, name || null, avatar || null]
             );

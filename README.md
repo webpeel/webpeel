@@ -74,13 +74,13 @@ npx webpeel search "best AI frameworks 2026"
 npx webpeel https://store.com/search --extract-all --json
 ```
 
-First 25 fetches work instantly, no signup. After that, [sign up free](https://app.webpeel.dev/signup) for 125/week.
+First 25 fetches work instantly, no signup. After that, [sign up free](https://app.webpeel.dev/signup) for 500/week.
 
 ## Why WebPeel?
 
 | Feature | **WebPeel** | Firecrawl | Jina Reader | MCP Fetch |
 |---------|:-----------:|:---------:|:-----------:|:---------:|
-| **Free tier** | ✅ 125/wk recurring | 500 one-time | ❌ Cloud only | ✅ Unlimited |
+| **Free tier** | ✅ 500/wk recurring | 500 one-time | ❌ Cloud only | ✅ Unlimited |
 | **Smart escalation** | ✅ HTTP→Browser→Stealth | Manual | ❌ | ❌ |
 | **Challenge detection** | ✅ 7 vendors auto-detected | ❌ | ❌ | ❌ |
 | **Site search** | ✅ 27 sites built-in | ❌ | ❌ | ❌ |
@@ -337,7 +337,7 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
 
 | Plan | Price | Weekly Fetches | Burst | Extra Usage |
 |------|------:|---------------:|:-----:|:-----------:|
-| **Free** | $0 | 125/wk | 25/hr | — |
+| **Free** | $0 | 500/wk | 50/hr | — |
 | **Pro** | $9/mo | 1,250/wk | 100/hr | ✅ from $0.001 |
 | **Max** | $29/mo | 6,250/wk | 500/hr | ✅ from $0.001 |
 

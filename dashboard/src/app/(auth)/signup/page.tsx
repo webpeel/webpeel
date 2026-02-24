@@ -58,7 +58,7 @@ export default function SignupPage() {
               <em className="font-serif">the web for free</em>
             </h1>
             <p className="mt-3 text-[15px] text-zinc-500">
-              125 fetches/week included. No credit card required.
+              500 fetches/week included. No credit card required.
             </p>
           </div>
 

@@ -265,7 +265,7 @@ export function createUserRouter(): Router {
       // Create user
       const userResult = await pool.query(
         `INSERT INTO users (email, password_hash, tier, weekly_limit, burst_limit, rate_limit)
-        VALUES ($1, $2, 'free', 125, 25, 10)
+        VALUES ($1, $2, 'free', 500, 50, 10)
         RETURNING id, email, tier, weekly_limit, burst_limit, rate_limit, created_at`,
         [email, passwordHash]
       );
