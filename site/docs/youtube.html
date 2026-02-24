@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="Extract full transcripts from YouTube videos with WebPeel — no API key needed. Supports all YouTube URL formats.">
+  <link rel="canonical" href="https://webpeel.dev/docs/youtube">
+  <meta property="og:title" content="YouTube Transcripts — WebPeel">
+  <meta property="og:description" content="Extract full transcripts from YouTube videos with WebPeel — no API key needed. Supports all YouTube URL formats.">
+  <meta property="og:url" content="https://webpeel.dev/docs/youtube">
+  <meta property="og:type" content="website">
+  <title>YouTube Transcripts — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js & Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">v0.14.0 Features</div>
+        <a href="/docs/youtube" class="sidebar-link active">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>YouTube Transcripts</span>
+      </div>
+
+      <h1>YouTube Transcripts <span class="badge">v0.14.0</span></h1>
+      <p class="lead">Extract full transcripts from any YouTube video — no API key, no OAuth, no scraping. WebPeel fetches the caption track directly from YouTube's public timedtext endpoint.</p>
+
+      <h2>What It Does</h2>
+      <p>Pass any YouTube URL to WebPeel and get back the full transcript as time-stamped segments. Works with auto-generated captions and manually uploaded subtitle tracks. No YouTube Data API v3 key required — this is completely free and unlimited.</p>
+
+      <ul>
+        <li>✅ No API key needed</li>
+        <li>✅ Auto-generated captions + manual subtitles</li>
+        <li>✅ Multi-language support (<code>language</code> param)</li>
+        <li>✅ Time-stamped segments for precise referencing</li>
+        <li>✅ Auto-detected inside <code>peel()</code> — zero config</li>
+      </ul>
+
+      <h2>Supported URL Formats</h2>
+      <p>All standard YouTube URL patterns are recognised automatically:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Format</th>
+            <th>Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Standard watch</td>
+            <td><code>https://www.youtube.com/watch?v=dQw4w9WgXcQ</code></td>
+          </tr>
+          <tr>
+            <td>Short URL</td>
+            <td><code>https://youtu.be/dQw4w9WgXcQ</code></td>
+          </tr>
+          <tr>
+            <td>Embed</td>
+            <td><code>https://www.youtube.com/embed/dQw4w9WgXcQ</code></td>
+          </tr>
+          <tr>
+            <td>Shorts</td>
+            <td><code>https://www.youtube.com/shorts/dQw4w9WgXcQ</code></td>
+          </tr>
+          <tr>
+            <td>Mobile</td>
+            <td><code>https://m.youtube.com/watch?v=dQw4w9WgXcQ</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>CLI</h2>
+      <p>Just pass a YouTube URL — WebPeel auto-detects it and returns the transcript:</p>
+
+      <pre><code class="language-bash"># Fetch transcript as plain text (default)
+npx webpeel "https://youtube.com/watch?v=dQw4w9WgXcQ"
+
+# JSON output with full segment metadata
+npx webpeel "https://youtube.com/watch?v=dQw4w9WgXcQ" --json
+
+# Specify language (default: en)
+npx webpeel "https://youtu.be/dQw4w9WgXcQ" --language es --json
+
+# Short-form Shorts URL
+npx webpeel "https://youtube.com/shorts/dQw4w9WgXcQ" --json</code></pre>
+
+      <h2>API</h2>
+      <p>Dedicated transcript endpoint — returns the full transcript with segment timestamps.</p>
+
+      <pre><code class="language-bash"># Basic transcript
+GET /v1/youtube?url=https://youtube.com/watch?v=dQw4w9WgXcQ
+
+# Specify language
+GET /v1/youtube?url=https://youtu.be/dQw4w9WgXcQ&language=en
+
+# With API key
+curl "https://api.webpeel.dev/v1/youtube?url=https://youtube.com/watch?v=dQw4w9WgXcQ" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>url</code></td>
+            <td>string (required)</td>
+            <td>YouTube video URL (any supported format)</td>
+          </tr>
+          <tr>
+            <td><code>language</code></td>
+            <td>string</td>
+            <td>BCP-47 language code (default: <code>en</code>). Falls back to first available track.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>MCP</h2>
+      <p>Use the <code>webpeel_youtube</code> tool directly inside Claude, Cursor, or any MCP-compatible client:</p>
+
+      <pre><code class="language-json">{
+  "tool": "webpeel_youtube",
+  "arguments": {
+    "url": "https://youtube.com/watch?v=dQw4w9WgXcQ",
+    "language": "en"
+  }
+}</code></pre>
+
+      <p>Or just use <code>webpeel_fetch</code> — YouTube URLs are auto-detected and the transcript is returned as the <code>content</code> field automatically.</p>
+
+      <h2>Example Output</h2>
+
+      <pre><code class="language-json">{
+  "url": "https://youtube.com/watch?v=dQw4w9WgXcQ",
+  "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+  "channel": "Rick Astley",
+  "duration": 213,
+  "language": "en",
+  "transcript": [
+    { "start": 0.0,   "dur": 3.2,  "text": "We're no strangers to love" },
+    { "start": 3.2,   "dur": 2.8,  "text": "You know the rules and so do I" },
+    { "start": 6.0,   "dur": 3.5,  "text": "A full commitment's what I'm thinking of" },
+    { "start": 9.5,   "dur": 4.0,  "text": "You wouldn't get this from any other guy" }
+  ],
+  "content": "We're no strangers to love\nYou know the rules and so do I\nA full commitment's what I'm thinking of\nYou wouldn't get this from any other guy\n..."
+}</code></pre>
+
+      <h4>Response Fields</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>url</code></td>
+            <td>string</td>
+            <td>Canonical YouTube URL</td>
+          </tr>
+          <tr>
+            <td><code>title</code></td>
+            <td>string</td>
+            <td>Video title</td>
+          </tr>
+          <tr>
+            <td><code>channel</code></td>
+            <td>string</td>
+            <td>Channel name</td>
+          </tr>
+          <tr>
+            <td><code>duration</code></td>
+            <td>number</td>
+            <td>Video duration in seconds</td>
+          </tr>
+          <tr>
+            <td><code>language</code></td>
+            <td>string</td>
+            <td>Language code of returned transcript</td>
+          </tr>
+          <tr>
+            <td><code>transcript</code></td>
+            <td>array</td>
+            <td>Time-stamped segments: <code>{ start, dur, text }</code></td>
+          </tr>
+          <tr>
+            <td><code>content</code></td>
+            <td>string</td>
+            <td>Full transcript as plain text (newline-separated)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>SDK Usage</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="node">Node.js</button>
+        <button class="tab-btn" data-tab="python">Python</button>
+      </div>
+
+      <div class="tab-content active" data-content="node">
+        <pre><code class="language-javascript">import { peel } from 'webpeel';
+
+// YouTube URLs are auto-detected — just call peel()
+const result = await peel('https://youtube.com/watch?v=dQw4w9WgXcQ');
+
+// result.content contains the full transcript text
+console.log(result.content);
+
+// result.transcript has the time-stamped segments
+result.transcript.forEach(seg => {
+  console.log(`[${seg.start}s] ${seg.text}`);
+});
+
+// Specify a language
+const spanish = await peel('https://youtu.be/dQw4w9WgXcQ', { language: 'es' });</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="python">
+        <pre><code class="language-python">from webpeel import WebPeel
+
+client = WebPeel()
+
+# YouTube URLs are auto-detected
+result = client.scrape("https://youtube.com/watch?v=dQw4w9WgXcQ")
+print(result.content)  # full transcript text
+
+# With language
+result = client.scrape(
+    "https://youtu.be/dQw4w9WgXcQ",
+    language="es"
+)
+for seg in result.transcript:
+    print(f"[{seg['start']}s] {seg['text']}")</code></pre>
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>💡 Auto-Detection in <code>peel()</code></strong><br>
+        You don't need to call a special method. Any YouTube URL passed to <code>peel()</code> is automatically routed to the transcript extractor. The <code>content</code> field will contain the full transcript text, ready to feed into an LLM.
+      </div>
+
+      <h2>Error Handling</h2>
+      <p>If a video has no transcript (disabled or unavailable), WebPeel returns an error with a descriptive message:</p>
+
+      <pre><code class="language-json">{
+  "error": "NO_TRANSCRIPT",
+  "message": "No transcript available for this video. The uploader may have disabled captions.",
+  "url": "https://youtube.com/watch?v=..."
+}</code></pre>
+
+      <p>Use the <code>language</code> parameter to fall back to a specific track, or omit it to get the first available track in any language.</p>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="../scripts/docs.js"></script>
+
+  <footer class="docs-footer">
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. Open source under AGPL-3.0.</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

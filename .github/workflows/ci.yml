@@ -42,6 +42,120 @@ jobs:
         run: npm run lint
         if: runner.os == 'Linux'
 
+  # ─── Quality gates (catches the issues the audit found) ───
+  quality-gates:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      # Gate 1: MCP tool parity (local = hosted)
+      - name: MCP tool parity check
+        run: |
+          LOCAL=$(grep -c "name: 'webpeel_" src/mcp/server.ts)
+          HOSTED=$(grep -c "name: 'webpeel_" src/server/routes/mcp.ts)
+          echo "Local MCP: $LOCAL tools, Hosted MCP: $HOSTED tools"
+          if [ "$LOCAL" -ne "$HOSTED" ]; then
+            echo "❌ MCP tool count mismatch! Local=$LOCAL, Hosted=$HOSTED"
+            echo "Every tool must be in BOTH src/mcp/server.ts AND src/server/routes/mcp.ts"
+            exit 1
+          fi
+          echo "✅ MCP parity: $LOCAL tools in both servers"
+
+      # Gate 2: Dockerfile version matches package.json
+      - name: Dockerfile version pin check
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if grep -q "webpeel@$VERSION" Dockerfile.api; then
+            echo "✅ Dockerfile.api pins webpeel@$VERSION"
+          else
+            PINNED=$(grep -o 'webpeel@[0-9.]*' Dockerfile.api || echo "none")
+            echo "❌ Version mismatch: Dockerfile.api=$PINNED, package.json=v$VERSION"
+            exit 1
+          fi
+
+      # Gate 3: No secrets in source
+      - name: Secret leak check
+        run: |
+          LEAKED=$(grep -rn 'wp_live_\|wp_test_\|rnd_[A-Za-z]\|sk-ant-api\|OPENAI_API_KEY=sk-\|npg_[A-Za-z]' \
+            src/ site/ README.md dashboard/src/ 2>/dev/null \
+            | grep -v node_modules \
+            | grep -v '\.env' \
+            | grep -v 'example\|placeholder\|YOUR_KEY\|your_key\|xxx\|REDACTED' || true)
+          if [ -n "$LEAKED" ]; then
+            echo "❌ Possible secrets found in source code:"
+            echo "$LEAKED"
+            exit 1
+          fi
+          echo "✅ No secrets detected"
+
+      # Gate 4: No stale marketing numbers
+      - name: Content consistency check
+        run: |
+          TOOL_COUNT=$(grep -c "name: 'webpeel_" src/mcp/server.ts)
+          STALE=0
+
+          # Check for OLD tool counts in marketing (anything below current)
+          for old in 7 11 12 13 14 15 16 17; do
+            if [ "$old" -lt "$TOOL_COUNT" ]; then
+              FOUND=$(grep -rn "\b${old} tool\|\b${old} MCP" site/index.html site/blog/ README.md llms.txt 2>/dev/null | grep -v CHANGELOG | grep -v node_modules || true)
+              if [ -n "$FOUND" ]; then
+                echo "⚠️  Found '${old} tools' (current: ${TOOL_COUNT}):"
+                echo "$FOUND"
+                STALE=1
+              fi
+            fi
+          done
+
+          # Check for old free tier (125/week)
+          OLD_TIER=$(grep -rn "125/week\|125 per week\|125 free" site/ README.md 2>/dev/null | grep -v CHANGELOG | grep -v node_modules || true)
+          if [ -n "$OLD_TIER" ]; then
+            echo "⚠️  Found stale free tier (should be 500/week):"
+            echo "$OLD_TIER"
+            STALE=1
+          fi
+
+          if [ "$STALE" -eq 1 ]; then
+            echo ""
+            echo "❌ Stale content detected. Update ALL marketing to match current values."
+            exit 1
+          fi
+          echo "✅ Content consistent: $TOOL_COUNT tools, 500/week"
+
+      # Gate 5: Auth test — every route file must reference auth middleware
+      - name: Auth coverage check
+        run: |
+          UNAUTHED=""
+          for route in src/server/routes/*.ts; do
+            BASENAME=$(basename "$route" .ts)
+            # Skip health (intentionally public) and static/public routes
+            if [[ "$BASENAME" == "health" || "$BASENAME" == "index" ]]; then
+              continue
+            fi
+            if ! grep -q "auth\|requireAuth\|jwtAuth\|apiKeyAuth" "$route" 2>/dev/null; then
+              UNAUTHED="$UNAUTHED $BASENAME"
+            fi
+          done
+          if [ -n "$UNAUTHED" ]; then
+            echo "❌ Routes without auth middleware:$UNAUTHED"
+            echo "Every route must reference auth. If intentionally public, add a comment: // AUTH: public (reason)"
+            exit 1
+          fi
+          echo "✅ All routes reference auth middleware"
+
   docker-validate:
     name: Validate Docker build
     runs-on: ubuntu-latest
@@ -52,20 +166,8 @@ jobs:
       - name: Verify Dockerfile.api exists and is referenced
         run: |
           test -f Dockerfile.api || (echo "❌ Dockerfile.api missing!" && exit 1)
-          # Ensure we're not accidentally using the MCP Dockerfile
           if [ -f Dockerfile ] && ! grep -q "mcp" Dockerfile 2>/dev/null; then
             echo "⚠️ Root Dockerfile exists and may not be the MCP variant"
-          fi
-
-      - name: Check version pin in Dockerfile.api
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          if grep -q "webpeel@$VERSION" Dockerfile.api; then
-            echo "✅ Dockerfile.api pins webpeel@$VERSION"
-          else
-            PINNED=$(grep -o 'webpeel@[0-9.]*' Dockerfile.api)
-            echo "⚠️ Dockerfile.api pins $PINNED but package.json is v$VERSION"
-            echo "::warning::Dockerfile.api version ($PINNED) doesn't match package.json (v$VERSION)"
           fi
 
       - name: Build Docker image
@@ -73,25 +175,18 @@ jobs:
 
       - name: Smoke test Docker container
         run: |
-          # Start container with minimal config
           docker run -d --name wp-test -p 3333:3000 \
             -e JWT_SECRET=test-secret-for-ci \
             -e DATABASE_URL=postgresql://skip:skip@localhost/skip \
             webpeel-api-test || true
-          
-          # Give it 5 seconds to start
           sleep 5
-          
-          # Check if process is running (may fail on DB connect, that's OK)
           if docker ps | grep -q wp-test; then
             echo "✅ Container started successfully"
           else
             echo "Container logs:"
             docker logs wp-test 2>&1 | tail -20
-            # Don't fail — DB connection errors are expected in CI
             echo "::warning::Container exited (expected if no DB)"
           fi
-          
           docker rm -f wp-test 2>/dev/null || true
 
   dashboard-check:
@@ -117,7 +212,7 @@ jobs:
   notify-failure:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, quality-gates]
     if: failure()
     steps:
       - name: Notify Discord

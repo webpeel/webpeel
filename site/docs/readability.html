@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="WebPeel Reader Mode strips all page noise — ads, nav, sidebars, cookie banners — and returns clean markdown with author, date, and reading time.">
+  <link rel="canonical" href="https://webpeel.dev/docs/readability">
+  <meta property="og:title" content="Reader Mode — WebPeel">
+  <meta property="og:description" content="WebPeel Reader Mode strips all page noise — ads, nav, sidebars, cookie banners — and returns clean markdown with author, date, and reading time.">
+  <meta property="og:url" content="https://webpeel.dev/docs/readability">
+  <meta property="og:type" content="website">
+  <title>Reader Mode — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js & Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">v0.14.0 Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link active">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Reader Mode</span>
+      </div>
+
+      <h1>Reader Mode <span class="badge">v0.14.0</span></h1>
+      <p class="lead">Strip every piece of page noise — navigation, ads, cookie banners, sidebars, share buttons, related-articles widgets — and get back the pure content as clean Markdown, with title, author, date, and reading time.</p>
+
+      <h2>What It Does</h2>
+      <p>Reader Mode applies a multi-signal noise removal pipeline to any webpage. Think of it as the "Reader View" button in Firefox or Safari, but for your code. The result is clean, LLM-ready Markdown with full article metadata attached.</p>
+
+      <ul>
+        <li>✅ Removes 25+ classes of page noise (nav, ads, cookie banners, related articles, share widgets, sidebars, footers, pop-ups…)</li>
+        <li>✅ Candidate scoring picks the highest-density content block</li>
+        <li>✅ Extracts metadata: title, author, publish date, reading time, word count</li>
+        <li>✅ Returns clean Markdown — ready to pass to any LLM</li>
+        <li>✅ Works on news articles, blog posts, documentation, long-form essays</li>
+      </ul>
+
+      <h2>CLI</h2>
+      <pre><code class="language-bash"># Enable reader mode with --readable
+npx webpeel "https://techcrunch.com/2026/02/24/some-article" --readable
+
+# JSON output — includes metadata fields
+npx webpeel "https://techcrunch.com/2026/02/24/some-article" --readable --json
+
+# Also works with browser rendering for JS-rendered pages
+npx webpeel "https://medium.com/@user/article-slug" --readable --render --json</code></pre>
+
+      <h2>API</h2>
+      <pre><code class="language-bash"># Basic readable fetch
+GET /v1/fetch?url=https://techcrunch.com/2026/02/24/some-article&readable=true
+
+# With curl
+curl "https://api.webpeel.dev/v1/fetch?url=https://techcrunch.com/2026/02/24/some-article&readable=true" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>url</code></td>
+            <td>string (required)</td>
+            <td>Page URL to fetch in reader mode</td>
+          </tr>
+          <tr>
+            <td><code>readable</code></td>
+            <td>boolean</td>
+            <td>Set to <code>true</code> to enable reader mode</td>
+          </tr>
+          <tr>
+            <td><code>render</code></td>
+            <td>boolean</td>
+            <td>Use headless browser for JS-rendered pages</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>MCP</h2>
+      <p>Pass <code>readable: true</code> to <code>webpeel_fetch</code>:</p>
+
+      <pre><code class="language-json">{
+  "tool": "webpeel_fetch",
+  "arguments": {
+    "url": "https://techcrunch.com/2026/02/24/some-article",
+    "readable": true
+  }
+}</code></pre>
+
+      <h2>How It Works</h2>
+      <p>Reader Mode runs a three-stage pipeline entirely in-process — no external calls:</p>
+
+      <h3>Stage 1 — Noise Removal (25+ patterns)</h3>
+      <p>The following element types are stripped before any content scoring:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>What gets removed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Navigation</td>
+            <td><code>&lt;nav&gt;</code>, <code>[role=navigation]</code>, header nav bars, breadcrumb trails</td>
+          </tr>
+          <tr>
+            <td>Advertising</td>
+            <td><code>.ad</code>, <code>.ads</code>, <code>.advertisement</code>, <code>[data-ad]</code>, iframe ads</td>
+          </tr>
+          <tr>
+            <td>Cookie / GDPR</td>
+            <td><code>.cookie-banner</code>, <code>#consent</code>, GDPR overlays, "Accept cookies" dialogs</td>
+          </tr>
+          <tr>
+            <td>Sidebars</td>
+            <td><code>aside</code>, <code>[role=complementary]</code>, <code>.sidebar</code>, <code>.widget-area</code></td>
+          </tr>
+          <tr>
+            <td>Share buttons</td>
+            <td><code>.share</code>, <code>.social-share</code>, <code>.addthis</code>, floating share bars</td>
+          </tr>
+          <tr>
+            <td>Related articles</td>
+            <td><code>.related</code>, <code>.recommended</code>, <code>.you-may-also-like</code></td>
+          </tr>
+          <tr>
+            <td>Comments</td>
+            <td><code>#comments</code>, <code>.comment-section</code>, Disqus embeds</td>
+          </tr>
+          <tr>
+            <td>Footers</td>
+            <td><code>&lt;footer&gt;</code>, <code>[role=contentinfo]</code>, site footers</td>
+          </tr>
+          <tr>
+            <td>Pop-ups / modals</td>
+            <td><code>.modal</code>, <code>.popup</code>, newsletter sign-up overlays</td>
+          </tr>
+          <tr>
+            <td>Sticky bars</td>
+            <td>Fixed-position headers, scroll-triggered notification bars</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Stage 2 — Candidate Scoring</h3>
+      <p>After stripping noise, remaining block-level elements (<code>&lt;article&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;div&gt;</code>, <code>&lt;section&gt;</code>) are scored by content density — the ratio of text to HTML. The highest-scoring block is selected as the article body.</p>
+
+      <h3>Stage 3 — Metadata Extraction</h3>
+      <p>Structured metadata is extracted from <code>&lt;meta&gt;</code> tags, JSON-LD, and OpenGraph properties, then verified against visible on-page signals:</p>
+
+      <ul>
+        <li><strong>Title</strong> — from <code>og:title</code>, <code>&lt;title&gt;</code>, or largest heading</li>
+        <li><strong>Author</strong> — from <code>article:author</code>, byline heuristics, JSON-LD <code>Person</code></li>
+        <li><strong>Published date</strong> — from <code>article:published_time</code>, <code>datePublished</code>, visible date patterns</li>
+        <li><strong>Reading time</strong> — calculated at 238 WPM (average adult reading speed)</li>
+        <li><strong>Word count</strong> — plain-text word count of the extracted body</li>
+      </ul>
+
+      <h2>Example Output</h2>
+
+      <pre><code class="language-json">{
+  "url": "https://techcrunch.com/2026/02/24/some-article",
+  "readable": true,
+  "title": "The Rise of LLM-Free Web Agents",
+  "author": "Jane Smith",
+  "publishedAt": "2026-02-24T08:00:00Z",
+  "readingTime": 4,
+  "wordCount": 980,
+  "content": "# The Rise of LLM-Free Web Agents\n\nFor years, building a reliable web agent meant stitching together an LLM, a browser, and a prompt. But a new wave of tools is changing that...\n\n## Why BM25 Is Enough for Most Tasks\n\nLarge language models are powerful, but they're also slow and expensive...",
+  "excerpt": "For years, building a reliable web agent meant stitching together an LLM, a browser, and a prompt."
+}</code></pre>
+
+      <h2>SDK Usage</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="node">Node.js</button>
+        <button class="tab-btn" data-tab="python">Python</button>
+      </div>
+
+      <div class="tab-content active" data-content="node">
+        <pre><code class="language-javascript">import { peel } from 'webpeel';
+
+const result = await peel('https://techcrunch.com/2026/02/24/some-article', {
+  readable: true
+});
+
+console.log(result.title);       // "The Rise of LLM-Free Web Agents"
+console.log(result.author);      // "Jane Smith"
+console.log(result.publishedAt); // "2026-02-24T08:00:00Z"
+console.log(result.readingTime); // 4 (minutes)
+console.log(result.wordCount);   // 980
+console.log(result.content);     // Clean Markdown article body</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="python">
+        <pre><code class="language-python">from webpeel import WebPeel
+
+client = WebPeel()
+result = client.scrape(
+    "https://techcrunch.com/2026/02/24/some-article",
+    readable=True
+)
+
+print(result.title)        # "The Rise of LLM-Free Web Agents"
+print(result.author)       # "Jane Smith"
+print(result.reading_time) # 4
+print(result.word_count)   # 980
+print(result.content)      # Clean Markdown</code></pre>
+      </div>
+
+      <h2>When to Use Reader Mode</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Use case</th>
+            <th>Use Reader Mode?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>News articles, blog posts</td>
+            <td>✅ Yes — lots of surrounding noise</td>
+          </tr>
+          <tr>
+            <td>Documentation pages</td>
+            <td>✅ Yes — strip nav and ads</td>
+          </tr>
+          <tr>
+            <td>Long-form essays</td>
+            <td>✅ Yes — ideal use case</td>
+          </tr>
+          <tr>
+            <td>E-commerce product pages</td>
+            <td>⚠️ Partial — use <code>--schema</code> instead for structured data</td>
+          </tr>
+          <tr>
+            <td>Search result pages</td>
+            <td>❌ No — content IS the listing grid</td>
+          </tr>
+          <tr>
+            <td>Single-page apps (SPAs)</td>
+            <td>✅ Yes, but add <code>--render</code> flag</td>
+          </tr>
+          <tr>
+            <td>Twitter / GitHub / Reddit</td>
+            <td>❌ No — use <a href="/docs/domain-extractors">Domain Extractors</a> instead</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-tip">
+        <strong>💡 Combine with <code>--focus</code> for LLM efficiency</strong><br>
+        Stack Reader Mode with BM25 query filtering for maximum token efficiency: <code>--readable --focus "climate impact"</code>. Reader Mode strips noise first, then BM25 keeps only the most query-relevant paragraphs. Typical savings: 40–75% fewer tokens vs. raw HTML.
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="../scripts/docs.js"></script>
+
+  <footer class="docs-footer">
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. Open source under AGPL-3.0.</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

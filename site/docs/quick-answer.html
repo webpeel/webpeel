@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="Ask questions about any webpage using BM25 scoring — no LLM key required. WebPeel's LLM-free Q&A returns the most relevant passage instantly.">
+  <link rel="canonical" href="https://webpeel.dev/docs/quick-answer">
+  <meta property="og:title" content="LLM-Free Q&A — WebPeel">
+  <meta property="og:description" content="Ask questions about any webpage using BM25 scoring — no LLM key required. WebPeel's LLM-free Q&A returns the most relevant passage instantly.">
+  <meta property="og:url" content="https://webpeel.dev/docs/quick-answer">
+  <meta property="og:type" content="website">
+  <title>LLM-Free Q&amp;A — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js & Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">v0.14.0 Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link active">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>LLM-Free Q&amp;A</span>
+      </div>
+
+      <h1>LLM-Free Q&amp;A <span class="badge">v0.14.0</span></h1>
+      <p class="lead">Ask a question about any webpage and get the most relevant passage back — instantly, with no LLM API key. Uses BM25 relevance scoring under the hood: fast, deterministic, and completely free.</p>
+
+      <h2>What It Does</h2>
+      <p>WebPeel fetches a page, splits it into sentences, scores each sentence against your question using BM25 (the same algorithm powering search engines like Elasticsearch), and returns the top passage with a confidence score. No OpenAI key. No Anthropic key. Zero cost per query.</p>
+
+      <ul>
+        <li>✅ No LLM API key required</li>
+        <li>✅ Instant — no round-trip to an LLM provider</li>
+        <li>✅ Completely free, unlimited use</li>
+        <li>✅ Deterministic — same question always returns the same answer</li>
+        <li>✅ Confidence score so you know how relevant the result is</li>
+      </ul>
+
+      <h2>CLI</h2>
+      <pre><code class="language-bash"># Short flag
+npx webpeel "https://example.com/pricing" -q "what does the pro plan cost?"
+
+# Long flag
+npx webpeel "https://example.com/pricing" --question "what does the pro plan cost?"
+
+# JSON output (includes confidence score)
+npx webpeel "https://example.com/pricing" -q "what does the pro plan cost?" --json
+
+# Works with any URL — news articles, docs, product pages
+npx webpeel "https://en.wikipedia.org/wiki/BM25" -q "who invented BM25?"</code></pre>
+
+      <h2>API</h2>
+      <pre><code class="language-bash"># Basic quick answer
+GET /v1/answer/quick?url=https://example.com/pricing&question=what+does+the+pro+plan+cost
+
+# With curl
+curl "https://api.webpeel.dev/v1/answer/quick?url=https://example.com/pricing&question=what+does+the+pro+plan+cost" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>url</code></td>
+            <td>string (required)</td>
+            <td>Page URL to query</td>
+          </tr>
+          <tr>
+            <td><code>question</code></td>
+            <td>string (required)</td>
+            <td>Natural language question</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>MCP</h2>
+      <p>Use the <code>webpeel_quick_answer</code> tool in Claude, Cursor, or any MCP client:</p>
+
+      <pre><code class="language-json">{
+  "tool": "webpeel_quick_answer",
+  "arguments": {
+    "url": "https://example.com/pricing",
+    "question": "what does the pro plan cost?"
+  }
+}</code></pre>
+
+      <h2>How It Works</h2>
+      <p>Quick Answer uses a lightweight, purely local pipeline — no external AI calls:</p>
+
+      <ol>
+        <li><strong>Fetch &amp; extract</strong> — WebPeel fetches the page and strips noise (nav, ads, footers)</li>
+        <li><strong>Sentence splitting</strong> — Content is split into individual sentences using punctuation and whitespace heuristics</li>
+        <li><strong>Question-type detection</strong> — Detects whether the question is a "what", "how much", "who", "when", etc. to apply appropriate boost signals</li>
+        <li><strong>BM25 scoring</strong> — Each sentence is ranked against the question using BM25 term frequency–inverse document frequency</li>
+        <li><strong>Boost signals</strong> — Sentences near headings, in tables, or containing numbers get score boosts for price/quantity questions</li>
+        <li><strong>Top passage selection</strong> — The top-scoring sentence(s) are merged into a coherent passage and returned with a confidence score</li>
+      </ol>
+
+      <h2>Example</h2>
+      <p>Querying a SaaS pricing page:</p>
+
+      <pre><code class="language-bash">npx webpeel "https://example.com/pricing" -q "what does the pro plan cost?" --json</code></pre>
+
+      <pre><code class="language-json">{
+  "url": "https://example.com/pricing",
+  "question": "what does the pro plan cost?",
+  "answer": "The Pro plan costs $49/month and includes unlimited API calls, 5 team seats, and priority support.",
+  "confidence": 0.87,
+  "source": {
+    "text": "The Pro plan costs $49/month and includes unlimited API calls, 5 team seats, and priority support.",
+    "context": "Pricing — Pro",
+    "score": 12.4
+  }
+}</code></pre>
+
+      <h2>SDK Usage</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="node">Node.js</button>
+        <button class="tab-btn" data-tab="python">Python</button>
+      </div>
+
+      <div class="tab-content active" data-content="node">
+        <pre><code class="language-javascript">import { quickAnswer } from 'webpeel';
+
+const result = await quickAnswer(
+  'https://example.com/pricing',
+  'what does the pro plan cost?'
+);
+
+console.log(result.answer);      // "The Pro plan costs $49/month..."
+console.log(result.confidence);  // 0.87</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="python">
+        <pre><code class="language-python">from webpeel import WebPeel
+
+client = WebPeel()
+result = client.quick_answer(
+    "https://example.com/pricing",
+    "what does the pro plan cost?"
+)
+
+print(result.answer)      # "The Pro plan costs $49/month..."
+print(result.confidence)  # 0.87</code></pre>
+      </div>
+
+      <h2>quick_answer vs answer</h2>
+      <p>WebPeel has two answer endpoints. Choose the right one for your use case:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th><code>quick_answer</code></th>
+            <th><code>answer</code></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>LLM required</strong></td>
+            <td>❌ No</td>
+            <td>✅ Yes (BYOK)</td>
+          </tr>
+          <tr>
+            <td><strong>Cost</strong></td>
+            <td>Free</td>
+            <td>LLM tokens</td>
+          </tr>
+          <tr>
+            <td><strong>Speed</strong></td>
+            <td>~200ms</td>
+            <td>2–10s</td>
+          </tr>
+          <tr>
+            <td><strong>Answer quality</strong></td>
+            <td>Good (extractive)</td>
+            <td>Better (generative)</td>
+          </tr>
+          <tr>
+            <td><strong>Synthesises multiple sources</strong></td>
+            <td>❌</td>
+            <td>✅</td>
+          </tr>
+          <tr>
+            <td><strong>Best for</strong></td>
+            <td>Fact lookup, pricing, dates, specs</td>
+            <td>Complex questions, summaries, comparisons</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-tip">
+        <strong>💡 When to use quick_answer</strong><br>
+        Use <code>quick_answer</code> when you need to pull a specific fact from a page (price, date, name, spec) and speed or cost matters. Use <code>answer</code> when the question requires reasoning across multiple sentences or you want a polished, written response.
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="../scripts/docs.js"></script>
+
+  <footer class="docs-footer">
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. Open source under AGPL-3.0.</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

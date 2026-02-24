@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="WebPeel automatically extracts structured data from Twitter/X, Reddit, GitHub, and Hacker News — no special flags needed.">
+  <link rel="canonical" href="https://webpeel.dev/docs/domain-extractors">
+  <meta property="og:title" content="Domain Extractors — WebPeel">
+  <meta property="og:description" content="WebPeel automatically extracts structured data from Twitter/X, Reddit, GitHub, and Hacker News — no special flags needed.">
+  <meta property="og:url" content="https://webpeel.dev/docs/domain-extractors">
+  <meta property="og:type" content="website">
+  <title>Domain Extractors — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js & Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">v0.14.0 Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link active">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Domain Extractors</span>
+      </div>
+
+      <h1>Domain Extractors <span class="badge">v0.14.0</span></h1>
+      <p class="lead">Pass a Twitter/X, Reddit, GitHub, or Hacker News URL to WebPeel and get back clean, structured data — tweets, comments, repo stats, stories. No special flags. Fully automatic.</p>
+
+      <h2>What It Does</h2>
+      <p>Domain Extractors are purpose-built parsers that activate automatically when WebPeel detects a supported platform URL. Instead of scraping HTML (slow, brittle, blocked), each extractor calls the platform's own data API for reliable, structured output:</p>
+
+      <ul>
+        <li>🐦 <strong>Twitter/X</strong> — tweet text, engagement metrics, threads, quoted tweets</li>
+        <li>🟠 <strong>Reddit</strong> — post + comments via Reddit's JSON API</li>
+        <li>🐙 <strong>GitHub</strong> — repo stats, README, open issues, recent PRs via GitHub API</li>
+        <li>🟧 <strong>Hacker News</strong> — stories + threaded comments via Firebase API</li>
+      </ul>
+
+      <p>All extractors are <strong>zero-config</strong>: just fetch the URL as you normally would.</p>
+
+      <h2>CLI</h2>
+      <pre><code class="language-bash"># GitHub repo — structured stats + README
+npx webpeel "https://github.com/webpeel/webpeel" --json
+
+# Reddit post + comments
+npx webpeel "https://reddit.com/r/programming/comments/xyz/title" --json
+
+# Hacker News story + comments
+npx webpeel "https://news.ycombinator.com/item?id=12345" --json
+
+# Twitter/X tweet
+npx webpeel "https://x.com/webpeel_dev/status/12345" --json
+
+# Plain text output (no --json)
+npx webpeel "https://github.com/webpeel/webpeel"</code></pre>
+
+      <p>The structured data appears in the <code>domainData</code> field of the JSON output alongside the standard <code>content</code> and <code>title</code> fields.</p>
+
+      <h2>MCP</h2>
+      <p>Domain Extractors are automatic via <code>webpeel_fetch</code>. No special tool name required:</p>
+
+      <pre><code class="language-json">{
+  "tool": "webpeel_fetch",
+  "arguments": {
+    "url": "https://github.com/webpeel/webpeel"
+  }
+}</code></pre>
+
+      <p>The response will include a <code>domainData</code> field with the structured platform data when a supported domain is detected.</p>
+
+      <h2>Supported Platforms</h2>
+
+      <h3>Twitter / X</h3>
+      <p>Extracts tweet content and engagement using the tweet embed API — no Twitter developer account needed.</p>
+
+      <h4>Supported URL patterns</h4>
+      <ul>
+        <li><code>https://x.com/:user/status/:id</code></li>
+        <li><code>https://twitter.com/:user/status/:id</code></li>
+      </ul>
+
+      <h4>Example output</h4>
+      <pre><code class="language-json">{
+  "platform": "twitter",
+  "tweet": {
+    "id": "1234567890",
+    "text": "Introducing WebPeel v0.14.0 — YouTube transcripts, BM25 Q&A, and more 🚀",
+    "author": {
+      "username": "webpeel_dev",
+      "name": "WebPeel",
+      "verified": false
+    },
+    "metrics": {
+      "likes": 142,
+      "retweets": 38,
+      "replies": 17,
+      "views": 4821
+    },
+    "createdAt": "2026-02-24T10:00:00Z",
+    "quotedTweet": null,
+    "thread": []
+  }
+}</code></pre>
+
+      <h3>Reddit</h3>
+      <p>Uses Reddit's public <code>.json</code> API endpoint — no OAuth required, no scraping.</p>
+
+      <h4>Supported URL patterns</h4>
+      <ul>
+        <li><code>https://reddit.com/r/:sub/comments/:id/:slug</code></li>
+        <li><code>https://www.reddit.com/r/:sub/comments/:id/:slug</code></li>
+        <li><code>https://old.reddit.com/r/:sub/comments/:id/:slug</code></li>
+      </ul>
+
+      <h4>Example output</h4>
+      <pre><code class="language-json">{
+  "platform": "reddit",
+  "post": {
+    "title": "WebPeel vs Firecrawl — an honest comparison",
+    "author": "u/dev_tools_fan",
+    "subreddit": "r/programming",
+    "score": 312,
+    "upvoteRatio": 0.94,
+    "numComments": 47,
+    "url": "https://reddit.com/r/programming/comments/xyz/...",
+    "selftext": "I spent a weekend benchmarking both tools...",
+    "createdAt": "2026-02-20T18:45:00Z"
+  },
+  "comments": [
+    {
+      "author": "u/alice",
+      "score": 88,
+      "text": "WebPeel's BM25 quick answer is genuinely useful for agent pipelines.",
+      "replies": [
+        {
+          "author": "u/bob",
+          "score": 31,
+          "text": "Agreed — especially the no-LLM-key angle."
+        }
+      ]
+    }
+  ]
+}</code></pre>
+
+      <h3>GitHub</h3>
+      <p>Calls the GitHub REST API to return repo metadata, README, open issues, and recent pull requests. No GitHub token needed for public repos (60 req/hour unauthenticated; set <code>GITHUB_TOKEN</code> for 5000 req/hour).</p>
+
+      <h4>Supported URL patterns</h4>
+      <ul>
+        <li><code>https://github.com/:owner/:repo</code></li>
+        <li><code>https://github.com/:owner/:repo/issues/:n</code></li>
+        <li><code>https://github.com/:owner/:repo/pull/:n</code></li>
+      </ul>
+
+      <h4>Example output</h4>
+      <pre><code class="language-json">{
+  "platform": "github",
+  "repo": {
+    "name": "webpeel",
+    "fullName": "webpeel/webpeel",
+    "description": "Fast web fetching for AI agents",
+    "stars": 1842,
+    "forks": 94,
+    "openIssues": 12,
+    "language": "TypeScript",
+    "license": "AGPL-3.0",
+    "topics": ["web-scraping", "ai", "mcp", "typescript"],
+    "homepage": "https://webpeel.dev",
+    "pushedAt": "2026-02-24T09:30:00Z"
+  },
+  "readme": "# WebPeel\n\nFast web fetching for AI agents...",
+  "recentIssues": [
+    { "number": 201, "title": "Support for Playwright tracing", "state": "open", "createdAt": "2026-02-22T..." }
+  ],
+  "recentPRs": [
+    { "number": 198, "title": "feat: YouTube transcript extractor", "state": "merged", "mergedAt": "2026-02-20T..." }
+  ]
+}</code></pre>
+
+      <h3>Hacker News</h3>
+      <p>Uses the official HN Firebase API — same data powering <code>news.ycombinator.com</code> itself.</p>
+
+      <h4>Supported URL patterns</h4>
+      <ul>
+        <li><code>https://news.ycombinator.com/item?id=:id</code></li>
+        <li><code>https://news.ycombinator.com/</code> (front page)</li>
+      </ul>
+
+      <h4>Example output</h4>
+      <pre><code class="language-json">{
+  "platform": "hackernews",
+  "story": {
+    "id": 42123456,
+    "title": "WebPeel v0.14.0 – YouTube transcripts and BM25 Q&A",
+    "url": "https://webpeel.dev/changelog",
+    "score": 284,
+    "author": "jliu",
+    "numComments": 63,
+    "createdAt": "2026-02-24T08:00:00Z"
+  },
+  "comments": [
+    {
+      "id": 42123500,
+      "author": "pg",
+      "text": "Nice. The BM25 quick answer is clever.",
+      "score": 41,
+      "replies": []
+    }
+  ]
+}</code></pre>
+
+      <h2>SDK Usage</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="node">Node.js</button>
+        <button class="tab-btn" data-tab="python">Python</button>
+      </div>
+
+      <div class="tab-content active" data-content="node">
+        <pre><code class="language-javascript">import { peel } from 'webpeel';
+
+// GitHub repo
+const repo = await peel('https://github.com/webpeel/webpeel');
+console.log(repo.domainData.repo.stars);   // 1842
+console.log(repo.domainData.readme);        // README markdown
+
+// Reddit post
+const post = await peel('https://reddit.com/r/programming/comments/xyz/title');
+console.log(post.domainData.post.score);   // 312
+console.log(post.domainData.comments);     // threaded comments
+
+// Hacker News story
+const hn = await peel('https://news.ycombinator.com/item?id=42123456');
+console.log(hn.domainData.story.title);
+console.log(hn.domainData.comments);</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="python">
+        <pre><code class="language-python">from webpeel import WebPeel
+
+client = WebPeel()
+
+# GitHub repo
+repo = client.scrape("https://github.com/webpeel/webpeel")
+print(repo.domain_data["repo"]["stars"])  # 1842
+print(repo.domain_data["readme"])         # README markdown
+
+# Reddit post
+post = client.scrape("https://reddit.com/r/programming/comments/xyz/title")
+print(post.domain_data["post"]["score"])
+print(post.domain_data["comments"])</code></pre>
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>💡 GitHub rate limits</strong><br>
+        The GitHub extractor works without authentication for public repos (60 requests/hour). Set a <code>GITHUB_TOKEN</code> environment variable to raise the limit to 5,000 requests/hour. Generate a token at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> — no special scopes needed for public repos.
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="../scripts/docs.js"></script>
+
+  <footer class="docs-footer">
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. Open source under AGPL-3.0.</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
