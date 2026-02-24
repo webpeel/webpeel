@@ -12,7 +12,7 @@ info:
     
     **Firecrawl Compatible:** WebPeel supports Firecrawl-compatible endpoints at the same paths.
     Switch from Firecrawl by changing your base URL.
-  version: "0.13.5"
+  version: "0.14.0"
   contact:
     name: WebPeel Support
     email: support@webpeel.dev
@@ -648,6 +648,248 @@ components:
             output:
               type: integer
 
+  /v1/youtube:
+    get:
+      operationId: youtubeTranscript
+      summary: Extract YouTube video transcript
+      description: |
+        Automatically extract transcripts from YouTube video URLs. No API key needed.
+        Supports all YouTube URL formats: watch, youtu.be, embed, and shorts.
+        Returns structured transcript data with timestamps.
+      tags: [Extract]
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+          description: YouTube video URL (watch, youtu.be, embed, or shorts format)
+          example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+      responses:
+        "200":
+          description: Transcript extracted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transcript:
+                    type: string
+                  segments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        text:
+                          type: string
+                        start:
+                          type: number
+                        duration:
+                          type: number
+                  videoId:
+                    type: string
+                  title:
+                    type: string
+
+  /v1/answer/quick:
+    get:
+      operationId: quickAnswer
+      summary: LLM-free quick answer using BM25
+      description: |
+        Ask a question about any page without an LLM API key.
+        Uses BM25 relevance scoring + heuristic boosting to find the most relevant passages.
+        Fast, free, and requires no external API credentials.
+      tags: [Answer]
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+          description: URL to fetch and search for the answer
+          example: https://openai.com/pricing
+        - name: question
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Question to answer about the page content
+          example: How much does GPT-4 cost?
+      responses:
+        "200":
+          description: Answer found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+                  passages:
+                    type: array
+                    items:
+                      type: string
+                  score:
+                    type: number
+
+  /v1/extract/auto:
+    get:
+      operationId: autoExtract
+      summary: Auto-detect page type and extract structured data
+      description: |
+        Automatically detect the type of a web page and extract structured JSON data.
+        Supports pricing pages, product listings, contact pages, articles, and API documentation.
+        No LLM needed — pure heuristic extraction.
+      tags: [Extract]
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+          description: URL to fetch and auto-extract from
+          example: https://github.com/webpeel/webpeel
+      responses:
+        "200":
+          description: Structured data extracted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Detected page type (pricing, product, contact, article, api-docs, etc.)
+                  data:
+                    type: object
+                    description: Extracted structured data (shape varies by page type)
+                  confidence:
+                    type: number
+                    description: Extraction confidence score (0–1)
+
+  /v1/deep-fetch:
+    post:
+      operationId: deepFetch
+      summary: Deep fetch with BM25 scoring and cross-source deduplication
+      description: |
+        Enhanced deep fetch: search for a query, fetch top N sources in parallel, score
+        passages with BM25 per source, extract key points, deduplicate across sources,
+        and optionally detect comparison queries (auto-detects "vs" patterns).
+        Returns a merged, relevance-ranked markdown document. No LLM key needed.
+      tags: [Agent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  description: Search query or research question
+                  example: "Firecrawl vs WebPeel feature comparison"
+                count:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+                  description: Number of sources to fetch and merge
+      responses:
+        "200":
+          description: Merged research document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                    description: Merged markdown with source attribution
+                  sources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        url:
+                          type: string
+                        title:
+                          type: string
+                        score:
+                          type: number
+                  isComparison:
+                    type: boolean
+                    description: True if the query was detected as a comparison query
+
+  /v1/watch:
+    get:
+      operationId: listWatchers
+      summary: List URL watchers
+      description: List all active URL watchers for the authenticated user.
+      tags: [System]
+      responses:
+        "200":
+          description: List of watchers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  watchers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        url:
+                          type: string
+                        schedule:
+                          type: string
+                        webhookUrl:
+                          type: string
+                        createdAt:
+                          type: string
+    post:
+      operationId: createWatcher
+      summary: Create a URL watcher
+      description: |
+        Create a persistent URL watcher that monitors a URL for content changes on a schedule.
+        Sends webhook notifications when changes are detected. PostgreSQL-backed.
+      tags: [System]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, webhookUrl]
+              properties:
+                url:
+                  type: string
+                  description: URL to monitor
+                webhookUrl:
+                  type: string
+                  description: Webhook URL to notify on change
+                schedule:
+                  type: string
+                  description: Cron schedule (default every hour)
+                  default: "0 * * * *"
+      responses:
+        "201":
+          description: Watcher created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  url:
+                    type: string
+                  schedule:
+                    type: string
+
 tags:
   - name: Scrape
     description: Scrape web pages
@@ -659,6 +901,8 @@ tags:
     description: Crawl websites
   - name: Batch
     description: Batch operations
+  - name: Extract
+    description: Structured data extraction
   - name: Agent
     description: AI-powered web research
   - name: System

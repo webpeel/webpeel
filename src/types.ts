@@ -180,6 +180,13 @@ export interface PeelOptions {
    */
   fullPage?: boolean;
   /**
+   * Reader mode — extract only the main article content, strip all noise.
+   * Like browser Reader Mode / Pocket / Instapaper but deterministic and fast.
+   * Returns clean markdown with metadata header (title, author, date, reading time).
+   * When enabled, readability metadata is included in result.readability.
+   */
+  readable?: boolean;
+  /**
    * Intelligently scroll the page to load all lazy/infinite-scroll content
    * before extracting. Set to `true` for default settings or an object to
    * configure scroll behavior. Auto-enables browser rendering.
@@ -192,6 +199,8 @@ export interface PeelOptions {
    * { autoScroll: { maxScrolls: 10, scrollDelay: 2000, timeout: 60000 } }
    */
   autoScroll?: boolean | import('./core/actions.js').AutoScrollOptions;
+  /** Ask a question about the page content. Uses BM25 to find relevant passages — no LLM key needed. */
+  question?: string;
 }
 
 export interface ImageInfo {
@@ -246,6 +255,15 @@ export interface PeelResult {
   images?: ImageInfo[];
   /** Percentage of HTML pruned by content density scoring (0-100). Only present when pruning was applied. */
   prunedPercent?: number;
+  /**
+   * Readability extraction result (when readable option is true).
+   * Contains title, author, date, reading time, excerpt, and word count.
+   */
+  readability?: import('./core/readability.js').ReadabilityResult;
+  /** Domain-aware structured data (Twitter, Reddit, GitHub, HN). Present when URL matches a known domain. */
+  domainData?: import('./core/domain-extractors.js').DomainExtractResult;
+  /** Quick answer result (when question option is set). BM25-powered, no LLM needed. */
+  quickAnswer?: import('./core/quick-answer.js').QuickAnswerResult;
 }
 
 export interface PageMetadata {

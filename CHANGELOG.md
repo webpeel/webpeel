@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## v0.14.0 (2026-02-24)
+
+### 🚀 Major Features
+
+- **YouTube Transcript Extraction** — Automatically extract video transcripts from YouTube URLs. No API key needed. Supports all URL formats (watch, youtu.be, embed, shorts). Integrated into `peel()` pipeline — YouTube URLs automatically return structured transcript data. New MCP tool: `webpeel_youtube`. New REST endpoint: `GET /v1/youtube`.
+
+- **Domain-Aware Extractors** — Automatic structured data extraction for Twitter/X, Reddit, GitHub, and Hacker News URLs:
+  - **Twitter/X**: Tweet text, metrics (likes, retweets, views), thread detection, quoted tweets
+  - **Reddit**: Post + top comments via Reddit JSON API (no HTML parsing), 3 levels deep
+  - **GitHub**: Repository stats, README excerpt, issues, PRs via GitHub API
+  - **Hacker News**: Stories + threaded comments via Firebase API
+
+- **LLM-Free Quick Answer** — Ask a question about any page without an API key. Uses BM25 relevance scoring + heuristic boosting to find the most relevant passages. CLI: `--question "what's the pricing?"`. New MCP tool: `webpeel_quick_answer`. New REST endpoint: `GET /v1/answer/quick`.
+
+- **Readability Engine** — Browser Reader Mode for AI agents. Strips nav, ads, cookies, sidebars, newsletters, share buttons, and 25+ noise patterns. Multi-signal content scoring (text density, link density, paragraph count). CLI: `--readable`. Also available via `webpeel_fetch` MCP tool with `readable: true`.
+
+- **Auto-Extract Structured Data** — Automatically detect page types and extract structured JSON. Supports pricing pages, product listings, contact pages, articles, and API documentation. No LLM needed. New MCP tool: `webpeel_auto_extract`. REST: `GET /v1/extract/auto`.
+
+- **Deep Fetch Intelligence** — Enhanced deep_fetch with BM25 relevance scoring per source, key-point extraction, cross-source deduplication, number/entity extraction, and comparison mode (auto-detects "vs" queries). REST: `POST /v1/deep-fetch`.
+
+- **URL Watch & Monitoring** — Persistent URL monitoring with webhook notifications on content changes. Create watchers that check URLs on a schedule. PostgreSQL-backed. REST CRUD: `/v1/watch`. MCP tool: `webpeel_watch`.
+
+### 📊 Stats
+- **18 MCP tools** (was 13): fetch, search, crawl, map, extract, batch, research, screenshot, summarize, answer, brand, change_track, deep_fetch, youtube, auto_extract, quick_answer, watch
+- **927 tests** (was 673)
+- **7 new modules**: youtube.ts, domain-extractors.ts, quick-answer.ts, readability.ts, auto-extract.ts, deep-fetch.ts, watch-manager.ts
+
+### 🔧 CLI
+- `--question <q>` / `-q <q>` — Ask a question about page content (BM25, no LLM)
+- `--readable` — Reader mode, strips all page noise
+- YouTube URLs auto-detected, returns transcript instead of raw HTML
+- Domain-aware output for Twitter, Reddit, GitHub, HN
+
 ## [0.13.3] - 2026-02-24
 
 ### 🆕 Added

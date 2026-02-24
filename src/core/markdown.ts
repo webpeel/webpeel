@@ -544,6 +544,35 @@ export function htmlToMarkdown(html: string, options?: { raw?: boolean; prune?: 
 }
 
 /**
+ * Convert HTML to markdown using Turndown directly, without the full cleanHTML pipeline.
+ * Useful when the caller has already cleaned the HTML and wants to preserve elements
+ * (like images) that cleanHTML would strip due to empty-element detection.
+ *
+ * The only pre-processing done: remove script/style tags for safety.
+ */
+export function rawHtmlToMarkdown(html: string): string {
+  const $ = cheerio.load(html);
+
+  // Remove scripts and styles (always)
+  $('script, style, noscript').remove();
+
+  // Run Turndown on the cleaned HTML
+  let markdown = turndownSingleton.turndown($.html());
+
+  // Clean up excessive newlines
+  markdown = markdown.split('\n').reduce((acc, line, i, arr) => {
+    if (i === 0) return line;
+    const prevEmpty = arr[i - 1].trim() === '';
+    const currEmpty = line.trim() === '';
+    if (prevEmpty && currEmpty) return acc;
+    return acc + '\n' + line;
+  }, '');
+
+  return markdown.trim();
+}
+
+
+/**
  * Convert HTML to plain text (strip all formatting)
  */
 export function htmlToText(html: string): string {

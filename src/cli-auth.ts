@@ -173,8 +173,8 @@ export async function checkUsage(): Promise<UsageCheckResult> {
       return {
         allowed: false,
         message: `You've used your ${limit} free fetches this week.\n\n` +
-          `📦 Sign up free → 125 fetches/week:  webpeel login\n` +
-          `⚡ Pro ($9/mo) → 1,250 fetches/week: https://webpeel.dev/#pricing\n` +
+          `📦 Sign up free → 500 fetches/week:  webpeel login\n` +
+          `⚡ Pro ($9/mo) → 1,250 fetches/week: https://webpeel.dev/pricing\n` +
           `🚀 Max ($29/mo) → 6,250 fetches/week\n`,
       };
     }
@@ -266,16 +266,16 @@ export function showUsageFooter(
   // Only show footer for anonymous or free users
   if (isAnonymous) {
     const costText = stealth ? ' (costs 5 credits)' : '';
-    console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} free fetches remaining${costText}. Run \`webpeel login\` to get 125/week free.`);
-  } else if (usageInfo.limit <= 125) {
+    console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} free fetches remaining${costText} · webpeel login for 500/week free · webpeel.dev/pricing for unlimited`);
+  } else if (usageInfo.limit <= 500) {
     // Free tier authenticated users — show upgrade CTA
     const costText = stealth ? ' (costs 5 credits)' : '';
     const pct = Math.round((usageInfo.used / usageInfo.limit) * 100);
     if (pct >= 80) {
       console.error(`⚠️  ${usageInfo.remaining}/${usageInfo.limit} fetches remaining this week${costText}.`);
-      console.error(`   Upgrade to Pro ($9/mo) for 1,250/week → https://webpeel.dev/#pricing`);
+      console.error(`   Upgrade to Pro ($9/mo) for 1,250/week → webpeel.dev/pricing`);
     } else if (pct >= 50) {
-      console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} fetches remaining this week${costText}. Upgrade: webpeel.dev/#pricing`);
+      console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} fetches remaining this week${costText}. Upgrade: webpeel.dev/pricing`);
     } else {
       console.error(`⚡ ${usageInfo.remaining}/${usageInfo.limit} fetches remaining this week${costText}.`);
     }
@@ -411,7 +411,7 @@ export async function handleUsage(): Promise<void> {
     console.log(`Used this week: ${used}/${limit}`);
     console.log(`Remaining: ${remaining}`);
     console.log(`Resets: ${nextMonday.toUTCString()}`);
-    console.log('\n💡 Run `webpeel login` to get 125 fetches/week for free!');
+    console.log('\n💡 Run `webpeel login` to get 500 fetches/week for free!');
     console.log('   Or sign up at https://app.webpeel.dev/signup\n');
     return;
   }
