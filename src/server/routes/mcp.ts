@@ -381,6 +381,21 @@ function getTools(): Tool[] {
         required: ['action'],
       },
     },
+    {
+      name: 'webpeel_hotels',
+      description: 'Search multiple travel sites for hotels in parallel. Returns sorted results from Kayak, Booking.com, Google Travel, and Expedia.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          destination: { type: 'string', description: 'Destination city or area (e.g., "Manhattan", "Paris")' },
+          checkin: { type: 'string', description: 'Check-in date (ISO or natural language like "tomorrow")' },
+          checkout: { type: 'string', description: 'Check-out date. Defaults to day after checkin.' },
+          sort: { type: 'string', enum: ['price', 'rating', 'value'], description: 'Sort order (default: price)' },
+          limit: { type: 'number', description: 'Max results (default: 20)' },
+        },
+        required: ['destination'],
+      },
+    },
   ];
 }
 
@@ -993,6 +1008,19 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
         return { content: [{ type: 'text', text: JSON.stringify({ success: true }) }] };
       }
       return { content: [{ type: 'text', text: JSON.stringify({ error: `Unknown watch action: ${action}` }) }] };
+    }
+
+    // webpeel_hotels
+    if (name === 'webpeel_hotels') {
+      const { searchHotels, parseDate, addDays } = await import('../../core/hotel-search.js');
+      const destination = args.destination as string;
+      if (!destination) return { content: [{ type: 'text', text: safeStringify({ error: 'Missing destination' }) }] };
+      const checkin = args.checkin ? parseDate(args.checkin as string) : parseDate('tomorrow');
+      const checkout = args.checkout ? parseDate(args.checkout as string) : addDays(checkin, 1);
+      const sort = (['price', 'rating', 'value'].includes(args.sort as string) ? args.sort : 'price') as 'price' | 'rating' | 'value';
+      const limit = Math.max(1, Math.min(50, (args.limit as number) || 20));
+      const result = await searchHotels({ destination, checkin, checkout, sort, limit, stealth: true });
+      return { content: [{ type: 'text', text: safeStringify({ destination, checkin, checkout, sources: result.sources, count: result.results.length, results: result.results.slice(0, limit) }) }] };
     }
 
     throw new Error(`Unknown tool: ${name}`);

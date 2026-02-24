@@ -875,6 +875,28 @@ const tools: Tool[] = [
       required: ['action'],
     },
   },
+  {
+    name: 'webpeel_hotels',
+    description: 'Search multiple travel sites for hotels in parallel. Returns sorted results from Kayak, Booking.com, Google Travel, and Expedia.',
+    annotations: {
+      title: 'Hotel Search',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        destination: { type: 'string', description: 'Destination city or area (e.g., "Manhattan", "Paris")' },
+        checkin: { type: 'string', description: 'Check-in date (ISO format or natural language like "tomorrow", "next friday")' },
+        checkout: { type: 'string', description: 'Check-out date (ISO format or natural language). Defaults to day after checkin.' },
+        sort: { type: 'string', enum: ['price', 'rating', 'value'], description: 'Sort results by price, rating, or value (default: price)' },
+        limit: { type: 'number', description: 'Max results to return (default: 20)' },
+      },
+      required: ['destination'],
+    },
+  },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -882,7 +904,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  const { name, arguments: rawArgs } = request.params;
+  const args = rawArgs || {};
 
   try {
     if (name === 'webpeel_fetch') {
@@ -2119,6 +2142,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           type: 'text',
           text: JSON.stringify({
             message: 'URL watching requires the hosted API (api.webpeel.dev). Use webpeel_change_track for one-time change detection.',
+          }, null, 2),
+        }],
+      };
+    }
+
+    if (name === 'webpeel_hotels') {
+      const { searchHotels, parseDate, addDays } = await import('../core/hotel-search.js');
+      const destination = args.destination as string;
+      if (!destination) throw new Error('Missing destination parameter');
+      const checkin = args.checkin ? parseDate(args.checkin as string) : parseDate('tomorrow');
+      const checkout = args.checkout ? parseDate(args.checkout as string) : addDays(checkin, 1);
+      const sort = (['price', 'rating', 'value'].includes(args.sort as string) ? args.sort : 'price') as 'price' | 'rating' | 'value';
+      const limit = Math.max(1, Math.min(50, (args.limit as number) || 20));
+      const result = await searchHotels({ destination, checkin, checkout, sort, limit, stealth: true });
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            destination,
+            checkin,
+            checkout,
+            sources: result.sources,
+            count: result.results.length,
+            results: result.results.slice(0, limit),
           }, null, 2),
         }],
       };
