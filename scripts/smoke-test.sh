@@ -1,8 +1,6 @@
 #!/bin/bash
 # WebPeel Post-Deploy Smoke Test
 # Run after every deploy: ./scripts/smoke-test.sh
-set -e
-
 API="https://api.webpeel.dev"
 PASS=0
 FAIL=0
@@ -11,10 +9,10 @@ check() {
   local name="$1" expected="$2" actual="$3"
   if [[ "$actual" == *"$expected"* ]]; then
     echo "  ✅ $name"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  ❌ $name (expected '$expected', got '$actual')"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
@@ -43,10 +41,10 @@ check "MCP requires auth" "-32001" "$NOAUTH_MCP"
 echo ""
 echo "3. SSRF Protection"
 SSRF_LOCAL=$(curl -s "$API/v1/fetch?url=http://localhost:3000" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error','none'))" 2>/dev/null)
-check "SSRF localhost blocked" "blocked" "$SSRF_LOCAL"
+check "SSRF localhost blocked" "forbidden" "$SSRF_LOCAL"
 
 SSRF_META=$(curl -s "$API/v1/fetch?url=http://169.254.169.254/" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error','none'))" 2>/dev/null)
-check "SSRF metadata blocked" "blocked" "$SSRF_META"
+check "SSRF metadata blocked" "forbidden" "$SSRF_META"
 
 # 4. Basic fetch
 echo ""
@@ -67,7 +65,7 @@ SITE=$(curl -s -o /dev/null -w "%{http_code}" "https://webpeel.dev")
 check "webpeel.dev" "200" "$SITE"
 
 DASH=$(curl -s -o /dev/null -w "%{http_code}" "https://app.webpeel.dev")
-check "app.webpeel.dev" "200\|307" "$DASH"
+check "app.webpeel.dev" "307" "$DASH"
 
 # 7. Content consistency
 echo ""

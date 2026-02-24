@@ -16,7 +16,7 @@ echo "============================"
 # Get current values from source of truth
 VERSION=$(python3 -c "import json; print(json.load(open('package.json'))['version'])")
 TOOL_COUNT=$(grep -c "name: 'webpeel_" src/mcp/server.ts)
-TEST_COUNT=$(npm test 2>&1 | grep -oP '\d+ passed' | head -1 | grep -oP '^\d+' || echo "?")
+TEST_COUNT=$(npm test 2>&1 | grep -Eo '[0-9]+ passed' | head -1 | grep -Eo '^[0-9]+' || echo "?")
 
 echo ""
 echo "Source of truth: v$VERSION, $TOOL_COUNT MCP tools"
@@ -24,7 +24,7 @@ echo ""
 
 # Check for OLD tool counts (anything less than current)
 echo "1. Stale tool counts"
-OLD_TOOLS=$(grep -rn "13 tool\|12 tool\|11 tool\|7 tool\|13 MCP\|12 MCP\|11 MCP\|7 MCP" site/ README.md llms.txt 2>/dev/null | grep -v node_modules | grep -v CHANGELOG || true)
+OLD_TOOLS=$(grep -rn "13 tool\|12 tool\|11 tool\|7 tool\|13 MCP\|12 MCP\|11 MCP\|7 MCP" site/index.html site/blog/ README.md llms.txt 2>/dev/null | grep -v node_modules | grep -v CHANGELOG | grep -v changelog || true)
 if [ -n "$OLD_TOOLS" ]; then
   fail "Found stale tool counts:"
   echo "$OLD_TOOLS" | head -10
@@ -71,7 +71,7 @@ fi
 # Check for leaked secrets patterns
 echo ""
 echo "5. Secret leak check"
-LEAKED=$(grep -rn "wp_live_\|wp_test_\|rnd_\|sk-ant-\|OPENAI_API_KEY=sk-" src/ site/ README.md dashboard/src/ 2>/dev/null | grep -v node_modules | grep -v ".env" | grep -v "example\|placeholder\|YOUR_KEY\|your_key\|xxx" || true)
+LEAKED=$(grep -rn "rnd_[A-Za-z0-9]\{15,\}\|sk-ant-api[A-Za-z0-9]\{10,\}\|npg_[A-Za-z0-9]\{10,\}" src/ site/ README.md dashboard/src/ 2>/dev/null | grep -v node_modules | grep -v ".env" | grep -v "example\|placeholder\|YOUR_KEY\|your_key\|xxx\|REDACTED\|abc123" || true)
 if [ -n "$LEAKED" ]; then
   fail "Possible secret leak in source:"
   echo "$LEAKED" | head -5

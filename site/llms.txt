@@ -1,6 +1,6 @@
 # WebPeel Documentation
 
-WebPeel is an open-source web scraping, data extraction, and research tool. It converts any webpage into clean, AI-ready Markdown with automatic content pruning (15-33% token savings), supports browser rendering for JavaScript-heavy sites, and offers web search, crawling, batch fetching, deep research, and an MCP server with 13 tools for AI assistants.
+WebPeel is an open-source web intelligence tool for AI agents. It converts any webpage into clean, AI-ready Markdown with automatic content pruning (15-33% token savings), supports browser rendering for JavaScript-heavy sites, and offers web search, crawling, batch fetching, deep research, YouTube transcripts, domain-aware extractors, LLM-free Q&A, and an MCP server with 18 tools for AI assistants.
 
 ## Key Features
 - Web scraping with smart escalation (HTTP → browser → stealth)
@@ -23,7 +23,7 @@ https://webpeel.dev/docs/cli
 ## API Reference
 https://webpeel.dev/docs/api-reference
 
-## MCP Server (13 tools)
+## MCP Server (18 tools)
 https://webpeel.dev/docs/mcp
 
 ## Deep Research
