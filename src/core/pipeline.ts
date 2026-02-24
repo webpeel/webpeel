@@ -450,10 +450,14 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
     const metadataTask = Promise.resolve().then(() => {
       ctx.timer.mark('metadata');
       const meta = extractMetadata(html, fetchResult.url);
+      // When budget is set, use pre-truncated HTML for link extraction (faster)
+      const htmlForLinks = (ctx.options.budget && ctx.options.budget > 0 && html.length > 100000)
+        ? html.slice(0, 100000)
+        : html;
       const result = {
         title: meta.title,
         metadata: meta.metadata,
-        links: extractLinks(html, fetchResult.url),
+        links: extractLinks(htmlForLinks, fetchResult.url),
       };
       ctx.timer.end('metadata');
       return result;
@@ -461,8 +465,8 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
 
     // Content density pruning — runs on HTML before markdown conversion.
     // Removes low-value blocks (sidebars, footers, ads) CSS selectors miss.
-    // OFF when fullPage=true or format !== markdown.
-    if (format === 'markdown' && !fullPage) {
+    // OFF when fullPage=true, format !== markdown, or content is small (< 20K chars — overhead not worth it).
+    if (format === 'markdown' && !fullPage && contentHtml.length >= 20000) {
       ctx.timer.mark('prune');
       const pruned = pruneContent(contentHtml, { dynamic: true });
       ctx.timer.end('prune');
@@ -472,20 +476,47 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
       }
     }
 
+    // OPTIMIZATION: When budget is set, pre-truncate HTML before markdown conversion.
+    // Converting 332K chars → markdown takes ~450ms. If budget=4000 tokens (~16K chars),
+    // we only need ~50K chars of HTML (3x overhead for tags/attributes).
+    // This cuts convert time from ~450ms to ~30ms on large pages.
+    let htmlForConvert = contentHtml;
+    // Skip pre-truncation when question is specified — QA needs full content to find answers
+    // that may be deep in the article (e.g., "Who coined AI?" → History section of Wikipedia)
+    const hasQuestion = !!ctx.options.question;
+    if (!hasQuestion && ctx.options.budget && ctx.options.budget > 0 && contentHtml.length > 50000) {
+      const estimatedCharsNeeded = ctx.options.budget * 12; // ~12 chars HTML per output token
+      const minChars = Math.max(estimatedCharsNeeded, 50000); // at least 50K to ensure quality
+      if (contentHtml.length > minChars) {
+        // Truncate at a block boundary (</p>, </div>, </li>, </tr>) to avoid broken HTML
+        const truncPoint = contentHtml.lastIndexOf('</', minChars);
+        if (truncPoint > minChars * 0.8) {
+          // Find the end of this closing tag
+          const tagEnd = contentHtml.indexOf('>', truncPoint);
+          htmlForConvert = contentHtml.slice(0, tagEnd > 0 ? tagEnd + 1 : minChars);
+        } else {
+          htmlForConvert = contentHtml.slice(0, minChars);
+        }
+        if (process.env.DEBUG) {
+          console.debug('[webpeel]', `budget pre-truncate: ${contentHtml.length} → ${htmlForConvert.length} chars`);
+        }
+      }
+    }
+
     const contentTask = Promise.resolve().then(() => {
       ctx.timer.mark('convert');
       let converted: string;
       switch (format) {
         case 'html':
-          converted = contentHtml;
+          converted = htmlForConvert;
           break;
         case 'text':
-          converted = htmlToText(contentHtml);
+          converted = htmlToText(htmlForConvert);
           break;
         case 'markdown':
         default:
           // prune:false — already pruned above; avoid double-pruning in htmlToMarkdown
-          converted = htmlToMarkdown(contentHtml, { raw, prune: false });
+          converted = htmlToMarkdown(htmlForConvert, { raw, prune: false });
           break;
       }
       ctx.timer.end('convert');
@@ -608,15 +639,33 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
     }
   }
 
-  // Quick answer (LLM-free) — runs BEFORE budget distillation so it sees full
-  // content including infobox data (which budget stripping may remove).
+  // Quick answer (LLM-free) — tries pruned content first (higher quality),
+  // then falls back to full raw HTML text if confidence is low (catches answers
+  // deep in the document that pruning may have removed).
   if (options.question && ctx.content) {
     ctx.timer.mark('quickAnswer');
-    const qa = runQuickAnswer({
+    let qa = runQuickAnswer({
       question: options.question,
       content: ctx.content,
       url: fetchResult.url,
     });
+
+    // If confidence is below infobox-level (0.92) and we have raw HTML, try again on full text.
+    // This catches answers deep in articles that pruning may have removed.
+    if (qa.confidence < 0.91 && fetchResult.html && fetchResult.html.length > ctx.content.length * 2) {
+      const { htmlToText } = await import('./markdown.js');
+      const fullText = htmlToText(fetchResult.html);
+      const qaFull = runQuickAnswer({
+        question: options.question,
+        content: fullText,
+        url: fetchResult.url,
+      });
+      // Use the full-text answer if it's more confident
+      if (qaFull.confidence > qa.confidence) {
+        qa = qaFull;
+      }
+    }
+
     ctx.timer.end('quickAnswer');
     ctx.quickAnswerResult = qa;
   }
