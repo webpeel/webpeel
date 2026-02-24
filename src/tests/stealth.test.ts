@@ -42,8 +42,9 @@ describe('stealth mode', () => {
 
   it('handles escalation chain: simple → browser → stealth', async () => {
     // This site requires JavaScript rendering and might have bot protection
+    // nowsecure.nl can be slow in CI (~30s), so generous timeout
     const result = await peel('https://nowsecure.nl', {
-      timeout: 15000,
+      timeout: 25000,
       // Don't force method - let it escalate naturally
     });
 
@@ -52,7 +53,7 @@ describe('stealth mode', () => {
     expect(result.content).toBeTruthy();
     // Method varies by environment — simple may succeed in CI, browser/stealth locally
     expect(['simple', 'browser', 'stealth']).toContain(result.method);
-  }, 20000);
+  }, 45000);
 
   // Skip: Cloudflare challenge pages are non-deterministic
   // This test passes locally but fails in CI when Cloudflare shows a JS challenge

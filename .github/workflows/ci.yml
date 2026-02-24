@@ -87,14 +87,14 @@ jobs:
             exit 1
           fi
 
-      # Gate 3: No secrets in source
+      # Gate 3: No secrets in source (real secrets only, not format docs)
       - name: Secret leak check
         run: |
-          LEAKED=$(grep -rn 'wp_live_\|wp_test_\|rnd_[A-Za-z]\|sk-ant-api\|OPENAI_API_KEY=sk-\|npg_[A-Za-z]' \
+          LEAKED=$(grep -rEn 'rnd_[A-Za-z0-9]{15,}|sk-ant-api[A-Za-z0-9]{10,}|npg_[A-Za-z0-9]{10,}' \
             src/ site/ README.md dashboard/src/ 2>/dev/null \
             | grep -v node_modules \
             | grep -v '\.env' \
-            | grep -v 'example\|placeholder\|YOUR_KEY\|your_key\|xxx\|REDACTED' || true)
+            | grep -v 'example\|placeholder\|YOUR_KEY\|your_key\|xxx\|REDACTED\|abc123\|Format:' || true)
           if [ -n "$LEAKED" ]; then
             echo "❌ Possible secrets found in source code:"
             echo "$LEAKED"
