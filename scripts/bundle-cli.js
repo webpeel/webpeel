@@ -32,12 +32,17 @@ await esbuild.build({
   define: {
     'import.meta.url': '__importMetaUrl',
   },
-  // Don't bundle native/heavy modules — they're lazy-loaded or too large
+  // Don't bundle native/heavy modules — they're lazy-loaded, optional, or too large.
+  // pdf-parse alone pulls in ~12MB of bundled PDF.js workers across 4 versions.
+  // mammoth pulls in @mixmark-io/domino (~246KB). @sentry/node is optional.
   external: [
     'playwright',
     'playwright-extra',
     'playwright-core',
     'puppeteer-extra-plugin-stealth',
+    'pdf-parse',
+    'mammoth',
+    '@sentry/node',
   ],
   // Silence warnings about dynamic requires (e.g. from pdf-parse)
   logLevel: 'warning',
