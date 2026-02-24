@@ -423,6 +423,8 @@ export interface FetchResult {
   screenshot?: Buffer;
   /** Raw Content-Type header from the response (may include charset). */
   contentType?: string;
+  /** Selected response headers for freshness metadata (last-modified, etag, cache-control). */
+  responseHeaders?: Record<string, string>;
   /** Playwright page object (only available in browser/stealth mode, must be closed by caller) */
   page?: import('playwright').Page;
   /** Playwright browser object (only available in browser/stealth mode, must be closed by caller) */
@@ -698,12 +700,22 @@ export async function simpleFetch(
         }
       }
 
+      // Capture selected response headers for freshness metadata
+      const responseHeaders: Record<string, string> = {};
+      const lastModified = response.headers.get('last-modified');
+      if (lastModified) responseHeaders['last-modified'] = lastModified;
+      const etag = response.headers.get('etag');
+      if (etag) responseHeaders['etag'] = etag;
+      const cacheControl = response.headers.get('cache-control');
+      if (cacheControl) responseHeaders['cache-control'] = cacheControl;
+
       return {
         html,
         buffer: isBinaryDoc ? buffer : undefined,
         url: currentUrl,
         statusCode: response.status,
         contentType,
+        responseHeaders: Object.keys(responseHeaders).length > 0 ? responseHeaders : undefined,
       };
     } catch (error) {
       clearTimeout(timer);

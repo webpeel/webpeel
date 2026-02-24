@@ -57,11 +57,107 @@ function extractAuthor($: cheerio.CheerioAPI): string | undefined {
   let author = $('meta[property="article:author"]').attr('content');
   if (author) return author.trim();
 
+  // Try og:article:author
+  author = $('meta[property="og:article:author"]').attr('content');
+  if (author) return author.trim();
+
   // Try author meta tag
   author = $('meta[name="author"]').attr('content');
   if (author) return author.trim();
 
+  // Try twitter:creator
+  author = $('meta[name="twitter:creator"]').attr('content');
+  if (author) return author.trim();
+
   return undefined;
+}
+
+/**
+ * Extract publish date from rich meta sources
+ * Returns ISO 8601 date string if found
+ */
+function extractPublishDate($: cheerio.CheerioAPI, _html: string): string | undefined {
+  // Try article:published_time
+  let published = $('meta[property="article:published_time"]').attr('content');
+  if (published) {
+    try { return new Date(published).toISOString(); } catch { /* ignore */ }
+  }
+
+  // Try meta name="date"
+  published = $('meta[name="date"]').attr('content');
+  if (published) {
+    try { return new Date(published).toISOString(); } catch { /* ignore */ }
+  }
+
+  // Try og:updated_time
+  published = $('meta[property="og:updated_time"]').attr('content');
+  if (published) {
+    try { return new Date(published).toISOString(); } catch { /* ignore */ }
+  }
+
+  // Try <time pubdate> or <time datetime> with pubdate attribute
+  const timeEl = $('time[pubdate], time[datetime][pubdate]').first();
+  const datetime = timeEl.attr('datetime') || timeEl.attr('content');
+  if (datetime) {
+    try { return new Date(datetime).toISOString(); } catch { /* ignore */ }
+  }
+
+  // Try JSON-LD datePublished
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (published) return;
+    try {
+      const json = JSON.parse($(el).html() || '{}');
+      const date = json.datePublished || json.publishDate || (json['@graph'] && json['@graph'].find?.((n: any) => n.datePublished)?.datePublished);
+      if (date) {
+        published = new Date(date).toISOString();
+      }
+    } catch { /* ignore */ }
+  });
+  if (published) return published;
+
+  return undefined;
+}
+
+/**
+ * Extract page language
+ */
+function extractLanguage($: cheerio.CheerioAPI): string | undefined {
+  // Try html lang attribute
+  const htmlLang = $('html').attr('lang');
+  if (htmlLang) return htmlLang.trim();
+
+  // Try Content-Language meta
+  const contentLang = $('meta[http-equiv="Content-Language"]').attr('content');
+  if (contentLang) return contentLang.trim();
+
+  // Try og:locale (convert underscore to hyphen, e.g. "en_US" → "en-US")
+  const ogLocale = $('meta[property="og:locale"]').attr('content');
+  if (ogLocale) return ogLocale.trim().replace('_', '-');
+
+  return undefined;
+}
+
+/**
+ * Count words in visible text (strips HTML tags, splits on whitespace)
+ */
+function extractWordCount(html: string): number {
+  // Remove script and style content
+  const stripped = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    // Remove all HTML tags
+    .replace(/<[^>]+>/g, ' ')
+    // Decode common entities
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    // Collapse whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!stripped) return 0;
+  return stripped.split(' ').filter(w => w.length > 0).length;
 }
 
 /**
@@ -286,12 +382,18 @@ export function extractMetadata(html: string, _url: string): { title: string; me
   const $ = cheerio.load(html);
 
   const title = extractTitle($);
+  const publishDate = extractPublishDate($, html);
+  const language = extractLanguage($);
+  const wordCount = extractWordCount(html);
   const metadata: PageMetadata = {
     description: extractDescription($),
     author: extractAuthor($),
     published: extractPublished($),
     image: extractImage($),
     canonical: extractCanonical($),
+    ...(publishDate ? { publishDate } : {}),
+    ...(language ? { language } : {}),
+    wordCount,
   };
 
   return { title, metadata };

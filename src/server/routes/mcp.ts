@@ -438,11 +438,16 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
         actions: parsedActions,
       };
 
+      // Auto-budget: default to 4000 tokens for MCP when no budget specified
+      if (options.budget === undefined) {
+        options.budget = 4000;
+      }
+
       // Cache key and bypass logic
       const mcpNoCache = args.noCache === true;
       const mcpCacheTtlMs = typeof args.cacheTtl === 'number' ? (args.cacheTtl as number) * 1000 : 5 * 60 * 1000;
       const mcpActionsKey = parsedActions ? JSON.stringify(parsedActions) : '';
-      const mcpCacheKey = `mcp:fetch:${url}:${options.render}:${options.wait}:${options.format}:${options.selector}:${options.images}:${mcpActionsKey}`;
+      const mcpCacheKey = `mcp:fetch:${url}:${options.render}:${options.wait}:${options.format}:${options.selector}:${options.images}:${mcpActionsKey}:${options.budget}`;
 
       // Check cache (skip for noCache or inline extraction requests)
       const hasInlineExtract = args.inlineExtract && ((args.inlineExtract as any).schema || (args.inlineExtract as any).prompt);
@@ -469,6 +474,12 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
             if (r.images && r.images.length > 0) cachedOutput.images = r.images;
             if (r.screenshot) cachedOutput.screenshot = r.screenshot;
             if (r.fingerprint) cachedOutput.fingerprint = r.fingerprint;
+            if (r.linkCount !== undefined) cachedOutput.linkCount = r.linkCount;
+            if (r.quality !== undefined) cachedOutput.quality = r.quality;
+            if (r.timing) cachedOutput.timing = r.timing;
+            if (r.method) cachedOutput.method = r.method;
+            if (r.freshness) cachedOutput.freshness = r.freshness;
+            if (r.prunedPercent !== undefined) cachedOutput.prunedPercent = r.prunedPercent;
             return ok(safeStringify(cachedOutput));
           }
         }
@@ -527,6 +538,12 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
       if (result.extractTokensUsed) output.extractTokensUsed = result.extractTokensUsed;
       if (result._cache) output._cache = result._cache;
       if (result._cacheAge !== undefined) output._cacheAge = result._cacheAge;
+      if (result.linkCount !== undefined) output.linkCount = result.linkCount;
+      if (result.quality !== undefined) output.quality = result.quality;
+      if (result.timing) output.timing = result.timing;
+      if (result.method) output.method = result.method;
+      if (result.freshness) output.freshness = result.freshness;
+      if (result.prunedPercent !== undefined) output.prunedPercent = result.prunedPercent;
 
       return ok(safeStringify(output));
     }
