@@ -9,9 +9,36 @@
 import dns from 'dns';
 dns.setDefaultResultOrder('ipv4first');
 
-import { chromium, type Browser, type Page } from 'playwright';
-import { chromium as stealthChromium } from 'playwright-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+// Playwright is lazy-loaded — only imported when browser rendering is needed.
+// This avoids ~400ms startup penalty for simple HTTP fetches.
+import type { Browser, Page } from 'playwright';
+type ChromiumType = typeof import('playwright').chromium;
+
+let _chromium: ChromiumType | null = null;
+let _stealthChromium: ChromiumType | null = null;
+/** Whether Playwright has been loaded (for diagnostics). */
+export let playwrightLoaded = false;
+
+async function getPlaywright(): Promise<ChromiumType> {
+  if (!_chromium) {
+    const pw = await import('playwright');
+    _chromium = pw.chromium;
+    playwrightLoaded = true;
+  }
+  return _chromium;
+}
+
+async function getStealthPlaywright(): Promise<ChromiumType> {
+  if (!_stealthChromium) {
+    const pwExtra = await import('playwright-extra');
+    const StealthPlugin = (await import('puppeteer-extra-plugin-stealth')).default;
+    _stealthChromium = pwExtra.chromium as unknown as ChromiumType;
+    (_stealthChromium as any).use(StealthPlugin());
+    playwrightLoaded = true;
+  }
+  return _stealthChromium;
+}
+
 import { getRealisticUserAgent, getSecCHUA, getSecCHUAPlatform } from './user-agents.js';
 import { fetch as undiciFetch, Agent, ProxyAgent, type Response } from 'undici';
 import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types.js';
@@ -19,9 +46,6 @@ import type { PageAction } from '../types.js';
 import { getCached } from './cache.js';
 import { cachedLookup, resolveAndCache, startDnsWarmup } from './dns-cache.js';
 import { detectChallenge } from './challenge-detection.js';
-
-// Add stealth plugin to playwright-extra
-stealthChromium.use(StealthPlugin());
 
 /**
  * Returns a realistic Chrome user agent.
@@ -949,7 +973,8 @@ async function getBrowser(): Promise<Browser> {
   pagePoolFillPromise = null;
 
   const vp = getRandomViewport();
-  sharedBrowser = await chromium.launch({
+  const pw = await getPlaywright();
+  sharedBrowser = await pw.launch({
     headless: true,
     args: [...ANTI_DETECTION_ARGS, `--window-size=${vp.width},${vp.height}`],
   });
@@ -971,7 +996,8 @@ async function getStealthBrowser(): Promise<Browser> {
   }
 
   const stealthVp = getRandomViewport();
-  const stealthBrowser = await stealthChromium.launch({
+  const stealthPw = await getStealthPlaywright();
+  const stealthBrowser = await stealthPw.launch({
     headless: true,
     args: [...ANTI_DETECTION_ARGS, `--window-size=${stealthVp.width},${stealthVp.height}`],
   });
@@ -1018,8 +1044,8 @@ async function getProfileBrowser(
   };
 
   const launched = stealth
-    ? await stealthChromium.launch(launchOptions)
-    : await chromium.launch(launchOptions);
+    ? await (await getStealthPlaywright()).launch(launchOptions)
+    : await (await getPlaywright()).launch(launchOptions);
   if (!launched) throw new Error('Failed to launch profile browser');
 
   profileBrowsers.set(profileDir, launched);
