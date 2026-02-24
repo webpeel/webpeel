@@ -19,6 +19,7 @@ import { extractDomainData, getDomainExtractor } from './core/domain-extractors.
 import type { DomainExtractResult } from './core/domain-extractors.js';
 import { extractReadableContent } from './core/readability.js';
 import { quickAnswer as runQuickAnswer } from './core/quick-answer.js';
+import { Timer } from './core/timing.js';
 import type { PeelOptions, PeelResult, ImageInfo } from './types.js';
 
 export * from './types.js';
@@ -112,6 +113,7 @@ export {
 } from './core/diff.js';
 export { extractReadableContent, type ReadabilityResult, type ReadabilityOptions } from './core/readability.js';
 export { quickAnswer, type QuickAnswerOptions, type QuickAnswerResult } from './core/quick-answer.js';
+export { Timer, type PipelineTiming } from './core/timing.js';
 
 /**
  * Fetch and extract content from a URL
@@ -131,6 +133,7 @@ export { quickAnswer, type QuickAnswerOptions, type QuickAnswerResult } from './
  */
 export async function peel(url: string, options: PeelOptions = {}): Promise<PeelResult> {
   const startTime = Date.now();
+  const timer = new Timer();
 
   // Apply agent-mode defaults (can be overridden by explicit options)
   if (options.agentMode) {
@@ -262,6 +265,7 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     // Fetch the page (keep browser open if branding extraction or autoScroll is needed)
     const needsBranding = options.branding && render;
     const needsAutoScroll = !!autoScrollOpts && render;
+    timer.mark('fetch');
     const fetchResult = await smartFetch(url, {
       forceBrowser: render,
       stealth,
@@ -279,6 +283,7 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       storageState,
       proxy,
     });
+    timer.end('fetch');
 
     // Auto-scroll to load lazy content, then grab fresh HTML
     if (needsAutoScroll && fetchResult.page) {
@@ -286,8 +291,9 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
         await runAutoScroll(fetchResult.page, autoScrollOpts);
         // Capture refreshed HTML after scrolling
         fetchResult.html = await fetchResult.page.content();
-      } catch {
-        // If autoScroll fails, continue with whatever HTML we have
+      } catch (e) {
+        // Non-fatal: auto-scroll failed, continuing with whatever HTML we have
+        if (process.env.DEBUG) console.debug('[webpeel]', 'auto-scroll failed:', e instanceof Error ? e.message : e);
       } finally {
         // Close page unless branding also needs it
         if (!needsBranding) {
@@ -296,7 +302,10 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
             if (fetchResult.browser && !needsBranding) {
               await fetchResult.browser.close().catch(() => {});
             }
-          } catch { /* ignore cleanup errors */ }
+          } catch (e) {
+            // Non-fatal: page/browser cleanup after auto-scroll
+            if (process.env.DEBUG) console.debug('[webpeel]', 'page/browser cleanup after auto-scroll:', e instanceof Error ? e.message : e);
+          }
           fetchResult.page = undefined;
         }
       }
@@ -366,19 +375,24 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       }
 
       const metadataTask = Promise.resolve().then(() => {
+        timer.mark('metadata');
         const meta = extractMetadata(html, fetchResult.url);
-        return {
+        const result = {
           title: meta.title,
           metadata: meta.metadata,
           links: extractLinks(html, fetchResult.url),
         };
+        timer.end('metadata');
+        return result;
       });
 
       // Content density pruning — runs on HTML before markdown conversion.
       // Removes low-value blocks (sidebars, footers, ads) CSS selectors miss.
       // OFF when fullPage=true or format !== markdown.
       if (format === 'markdown' && !fullPage) {
+        timer.mark('prune');
         const pruned = pruneContent(contentHtml, { dynamic: true });
+        timer.end('prune');
         contentHtml = pruned.html;
         if (pruned.nodesRemoved > 0) {
           prunedPercent = pruned.reductionPercent;
@@ -386,16 +400,23 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       }
 
       const contentTask = Promise.resolve().then(() => {
+        timer.mark('convert');
+        let converted: string;
         switch (format) {
           case 'html':
-            return contentHtml;
+            converted = contentHtml;
+            break;
           case 'text':
-            return htmlToText(contentHtml);
+            converted = htmlToText(contentHtml);
+            break;
           case 'markdown':
           default:
             // prune:false — already pruned above; avoid double-pruning in htmlToMarkdown
-            return htmlToMarkdown(contentHtml, { raw, prune: false });
+            converted = htmlToMarkdown(contentHtml, { raw, prune: false });
+            break;
         }
+        timer.end('convert');
+        return converted;
       });
 
       const [metaResult, convertedContent] = await Promise.all([metadataTask, contentTask]);
@@ -416,7 +437,9 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
         const urlRegex = /https?:\/\/[^\s"'`,\]})]+/g;
         const found = content.match(urlRegex) || [];
         links = [...new Set(found)];
-      } catch {
+      } catch (e) {
+        // Non-fatal: JSON parse failed, treating as malformed
+        if (process.env.DEBUG) console.debug('[webpeel]', 'JSON parse failed:', e instanceof Error ? e.message : e);
         content = fetchResult.html;
         title = 'JSON Response (malformed)';
       }
@@ -443,7 +466,9 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
           content = fetchResult.html;
           title = $('title').first().text() || 'XML Document';
         }
-      } catch {
+      } catch (e) {
+        // Non-fatal: XML/RSS parse failed, using raw content
+        if (process.env.DEBUG) console.debug('[webpeel]', 'XML/RSS parse failed:', e instanceof Error ? e.message : e);
         content = fetchResult.html;
         title = 'XML Document';
       }
@@ -463,7 +488,9 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     // Readability mode
     let readabilityResult: import('./core/readability.js').ReadabilityResult | undefined;
     if (options.readable && isHTML && fetchResult.html) {
+      timer.mark('readability');
       const readResult = extractReadableContent(fetchResult.html, fetchResult.url);
+      timer.end('readability');
       readabilityResult = readResult;
       content = readResult.content;
       metadata = {
@@ -506,7 +533,9 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       const budgetFormat: 'markdown' | 'text' | 'json' =
         detectedType === 'json' ? 'json' :
         format === 'text' ? 'text' : 'markdown';
+      timer.mark('budget');
       content = distillToBudget(content, options.budget, budgetFormat);
+      timer.end('budget');
     }
 
     // Domain-aware structured extraction (Twitter, Reddit, GitHub, HN)
@@ -514,24 +543,29 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
     let domainData: DomainExtractResult | undefined;
     if (getDomainExtractor(fetchResult.url)) {
       try {
+        timer.mark('domainExtract');
         const ddResult = await extractDomainData(fetchResult.html, fetchResult.url);
+        timer.end('domainExtract');
         if (ddResult) {
           domainData = ddResult;
           content = ddResult.cleanContent;
         }
-      } catch {
+      } catch (e) {
         // Domain extraction failure is non-fatal; continue with normal content
+        if (process.env.DEBUG) console.debug('[webpeel]', 'domain extraction failed:', e instanceof Error ? e.message : e);
       }
     }
 
     // Quick answer (LLM-free)
     let quickAnswerResult: import('./core/quick-answer.js').QuickAnswerResult | undefined;
     if (options.question && content) {
+      timer.mark('quickAnswer');
       const qa = runQuickAnswer({
         question: options.question,
         content,
         url: fetchResult.url,
       });
+      timer.end('quickAnswer');
       quickAnswerResult = qa;
     }
 
@@ -558,7 +592,10 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
           if (fetchResult.browser) {
             await fetchResult.browser.close().catch(() => {});
           }
-        } catch { /* ignore cleanup errors */ }
+        } catch (e) {
+          // Non-fatal: page/browser cleanup after branding extraction
+          if (process.env.DEBUG) console.debug('[webpeel]', 'page/browser cleanup after branding:', e instanceof Error ? e.message : e);
+        }
       }
     }
 
@@ -615,6 +652,7 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       ...(domainData !== undefined ? { domainData } : {}),
       ...(readabilityResult !== undefined ? { readability: readabilityResult } : {}),
       ...(quickAnswerResult !== undefined ? { quickAnswer: quickAnswerResult } : {}),
+      timing: timer.toTiming(),
     };
   } catch (error) {
     // Clean up browser resources on error

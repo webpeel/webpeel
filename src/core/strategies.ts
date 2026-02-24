@@ -92,8 +92,9 @@ function shouldForceBrowser(url: string): DomainRecommendation | null {
         return { mode: 'stealth' };
       }
     }
-  } catch {
+  } catch (e) {
     // Ignore URL parsing errors; validation happens inside fetchers.
+    if (process.env.DEBUG) console.debug('[webpeel]', 'stealth domain URL parse failed:', e instanceof Error ? e.message : e);
   }
 
   return null;
@@ -206,8 +207,9 @@ function prefetchDns(url: string): void {
   try {
     const hostname = new URL(url).hostname;
     void resolveAndCache(hostname).catch(() => {});
-  } catch {
+  } catch (e) {
     // Ignore invalid URL.
+    if (process.env.DEBUG) console.debug('[webpeel]', 'DNS prefetch URL parse failed:', e instanceof Error ? e.message : e);
   }
 }
 
@@ -473,8 +475,9 @@ export async function smartFetch(
             if (!looksLikeShellPage(fresh)) {
               hooks.setCache?.(url, { ...fresh, method: 'simple' as const });
             }
-          } catch {
-            // Stale entry continues serving.
+          } catch (e) {
+            // Non-fatal: background revalidation failed, stale entry continues serving.
+            if (process.env.DEBUG) console.debug('[webpeel]', 'background cache revalidation failed:', e instanceof Error ? e.message : e);
           }
         })();
       }
@@ -653,7 +656,9 @@ export async function smartFetch(
           }
           recordMethod(winner.result.method);
           return winner.result;
-        } catch {
+        } catch (e) {
+          // Race resolution failed — determine which error to propagate
+          if (process.env.DEBUG) console.debug('[webpeel]', 'fetch race resolution failed:', e instanceof Error ? e.message : e);
           if (
             simpleError &&
             !shouldEscalateSimpleError(simpleError) &&

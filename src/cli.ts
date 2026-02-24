@@ -3829,7 +3829,7 @@ async function outputResult(result: PeelResult, options: any, extra: OutputExtra
     if (extra.truncated) output.truncated = true;
     if (extra.totalAvailable !== undefined) output.totalAvailable = extra.totalAvailable;
 
-    output._meta = { version: cliVersion, method: result.method || 'simple' };
+    output._meta = { version: cliVersion, method: result.method || 'simple', timing: result.timing };
 
     await writeStdout(JSON.stringify(output, null, 2) + '\n');
   } else {

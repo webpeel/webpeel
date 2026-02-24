@@ -211,7 +211,9 @@ function normalizeUrlForConditionalCache(url: string): string {
     }
 
     return normalized.toString();
-  } catch {
+  } catch (e) {
+    // Non-fatal: URL normalization failed, returning raw trimmed URL
+    if (process.env.DEBUG) console.debug('[webpeel]', 'URL normalization:', e instanceof Error ? e.message : e);
     return url.trim();
   }
 }
@@ -605,8 +607,9 @@ export async function simpleFetch(
     void resolveAndCache(hostname).catch(() => {
       // Best-effort optimization only.
     });
-  } catch {
+  } catch (e) {
     // Ignore URL parsing errors here; validation handles invalid input below.
+    if (process.env.DEBUG) console.debug('[webpeel]', 'DNS prefetch (initial URL):', e instanceof Error ? e.message : e);
   }
 
   while (redirectCount <= MAX_REDIRECTS) {
@@ -670,8 +673,9 @@ export async function simpleFetch(
           void resolveAndCache(hostname).catch(() => {
             // Best-effort optimization only.
           });
-        } catch {
+        } catch (e) {
           // Ignore URL parsing errors here; validation handles invalid input below.
+          if (process.env.DEBUG) console.debug('[webpeel]', 'DNS prefetch (redirect URL):', e instanceof Error ? e.message : e);
         }
         redirectCount++;
         continue;
@@ -936,7 +940,9 @@ async function recyclePooledPage(page: Page): Promise<void> {
     if (!idlePagePool.includes(page)) {
       idlePagePool.push(page);
     }
-  } catch {
+  } catch (e) {
+    // Non-fatal: page reset failed, removing from pool and closing
+    if (process.env.DEBUG) console.debug('[webpeel]', 'page reset failed:', e instanceof Error ? e.message : e);
     removePooledPage(page);
     await page.close().catch(() => {});
   }
@@ -962,8 +968,9 @@ async function getBrowser(): Promise<Browser> {
         }
         return sharedBrowser;
       }
-    } catch {
+    } catch (e) {
       // Browser is dead, recreate
+      if (process.env.DEBUG) console.debug('[webpeel]', 'shared browser health check failed, recreating:', e instanceof Error ? e.message : e);
       sharedBrowser = null;
     }
   }
@@ -989,8 +996,9 @@ async function getStealthBrowser(): Promise<Browser> {
       if (sharedStealthBrowser.isConnected()) {
         return sharedStealthBrowser;
       }
-    } catch {
+    } catch (e) {
       // Browser is dead, recreate
+      if (process.env.DEBUG) console.debug('[webpeel]', 'stealth browser health check failed, recreating:', e instanceof Error ? e.message : e);
       sharedStealthBrowser = null;
     }
   }
@@ -1029,7 +1037,10 @@ async function getProfileBrowser(
   if (existing) {
     try {
       if (existing.isConnected()) return existing;
-    } catch { /* dead, recreate */ }
+    } catch (e) {
+      // Profile browser is dead, recreate
+      if (process.env.DEBUG) console.debug('[webpeel]', 'profile browser health check failed, recreating:', e instanceof Error ? e.message : e);
+    }
     profileBrowsers.delete(profileDir);
   }
 
@@ -1207,8 +1218,9 @@ export async function browserFetch(
             username: proxyUrl.username || undefined,
             password: proxyUrl.password || undefined,
           };
-        } catch {
+        } catch (e) {
           // Fallback: use proxy string as-is
+          if (process.env.DEBUG) console.debug('[webpeel]', 'proxy URL parse failed, using as-is:', e instanceof Error ? e.message : e);
           playwrightProxy = { server: proxy };
         }
 
@@ -1792,8 +1804,9 @@ export async function scrollAndWait(page: Page, times = 3): Promise<string> {
     // Wait for network to settle (500 ms of no new requests) or 2 s max.
     try {
       await page.waitForLoadState('networkidle', { timeout: 2000 });
-    } catch {
+    } catch (e) {
       // networkidle may never fire — fall back to a flat delay.
+      if (process.env.DEBUG) console.debug('[webpeel]', 'networkidle timeout, falling back to flat delay:', e instanceof Error ? e.message : e);
       await page.waitForTimeout(1000);
     }
   }

@@ -8,7 +8,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "webpeel": "dist/cli.js"
+    "webpeel": "dist/cli.bundle.cjs"
   },
   "exports": {
     ".": {
@@ -23,6 +23,7 @@
     "dist/index.d.ts.map",
     "dist/cli.js",
     "dist/cli.js.map",
+    "dist/cli.bundle.cjs",
     "dist/cli.d.ts",
     "dist/cli.d.ts.map",
     "dist/types.js",
@@ -46,6 +47,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "bundle": "node scripts/bundle-cli.js",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -121,6 +123,7 @@
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.3",
     "@types/turndown": "^5.0.5",
+    "esbuild": "^0.27.3",
     "pdf-lib": "^1.17.1",
     "supertest": "^7.2.2",
     "typescript": "^5.6.0",

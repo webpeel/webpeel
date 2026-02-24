@@ -264,6 +264,8 @@ export interface PeelResult {
   domainData?: import('./core/domain-extractors.js').DomainExtractResult;
   /** Quick answer result (when question option is set). BM25-powered, no LLM needed. */
   quickAnswer?: import('./core/quick-answer.js').QuickAnswerResult;
+  /** Per-stage timing breakdown in milliseconds. */
+  timing?: import('./core/timing.js').PipelineTiming;
 }
 
 export interface PageMetadata {

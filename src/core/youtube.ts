@@ -6,7 +6,7 @@
  * track URLs, fetch the timedtext XML, and return structured transcript data.
  */
 
-import { simpleFetch } from './fetcher.js';
+import { simpleFetch, browserFetch } from './fetcher.js';
 
 // ---------------------------------------------------------------------------
 // Public interfaces
@@ -187,10 +187,21 @@ export async function getYouTubeTranscript(
 
   const preferredLang = options.language ?? 'en';
 
-  // Fetch the video page
+  // Fetch the video page — try simple first, fall back to browser if challenged
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const fetchResult = await simpleFetch(videoUrl, undefined, 30000);
-  const html = fetchResult.html;
+  let html: string;
+  try {
+    const fetchResult = await simpleFetch(videoUrl, undefined, 30000);
+    html = fetchResult.html;
+    // Check if we got a challenge/consent page instead of actual video page
+    if (!html.includes('ytInitialPlayerResponse') && !html.includes('ytInitialData')) {
+      throw new Error('YouTube served non-video page (likely challenge/consent)');
+    }
+  } catch {
+    // Simple fetch failed or got challenged — use browser rendering
+    const browserResult = await browserFetch(videoUrl, { timeoutMs: 30000 });
+    html = browserResult.html;
+  }
 
   // Extract player response
   const playerResponse = extractPlayerResponse(html);
