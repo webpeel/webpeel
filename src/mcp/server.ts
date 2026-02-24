@@ -1096,6 +1096,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (result.screenshot) fetchOutput.screenshot = result.screenshot;
       if (result.fingerprint) fetchOutput.fingerprint = result.fingerprint;
       if (result.extractTokensUsed) fetchOutput.extractTokensUsed = result.extractTokensUsed;
+      if (result.linkCount !== undefined) fetchOutput.linkCount = result.linkCount;
+      if (result.quality !== undefined) fetchOutput.quality = result.quality;
+      if (result.timing) fetchOutput.timing = result.timing;
+      if (result.method) fetchOutput.method = result.method;
+      if (result.freshness) fetchOutput.freshness = result.freshness;
+      if (result.prunedPercent !== undefined) fetchOutput.prunedPercent = result.prunedPercent;
 
       // SECURITY: Handle JSON serialization errors
       let resultText: string;

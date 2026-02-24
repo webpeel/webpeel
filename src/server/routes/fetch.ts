@@ -209,6 +209,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
         timeout: timeout ? parseInt(timeout as string, 10) : undefined,
       };
 
+      // Auto-budget: default to 4000 tokens for API requests when no budget specified
+      // Opt-out: budget=0 explicitly disables
+      if (options.budget === undefined) {
+        options.budget = 4000;
+        res.setHeader('X-Auto-Budget', '4000');
+      }
+
       // Inform the user if their request was degraded
       if (isSoftLimited && !hasExtraUsage && render === 'true' && !hasActions) {
         res.setHeader('X-Degraded', 'render=true downgraded to HTTP-only (quota exceeded)');
@@ -636,6 +643,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
         raw: raw === true,
         timeout: typeof timeout === 'number' ? timeout : undefined,
       };
+
+      // Auto-budget: default to 4000 tokens for API requests when no budget specified
+      // Opt-out: budget=0 explicitly disables
+      if (options.budget === undefined) {
+        options.budget = 4000;
+        res.setHeader('X-Auto-Budget', '4000');
+      }
 
       if (isSoftLimited && !hasExtraUsage && render === true && !postHasActions) {
         res.setHeader('X-Degraded', 'render=true downgraded to HTTP-only (quota exceeded)');

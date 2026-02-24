@@ -68,6 +68,38 @@ const CHROME_PATTERNS = [
   /\btable-?of-?contents\b/,
   /\bgdpr\b/,
   /\bconsent\b/,
+  // Q&A sites (Stack Overflow, StackExchange)
+  /\bvote\b/,
+  /\bpost-?menu/,
+  /\bjs-vote/,
+  /\buser-?card/,
+  /\buser-?info/,
+  /\bpost-?tag/,
+  /\bquestion-?stats/,
+  // Social/sharing UI
+  /\bshare-?(button|link|panel|menu|bar)/,
+  /\bfollow-?button/,
+  /\breaction/,
+  /\blike-?button/,
+  /\bupvote/,
+  /\bdownvote/,
+  // Edit/action UI
+  /\bedit-?(link|button|post)/,
+  /\breport-?(link|button)/,
+  /\bflag-?(link|button)/,
+  // Generic site chrome
+  /\btop-?bar/,
+  /\bsite-?header/,
+  /\bpage-?header/,
+  /\bsticky-?header/,
+  /\bnotice\b/,
+  /\balert\b/,
+  /\btoast\b/,
+  /\bsnackbar/,
+  /\bbottom-?bar/,
+  /\bfloating/,
+  /\bfixed-?bottom/,
+  /\bback-?to-?top/,
 ];
 
 /**

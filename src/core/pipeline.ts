@@ -80,6 +80,20 @@ export interface PipelineContext {
   quality: number;
   prunedPercent?: number;
 
+  // ---- Set by link extraction ----
+  linkCount: number;
+
+  // ---- Set by fetch (freshness headers) ----
+  freshness?: {
+    lastModified?: string;
+    etag?: string;
+    fetchedAt: string;
+    cacheControl?: string;
+  };
+
+  // ---- Set by JSON-LD extraction ----
+  jsonLdType?: string;
+
   // ---- Set by post-processing (all optional) ----
   readabilityResult?: ReadabilityResult;
   imagesList?: ImageInfo[];
@@ -136,6 +150,9 @@ export function createContext(url: string, options: PeelOptions): PipelineContex
     metadata: {},
     links: [],
     quality: 0,
+
+    // Link count — filled by parseContent() / buildResult
+    linkCount: 0,
   };
 }
 
@@ -420,6 +437,33 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
     ctx.quality = 1.0; // Documents are inherently structured content
 
   } else if (contentType === 'html') {
+    // === JSON-LD extraction — first-class content source ===
+    // Many sites (recipes, products, articles) embed structured data that's
+    // more reliable than DOM parsing, especially on JS-heavy SPAs.
+    if (!raw && !selector) {
+      const { extractJsonLd } = await import('./json-ld.js');
+      const jsonLdResult = extractJsonLd(fetchResult.html);
+      if (jsonLdResult && jsonLdResult.found && jsonLdResult.content.length > 100) {
+        ctx.content = jsonLdResult.content;
+        ctx.title = jsonLdResult.title || ctx.title;
+        ctx.jsonLdType = jsonLdResult.type;
+        ctx.quality = 0.95; // Structured data is high quality
+
+        // Still extract metadata and links from HTML
+        ctx.timer.mark('metadata');
+        const meta = extractMetadata(fetchResult.html, fetchResult.url);
+        ctx.metadata = meta.metadata;
+        if (!ctx.title) ctx.title = meta.title;
+        const htmlForLinks = fetchResult.html.length > 100000
+          ? fetchResult.html.slice(0, 100000)
+          : fetchResult.html;
+        ctx.links = extractLinks(htmlForLinks, fetchResult.url);
+        ctx.linkCount = ctx.links.length;
+        ctx.timer.end('metadata');
+        return;
+      }
+    }
+
     // Standard HTML pipeline
     let html = fetchResult.html;
 
@@ -703,6 +747,46 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
       if (process.env.DEBUG) console.debug('[webpeel]', 'domain extraction failed:', e instanceof Error ? e.message : e);
     }
   }
+
+  // === Zero-token safety net ===
+  // NEVER return empty content. If pipeline produced nothing, fall back.
+  if (!ctx.content || ctx.content.trim().length === 0) {
+    // Try 1: JSON-LD (may not have been tried if selector/raw was used)
+    if (fetchResult.html) {
+      const { extractJsonLd } = await import('./json-ld.js');
+      const jsonLd = extractJsonLd(fetchResult.html);
+      if (jsonLd?.content && jsonLd.content.length > 50) {
+        ctx.content = jsonLd.content;
+        ctx.title = jsonLd.title || ctx.title;
+        ctx.jsonLdType = jsonLd.type;
+        ctx.quality = 0.90;
+        return;
+      }
+    }
+
+    // Try 2: Meta description + title as minimal content
+    const metaDesc = (ctx.metadata as any)?.description || (ctx.metadata as any)?.ogDescription;
+    const pageTitle = ctx.title || (ctx.metadata as any)?.title;
+    if (metaDesc || pageTitle) {
+      const parts: string[] = [];
+      if (pageTitle) parts.push(`# ${pageTitle}\n`);
+      if (metaDesc) parts.push(metaDesc);
+      ctx.content = parts.join('\n');
+      ctx.quality = 0.3; // Low quality — we only got metadata
+      return;
+    }
+
+    // Try 3: Raw text from HTML (strip all tags)
+    if (fetchResult.html && fetchResult.html.length > 100) {
+      const { htmlToText } = await import('./markdown.js');
+      const rawText = htmlToText(fetchResult.html);
+      if (rawText.trim().length > 50) {
+        ctx.content = rawText.slice(0, 10000); // Cap at 10K chars
+        ctx.quality = 0.2; // Very low quality
+        return;
+      }
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -784,6 +868,14 @@ export function buildResult(ctx: PipelineContext): PeelResult {
   const tokens = estimateTokens(ctx.content);
   const fingerprint = createHash('sha256').update(ctx.content).digest('hex').slice(0, 16);
 
+  // Build freshness from fetchResult response headers
+  const freshness: PeelResult['freshness'] = {
+    ...(fetchResult.responseHeaders?.['last-modified'] ? { lastModified: fetchResult.responseHeaders['last-modified'] } : {}),
+    ...(fetchResult.responseHeaders?.['etag'] ? { etag: fetchResult.responseHeaders['etag'] } : {}),
+    fetchedAt: new Date().toISOString(),
+    ...(fetchResult.responseHeaders?.['cache-control'] ? { cacheControl: fetchResult.responseHeaders['cache-control'] } : {}),
+  };
+
   return {
     url: fetchResult.url,
     title: ctx.title,
@@ -802,10 +894,13 @@ export function buildResult(ctx: PipelineContext): PeelResult {
     changeTracking: ctx.changeResult,
     summary: ctx.summaryText,
     images: ctx.imagesList,
+    linkCount: ctx.links.length,
+    freshness,
     ...(ctx.prunedPercent !== undefined ? { prunedPercent: ctx.prunedPercent } : {}),
     ...(ctx.domainData !== undefined ? { domainData: ctx.domainData } : {}),
     ...(ctx.readabilityResult !== undefined ? { readability: ctx.readabilityResult } : {}),
     ...(ctx.quickAnswerResult !== undefined ? { quickAnswer: ctx.quickAnswerResult } : {}),
     timing: ctx.timer.toTiming(),
+    ...(ctx.jsonLdType !== undefined ? { jsonLdType: ctx.jsonLdType } : {}),
   };
 }

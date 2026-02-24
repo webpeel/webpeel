@@ -513,6 +513,19 @@ export function htmlToMarkdown(html: string, options?: { raw?: boolean; prune?: 
     if (trimmed === 'save-icon' || trimmed === 'loading' || trimmed === 'report job') return false;
     if (/^show more(chevron down)?$/i.test(trimmed)) return false;
     if (trimmed === 'whatwherefind jobs') return false;
+    // Q&A site chrome (Stack Overflow, StackExchange, forums)
+    if (/^\[?(share|follow|flag|report)\]?(\(.*\))?$/i.test(trimmed)) return false;
+    if (/^\[?improve this (question|answer)\]?/i.test(trimmed)) return false;
+    if (/^(sorted by|highest score|trending|date modified|date created)/i.test(trimmed)) return false;
+    if (/^\[?(edited|answered|asked)\s+\w+\s+\d/i.test(trimmed)) return false;
+    if (/^community wiki$/i.test(trimmed)) return false;
+    if (/^\d+\s*(answers?|votes?|views?)\s*\d*$/i.test(trimmed)) return false;
+    if (/^\[?reset to default\]?/i.test(trimmed)) return false;
+    // Generic interactive chrome
+    if (/^\[?(bookmark|save|pin|mute|hide|block)\]?(\(.*\))?$/i.test(trimmed)) return false;
+    if (/^\[?(reply|retweet|repost|quote)\]?(\(.*\))?$/i.test(trimmed)) return false;
+    if (/^\[?copy\s*(link|url)?\]?(\(.*\))?$/i.test(trimmed)) return false;
+    if (/^(sign up|log in|create account|join now)\s*(to|for)?/i.test(trimmed)) return false;
     return true;
   }).join('\n');
 

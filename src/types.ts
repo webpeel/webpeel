@@ -266,6 +266,17 @@ export interface PeelResult {
   quickAnswer?: import('./core/quick-answer.js').QuickAnswerResult;
   /** Per-stage timing breakdown in milliseconds. */
   timing?: import('./core/timing.js').PipelineTiming;
+  /** Number of unique links found on the page. Always present (cheaper than full links array). */
+  linkCount?: number;
+  /** Schema.org type extracted from JSON-LD (e.g., "Recipe", "Product", "Article") */
+  jsonLdType?: string;
+  /** Content freshness metadata from HTTP response headers */
+  freshness?: {
+    lastModified?: string;
+    etag?: string;
+    fetchedAt: string;
+    cacheControl?: string;
+  };
 }
 
 export interface PageMetadata {
@@ -281,10 +292,14 @@ export interface PageMetadata {
   canonical?: string;
   /** MIME content type (set for documents like PDF/DOCX) */
   contentType?: string;
-  /** Word count (set for documents like PDF/DOCX) */
+  /** Word count (set for documents like PDF/DOCX, and HTML pages) */
   wordCount?: number;
   /** Page count (set for PDF documents) */
   pages?: number;
+  /** Publish date extracted from rich meta sources (ISO 8601) */
+  publishDate?: string;
+  /** Page language (e.g. "en", "en-US") */
+  language?: string;
   /** Allow additional document-specific metadata */
   [key: string]: any;
 }

@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Migrate from Firecrawl to WebPeel in 5 Minutes — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/migrate-from-firecrawl">
+  <meta property="og:title" content="Migrate from Firecrawl to WebPeel in 5 Minutes — WebPeel">
+  <meta property="og:description" content="Switch from Firecrawl to WebPeel in minutes. Free tier, open-source AGPL-3.0, 18 MCP tools, stealth mode built-in, and Firecrawl-compatible API endpoints.">
+  <meta property="og:url" content="https://webpeel.dev/docs/migrate-from-firecrawl">
+  <meta property="og:type" content="website">
+  <meta name="description" content="Migrate from Firecrawl to WebPeel in under 5 minutes. Drop-in API compatibility, 500 free requests/week, 18 MCP tools, stealth mode, YouTube transcripts, and LLM-free Q&amp;A.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .comparison-table { width: 100%; border-collapse: collapse; margin: 24px 0; }
+    .comparison-table th { background: var(--surface); font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--border); font-size: 13px; }
+    .comparison-table td { padding: 10px 14px; border: 1px solid var(--border); font-size: 14px; vertical-align: top; }
+    .comparison-table tr:hover td { background: var(--surface); }
+    .comparison-table .col-feature { font-weight: 500; width: 30%; }
+    .comparison-table .col-firecrawl { width: 35%; }
+    .comparison-table .col-webpeel { width: 35%; color: #16A34A; }
+    .comparison-table .col-webpeel code { color: inherit; }
+    .check { color: #16A34A; font-weight: 700; }
+    .cross { color: #DC2626; }
+    .neutral { color: #71717A; }
+    .migration-step {
+      display: flex; gap: 16px; align-items: flex-start; margin: 20px 0;
+    }
+    .step-num {
+      flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+      background: #8B5CF6; color: white; font-weight: 700; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step-body { flex: 1; }
+    .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+    .before-after-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px 4px 0 0;
+      display: inline-block; margin-bottom: -4px;
+    }
+    .label-before { background: #FEE2E2; color: #DC2626; }
+    .label-after { background: #DCFCE7; color: #16A34A; }
+    .callout-info {
+      background: #EFF6FF; border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+    .callout-info .callout-title { color: #1D4ED8; }
+    .callout-success {
+      background: #F0FDF4; border: 1px solid rgba(22, 163, 74, 0.2);
+    }
+    .callout-success .callout-title { color: #16A34A; }
+    .url-swap {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 16px 20px; background: var(--surface); border-radius: 8px;
+      border: 1px solid var(--border); margin: 16px 0; font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+    }
+    .url-swap .arrow { color: #8B5CF6; font-weight: 700; font-size: 20px; }
+    .url-old { text-decoration: line-through; color: var(--text-3); }
+    .url-new { color: #16A34A; font-weight: 600; }
+    .feature-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;
+      background: #EDE9FE; color: #7C3AED; margin: 2px;
+    }
+    .footer-docs {
+      border-top: 1px solid var(--border); padding: 32px 0; margin-top: 64px;
+    }
+    .footer-docs-inner {
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+    }
+    .footer-docs-left { font-size: 13px; color: var(--text-4); }
+    .footer-docs-links { display: flex; gap: 20px; }
+    .footer-docs-links a { font-size: 13px; color: var(--text-3); transition: color 0.15s; }
+    .footer-docs-links a:hover { color: var(--text); }
+    @media (max-width: 768px) {
+      .before-after { grid-template-columns: 1fr; }
+      .footer-docs-inner { flex-direction: column; gap: 12px; text-align: center; }
+      .footer-docs-links { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">v0.14.0 Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link active">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Migration</span>
+        <span>/</span>
+        <span>From Firecrawl</span>
+      </div>
+
+      <h1>Migrate from Firecrawl to WebPeel in 5 Minutes</h1>
+      <p class="lead">WebPeel is a free, open-source alternative to Firecrawl with a compatible API. In most cases, switching is a one-line URL change.</p>
+
+      <!-- ================================================================== -->
+      <!-- WHY SWITCH                                                          -->
+      <!-- ================================================================== -->
+
+      <h2 id="why-switch">Why switch?</h2>
+
+      <p>Firecrawl is a well-built product and a solid choice. If you're on their free tier and it works for your needs, there's no urgent reason to switch. WebPeel is for people who want:</p>
+
+      <ul>
+        <li><strong>A free recurring tier</strong> — 500 requests/week, no credit card, no one-time cap</li>
+        <li><strong>Self-hosting without restrictions</strong> — full AGPL-3.0 codebase, <code>docker compose up</code> and you're running</li>
+        <li><strong>More MCP tools</strong> — 18 vs. ~5 (quick answers, YouTube transcripts, hotel search, change tracking, and more)</li>
+        <li><strong>Stealth mode built-in</strong> — 28 preconfigured domains with anti-bot bypass, no cloud-only restriction</li>
+        <li><strong>LLM-free Q&amp;A</strong> — answer factual questions from web pages without sending content to an LLM</li>
+        <li><strong>Token efficiency</strong> — budget mode reduces tokens by 83% on typical pages</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Honest comparison</div>
+        Firecrawl has 84.8K GitHub stars, $16M in funding, and a polished managed service. They're great at what they do. WebPeel is a free, open alternative — not necessarily "better," but different in ways that matter to some teams.
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- COMPARISON TABLE                                                    -->
+      <!-- ================================================================== -->
+
+      <h2 id="comparison">Feature comparison</h2>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th class="col-feature">Feature</th>
+            <th class="col-firecrawl">Firecrawl</th>
+            <th class="col-webpeel">WebPeel</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-feature">Price</td>
+            <td>$16/mo+ (free tier is limited, one-time)</td>
+            <td class="col-webpeel"><strong>Free</strong> (500 req/week recurring)</td>
+          </tr>
+          <tr>
+            <td class="col-feature">Open Source</td>
+            <td>AGPL — hosted service has additional proprietary layers</td>
+            <td class="col-webpeel">AGPL-3.0, fully open — server, CLI, SDKs</td>
+          </tr>
+          <tr>
+            <td class="col-feature">MCP Tools</td>
+            <td>~5 tools</td>
+            <td class="col-webpeel"><strong>18 tools</strong></td>
+          </tr>
+          <tr>
+            <td class="col-feature">Stealth / Anti-bot</td>
+            <td>Cloud only</td>
+            <td class="col-webpeel">Built-in (28 domain configs), self-hostable</td>
+          </tr>
+          <tr>
+            <td class="col-feature">Quick Answer (Q&amp;A)</td>
+            <td class="cross">✗ No</td>
+            <td class="col-webpeel check">✓ Yes (LLM-free, confidence score)</td>
+          </tr>
+          <tr>
+            <td class="col-feature">YouTube Transcripts</td>
+            <td class="cross">✗ No</td>
+            <td class="col-webpeel check">✓ Yes (no API key needed)</td>
+          </tr>
+          <tr>
+            <td class="col-feature">Hotel Search</td>
+            <td class="cross">✗ No</td>
+            <td class="col-webpeel check">✓ Yes (multi-source, merged results)</td>
+          </tr>
+          <tr>
+            <td class="col-feature">Budget Mode</td>
+            <td class="cross">✗ No</td>
+            <td class="col-webpeel check">✓ Yes (83% token reduction)</td>
+          </tr>
+          <tr>
+            <td class="col-feature">Self-hosting</td>
+            <td>Limited (some features cloud-only)</td>
+            <td class="col-webpeel">Full — <code>docker compose up</code></td>
+          </tr>
+          <tr>
+            <td class="col-feature">No API key for CLI/MCP</td>
+            <td class="cross">✗ Required</td>
+            <td class="col-webpeel check">✓ Works without key (25 req/hr anonymous)</td>
+          </tr>
+          <tr>
+            <td class="col-feature">GitHub Stars</td>
+            <td>84.8K ⭐</td>
+            <td class="col-webpeel neutral">Growing ⭐ — <a href="https://github.com/webpeel/webpeel">help us out</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ================================================================== -->
+      <!-- API COMPATIBILITY                                                   -->
+      <!-- ================================================================== -->
+
+      <h2 id="api-compat">API compatibility</h2>
+
+      <p>WebPeel supports Firecrawl-compatible endpoints at <code>/v1/scrape</code> and <code>/v1/crawl</code>. For most use cases, switching is a single URL change:</p>
+
+      <div class="url-swap">
+        <span class="url-old">https://api.firecrawl.dev</span>
+        <span class="arrow">→</span>
+        <span class="url-new">https://api.webpeel.dev</span>
+      </div>
+
+      <p>Supported Firecrawl-compatible fields:</p>
+      <ul>
+        <li><code>POST /v1/scrape</code> — <code>url</code>, <code>formats</code> (markdown, html, rawHtml, screenshot, links, json), <code>onlyMainContent</code>, <code>waitFor</code>, <code>actions</code></li>
+        <li><code>POST /v1/crawl</code> — <code>url</code>, <code>limit</code>, <code>maxDepth</code>, <code>includePaths</code>, <code>excludePaths</code></li>
+        <li><code>GET /v1/crawl/:jobId</code> — job status polling</li>
+        <li><code>POST /v2/scrape</code> — v2 scrape endpoint</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Native API also available</div>
+        WebPeel's native API at <code>/v1/fetch</code> offers additional parameters like <code>budget</code>, <code>focus</code>, <code>stealth</code>, and more. We recommend using the native API for new integrations — see the <a href="/docs/api-reference">API Reference</a>.
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- CODE EXAMPLES                                                       -->
+      <!-- ================================================================== -->
+
+      <h2 id="code-examples">Code examples</h2>
+
+      <!-- REST API -->
+      <h3 id="rest-api">REST API</h3>
+
+      <div class="before-after">
+        <div>
+          <span class="before-after-label label-before">Before — Firecrawl</span>
+          <pre><code class="language-bash">curl -X POST https://api.firecrawl.dev/v1/scrape \
+  -H "Authorization: Bearer fc-YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"]
+  }'</code></pre>
+        </div>
+        <div>
+          <span class="before-after-label label-after">After — WebPeel</span>
+          <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/scrape \
+  -H "Authorization: Bearer wp_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"]
+  }'</code></pre>
+        </div>
+      </div>
+
+      <p>The response shape is identical. No other changes needed for basic scraping.</p>
+
+      <!-- MCP Config -->
+      <h3 id="mcp-config">MCP server config (Claude Desktop)</h3>
+
+      <div class="before-after">
+        <div>
+          <span class="before-after-label label-before">Before — Firecrawl MCP</span>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-YOUR_KEY"
+      }
+    }
+  }
+}</code></pre>
+        </div>
+        <div>
+          <span class="before-after-label label-after">After — WebPeel MCP</span>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "mcp"]
+    }
+  }
+}</code></pre>
+        </div>
+      </div>
+
+      <p>No API key is required to use the WebPeel MCP server. You get 25 anonymous requests per hour, or sign up free for 500/week.</p>
+
+      <p>Prefer a remote URL (no install, always up-to-date)?</p>
+
+      <pre><code class="language-json">{
+  "mcpServers": {
+    "webpeel": {
+      "url": "https://api.webpeel.dev/v2/mcp"
+    }
+  }
+}</code></pre>
+
+      <!-- Node.js SDK -->
+      <h3 id="nodejs-sdk">Node.js library</h3>
+
+      <div class="before-after">
+        <div>
+          <span class="before-after-label label-before">Before — Firecrawl SDK</span>
+          <pre><code class="language-javascript">import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({
+  apiKey: 'fc-YOUR_KEY'
+});
+
+const result = await app.scrapeUrl(
+  'https://example.com',
+  { formats: ['markdown'] }
+);
+
+console.log(result.markdown);</code></pre>
+        </div>
+        <div>
+          <span class="before-after-label label-after">After — WebPeel SDK</span>
+          <pre><code class="language-javascript">import { peel } from 'webpeel';
+
+// No API key required for basic usage
+const result = await peel('https://example.com');
+
+console.log(result.content); // markdown</code></pre>
+        </div>
+      </div>
+
+      <p>Install WebPeel: <code>npm install webpeel</code></p>
+
+      <p>For API-key authenticated requests with the full client:</p>
+
+      <pre><code class="language-javascript">import { WebPeel } from 'webpeel';
+
+const client = new WebPeel({ apiKey: 'wp_YOUR_KEY' });
+
+const result = await client.scrape('https://example.com', {
+  formats: ['markdown'],
+  budget: 4000,     // Token budget (WebPeel-specific)
+  stealth: true,    // Built-in stealth mode
+});
+
+console.log(result.markdown);</code></pre>
+
+      <!-- Python SDK -->
+      <h3 id="python-sdk">Python SDK</h3>
+
+      <div class="before-after">
+        <div>
+          <span class="before-after-label label-before">Before — Firecrawl Python</span>
+          <pre><code class="language-python">from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key="fc-YOUR_KEY")
+
+result = app.scrape_url(
+    "https://example.com",
+    params={"formats": ["markdown"]}
+)
+
+print(result["markdown"])</code></pre>
+        </div>
+        <div>
+          <span class="before-after-label label-after">After — WebPeel Python</span>
+          <pre><code class="language-python">from webpeel import WebPeel
+
+client = WebPeel(api_key="wp_YOUR_KEY")
+
+result = client.scrape("https://example.com")
+
+print(result.content)  # markdown</code></pre>
+        </div>
+      </div>
+
+      <p>Install: <code>pip install webpeel</code></p>
+
+      <!-- ================================================================== -->
+      <!-- WHAT'S DIFFERENT                                                    -->
+      <!-- ================================================================== -->
+
+      <h2 id="whats-different">What's different (and new)</h2>
+
+      <p>WebPeel does everything Firecrawl does, plus a few things it doesn't:</p>
+
+      <h3>Budget mode — token-efficient fetching</h3>
+      <p>Pass <code>budget=4000</code> to get any page distilled to ~4K tokens. Content density pruning removes sidebars, footers, navigation, and ads automatically. On a Wikipedia page, this reduced 99,427 tokens to 3,867 — a 96% reduction.</p>
+
+      <pre><code class="language-bash"># REST API
+curl "https://api.webpeel.dev/v1/fetch?url=https://en.wikipedia.org/wiki/AI&budget=4000"
+
+# CLI
+npx webpeel https://en.wikipedia.org/wiki/AI --budget 4000</code></pre>
+
+      <h3>LLM-free quick answers</h3>
+      <p>Ask factual questions from any web page without sending content to an LLM. Uses BM25 retrieval + heuristic answer extraction with a confidence score.</p>
+
+      <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/answer \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/pricing",
+    "question": "What is the monthly price?"
+  }'</code></pre>
+
+      <h3>Domain extractors (stealth built-in)</h3>
+      <p>28 domain-specific extractors handle sites that typically require anti-bot bypasses: Amazon, Reddit, LinkedIn, Twitter/X, GitHub, Hacker News, Yelp, Booking.com, and more. These work on self-hosted instances too — no cloud requirement.</p>
+
+      <pre><code class="language-bash">npx webpeel https://www.amazon.com/dp/B08N5WRWNW --schema amazon --json</code></pre>
+
+      <h3>YouTube transcripts</h3>
+      <p>Extract full transcripts from YouTube videos — no YouTube API key required.</p>
+
+      <pre><code class="language-bash">npx webpeel https://www.youtube.com/watch?v=dQw4w9WgXcQ</code></pre>
+
+      <h3>Hotel search</h3>
+      <p>Multi-source hotel search with merged and sorted results — a unique capability not available in other web fetching tools.</p>
+
+      <pre><code class="language-bash">npx webpeel hotels "Paris" --checkin 2026-04-01 --checkout 2026-04-05 --sort price</code></pre>
+
+      <!-- ================================================================== -->
+      <!-- MIGRATION STEPS                                                     -->
+      <!-- ================================================================== -->
+
+      <h2 id="migration-steps">Step-by-step migration</h2>
+
+      <div class="migration-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Change the base URL</strong>
+          <p>In your environment config, swap <code>https://api.firecrawl.dev</code> for <code>https://api.webpeel.dev</code>. Your existing Firecrawl API calls will work as-is against <code>/v1/scrape</code> and <code>/v1/crawl</code>.</p>
+        </div>
+      </div>
+
+      <div class="migration-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Get a free API key (optional)</strong>
+          <p>Sign up at <a href="https://app.webpeel.dev/signup">app.webpeel.dev</a> for 500 free requests/week. For basic testing, anonymous access gives 25 requests/hour with no signup.</p>
+        </div>
+      </div>
+
+      <div class="migration-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Update your API key prefix</strong>
+          <p>WebPeel API keys start with <code>wp_live_</code>. Update any env vars — e.g. <code>FIRECRAWL_API_KEY</code> → <code>WEBPEEL_API_KEY</code>. If your client hardcodes the key prefix, update that too.</p>
+        </div>
+      </div>
+
+      <div class="migration-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Switch npm/pip package (optional)</strong>
+          <p>If you're using the Firecrawl SDK, you can keep using it with the base URL override, or migrate to the WebPeel SDK for access to native features like budget mode and stealth.</p>
+          <pre><code class="language-bash">npm install webpeel       # Node.js
+pip install webpeel       # Python</code></pre>
+        </div>
+      </div>
+
+      <div class="migration-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Update MCP config (if using Claude Desktop)</strong>
+          <p>Replace the Firecrawl MCP config with the WebPeel config shown above. WebPeel has 18 MCP tools vs. Firecrawl's ~5.</p>
+        </div>
+      </div>
+
+      <div class="callout callout-success">
+        <div class="callout-title">That's it</div>
+        Most migrations take under 5 minutes. If you hit any issues with specific Firecrawl API fields that don't map correctly, <a href="https://github.com/webpeel/webpeel/issues">open an issue</a> and we'll add compatibility.
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- SELF-HOSTING                                                        -->
+      <!-- ================================================================== -->
+
+      <h2 id="self-hosting">Self-hosting</h2>
+
+      <p>Unlike Firecrawl, all WebPeel features (including stealth mode and domain extractors) work in self-hosted deployments.</p>
+
+      <pre><code class="language-bash"># Clone and start
+git clone https://github.com/webpeel/webpeel
+cd webpeel
+docker compose up</code></pre>
+
+      <p>See the <a href="/docs/self-hosting">Self-Hosting guide</a> for environment variables, database setup, and production configuration.</p>
+
+      <!-- ================================================================== -->
+      <!-- NEXT STEPS                                                          -->
+      <!-- ================================================================== -->
+
+      <h2 id="next-steps">Next steps</h2>
+
+      <ul>
+        <li><a href="/docs/api-reference">API Reference</a> — full parameter docs for WebPeel's native API</li>
+        <li><a href="/docs/mcp">MCP Server</a> — all 18 MCP tools documented</li>
+        <li><a href="/docs/quick-answer">LLM-Free Q&amp;A</a> — how the answer endpoint works</li>
+        <li><a href="/docs/sdks">Node.js &amp; Python SDKs</a> — full SDK reference</li>
+        <li><a href="/docs/self-hosting">Self-Hosting</a> — run WebPeel on your own infrastructure</li>
+        <li><a href="https://github.com/webpeel/webpeel">GitHub</a> — source code, issues, contributions</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <footer class="footer-docs">
+    <div class="footer-docs-inner">
+      <div class="footer-docs-left">© 2026 WebPeel · <a href="https://github.com/webpeel/webpeel">AGPL-3.0</a></div>
+      <div class="footer-docs-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://www.npmjs.com/package/webpeel">npm</a>
+        <a href="https://pypi.org/project/webpeel">PyPI</a>
+        <a href="/changelog">Changelog</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script>
+    // Tab switching (matches docs.css tab pattern)
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const group = btn.closest('.tabs');
+        const contentId = btn.dataset.tab;
+        group.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const section = group.parentElement;
+        section.querySelectorAll('.tab-content').forEach(c => {
+          c.classList.toggle('active', c.dataset.content === contentId);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

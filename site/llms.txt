@@ -38,7 +38,10 @@ https://webpeel.dev/docs/token-efficiency
 - Node.js: `npm install webpeel`
 - Python: `pip install webpeel`
 - MCP: stdio or HTTP Streamable transport
-- Firecrawl-compatible API at `/v2/scrape`
+- Firecrawl-compatible API at `/v1/scrape` and `/v1/crawl` — switch by changing the base URL from `https://api.firecrawl.dev` to `https://api.webpeel.dev`
+
+## Migrating from Firecrawl
+WebPeel is a drop-in replacement for Firecrawl's `/v1/scrape` and `/v1/crawl` endpoints. No code changes needed beyond swapping the base URL and API key. Migration guide: https://webpeel.dev/docs/migrate-from-firecrawl
 
 ## Self-Hosting
 https://webpeel.dev/docs/self-hosting
