@@ -8,14 +8,23 @@ FROM node:22-slim
 # Shared Playwright browser path — ensures install + runtime use the same location
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
 
-# Install Playwright system deps + Chromium for browser rendering
-RUN npx --yes playwright install --with-deps chromium
+# Install system deps needed by Chromium (fonts, libs)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
+    libpango-1.0-0 libcairo2 libasound2 libxshmfence1 \
+    fonts-liberation fonts-noto-color-emoji curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install WebPeel from npm (includes compiled dist/)
+# Install WebPeel from npm FIRST (includes rebrowser-playwright)
 # Pin version to bust Docker layer cache on updates
 RUN npm install webpeel@0.13.4
+
+# Install Chromium using WebPeel's bundled rebrowser-playwright
+# This ensures the browser version matches what the code expects
+RUN npx --yes playwright install chromium
 
 # Non-root user for security
 RUN groupadd -r webpeel && useradd -r -g webpeel webpeel \
