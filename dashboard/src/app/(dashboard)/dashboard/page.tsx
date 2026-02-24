@@ -10,11 +10,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UsageBar } from '@/components/usage-bar';
 import { StatCard } from '@/components/stat-card';
 import { ActivityTable } from '@/components/activity-table';
-import { CopyButton } from '@/components/copy-button';
 import { OnboardingModal } from '@/components/onboarding-modal';
-import { RefreshCw, ExternalLink, Activity, Clock, CheckCircle2, Zap, Copy, AlertCircle } from 'lucide-react';
+import { CopyButton } from '@/components/copy-button';
+import {
+  RefreshCw,
+  ExternalLink,
+  Activity,
+  Clock,
+  CheckCircle2,
+  Zap,
+  AlertCircle,
+  Play,
+  BookOpen,
+  Terminal,
+  ArrowRight,
+  Globe,
+} from 'lucide-react';
 import { apiClient, Usage, ApiKey } from '@/lib/api';
 import { ApiErrorBanner } from '@/components/api-error-banner';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
 
 const fetcher = async <T,>(url: string, token: string): Promise<T> => {
   return apiClient<T>(url, { token });
@@ -37,10 +52,16 @@ interface ActivityData {
   }>;
 }
 
+interface DailyUsage {
+  date: string;
+  fetches: number;
+  stealth: number;
+  search: number;
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const token = (session as any)?.apiToken as string | undefined;
-  const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
   const [storedApiKey, setStoredApiKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,18 +87,20 @@ export default function DashboardPage() {
   );
 
   const { data: activity, isLoading: activityLoading, error: activityError, mutate: refreshActivity } = useSWR<ActivityData>(
-    token ? ['/v1/activity', token] : null,
+    token ? ['/v1/activity?limit=5', token] : null,
     ([url, token]: [string, string]) => fetcher<ActivityData>(url, token),
     { refreshInterval: 30000 }
+  );
+
+  const { data: history } = useSWR<{ history: DailyUsage[] }>(
+    token ? ['/v1/usage/history?days=7', token] : null,
+    ([url, token]: [string, string]) => fetcher<{ history: DailyUsage[] }>(url, token),
+    { refreshInterval: 60000 }
   );
 
   const dashboardError = usageError || statsError || activityError;
   const dashboardMutate = () => { refreshUsage(); refreshStats(); refreshActivity(); };
 
-  // Show a clear error state when the session is loaded but no API token was
-  // issued (typically because the OAuth backend call failed during sign-in).
-  // The layout's auto-recovery will handle reconnection — this just shows
-  // a placeholder so the dashboard doesn't render with missing data.
   if (status === 'authenticated' && !token) {
     return (
       <div className="mx-auto max-w-6xl">
@@ -99,55 +122,64 @@ export default function DashboardPage() {
   );
 
   const primaryKey = keys?.keys?.[0];
-  // Use session.apiKey (OAuth) or localStorage (email signup) — the real key is only available once at creation
   const sessionApiKey = (session as any)?.apiKey;
   const realApiKey = sessionApiKey || storedApiKey || null;
   const displayApiKey = realApiKey || 'YOUR_API_KEY';
   const userName = session?.user?.name?.split(' ')[0] || session?.user?.email?.split('@')[0] || 'there';
 
-  // Calculate stats
+  // Stats
   const totalRequests = stats?.totalRequests || 0;
   const remaining = usage?.weekly ? usage.weekly.totalAvailable - usage.weekly.totalUsed : 0;
   const successRate = stats?.successRate || 100;
   const avgResponseTime = stats?.avgResponseTime || 0;
   const weeklyPercentage = usage?.weekly ? (usage.weekly.totalUsed / usage.weekly.totalAvailable) * 100 : 0;
 
-  const handleCopy = (key: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedStates(prev => ({ ...prev, [key]: true }));
-    setTimeout(() => setCopiedStates(prev => ({ ...prev, [key]: false })), 2000);
-  };
+  // Usage chart data
+  const dailyHistory = history?.history || [];
+  const maxDailyValue = Math.max(...dailyHistory.map((d) => d.fetches + d.stealth + d.search), 1);
 
-  // Code examples for different languages
+  // Code examples
   const codeExamples = {
-    curl: `curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \\
+    curl: `curl "${API_URL}/v1/fetch?url=https://example.com" \\
   -H "Authorization: Bearer ${displayApiKey}"`,
-    node: `const response = await fetch(
-  'https://api.webpeel.dev/v1/fetch?url=https://example.com',
+    node: `const res = await fetch(
+  '${API_URL}/v1/fetch?url=https://example.com',
   { headers: { 'Authorization': 'Bearer ${displayApiKey}' } }
 );
-const data = await response.json();`,
-    python: `from webpeel import WebPeel
+const { markdown } = await res.json();`,
+    python: `import requests
 
-# Zero dependencies, pure stdlib
-client = WebPeel(api_key='${displayApiKey}')
-result = client.scrape('https://example.com')
-
-# Get clean markdown
-print(result.markdown)`
+r = requests.get(
+    '${API_URL}/v1/fetch',
+    params={'url': 'https://example.com'},
+    headers={'Authorization': 'Bearer ${displayApiKey}'}
+)
+print(r.json()['markdown'])`,
   };
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
       {/* Onboarding Modal */}
       <OnboardingModal sessionApiKey={sessionApiKey} />
-      
+
       {/* Hero Section */}
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-2">
-          Welcome back, <span className="font-serif italic text-violet-600">{userName}</span>
-        </h1>
-        <p className="text-base text-zinc-500">Here's your API activity at a glance</p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-1">
+            Welcome back, <span className="font-serif italic text-violet-600">{userName}</span>
+          </h1>
+          <p className="text-base text-zinc-500">Here's your API activity at a glance</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => dashboardMutate()}
+          disabled={usageLoading}
+          className="gap-2 w-full sm:w-auto shrink-0"
+        >
+          <RefreshCw className={`h-4 w-4 ${usageLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Stat Cards Row */}
@@ -161,196 +193,251 @@ print(result.markdown)`
           </>
         ) : (
           <>
-            <StatCard
-              icon={Activity}
-              label="Total Requests"
-              value={totalRequests.toLocaleString()}
-              delay={0}
-            />
-            <StatCard
-              icon={Zap}
-              label="Remaining"
-              value={remaining.toLocaleString()}
-              iconColor="text-emerald-600"
-              iconBg="bg-emerald-100"
-              delay={100}
-            />
-            <StatCard
-              icon={CheckCircle2}
-              label="Success Rate"
-              value={`${successRate.toFixed(1)}%`}
-              iconColor="text-blue-600"
-              iconBg="bg-blue-100"
-              delay={200}
-            />
-            <StatCard
-              icon={Clock}
-              label="Avg Response"
-              value={`${avgResponseTime}ms`}
-              iconColor="text-amber-600"
-              iconBg="bg-amber-100"
-              delay={300}
-            />
+            <StatCard icon={Activity} label="Total Requests" value={totalRequests.toLocaleString()} delay={0} />
+            <StatCard icon={Zap} label="Remaining" value={remaining.toLocaleString()} iconColor="text-emerald-600" iconBg="bg-emerald-100" delay={100} />
+            <StatCard icon={CheckCircle2} label="Success Rate" value={`${successRate.toFixed(1)}%`} iconColor="text-blue-600" iconBg="bg-blue-100" delay={200} />
+            <StatCard icon={Clock} label="Avg Response" value={`${avgResponseTime}ms`} iconColor="text-amber-600" iconBg="bg-amber-100" delay={300} />
           </>
         )}
       </div>
 
-      {/* Usage Section with Visual Ring */}
-      <Card className="border-zinc-200">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <CardTitle className="text-xl">Usage Overview</CardTitle>
-              <CardDescription>Track your API usage and limits</CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refreshUsage()}
-              disabled={usageLoading}
-              className="gap-2 w-full sm:w-auto"
-            >
-              <RefreshCw className={`h-4 w-4 ${usageLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <a
+          href="/playground"
+          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-violet-300 hover:shadow-sm transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center group-hover:bg-violet-200 transition-colors flex-shrink-0">
+            <Play className="h-5 w-5 text-violet-600" />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Weekly Usage with Visual Donut */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Donut Chart */}
-            <div className="flex items-center justify-center p-6">
-              <div className="relative w-48 h-48">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-900">Try the Playground</p>
+            <p className="text-xs text-zinc-500 truncate">Fetch any URL in your browser</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-violet-400 transition-colors flex-shrink-0" />
+        </a>
+
+        <a
+          href="https://webpeel.dev/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-emerald-300 hover:shadow-sm transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors flex-shrink-0">
+            <BookOpen className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-900">View Docs</p>
+            <p className="text-xs text-zinc-500 truncate">Full API reference & guides</p>
+          </div>
+          <ExternalLink className="h-4 w-4 text-zinc-300 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
+        </a>
+
+        <a
+          href="https://webpeel.dev/docs/mcp"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-amber-300 hover:shadow-sm transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors flex-shrink-0">
+            <Terminal className="h-5 w-5 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-900">Set up MCP</p>
+            <p className="text-xs text-zinc-500 truncate">Use WebPeel in Claude / Cursor</p>
+          </div>
+          <ExternalLink className="h-4 w-4 text-zinc-300 group-hover:text-amber-400 transition-colors flex-shrink-0" />
+        </a>
+      </div>
+
+      {/* Usage + Activity Chart */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Usage Overview */}
+        <Card className="border-zinc-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Usage Overview</CardTitle>
+                <CardDescription>Weekly API usage and limits</CardDescription>
+              </div>
+              {usage?.weekly && (
+                <span className="text-xs text-zinc-400">
+                  Resets {new Date(usage.weekly.resetsAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Donut */}
+            <div className="flex items-center gap-6">
+              <div className="relative w-28 h-28 flex-shrink-0">
                 <svg className="w-full h-full -rotate-90 transform">
-                  {/* Background circle */}
+                  <circle cx="56" cy="56" r="46" fill="none" stroke="#F4F4F5" strokeWidth="10" />
                   <circle
-                    cx="96"
-                    cy="96"
-                    r="80"
-                    fill="none"
-                    stroke="#F4F4F5"
-                    strokeWidth="16"
-                  />
-                  {/* Progress circle */}
-                  <circle
-                    cx="96"
-                    cy="96"
-                    r="80"
-                    fill="none"
-                    stroke={weeklyPercentage > 80 ? 'url(#warningGradient)' : 'url(#gradient)'}
-                    strokeWidth="16"
-                    strokeDasharray={`${(weeklyPercentage / 100) * 502.65} 502.65`}
+                    cx="56" cy="56" r="46" fill="none"
+                    stroke={weeklyPercentage > 80 ? 'url(#warningGrad)' : 'url(#grad)'}
+                    strokeWidth="10"
+                    strokeDasharray={`${(weeklyPercentage / 100) * 289} 289`}
                     strokeLinecap="round"
                     className="transition-all duration-700 ease-out"
                   />
                   <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#A78BFA" />
                       <stop offset="100%" stopColor="#8B5CF6" />
                     </linearGradient>
-                    <linearGradient id="warningGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id="warningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#FCD34D" />
                       <stop offset="100%" stopColor="#EF4444" />
                     </linearGradient>
                   </defs>
                 </svg>
-                {/* Center text */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold text-zinc-900">{Math.round(weeklyPercentage)}%</span>
-                  <span className="text-xs text-zinc-500 mt-1">Used this week</span>
+                  <span className="text-xl font-bold text-zinc-900">{Math.round(weeklyPercentage)}%</span>
+                  <span className="text-[10px] text-zinc-500">used</span>
                 </div>
+              </div>
+              <div className="flex-1 space-y-3">
+                {usage?.weekly ? (
+                  <>
+                    <UsageBar label="All fetches" used={usage.weekly.totalUsed} limit={usage.weekly.totalAvailable} />
+                    <UsageBar label="Stealth" used={usage.weekly.stealthUsed} limit={usage.weekly.totalAvailable} />
+                  </>
+                ) : (
+                  <>
+                    <div className="h-14 animate-pulse rounded-lg bg-zinc-100" />
+                    <div className="h-14 animate-pulse rounded-lg bg-zinc-100" />
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Usage Details */}
-            <div className="space-y-4 flex flex-col justify-center">
-              {usage?.weekly ? (
-                <>
-                  <UsageBar
-                    label="All fetches"
-                    used={usage.weekly.totalUsed}
-                    limit={usage.weekly.totalAvailable}
-                    resetInfo={`Resets ${new Date(usage.weekly.resetsAt).toLocaleDateString()}`}
-                  />
-                  <UsageBar
-                    label="Stealth fetches"
-                    used={usage.weekly.stealthUsed}
-                    limit={usage.weekly.totalAvailable}
-                  />
-                </>
-              ) : (
-                <>
-                  <div className="h-20 animate-pulse rounded-lg bg-zinc-100" />
-                  <div className="h-20 animate-pulse rounded-lg bg-zinc-100" />
-                </>
-              )}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Burst Limits */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-zinc-900">Current Session</h3>
-              <a
-                href="https://webpeel.dev/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-violet-600 hover:underline flex items-center gap-1"
-              >
-                Learn about limits
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-            {usage?.session ? (
-              <UsageBar
-                label="Burst usage"
-                used={usage.session.burstUsed}
-                limit={usage.session.burstLimit}
-                resetInfo={`Resets in ${usage.session.resetsIn}`}
-              />
-            ) : (
-              <div className="h-20 animate-pulse rounded-lg bg-zinc-100" />
+            {usage?.session && (
+              <>
+                <Separator />
+                <UsageBar
+                  label="Session burst"
+                  used={usage.session.burstUsed}
+                  limit={usage.session.burstLimit}
+                  resetInfo={`Resets in ${usage.session.resetsIn}`}
+                />
+              </>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Quick Start Section with Tabs */}
+        {/* Activity Chart */}
+        <Card className="border-zinc-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Requests (7 days)</CardTitle>
+                <CardDescription>Daily API request volume</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" asChild className="text-xs text-zinc-500 hover:text-violet-600">
+                <a href="/activity">View all <ArrowRight className="h-3 w-3 ml-1" /></a>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {dailyHistory.length > 0 ? (
+              <>
+                <div className="h-40 flex items-end justify-between gap-1.5">
+                  {dailyHistory.map((day, i) => {
+                    const total = day.fetches + day.stealth + day.search;
+                    const heightPct = maxDailyValue > 0 ? (total / maxDailyValue) * 100 : 0;
+                    const dayName = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' });
+                    const isToday = i === dailyHistory.length - 1;
+
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
+                        <div
+                          className="relative w-full"
+                          title={`${dayName}: ${total} requests`}
+                        >
+                          <div
+                            className={`w-full rounded-t-md transition-all ${
+                              isToday
+                                ? 'bg-gradient-to-t from-violet-600 to-violet-400'
+                                : 'bg-gradient-to-t from-violet-300 to-violet-200 group-hover:from-violet-400 group-hover:to-violet-300'
+                            }`}
+                            style={{ height: heightPct > 0 ? `${Math.max(heightPct * 1.4, 6)}px` : '2px' }}
+                          />
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                            <div className="bg-zinc-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                              {total} req
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`text-[9px] font-medium ${isToday ? 'text-violet-600' : 'text-zinc-400'}`}>
+                          {dayName}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-xs text-zinc-400">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-violet-500" />
+                    <span>Today</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-violet-200" />
+                    <span>Previous days</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="h-40 flex flex-col items-center justify-center">
+                <Globe className="h-10 w-10 text-zinc-200 mb-2" />
+                <p className="text-sm text-zinc-400 font-medium">No requests yet</p>
+                <p className="text-xs text-zinc-300 mt-0.5">Try the playground to get started</p>
+                <Button size="sm" variant="outline" asChild className="mt-3">
+                  <a href="/playground">
+                    <Play className="h-3 w-3 mr-1.5" />
+                    Open Playground
+                  </a>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* API Endpoint + Quick Start */}
       <Card className="border-zinc-200">
         <CardHeader>
           <CardTitle className="text-xl">Quick Start</CardTitle>
           <CardDescription>Start making requests in seconds</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-5">
+          {/* API Endpoint */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-zinc-900">API Endpoint</label>
+            <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
+              <Globe className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+              <code className="flex-1 text-sm font-mono text-zinc-700 truncate">{API_URL}/v1/fetch</code>
+              <CopyButton text={`${API_URL}/v1/fetch`} size="sm" variant="ghost" />
+            </div>
+          </div>
+
           {/* API Key Display */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <label className="text-sm font-semibold text-zinc-900">Your API Key</label>
             <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg font-mono text-sm">
               <code className="flex-1 truncate text-zinc-700">{displayApiKey}</code>
-              <button
-                onClick={() => handleCopy('apiKey', displayApiKey)}
-                className="p-2 hover:bg-zinc-200 rounded-md transition-colors"
-              >
-                {copiedStates['apiKey'] ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                ) : (
-                  <Copy className="h-4 w-4 text-zinc-500" />
-                )}
-              </button>
+              <CopyButton text={displayApiKey} size="sm" variant="ghost" />
             </div>
             {!realApiKey && (
               <p className="text-xs text-zinc-500">
-                Replace <code className="font-mono bg-zinc-100 px-1 rounded">YOUR_API_KEY</code> with your key from the{' '}
-                <a href="/keys" className="text-violet-600 hover:underline">
-                  Keys page
-                </a>.
+                Get your key from the{' '}
+                <a href="/keys" className="text-violet-600 hover:underline">Keys page</a>.
               </p>
             )}
           </div>
 
-          {/* Code Examples with Tabs */}
+          {/* Code Examples */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-zinc-900">Example Request</label>
             <Tabs defaultValue="curl" className="w-full">
@@ -365,16 +452,9 @@ print(result.markdown)`
                     <pre className="p-4 bg-zinc-900 text-zinc-100 rounded-lg overflow-x-auto text-xs md:text-sm">
                       <code>{code}</code>
                     </pre>
-                    <button
-                      onClick={() => handleCopy(`code-${lang}`, code)}
-                      className="absolute top-3 right-3 p-2 hover:bg-zinc-800 rounded-md transition-colors"
-                    >
-                      {copiedStates[`code-${lang}`] ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                      ) : (
-                        <Copy className="h-4 w-4 text-zinc-400" />
-                      )}
-                    </button>
+                    <div className="absolute top-3 right-3">
+                      <CopyButton text={code} size="sm" variant="ghost" />
+                    </div>
                   </div>
                 </TabsContent>
               ))}
@@ -383,13 +463,18 @@ print(result.markdown)`
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild className="bg-violet-600 hover:bg-violet-700 flex-1">
-              <a href="https://webpeel.dev/docs" target="_blank" rel="noopener noreferrer">
-                View Documentation
+            <Button asChild className="bg-violet-600 hover:bg-violet-700 flex-1 gap-2">
+              <a href="/playground">
+                <Play className="h-4 w-4" />
+                Try in Playground
               </a>
             </Button>
-            <Button variant="outline" asChild className="flex-1">
-              <a href="/keys">Manage API Keys</a>
+            <Button variant="outline" asChild className="flex-1 gap-2">
+              <a href="https://webpeel.dev/docs" target="_blank" rel="noopener noreferrer">
+                <BookOpen className="h-4 w-4" />
+                View Documentation
+                <ExternalLink className="h-3 w-3" />
+              </a>
             </Button>
           </div>
         </CardContent>
@@ -404,7 +489,10 @@ print(result.markdown)`
               <CardDescription>Your latest API requests</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <a href="/usage">View all</a>
+              <a href="/activity" className="gap-1.5">
+                View all
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
             </Button>
           </div>
         </CardHeader>
