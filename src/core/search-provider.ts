@@ -709,12 +709,8 @@ export function getBestSearchProvider(): { provider: SearchProvider; apiKey?: st
     return { provider: new BraveSearchProvider(), apiKey: braveKey };
   }
 
-  // In production with no API keys, use StealthSearchProvider — DDG HTTP
-  // is frequently blocked on datacenter IPs, so stealth multi-engine is more reliable.
-  if (process.env.NODE_ENV === 'production') {
-    return { provider: new StealthSearchProvider() };
-  }
-
-  // Default: DuckDuckGo (free, no key, with built-in fallback chain to stealth)
+  // Always use DuckDuckGoProvider — it has the full fallback chain:
+  // DDG HTTP → DDG Lite → Brave (if key) → stealth multi-engine.
+  // This ensures search works even if Playwright isn't available (graceful degradation).
   return { provider: new DuckDuckGoProvider() };
 }

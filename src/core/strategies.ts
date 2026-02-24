@@ -24,6 +24,11 @@ export type { StrategyResult } from './strategy-hooks.js';
 /* ---------- hardcoded domain rules -------------------------------------- */
 
 function shouldForceBrowser(url: string): DomainRecommendation | null {
+  // Hashbang URLs (#!) are always JS-routed SPAs — browser rendering required
+  if (url.includes('#!')) {
+    return { mode: 'browser' };
+  }
+
   try {
     const hostname = new URL(url).hostname.toLowerCase();
 
@@ -95,6 +100,72 @@ function shouldForceBrowser(url: string): DomainRecommendation | null {
 }
 
 /* ---------- helpers ------------------------------------------------------ */
+
+/**
+ * Detect strong SPA indicators in fetched HTML that suggest browser rendering is required.
+ *
+ * These patterns indicate a JS-rendered SPA shell page: the server returns a
+ * barebones HTML document with an empty root mount point that only gets
+ * populated after JavaScript runs in the browser.
+ *
+ * Auto-render detection complements the domain-list approach in shouldForceBrowser():
+ * it catches unknown SPAs that aren't in the hardcoded list.
+ */
+function hasSpaIndicators(html: string): boolean {
+  // Empty SPA root mount points — definitive SPA shell indicators
+  const emptyRootPatterns = [
+    '<div id="root"></div>',
+    '<div id="root"> </div>',
+    '<div id="app"></div>',
+    '<div id="app"> </div>',
+    '<div id="__next"></div>',
+    '<div id="__next"> </div>',
+    '<div id="___gatsby"></div>',
+    '<div id="gatsby-focus-wrapper"></div>',
+  ];
+  for (const pattern of emptyRootPatterns) {
+    if (html.includes(pattern)) return true;
+  }
+
+  // <noscript> blocks with "enable JavaScript" messages
+  // These are canonical SPA signals — React, Vue, Angular all emit them
+  const noscriptMatch = html.match(/<noscript[^>]*>([\s\S]*?)<\/noscript>/i);
+  if (noscriptMatch) {
+    const noscriptContent = noscriptMatch[1]!.toLowerCase();
+    if (
+      noscriptContent.includes('enable javascript') ||
+      noscriptContent.includes('javascript is required') ||
+      noscriptContent.includes('javascript must be enabled') ||
+      noscriptContent.includes('requires javascript') ||
+      noscriptContent.includes('javascript to run this app') ||
+      noscriptContent.includes('you need to enable javascript')
+    ) {
+      return true;
+    }
+  }
+
+  // Many script tags + very little visible text = almost certainly an SPA shell.
+  // This catches SPAs not matched by the root-div patterns above.
+  // Note: shouldEscalateForLowContent() guards html.length > 1500; this fills the gap
+  // for smaller pages (e.g. minimal webpack bundles with few/no meta tags).
+  const scriptTagCount = (html.match(/<script/gi) || []).length;
+  if (scriptTagCount >= 5) {
+    // Strip scripts/styles then measure visible text
+    const stripped = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    // Many scripts but almost no readable text → render it
+    if (stripped.length < 150) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
@@ -469,7 +540,7 @@ export async function smartFetch(
         ),
       3,
     ).then((result) => {
-      if (looksLikeShellPage(result)) {
+      if (looksLikeShellPage(result) || hasSpaIndicators(result.html)) {
         throw new BlockedError(
           'Shell page detected. Browser rendering required.',
         );
@@ -501,8 +572,8 @@ export async function smartFetch(
     if (raceTimer) clearTimeout(raceTimer);
 
     if (simpleOrTimeout.type === 'simple-success') {
-      // Check if the content is suspiciously thin — escalate to browser if so
-      if (shouldEscalateForLowContent(simpleOrTimeout.result)) {
+      // Check if the content is suspiciously thin or has SPA indicators — escalate to browser if so
+      if (shouldEscalateForLowContent(simpleOrTimeout.result) || hasSpaIndicators(simpleOrTimeout.result.html)) {
         shouldUseBrowser = true;
       } else {
         // Check whether the response is a bot-challenge page (e.g. Cloudflare, PerimeterX)
@@ -605,8 +676,8 @@ export async function smartFetch(
           .catch((error) => ({ type: 'simple-error' as const, error }));
 
         if (simpleResult.type === 'simple-success') {
-          // Check if the content is suspiciously thin — escalate to browser if so
-          if (shouldEscalateForLowContent(simpleResult.result)) {
+          // Check if the content is suspiciously thin or has SPA indicators — escalate to browser if so
+          if (shouldEscalateForLowContent(simpleResult.result) || hasSpaIndicators(simpleResult.result.html)) {
             shouldUseBrowser = true;
           } else {
             // Check whether the response is a bot-challenge page

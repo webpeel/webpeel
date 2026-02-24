@@ -20,7 +20,7 @@ WORKDIR /app
 
 # Install WebPeel from npm FIRST (includes rebrowser-playwright)
 # Pin version to bust Docker layer cache on updates
-RUN npm install webpeel@0.13.4
+RUN npm install webpeel@0.13.5
 
 # Install Chromium using WebPeel's bundled rebrowser-playwright
 # This ensures the browser version matches what the code expects
