@@ -135,6 +135,47 @@ function parseActions(actionStrings: string[]): PageAction[] {
   });
 }
 
+/**
+ * Format an error with actionable suggestions based on error type
+ */
+function formatError(error: Error, _url: string, options: any): string {
+  const msg = error.message || String(error);
+  const lines: string[] = [`\x1b[31m✖ ${msg}\x1b[0m`];
+
+  if (msg.includes('net::ERR_') || msg.includes('ECONNREFUSED') || msg.includes('ENOTFOUND')) {
+    lines.push('\x1b[33m💡 Check the URL is correct and the site is accessible.\x1b[0m');
+  } else if (msg.includes('timeout') || msg.includes('Timeout') || msg.includes('Navigation timeout')) {
+    lines.push('\x1b[33m💡 Try increasing timeout: --timeout 60000\x1b[0m');
+    if (!options.render) {
+      lines.push('\x1b[33m💡 Site may need browser rendering: --render\x1b[0m');
+    }
+  } else if (msg.includes('blocked') || msg.includes('403') || msg.includes('Access Denied') || msg.includes('challenge')) {
+    if (!options.stealth) {
+      lines.push('\x1b[33m💡 Try stealth mode to bypass bot detection: --stealth\x1b[0m');
+    }
+    lines.push('\x1b[33m💡 Try a different user agent: --ua "Mozilla/5.0..."\x1b[0m');
+  } else if (msg.includes('empty') || msg.includes('no content') || msg.includes('0 tokens')) {
+    if (!options.render) {
+      lines.push('\x1b[33m💡 Page may be JavaScript-rendered. Try: --render\x1b[0m');
+    } else if (!options.stealth) {
+      lines.push('\x1b[33m💡 Content may be behind bot detection. Try: --stealth\x1b[0m');
+    }
+    lines.push('\x1b[33m💡 Try waiting longer for content: --wait 5000\x1b[0m');
+  } else if (msg.includes('captcha') || msg.includes('CAPTCHA') || msg.includes('Captcha')) {
+    lines.push('\x1b[33m💡 This site requires CAPTCHA solving. Try a browser profile: --profile mysite --headed\x1b[0m');
+  } else if (msg.includes('rate limit') || msg.includes('429')) {
+    lines.push('\x1b[33m💡 Rate limited. Wait a moment and try again, or use --proxy.\x1b[0m');
+  } else if (msg.toLowerCase().includes('enotfound') || msg.toLowerCase().includes('getaddrinfo')) {
+    lines.push('\x1b[33m💡 Could not resolve hostname. Check the URL is correct.\x1b[0m');
+  } else if (msg.toLowerCase().includes('certificate') || msg.toLowerCase().includes('ssl') || msg.toLowerCase().includes('tls')) {
+    lines.push('\x1b[33m💡 SSL/TLS error. The site may have an invalid certificate.\x1b[0m');
+  } else if (msg.toLowerCase().includes('usage') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('limit')) {
+    lines.push('\x1b[33m💡 Run `webpeel usage` to check your quota, or `webpeel login` to authenticate.\x1b[0m');
+  }
+
+  return lines.join('\n');
+}
+
 program
   .argument('[url]', 'URL to fetch')
   .option('-r, --render', 'Use headless browser (for JS-heavy sites)')
@@ -155,6 +196,7 @@ program
   .option('--exclude-tags <tags>', 'Comma-separated HTML tags/selectors to exclude (e.g., "nav,footer,aside")')
   .option('--only-main-content', 'Shortcut for --include-tags main,article')
   .option('--full-content', 'Return full page content (disable automatic content density pruning)')
+  .option('--readable', 'Reader mode — extract only the main article content, strip all noise (like browser Reader Mode)')
   .option('--focus <query>', 'Query-focused filtering — only return content relevant to this query (BM25 ranking)')
   .option('--chunk <size>', 'Split content into N-token chunks for LLM processing (default strategy: semantic)', parseInt)
   .option('--chunk-overlap <tokens>', 'Overlap tokens between chunks (default: 200)', parseInt)
@@ -189,7 +231,54 @@ program
   .option('--pages <n>', 'Follow pagination "Next" links for N pages (max 10)', (v: string) => parseInt(v, 10))
   .option('--profile <path>', 'Use a persistent browser profile directory (cookies/sessions survive between calls)')
   .option('--headed', 'Run browser in headed (visible) mode — useful for profile setup and debugging')
+  .option('-q, --question <q>', 'Ask a question about the page content (BM25-powered, no LLM key needed)')
   .option('--agent', 'Agent mode: sets --json, --silent, --extract-all, and --budget 4000 (override with --budget N)')
+
+program.configureHelp({
+  sortSubcommands: true,
+  showGlobalOptions: false,
+});
+
+program.addHelpText('afterAll', `
+Output Formats:
+  --json                  JSON output with full metadata
+  --html                  Raw HTML output
+  --text                  Plain text output
+  --csv / --table         Tabular output for extractions
+  -s, --silent            No spinner or progress output
+
+Content Control:
+  --readable              Reader mode — clean article content only
+  --budget <n>            Smart token budget (no LLM key needed)
+  --focus <query>         BM25 query-focused filtering
+  --selector <css>        Extract specific CSS selector
+  --only-main-content     Just main/article content
+  --full-content          Disable content pruning
+  -q, --question <q>      Ask a question about the content
+
+Rendering:
+  -r, --render            Browser rendering for JS-heavy sites
+  --stealth               Stealth mode for bot-protected sites
+  --profile <path>        Persistent browser profile
+  --headed                Visible browser (for debugging)
+  --action <actions>      Browser automation (click, type, scroll...)
+
+Extraction:
+  --extract <json>        CSS selector extraction
+  --extract-all           Auto-detect listing items
+  --schema <name>         Named extraction schema
+  --llm-extract [inst]    LLM-powered extraction (BYOK)
+
+Examples:
+  $ webpeel "https://example.com"                              Basic fetch
+  $ webpeel "https://youtube.com/watch?v=..." --json           YouTube transcript
+  $ webpeel "https://openai.com/pricing" -q "GPT-4 cost?"     Quick answer
+  $ webpeel "https://nytimes.com/article" --readable           Reader mode
+  $ webpeel search "best restaurants in NYC"                   Web search
+  $ webpeel hotels "Manhattan" --checkin tomorrow              Hotel search
+`);
+
+program
   .action(async (url: string | undefined, options) => {
     // --agent sets sensible defaults for AI agents; explicit flags override
     if (options.agent) {
@@ -533,6 +622,7 @@ program
         storageState: resolvedStorageState,
         proxy: options.proxy as string | undefined,
         fullPage: options.fullContent || false,
+        readable: options.readable || false,
         // Smart auto-scroll (bare --scroll-extract flag)
         autoScroll: isAutoScroll
           ? { timeout: options.scrollExtractTimeout }
@@ -571,7 +661,21 @@ program
       }
 
       if (spinner) {
-        spinner.succeed(`Fetched in ${result.elapsed}ms using ${result.method} method`);
+        const domainTag = (result as any).domainData
+          ? ` [${(result as any).domainData.domain}:${(result as any).domainData.type}]`
+          : '';
+        spinner.succeed(`Fetched in ${result.elapsed}ms using ${result.method} method${domainTag}`);
+      }
+
+      // Show metadata header
+      const pageTitle = result.metadata?.title || result.title;
+      if (!options.silent && !options.json && pageTitle) {
+        const parts: string[] = [];
+        if (result.metadata?.author) parts.push(`by ${result.metadata.author}`);
+        if ((result as any).readability?.readingTime) parts.push((result as any).readability.readingTime);
+        if (result.tokens) parts.push(`${result.tokens.toLocaleString()} tokens`);
+        const subtitle = parts.length ? ` · ${parts.join(' · ')}` : '';
+        console.error(`\x1b[36m📄 ${pageTitle}${subtitle}\x1b[0m`);
       }
 
       // Show usage footer for free/anonymous users
@@ -634,6 +738,37 @@ program
         if (isJson) {
           (result as any).focusQuery = options.focus;
           (result as any).focusReduction = focusResult.reductionPercent;
+        }
+      }
+
+      // --- LLM-free Quick Answer ---
+      if (options.question && result.content) {
+        const { quickAnswer } = await import('./core/quick-answer.js');
+        const qa = quickAnswer({
+          question: options.question as string,
+          content: result.content,
+          url: result.url,
+        });
+        (result as any).quickAnswer = qa;
+
+        if (!isJson) {
+          // Display answer prominently in human-readable mode
+          const conf = (qa.confidence * 100).toFixed(0);
+          await writeStdout(`\n\x1b[36m📋 ${qa.question}\x1b[0m\n\n`);
+          if (qa.answer) {
+            await writeStdout(`\x1b[32m💡 Answer (${conf}% confidence):\x1b[0m\n${qa.answer}\n`);
+          } else {
+            await writeStdout(`\x1b[33m💡 No relevant answer found (${conf}% confidence)\x1b[0m\n`);
+          }
+          if (qa.passages && qa.passages.length > 1) {
+            await writeStdout(`\n\x1b[33m📝 Supporting evidence:\x1b[0m\n`);
+            for (const p of qa.passages.slice(1, 4)) {
+              await writeStdout(`  • [${(p.score * 100).toFixed(0)}%] ${p.text.substring(0, 200)}${p.text.length > 200 ? '...' : ''}\n`);
+            }
+          }
+          await writeStdout('\n');
+          await cleanup();
+          process.exit(0);
         }
       }
 
@@ -897,25 +1032,9 @@ program
       }
 
       if (error instanceof Error) {
-        console.error(`\nError: ${error.message}`);
-        
-        // Provide actionable hints based on error type
-        const msg = error.message.toLowerCase();
-        if (msg.includes('timeout') || msg.includes('timed out')) {
-          console.error('\n💡 Hint: Try --render for JS-heavy sites, or --wait 5000 to wait longer.');
-        } else if (msg.includes('blocked') || msg.includes('403') || msg.includes('cloudflare')) {
-          console.error('\n💡 Hint: Try --stealth to bypass bot detection (uses more credits).');
-        } else if (msg.includes('enotfound') || msg.includes('getaddrinfo')) {
-          console.error('\n💡 Hint: Could not resolve hostname. Check the URL is correct.');
-        } else if (msg.includes('econnrefused') || msg.includes('econnreset')) {
-          console.error('\n💡 Hint: Connection refused. The site may be down or blocking requests.');
-        } else if (msg.includes('certificate') || msg.includes('ssl') || msg.includes('tls')) {
-          console.error('\n💡 Hint: SSL/TLS error. The site may have an invalid certificate.');
-        } else if (msg.includes('usage') || msg.includes('quota') || msg.includes('limit')) {
-          console.error('\n💡 Hint: Run `webpeel usage` to check your quota, or `webpeel login` to authenticate.');
-        }
+        console.error('\n' + formatError(error, url || '', options));
       } else {
-        console.error('\nError: Unknown error occurred');
+        console.error('\x1b[31m✖ Unknown error occurred\x1b[0m');
       }
 
       await cleanup();
@@ -3674,8 +3793,45 @@ async function outputResult(result: PeelResult, options: any, extra: OutputExtra
 
   // Default: full output
   if (options.json) {
-    const envelope = buildEnvelope(result, extra);
-    await writeStdout(JSON.stringify(envelope, null, 2) + '\n');
+    // Build clean JSON output with guaranteed top-level fields
+    const output: Record<string, any> = {
+      url: result.url,
+      title: result.metadata?.title || result.title || null,
+      tokens: result.tokens || 0,
+      fetchedAt: new Date().toISOString(),
+      method: result.method || 'simple',
+      elapsed: result.elapsed,
+      content: result.content,
+    };
+
+    // Add optional fields only if present (filter out undefined/null values from metadata)
+    if (result.metadata) {
+      const cleanMeta: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(result.metadata)) {
+        if (v !== undefined && v !== null) cleanMeta[k] = v;
+      }
+      if (Object.keys(cleanMeta).length > 0) output.metadata = cleanMeta;
+    }
+    if (result.links?.length) output.links = result.links;
+    if ((result as any).images?.length) output.images = (result as any).images;
+    if ((result as any).structured) output.structured = (result as any).structured;
+    if ((result as any).domainData) output.domainData = (result as any).domainData;
+    if ((result as any).readability) output.readability = (result as any).readability;
+    if ((result as any).quickAnswer) output.quickAnswer = (result as any).quickAnswer;
+    if ((result as any).quality) output.quality = (result as any).quality;
+    if (result.contentType) output.contentType = result.contentType;
+    if ((result as any).chunks) output.chunks = (result as any).chunks;
+    if ((result as any).totalChunks) output.totalChunks = (result as any).totalChunks;
+    if ((result as any).warning) output.warning = (result as any).warning;
+    if ((result as any).focusQuery) output.focusQuery = (result as any).focusQuery;
+    if ((result as any).focusReduction) output.focusReduction = (result as any).focusReduction;
+    if (extra.cached) output.cached = true;
+    if (extra.truncated) output.truncated = true;
+    if (extra.totalAvailable !== undefined) output.totalAvailable = extra.totalAvailable;
+
+    output._meta = { version: cliVersion, method: result.method || 'simple' };
+
+    await writeStdout(JSON.stringify(output, null, 2) + '\n');
   } else {
     await writeStdout(result.content + '\n');
   }

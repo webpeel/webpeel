@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebPeel — The Web Data Platform for AI Agents</title>
-  <meta name="description" content="Give your AI agent the entire web. 13-tool MCP server for Claude, Cursor & VS Code. Deep research agent. Structured extraction. Smart escalation from HTTP to stealth. 500 free/week, no credit card.">
+  <meta name="description" content="Give your AI agent the entire web. 18-tool MCP server for Claude, Cursor & VS Code. YouTube transcripts. LLM-free Q&A. Deep research. Structured extraction. Smart escalation. 500 free/week, no credit card.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://webpeel.dev">
   <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://webpeel.dev">
   <meta property="og:title" content="WebPeel — The Web Data Platform for AI Agents">
-  <meta property="og:description" content="Give your AI agent the entire web. 13-tool MCP server for Claude, Cursor & VS Code. Deep research, structured extraction, smart escalation. 500 free/week.">
+  <meta property="og:description" content="Give your AI agent the entire web. 18-tool MCP server for Claude, Cursor & VS Code. YouTube transcripts, LLM-free Q&A, deep research, structured extraction, smart escalation. 500 free/week.">
   <meta property="og:image" content="https://webpeel.dev/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:creator" content="@webpeel_dev">
@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"WebPeel","applicationCategory":"DeveloperApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Cross-platform","description":"The web data platform for AI agents. 13-tool MCP server, deep research agent, structured extraction, smart escalation.","url":"https://webpeel.dev","creator":{"@type":"Person","name":"Jake Liu"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"WebPeel","applicationCategory":"DeveloperApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Cross-platform","description":"The web data platform for AI agents. 18-tool MCP server, YouTube transcripts, LLM-free Q&A, deep research agent, structured extraction, smart escalation.","url":"https://webpeel.dev","creator":{"@type":"Person","name":"Jake Liu"}}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What happens if I exceed my WebPeel limits?","acceptedAnswer":{"@type":"Answer","text":"WebPeel has two tiers: hourly burst limits (hard - returns 429) and weekly quotas (soft - degrades to HTTP-only mode instead of blocking). Hourly resets automatically; weekly resets every Monday. Paid plans have higher limits and can add extra usage credits when needed."}},{"@type":"Question","name":"Can I cancel my WebPeel subscription anytime?","acceptedAnswer":{"@type":"Answer","text":"Yes, absolutely. No contracts, no commitments. Cancel your subscription anytime from your dashboard."}},{"@type":"Question","name":"Does WebPeel store the pages I fetch?","acceptedAnswer":{"@type":"Answer","text":"No, we never store fetched content. We only log metadata (URL, timestamp, response time) for analytics."}},{"@type":"Question","name":"Can I self-host WebPeel?","acceptedAnswer":{"@type":"Answer","text":"Yes, WebPeel is open source under the AGPL-3.0 license. Install it with npm install -g webpeel and run your own instance."}}]}</script>
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -477,9 +477,9 @@
   <!-- HERO -->
   <section class="hero">
     <div class="container">
-      <div class="hero-badge fade-up"><span class="dot"></span> v0.13.3 — Deep Research Agent · Python SDK · 13 MCP Tools</div>
+      <div class="hero-badge fade-up"><span class="dot"></span> v0.14.0 — YouTube Transcripts · LLM-Free Q&amp;A · 18 MCP Tools</div>
       <h1 class="fade-up delay-1">Give your AI<br><em>the entire web.</em></h1>
-      <p class="fade-up delay-2">The web data platform for AI agents. MCP server with 13 tools for Claude, Cursor &amp; VS Code. Deep research. Structured extraction. Smart escalation. 500 free requests/week.</p>
+      <p class="fade-up delay-2">Web intelligence for AI agents. Fetch any URL → clean markdown. YouTube transcripts. Reddit threads. Quick answers. 18 MCP tools. No API keys needed. 500 free/week.</p>
       <div class="hero-actions fade-up delay-3">
         <a href="https://app.webpeel.dev/signup" class="btn btn-primary">Start free — no credit card →</a>
         <a href="https://github.com/webpeel/webpeel" class="btn btn-secondary">
@@ -490,7 +490,7 @@
       <div class="hero-trust fade-up delay-3">
         <span class="hero-trust-item"><span class="ck">✓</span> 500 free/week, no card</span>
         <span class="hero-trust-item"><span class="ck">✓</span> AGPL-3.0 open source</span>
-        <span class="hero-trust-item"><span class="ck">✓</span> 651 tests · 100% success rate</span>
+        <span class="hero-trust-item"><span class="ck">✓</span> 927 tests · 100% success rate</span>
         <span class="hero-trust-item"><span class="ck">✓</span> <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">npm install -g webpeel</code></span>
       </div>
 
@@ -518,23 +518,28 @@
         <div>
           <div class="section-label">MCP Server</div>
           <h2 style="font-family:'Instrument Serif',serif;font-size:38px;font-weight:400;color:white;margin-bottom:12px;line-height:1.1;">Your AI agent's<br><em style="font-style:italic;color:#C4B5FD;">web superpower.</em></h2>
-          <p style="color:#A1A1AA;font-size:16px;max-width:420px;line-height:1.65;margin-bottom:36px;">One command installs 13 powerful web tools into Claude, Cursor, VS Code, Windsurf — any MCP client. Hosted endpoint, no local server needed.</p>
+          <p style="color:#A1A1AA;font-size:16px;max-width:420px;line-height:1.65;margin-bottom:36px;">One command installs 18 powerful web tools into Claude, Cursor, VS Code, Windsurf — any MCP client. Hosted endpoint, no local server needed.</p>
 
-          <div class="mcp-sublabel">13 Tools Available</div>
+          <div class="mcp-sublabel">18 Tools Available</div>
           <div class="mcp-tools reveal-stagger" data-reveal>
             <div class="mcp-tool">fetch</div>
+            <div class="mcp-tool">youtube</div>
+            <div class="mcp-tool">quick_answer</div>
             <div class="mcp-tool">search</div>
+            <div class="mcp-tool">research</div>
+            <div class="mcp-tool">deep_fetch</div>
+            <div class="mcp-tool">extract</div>
+            <div class="mcp-tool">auto_extract</div>
             <div class="mcp-tool">crawl</div>
             <div class="mcp-tool">map</div>
-            <div class="mcp-tool">extract</div>
             <div class="mcp-tool">batch</div>
-            <div class="mcp-tool">agent</div>
             <div class="mcp-tool">screenshot</div>
-            <div class="mcp-tool">brand</div>
-            <div class="mcp-tool">summarize</div>
-            <div class="mcp-tool">answer</div>
-            <div class="mcp-tool">research</div>
             <div class="mcp-tool">hotels</div>
+            <div class="mcp-tool">watch</div>
+            <div class="mcp-tool">answer</div>
+            <div class="mcp-tool">summarize</div>
+            <div class="mcp-tool">brand</div>
+            <div class="mcp-tool">change_track</div>
           </div>
 
           <div class="mcp-sublabel" style="margin-top:24px;">Works With</div>
@@ -574,7 +579,7 @@
   }
 }</pre>
           </div>
-          <p style="color:#52525B;font-size:13px;margin-top:14px;line-height:1.6;">No local server needed. One URL, instant access to all 13 tools. Works in Claude Desktop, Cursor, VS Code Insiders, and any Streamable HTTP MCP client.</p>
+          <p style="color:#52525B;font-size:13px;margin-top:14px;line-height:1.6;">No local server needed. One URL, instant access to all 18 tools. Works in Claude Desktop, Cursor, VS Code Insiders, and any Streamable HTTP MCP client.</p>
         </div>
       </div>
     </div>
@@ -594,7 +599,7 @@
         <div class="stat-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1" fill="#EDE9FE"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1" fill="#EDE9FE"/></svg>
         </div>
-        <div class="stat-num" data-target="13">13</div>
+        <div class="stat-num" data-target="18">18</div>
         <div class="stat-label">MCP tools for AI agents</div>
       </div>
       <div class="stat">
@@ -620,9 +625,42 @@
       <div class="section-header">
         <div class="section-label">Capabilities</div>
         <h2>Everything your<br><em class="serif" style="font-style:italic">agent needs</em></h2>
-        <p>Six powerful capabilities in one package. Not just fetching — a complete web data platform.</p>
+        <p>Web intelligence in one package. Not just fetching — transcripts, Q&amp;A, reader mode, research, and more.</p>
       </div>
       <div class="features-grid reveal-stagger" data-reveal>
+        <div class="feature-card">
+          <div class="feature-icon">🎬</div>
+          <h3>YouTube Transcripts</h3>
+          <p>Extract video transcripts from any YouTube URL — no API key needed. Supports all formats: watch, youtu.be, embed, and shorts. YouTube URLs auto-return structured transcript data with timestamps.</p>
+          <div class="feature-tags">
+            <span class="feature-tag accent">No API key</span>
+            <span class="feature-tag">All URL formats</span>
+            <span class="feature-tag">Timestamps</span>
+            <span class="feature-tag">MCP tool</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">❓</div>
+          <h3>Quick Answer &amp; Domain Extractors</h3>
+          <p>Ask questions about any page — no LLM API key needed. BM25 relevance scoring finds answers instantly. Domain-aware structured extraction for Twitter/X, Reddit, GitHub, and Hacker News via native APIs.</p>
+          <div class="feature-tags">
+            <span class="feature-tag accent">No LLM key</span>
+            <span class="feature-tag accent">BM25 scoring</span>
+            <span class="feature-tag">Twitter / Reddit</span>
+            <span class="feature-tag">GitHub / HN</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📖</div>
+          <h3>Reader Mode</h3>
+          <p>Browser Reader Mode for AI agents. Strips nav, ads, cookie banners, sidebars, and 25+ other noise patterns using multi-signal content scoring. Get the pure article — nothing else.</p>
+          <div class="feature-tags">
+            <span class="feature-tag accent">25+ noise patterns</span>
+            <span class="feature-tag">Multi-signal scoring</span>
+            <span class="feature-tag">--readable flag</span>
+            <span class="feature-tag">MCP: readable: true</span>
+          </div>
+        </div>
         <div class="feature-card">
           <div class="feature-icon">🌐</div>
           <h3>Smart Scrape</h3>
@@ -633,6 +671,17 @@
             <span class="feature-tag">Screenshots</span>
             <span class="feature-tag">Infinite scroll</span>
             <span class="feature-tag">Browser profiles</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3>Deep Research Agent</h3>
+          <p>Multi-hop autonomous research: search → fetch → analyze → follow links → synthesize. Streaming output with live progress. Depth controls, topic tuning, JSON Schema results, cited sources.</p>
+          <div class="feature-tags">
+            <span class="feature-tag accent">Multi-hop</span>
+            <span class="feature-tag accent">Streaming</span>
+            <span class="feature-tag">BYOK LLM</span>
+            <span class="feature-tag">Citations</span>
           </div>
         </div>
         <div class="feature-card">
@@ -648,6 +697,17 @@
           </div>
         </div>
         <div class="feature-card">
+          <div class="feature-icon">🧬</div>
+          <h3>Structured Extraction</h3>
+          <p>Extract typed data — not just markdown. Use JSON Schema for precise field extraction, 7 built-in CSS schemas for common page types, or LLM extraction with your own API key (BYOK).</p>
+          <div class="feature-tags">
+            <span class="feature-tag accent">JSON Schema</span>
+            <span class="feature-tag accent">LLM (BYOK)</span>
+            <span class="feature-tag">7 CSS schemas</span>
+            <span class="feature-tag">Firecrawl compat.</span>
+          </div>
+        </div>
+        <div class="feature-card">
           <div class="feature-icon">🕷️</div>
           <h3>Crawl &amp; Map</h3>
           <p>Crawl entire sites with BFS/DFS strategies, depth control, and URL filtering. Generate sitemaps. Batch-fetch thousands of pages asynchronously with webhook notifications.</p>
@@ -659,35 +719,13 @@
           </div>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🧬</div>
-          <h3>Structured Extraction</h3>
-          <p>Extract typed data — not just markdown. Use JSON Schema for precise field extraction, 7 built-in CSS schemas for common page types, or LLM extraction with your own API key (BYOK).</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">JSON Schema</span>
-            <span class="feature-tag accent">LLM (BYOK)</span>
-            <span class="feature-tag">6 CSS schemas</span>
-            <span class="feature-tag">Firecrawl compat.</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🧠</div>
-          <h3>Deep Research Agent</h3>
-          <p>Multi-hop autonomous research: search → fetch → analyze → follow links → synthesize. Streaming output with live progress. Depth controls, topic tuning, JSON Schema results, cited sources.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">Multi-hop</span>
-            <span class="feature-tag accent">Streaming</span>
-            <span class="feature-tag">BYOK LLM</span>
-            <span class="feature-tag">Citations</span>
-          </div>
-        </div>
-        <div class="feature-card">
           <div class="feature-icon">🏨</div>
-          <h3>Specialized Tools</h3>
-          <p>Hotel search across Kayak, Booking.com, Google Travel &amp; Expedia in parallel. Brand &amp; design system extraction. Cited answer endpoint. Change tracking. Screenshot with full-page support.</p>
+          <h3>Hotels &amp; Specialized Tools</h3>
+          <p>Hotel search across Kayak, Booking.com, Google Travel &amp; Expedia in parallel. Brand &amp; design system extraction. URL change monitoring. Screenshot with full-page support.</p>
           <div class="feature-tags">
             <span class="feature-tag accent">Hotel search</span>
             <span class="feature-tag">Branding</span>
-            <span class="feature-tag">Cited answers</span>
+            <span class="feature-tag">URL monitoring</span>
             <span class="feature-tag">Change tracking</span>
           </div>
         </div>
@@ -941,7 +979,7 @@
           </tr>
           <tr>
             <td><div class="feature-tooltip">MCP server (tools)<span class="tooltip-icon">ⓘ<span class="tooltip-text">MCP tools for Claude, Cursor, VS Code, Windsurf</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span> 13 tools</td>
+            <td class="highlight-col"><span class="check">✓</span> 18 tools</td>
             <td>~6 tools</td>
             <td><span class="check">✓</span></td>
             <td><span class="check">✓</span></td>
@@ -1221,7 +1259,7 @@
         <div style="display: grid; gap: 12px; font-size: 14px; color: var(--text-2); line-height: 1.6;">
           <div style="display: flex; gap: 10px;"><span style="color: var(--green); font-weight: 600;">✓</span><span><strong>First 25 fetches need no account.</strong> Try WebPeel instantly via CLI or API.</span></div>
           <div style="display: flex; gap: 10px;"><span style="color: var(--green); font-weight: 600;">✓</span><span><strong>Credit costs:</strong> Basic fetch = 1 · Stealth = 5 · Search = 1 · Crawl = 1/page · Research = varies</span></div>
-          <div style="display: flex; gap: 10px;"><span style="color: var(--green); font-weight: 600;">✓</span><span><strong>651 tests</strong> in the test suite — battle-tested reliability for production use.</span></div>
+          <div style="display: flex; gap: 10px;"><span style="color: var(--green); font-weight: 600;">✓</span><span><strong>927 tests</strong> in the test suite — battle-tested reliability for production use.</span></div>
         </div>
       </div>
 
@@ -1260,7 +1298,7 @@
         </div>
         <div class="faq-item">
           <div class="faq-question" onclick="toggleFAQ(this)"><span>How is WebPeel different from Firecrawl?</span><span class="faq-arrow">▼</span></div>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel has more MCP tools (13 vs ~6), a built-in deep research agent, smart auto-escalation (HTTP → browser → stealth, zero config), 27+ search sources, hotel search, branding extraction, and a more generous free tier. Fully open source under AGPL-3.0. 100% success rate vs Firecrawl's 93.3% in our benchmark.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel has more MCP tools (18 vs ~6), a built-in deep research agent, smart auto-escalation (HTTP → browser → stealth, zero config), YouTube transcript extraction, LLM-free Q&amp;A, domain-aware extractors, 27+ search sources, hotel search, branding extraction, and a more generous free tier. Fully open source under AGPL-3.0. 100% success rate vs Firecrawl's 93.3% in our benchmark.</div></div>
         </div>
         <div class="faq-item">
           <div class="faq-question" onclick="toggleFAQ(this)"><span>Is there an enterprise plan?</span><span class="faq-arrow">▼</span></div>
@@ -1279,7 +1317,7 @@
     <div class="container">
       <h2>Ready to give your AI<br><em class="serif" style="font-style:italic">the entire web?</em></h2>
       <p>Start in under a minute. No credit card required.</p>
-      <p class="cta-proof">500 free/week · AGPL-3.0 open source · 651 tests · npm install -g webpeel</p>
+      <p class="cta-proof">500 free/week · AGPL-3.0 open source · 927 tests · npm install -g webpeel</p>
       <div class="hero-actions">
         <a href="https://app.webpeel.dev/signup" class="btn btn-primary">Create free account →</a>
         <a href="/docs/" class="btn btn-secondary">Read the docs</a>

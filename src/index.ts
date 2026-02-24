@@ -14,9 +14,15 @@ import { cleanup, warmup, closePool, scrollAndWait, closeProfileBrowser } from '
 import { autoScroll as runAutoScroll, type AutoScrollOptions } from './core/actions.js';
 import { extractStructured } from './core/extract.js';
 import { isPdfContentType, isDocxContentType, extractDocumentToFormat } from './core/documents.js';
+import { parseYouTubeUrl, getYouTubeTranscript } from './core/youtube.js';
+import { extractDomainData, getDomainExtractor } from './core/domain-extractors.js';
+import type { DomainExtractResult } from './core/domain-extractors.js';
+import { extractReadableContent } from './core/readability.js';
+import { quickAnswer as runQuickAnswer } from './core/quick-answer.js';
 import type { PeelOptions, PeelResult, ImageInfo } from './types.js';
 
 export * from './types.js';
+export { getDomainExtractor, extractDomainData, type DomainExtractResult, type DomainExtractor } from './core/domain-extractors.js';
 export { crawl, type CrawlOptions, type CrawlResult, type CrawlProgress } from './core/crawler.js';
 export { discoverSitemap, type SitemapUrl, type SitemapResult } from './core/sitemap.js';
 export { mapDomain, type MapOptions, type MapResult } from './core/map.js';
@@ -75,6 +81,17 @@ export {
 } from './core/apply.js';
 // Human behavior exports — see bottom of file for full export
 export { extractListings, type ListingItem } from './core/extract-listings.js';
+export {
+  parseYouTubeUrl,
+  extractVideoInfo,
+  extractPlayerResponse,
+  parseCaptionXml,
+  decodeHtmlEntities,
+  getYouTubeTranscript,
+  type TranscriptSegment,
+  type YouTubeTranscript,
+  type YouTubeVideoInfo,
+} from './core/youtube.js';
 export { formatTable } from './core/table-format.js';
 export { findNextPageUrl } from './core/paginate.js';
 export { distillToBudget, budgetListings, TOKENS_PER_LISTING_ITEM } from './core/budget.js';
@@ -93,6 +110,8 @@ export {
   type DiffResult,
   type DiffChange,
 } from './core/diff.js';
+export { extractReadableContent, type ReadabilityResult, type ReadabilityOptions } from './core/readability.js';
+export { quickAnswer, type QuickAnswerOptions, type QuickAnswerResult } from './core/quick-answer.js';
 
 /**
  * Fetch and extract content from a URL
@@ -181,6 +200,62 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
   // If autoScroll is requested, force render mode
   if (autoScrollOpts) {
     render = true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // YouTube special case — extract transcript instead of fetching the page HTML
+  // ---------------------------------------------------------------------------
+  const ytVideoId = parseYouTubeUrl(url);
+  if (ytVideoId) {
+    const ytStartTime = Date.now();
+    try {
+      const transcript = await getYouTubeTranscript(url, {
+        language: (options as any).language ?? 'en',
+      });
+
+      // Build a clean markdown representation of the video + transcript
+      const videoInfoLines = [
+        `# ${transcript.title}`,
+        '',
+        `**Channel:** ${transcript.channel}`,
+        `**Duration:** ${transcript.duration}`,
+        `**Language:** ${transcript.language}`,
+        transcript.availableLanguages.length > 1
+          ? `**Available Languages:** ${transcript.availableLanguages.join(', ')}`
+          : '',
+        '',
+        '## Transcript',
+        '',
+        transcript.fullText,
+      ].filter(l => l !== undefined);
+      const videoInfoContent = videoInfoLines.join('\n');
+
+      const elapsed = Date.now() - ytStartTime;
+      const tokens = estimateTokens(videoInfoContent);
+      const fingerprint = createHash('sha256').update(videoInfoContent).digest('hex').slice(0, 16);
+
+      return {
+        url: `https://www.youtube.com/watch?v=${ytVideoId}`,
+        title: transcript.title,
+        content: videoInfoContent,
+        metadata: {
+          description: `YouTube video by ${transcript.channel}, duration ${transcript.duration}`,
+          author: transcript.channel,
+        },
+        links: [`https://www.youtube.com/watch?v=${ytVideoId}`],
+        tokens,
+        method: 'simple',
+        elapsed,
+        contentType: 'youtube',
+        quality: 1.0,
+        fingerprint,
+        extracted: undefined,
+        structured: transcript,
+      } as PeelResult & { structured: typeof transcript };
+    } catch (_ytError) {
+      // If transcript extraction fails (no captions, page changed, etc.),
+      // fall through to the normal HTML fetch pipeline below.
+    }
   }
 
   try {
@@ -385,6 +460,21 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       quality = 1.0;
     }
 
+    // Readability mode
+    let readabilityResult: import('./core/readability.js').ReadabilityResult | undefined;
+    if (options.readable && isHTML && fetchResult.html) {
+      const readResult = extractReadableContent(fetchResult.html, fetchResult.url);
+      readabilityResult = readResult;
+      content = readResult.content;
+      metadata = {
+        ...metadata,
+        title: readResult.title || metadata?.title,
+        author: readResult.author || undefined,
+        publishedDate: readResult.date || undefined,
+      };
+      title = readResult.title || title;
+    }
+
     // Extract images if requested
     let imagesList: ImageInfo[] | undefined;
     if (extractImagesFlag && isHTML) {
@@ -417,6 +507,32 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
         detectedType === 'json' ? 'json' :
         format === 'text' ? 'text' : 'markdown';
       content = distillToBudget(content, options.budget, budgetFormat);
+    }
+
+    // Domain-aware structured extraction (Twitter, Reddit, GitHub, HN)
+    // Fires when URL matches a known domain. Replaces content with clean markdown.
+    let domainData: DomainExtractResult | undefined;
+    if (getDomainExtractor(fetchResult.url)) {
+      try {
+        const ddResult = await extractDomainData(fetchResult.html, fetchResult.url);
+        if (ddResult) {
+          domainData = ddResult;
+          content = ddResult.cleanContent;
+        }
+      } catch {
+        // Domain extraction failure is non-fatal; continue with normal content
+      }
+    }
+
+    // Quick answer (LLM-free)
+    let quickAnswerResult: import('./core/quick-answer.js').QuickAnswerResult | undefined;
+    if (options.question && content) {
+      const qa = runQuickAnswer({
+        question: options.question,
+        content,
+        url: fetchResult.url,
+      });
+      quickAnswerResult = qa;
     }
 
     // Calculate elapsed time, tokens, and fingerprint
@@ -496,6 +612,9 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
       summary: summaryText,
       images: imagesList,
       ...(prunedPercent !== undefined ? { prunedPercent } : {}),
+      ...(domainData !== undefined ? { domainData } : {}),
+      ...(readabilityResult !== undefined ? { readability: readabilityResult } : {}),
+      ...(quickAnswerResult !== undefined ? { quickAnswer: quickAnswerResult } : {}),
     };
   } catch (error) {
     // Clean up browser resources on error

@@ -1,8 +1,8 @@
 # WebPeel
 
-> The web data API for AI agents. Fetch, search, crawl, extract, and research — one tool, zero config.
+> Version: 0.14.0 | 18 MCP tools | 927 tests | The web data API for AI agents. Fetch, search, crawl, extract, and research — one tool, zero config.
 
-WebPeel is an open-source web fetcher that converts any URL to clean, AI-ready markdown. Smart escalation tries fast HTTP first (~150ms), auto-escalates to headless browser when needed, and uses stealth mode for heavily protected sites.
+WebPeel is an open-source web fetcher that converts any URL to clean, AI-ready markdown. Smart escalation tries fast HTTP first (~150ms), auto-escalates to headless browser when needed, and uses stealth mode for heavily protected sites. v0.14.0 adds YouTube transcript extraction, domain-aware extractors (Twitter/X, Reddit, GitHub, HN), LLM-free BM25 Q&A, reader mode, auto-extract, deep fetch intelligence, and URL monitoring.
 
 ## Quick Start
 
@@ -47,7 +47,12 @@ Base URL: `https://api.webpeel.dev`
 - `POST /v1/map` — Discover all URLs on a domain
 - `POST /v1/screenshot` — Screenshot a URL (PNG/JPEG, full-page)
 - `POST /v1/answer` — Search + fetch + LLM answer with citations (BYOK)
-- `POST /v1/deep_fetch` — Search + batch fetch + merge in one call. Params: query (string), count (number, default 5). Returns merged markdown with source attribution. No LLM key needed.
+- `GET /v1/answer/quick?url=URL&question=Q` — BM25 Q&A, no LLM key needed
+- `POST /v1/deep-fetch` — Search + batch fetch + BM25 merge + dedup. Params: query, count. No LLM key needed.
+- `GET /v1/youtube?url=YT_URL` — Extract YouTube video transcript. All URL formats. No API key.
+- `GET /v1/extract/auto?url=URL` — Auto-detect page type and extract structured JSON
+- `GET /v1/watch` — List URL watchers
+- `POST /v1/watch` — Create URL watcher with webhook notification
 - `POST /v1/agent` — Autonomous research agent (BYOK)
 - `POST /v1/batch` — Fetch multiple URLs in parallel
 - `POST /v2/scrape` — Firecrawl-compatible endpoint (drop-in replacement)
@@ -57,7 +62,7 @@ Authentication: `Authorization: Bearer YOUR_API_KEY` or anonymous (500 free fetc
 
 ## MCP Tools
 
-- `webpeel_fetch` — Fetch a URL, return clean markdown. Params: url (required), render (boolean), wait (ms), format (markdown|text|html), actions (JSON array)
+- `webpeel_fetch` — Fetch a URL, return clean markdown. Params: url (required), render (boolean), wait (ms), format (markdown|text|html), actions (JSON array), readable (boolean)
 - `webpeel_search` — Search the web. Params: query (required), count (1-10), provider (duckduckgo|brave)
 - `webpeel_crawl` — Crawl a website. Params: url (required), maxPages (number), maxDepth (number)
 - `webpeel_map` — Discover URLs on a domain. Params: url (required), maxUrls (number)
@@ -68,8 +73,12 @@ Authentication: `Authorization: Bearer YOUR_API_KEY` or anonymous (500 free fetc
 - `webpeel_answer` — Answer a question about any URL without BYOK. Params: url (required), question (required)
 - `webpeel_brand` — Extract brand info (name, logo, colors, social links). Params: url (required)
 - `webpeel_change_track` — Detect content changes (hash-based monitoring). Params: url (required), previousHash (string)
-- `webpeel_deep_fetch` — Search + batch fetch + merge in one call. Params: query (required), count (1-10)
+- `webpeel_deep_fetch` — Search + batch fetch + BM25 merge. Params: query (required), count (1-20). Comparison mode auto-detected.
 - `webpeel_research` — Research agent. Params: prompt (required), urls (array), maxPages (number)
+- `webpeel_youtube` — Extract YouTube video transcripts. Params: url (required). Supports all YouTube URL formats (watch, youtu.be, embed, shorts). No API key needed.
+- `webpeel_auto_extract` — Heuristic structured data extraction — auto-detects page type (pricing, product, contact, article, api-docs). Params: url (required)
+- `webpeel_quick_answer` — BM25-powered Q&A, no LLM key needed. Params: url (required), question (required)
+- `webpeel_watch` — Persistent URL change monitoring with webhook notifications. Params: url (required), webhookUrl (required), schedule (cron string)
 
 ## MCP Configuration
 

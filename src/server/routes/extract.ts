@@ -143,5 +143,17 @@ export function createExtractRouter(): Router {
     }
   });
 
+  router.get('/v1/extract/auto', async (req: Request, res: Response) => {
+    const url = req.query.url as string;
+    if (!url) {
+      res.status(400).json({ error: 'Missing url parameter' });
+      return;
+    }
+    const { autoExtract } = await import('../../core/auto-extract.js');
+    const result = await peel(url, { format: 'html' });
+    const extracted = autoExtract(result.content || '', url);
+    res.json({ url, pageType: extracted.type, structured: extracted });
+  });
+
   return router;
 }

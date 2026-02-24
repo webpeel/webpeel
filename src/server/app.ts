@@ -27,7 +27,12 @@ import { createJobsRouter } from './routes/jobs.js';
 import { createBatchRouter } from './routes/batch.js';
 import { createAgentRouter } from './routes/agent.js';
 import { createAnswerRouter } from './routes/answer.js';
+import { createQuickAnswerRouter } from './routes/quick-answer.js';
 import { createMcpRouter } from './routes/mcp.js';
+import { createYouTubeRouter } from './routes/youtube.js';
+import { createDeepFetchRouter } from './routes/deep-fetch.js';
+import { createWatchRouter } from './routes/watch.js';
+import pg from 'pg';
 import { createScreenshotRouter } from './routes/screenshot.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
@@ -116,6 +121,14 @@ export function createApp(config: ServerConfig = {}): Express {
 
   console.log(`Using ${usePostgres ? 'PostgreSQL' : 'in-memory'} auth store`);
 
+  // PostgreSQL pool for features that need direct DB access (watch, etc.)
+  const pool = process.env.DATABASE_URL
+    ? new pg.Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+      })
+    : null;
+
   // Job queue - Use PostgreSQL if DATABASE_URL is set, otherwise in-memory
   const jobQueue = createJobQueue();
 
@@ -138,6 +151,10 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createRateLimitMiddleware(rateLimiter));
   app.use(createCompatRouter(jobQueue));
   app.use(createExtractRouter());
+  app.use(createDeepFetchRouter());
+  if (pool) {
+    app.use(createWatchRouter(pool));
+  }
   app.use(createFetchRouter(authStore));
   app.use(createScreenshotRouter(authStore));
   app.use(createSearchRouter(authStore));
@@ -150,7 +167,9 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createBatchRouter(jobQueue));
   app.use(createAgentRouter());
   app.use(createAnswerRouter());
-  app.use(createMcpRouter(authStore));
+  app.use(createQuickAnswerRouter());
+  app.use(createYouTubeRouter());
+  app.use(createMcpRouter(authStore, pool));
 
   // 404 handler
   app.use((req: Request, res: Response) => {

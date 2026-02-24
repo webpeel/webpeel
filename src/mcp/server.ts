@@ -74,7 +74,7 @@ const server = new Server(
 const tools: Tool[] = [
   {
     name: 'webpeel_fetch',
-    description: 'Fetch a URL and return clean, AI-ready markdown content. Handles JavaScript rendering and anti-bot protections automatically. Supports page actions (click, scroll, type), structured extraction, token budgets, image extraction, tag filtering, and geo-targeting. Use stealth=true for protected sites.',
+    description: 'Fetch any URL and return clean markdown content. Handles JavaScript rendering, bot detection, and content extraction automatically. Set readable=true for article-only content.',
     annotations: {
       title: 'Fetch Web Page',
       readOnlyHint: true,
@@ -202,6 +202,19 @@ const tools: Tool[] = [
           type: 'object',
           description: 'Structured data extraction options: {selectors: {field: "css"}} or {schema: {...}}',
         },
+        question: {
+          type: 'string',
+          description: 'Ask a question about the content (BM25, no LLM needed). Returns the most relevant passages.',
+        },
+        budget: {
+          type: 'number',
+          description: 'Smart token budget — distill content to N tokens',
+        },
+        readable: {
+          type: 'boolean',
+          description: 'Reader mode — extract only article content, strip all noise',
+          default: false,
+        },
         inlineExtract: {
           type: 'object',
           description: 'Inline LLM-powered JSON extraction (BYOK). Provide schema and/or prompt, plus llmProvider & llmApiKey.',
@@ -235,7 +248,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_search',
-    description: 'Search the web and return results with titles, URLs, and snippets. Supports DuckDuckGo (free, default) and Brave Search (requires API key). Use this to find relevant web pages before fetching them.',
+    description: 'Search the web and return structured results with titles, URLs, and snippets. No API key needed.',
     annotations: {
       title: 'Search the Web',
       readOnlyHint: true,
@@ -273,7 +286,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_batch',
-    description: 'Fetch multiple URLs in batch with concurrency control. Returns an array of results or errors.',
+    description: 'Fetch multiple URLs concurrently. Pass an array of URLs, get back an array of results.',
     annotations: {
       title: 'Batch Fetch URLs',
       readOnlyHint: true,
@@ -319,7 +332,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_crawl',
-    description: 'Crawl a website starting from a URL, following links and extracting content. Supports sitemap-first discovery, BFS/DFS strategies, and content deduplication. Respects robots.txt and rate limits. Perfect for gathering documentation or site content.',
+    description: 'Crawl a website starting from a URL. Returns content for all discovered pages up to the specified depth/limit.',
     annotations: {
       title: 'Crawl Website',
       readOnlyHint: true,
@@ -394,7 +407,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_map',
-    description: 'Discover all URLs on a domain using sitemap.xml and link crawling. Returns a comprehensive list of URLs without fetching their content. Perfect for understanding site structure or planning a crawl.',
+    description: 'Discover all URLs on a domain via sitemap and link crawling. Returns a structured URL list.',
     annotations: {
       title: 'Map Website URLs',
       readOnlyHint: true,
@@ -436,7 +449,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_extract',
-    description: 'Extract structured data from a webpage using CSS selectors, JSON schema validation, or AI-powered extraction with natural language prompts. Perfect for scraping product data, article metadata, or any structured content.',
+    description: 'Extract structured data from a URL using CSS selectors, JSON Schema, or LLM. Returns typed key-value pairs.',
     annotations: {
       title: 'Extract Structured Data',
       readOnlyHint: true,
@@ -488,7 +501,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_brand',
-    description: 'Extract branding and design system from a URL. Returns colors, fonts, typography, and visual identity elements.',
+    description: 'Extract branding assets from a URL: logo, colors, fonts, and social links.',
     annotations: {
       title: 'Extract Branding',
       readOnlyHint: true,
@@ -514,7 +527,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_change_track',
-    description: 'Track changes on a URL by generating a content fingerprint. Use this to detect when a page has been updated.',
+    description: 'Track content changes on a URL. First call saves a snapshot, subsequent calls show what changed.',
     annotations: {
       title: 'Track Page Changes',
       readOnlyHint: true,
@@ -540,7 +553,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_summarize',
-    description: 'Generate an AI-powered summary of a webpage using an LLM. Requires an OpenAI-compatible API key.',
+    description: 'Generate an AI summary of a URL\'s content. Requires an LLM API key (BYOK).',
     annotations: {
       title: 'Summarize Page',
       readOnlyHint: true,
@@ -585,7 +598,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_answer',
-    description: 'Ask a question, search the web, fetch top results, and generate a cited answer using an LLM (BYOK). Returns an answer with [1], [2] source citations. Supports OpenAI, Anthropic, and Google LLMs.',
+    description: 'Ask a question about a URL and get an AI-generated answer with citations. Requires an LLM API key (BYOK). For LLM-free Q&A, use webpeel_quick_answer instead.',
     annotations: {
       title: 'Answer a Question',
       readOnlyHint: true,
@@ -636,7 +649,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_screenshot',
-    description: 'Take a screenshot of a URL and return a base64-encoded image. Supports full page or viewport capture, custom dimensions, PNG/JPEG format, quality setting, and page actions before capture.',
+    description: 'Take a screenshot of any URL. Returns a PNG image. Supports full-page capture and viewport sizing.',
     annotations: {
       title: 'Take Screenshot',
       readOnlyHint: true,
@@ -705,7 +718,7 @@ const tools: Tool[] = [
   },
   {
     name: 'webpeel_research',
-    description: 'Conduct autonomous multi-step web research on a topic. Searches the web, fetches top sources, extracts relevant content using BM25, optionally follows promising links, and synthesizes a comprehensive report with citations. Returns a markdown report and structured source list. Requires LLM API key for synthesis; without one it returns raw extracted source content.',
+    description: 'Multi-step web research: searches the web, fetches top sources, follows leads, and synthesizes findings into a report with citations.',
     annotations: {
       title: 'Deep Research Agent',
       readOnlyHint: true,
@@ -795,6 +808,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         llmApiKey,
         llmModel,
         autoScroll: autoScrollParam,
+        question,
+        budget: budgetArg,
+        readable,
       } = args as {
         url: string;
         render?: boolean;
@@ -818,6 +834,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         llmProvider?: string;
         llmApiKey?: string;
         llmModel?: string;
+        question?: string;
+        budget?: number;
+        readable?: boolean;
       };
 
       // SECURITY: Validate input parameters
@@ -903,9 +922,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         autoScroll: autoScrollParam,
         maxTokens,
         extract,
+        readable: readable || false,
+        question,
         // Agent-friendly default: cap tokens at 4000 when no explicit limit is set.
-        // This prevents agents from receiving 30K+ token pages they can't use.
-        budget: maxTokens === undefined ? 4000 : undefined,
+        // User-supplied budget takes priority; fall back to default 4000.
+        budget: budgetArg ?? (maxTokens === undefined ? 4000 : undefined),
       };
 
       // SECURITY: Wrap in timeout (60 seconds max)
@@ -934,10 +955,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
 
+      // Build consistent output — always include url, title, tokens
+      const fetchOutput: Record<string, any> = {
+        url: result.url || url,
+        title: result.title || result.metadata?.title || '',
+        tokens: result.tokens || 0,
+        content: result.content,
+      };
+      if (result.metadata && Object.keys(result.metadata).length > 0) fetchOutput.metadata = result.metadata;
+      if (result.domainData) fetchOutput.domainData = result.domainData;
+      if (result.readability) fetchOutput.readability = { readingTime: result.readability.readingTime, wordCount: result.readability.wordCount };
+      if (result.quickAnswer) fetchOutput.quickAnswer = result.quickAnswer;
+      if (result.json) fetchOutput.json = result.json;
+      if (result.extracted) fetchOutput.extracted = result.extracted;
+      if (result.images && result.images.length > 0) fetchOutput.images = result.images;
+      if (result.screenshot) fetchOutput.screenshot = result.screenshot;
+      if (result.fingerprint) fetchOutput.fingerprint = result.fingerprint;
+      if (result.extractTokensUsed) fetchOutput.extractTokensUsed = result.extractTokensUsed;
+
       // SECURITY: Handle JSON serialization errors
       let resultText: string;
       try {
-        resultText = JSON.stringify(result, null, 2);
+        resultText = JSON.stringify(fetchOutput, null, 2);
       } catch (jsonError) {
         resultText = JSON.stringify({
           error: 'serialization_error',

@@ -14,8 +14,8 @@
 </p>
 
 <p align="center">
-  <strong>Reliable web access for AI agents.</strong><br>
-  Fetch any page · Extract structured data · Crawl entire sites · Deep research — one tool, three interfaces.
+  <strong>Web intelligence for AI agents.</strong><br>
+  Fetch any URL → clean markdown. YouTube transcripts. Reddit threads. Quick answers. No API keys needed.
 </p>
 
 <p align="center">
@@ -28,29 +28,35 @@
 
 ---
 
-## What is WebPeel?
-
-WebPeel gives your AI agent reliable access to the web. Fetch any page, extract structured data, crawl entire sites, and research topics — all through a single CLI, API, or MCP server.
-
-It automatically handles the hard parts: JavaScript rendering, bot detection, Cloudflare challenges, infinite scroll, pagination, and content noise. Your agent gets clean markdown. You don't think about the plumbing.
+> **WebPeel** gives AI agents reliable web access in one call. It handles JavaScript rendering, bot detection, and content extraction automatically — your agent gets clean, structured data. 18 MCP tools, 927 tests, 100% open source.
 
 ---
 
 ## 🚀 Quick Start
 
-**Three paths in, all free to try:**
+```bash
+npx webpeel "https://example.com"
+```
 
-### CLI
+**More examples:**
 
 ```bash
-npx webpeel "https://news.ycombinator.com"
+# YouTube transcript — no API key!
+npx webpeel "https://youtube.com/watch?v=dQw4w9WgXcQ"
+
+# Ask any page a question — no LLM key!
+npx webpeel "https://openai.com/pricing" -q "how much does GPT-4 cost?"
+
+# Reddit thread — structured JSON
+npx webpeel "https://reddit.com/r/programming/comments/..." --json
+
+# Reader mode — strips all noise
+npx webpeel "https://nytimes.com/article" --readable
 ```
 
 No install needed. First 25 fetches work without signup. [Get 500/week free →](https://app.webpeel.dev/signup)
 
 ### MCP Server (for Claude, Cursor, VS Code, Windsurf)
-
-Add to your MCP config (`~/Library/Application Support/Claude/claude_desktop_config.json` on Mac):
 
 ```json
 {
@@ -75,90 +81,86 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
 
 ---
 
-## ✨ Features
+## ✨ What can it do?
 
-### Core
+| | Feature | What you get |
+|---|---------|-------------|
+| 🌐 | **Fetch** | Any URL → clean markdown, text, or JSON. Auto-handles JS rendering, bot detection, CAPTCHAs |
+| 🎬 | **YouTube** | Full video transcripts with timestamps. No API key |
+| 🐦 | **Twitter/Reddit/GitHub/HN** | Structured data from social platforms via native APIs |
+| ❓ | **Quick Answer** | Ask a question about any page. BM25 scoring, no LLM key |
+| 📖 | **Reader Mode** | Browser Reader Mode for AI — strips nav, ads, cookies, 25+ noise patterns |
+| 🔍 | **Search** | Web search across 27+ sites. Deep research with multi-hop analysis |
+| 📊 | **Extract** | Pricing pages, products, contacts → structured JSON. CSS/JSON Schema/LLM extraction |
+| 🕵️ | **Stealth** | Bypasses Cloudflare, PerimeterX, DataDome, Akamai. 28 auto-stealth domains |
+| 🏨 | **Hotels** | Kayak + Booking + Google Travel + Expedia in parallel |
+| 🔄 | **Monitor** | Watch URLs for changes, get webhook notifications |
+| 🕷️ | **Crawl** | BFS/DFS site crawling, sitemap discovery, robots.txt compliance |
+| 📸 | **Screenshot** | Full-page or viewport screenshots |
+| 🐍 | **Python SDK** | `pip install webpeel` — sync + async client |
 
-| Feature | Description |
-|---------|-------------|
-| **Web Fetching** | Any URL → clean markdown, text, HTML, or JSON |
-| **Smart Escalation** | Auto-upgrades: HTTP → Browser → Stealth. Uses the fastest method, escalates only when needed |
-| **Content Pruning** | 2-pass HTML reduction — strips nav/footer/sidebar/ads automatically |
-| **Token Budget** | Hard-cap output to N tokens. No surprises in your LLM bill |
-| **Screenshots** | Full-page or viewport screenshots with a single flag |
-| **Batch Mode** | Process multiple URLs concurrently |
+---
 
-### AI Agent
+## 🏆 How does it compare?
 
-| Feature | Description |
-|---------|-------------|
-| **MCP Server** | 13 tools for Claude Desktop, Cursor, VS Code, and Windsurf |
-| **Deep Research** | Multi-hop agent: search → fetch → analyze → follow leads → synthesize |
-| **Search** | Web search across 27+ structured sources |
-| **Hotel Search** | Kayak, Booking.com, Google Travel, Expedia — in parallel |
-| **Browser Profiles** | Persistent sessions for sites that require login |
-| **Infinite Scroll** | Auto-scrolls lazy-loaded feeds until stable |
-| **Actions** | Click, type, fill, select, hover, press, scroll — full browser automation |
+| Feature | WebPeel | Firecrawl | Crawl4AI | Jina Reader |
+|---------|:-------:|:---------:|:--------:|:-----------:|
+| YouTube transcripts | ✅ | ❌ | ❌ | ❌ |
+| LLM-free Q&A | ✅ | ❌ | ❌ | ❌ |
+| Reader mode | ✅ | ❌ | ❌ | ❌ |
+| Domain extractors (Twitter, Reddit, GH, HN) | ✅ | ❌ | ❌ | ❌ |
+| Auto-extract (pricing, products) | ✅ | ❌ | ❌ | ❌ |
+| URL monitoring | ✅ | ❌ | ❌ | ❌ |
+| Stealth / anti-bot | ✅ | ⚡ Hosted only | ✅ | ❌ |
+| MCP server | ✅ 18 tools | ✅ 4 tools | ❌ | ❌ |
+| Deep research | ✅ | ❌ | ❌ | ❌ |
+| Hotel search | ✅ | ❌ | ❌ | ❌ |
+| Self-hostable | ✅ | ✅ | ✅ | ❌ |
+| Free tier | 500/week | 500 credits | Unlimited | Unlimited |
+| Open source | AGPL-3.0 | AGPL-3.0 | Apache-2.0 | N/A |
 
-### Extraction
+---
 
-| Feature | Description |
-|---------|-------------|
-| **CSS Schema Extraction** | 7 built-in schemas (Amazon, Booking.com, eBay, Expedia, Hacker News, Walmart, Yelp) — auto-detected by domain |
-| **JSON Schema Extraction** | Pass any JSON Schema and get back typed, structured data |
-| **LLM Extraction (BYOK)** | Natural language → structured data using your own OpenAI-compatible key |
-| **BM25 Filtering** | Query-focused content: only the parts relevant to your question |
-| **Links / Images / Meta** | Extract just the links, images, or metadata from any page |
+## ⚡ Benchmark
 
-### Anti-Bot
+Evaluated on 30 real-world URLs across 6 categories (static, dynamic, SPA, protected, documents, international):
 
-| Feature | Description |
-|---------|-------------|
-| **Stealth Mode** | Bypasses Cloudflare, PerimeterX, DataDome, Akamai, and more |
-| **28 Auto-Stealth Domains** | Amazon, LinkedIn, Glassdoor, Zillow, and 24 more — stealth kicks in automatically |
-| **Challenge Detection** | 7 bot-protection vendors detected and handled automatically |
-| **Browser Fingerprinting** | Masks WebGL, navigator properties, canvas fingerprint |
+| | WebPeel | Next best |
+|---|:---:|:---:|
+| **Success rate** | **100%** (30/30) | 93.3% |
+| **Content quality** | **92.3%** | 83.2% |
 
-### Advanced
-
-| Feature | Description |
-|---------|-------------|
-| **Crawl + Sitemap** | BFS/DFS crawling, sitemap discovery, robots.txt compliance, deduplication |
-| **Site Map** | Map all URLs on a domain up to any depth |
-| **Pagination** | Follow "Next" links automatically for N pages |
-| **Chunking** | Split long content into LLM-sized pieces (fixed, semantic, or paragraph) |
-| **Caching** | Local result cache with configurable TTL (`5m`, `1h`, `1d`) |
-| **Geo-targeting** | ISO country code + language preferences per request |
-| **Change Tracking** | Detect what changed between two fetches of the same page |
-| **Brand Extraction** | Pull logo, colors, fonts, and social links from any site |
-| **PDF Extraction** | Extract text from PDF documents |
-| **Self-Hostable** | Docker Compose for full on-premise deployment |
-| **Python SDK** | Sync + async client, `pip install webpeel` |
+WebPeel is the only tool that extracted content from all 30 test URLs. [Full methodology →](https://webpeel.dev/blog/benchmarks)
 
 ---
 
 ## 🤖 MCP Integration
 
-WebPeel exposes **13 tools** to your AI coding assistant:
+WebPeel exposes **18 tools** to your AI coding assistant:
 
 | Tool | What it does |
 |------|--------------|
-| `webpeel_fetch` | Fetch any URL → markdown (smart escalation built in) |
-| `webpeel_search` | Web search with structured results |
+| `webpeel_fetch` | Fetch any URL → markdown. Smart escalation built in. Supports `readable: true` for reader mode |
+| `webpeel_search` | Web search with structured results across 27+ sources |
 | `webpeel_batch` | Fetch multiple URLs concurrently |
 | `webpeel_crawl` | Crawl a site with depth/page limits |
 | `webpeel_map` | Discover all URLs on a domain |
 | `webpeel_extract` | Structured extraction (CSS, JSON Schema, or LLM) |
-| `webpeel_screenshot` | Screenshot any page |
+| `webpeel_screenshot` | Screenshot any page (full-page or viewport) |
 | `webpeel_research` | Deep multi-hop research on a topic |
 | `webpeel_summarize` | AI summary of any URL |
 | `webpeel_answer` | Ask a question about a URL's content |
 | `webpeel_change_track` | Detect changes between two fetches |
 | `webpeel_brand` | Extract branding assets from a site |
-| `webpeel_deep_fetch` | Search + batch fetch + merge — comprehensive research in one call, no LLM key needed |
+| `webpeel_deep_fetch` | Search + batch fetch + merge — comprehensive research, no LLM key |
+| `webpeel_youtube` | Extract YouTube video transcripts — all URL formats, no API key |
+| `webpeel_auto_extract` | Heuristic structured data extraction — auto-detects pricing, products, contacts |
+| `webpeel_quick_answer` | BM25-powered Q&A — ask any question about any page, no LLM key |
+| `webpeel_watch` | Persistent URL change monitoring with webhook notifications |
+| `webpeel_hotels` | Hotel search across Kayak, Booking.com, Google Travel, Expedia in parallel |
 
 <details>
-<summary>Setup for each editor</summary>
+<summary>Setup for Claude Desktop, Cursor, VS Code, Windsurf, Docker</summary>
 
 **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 ```json
@@ -204,6 +206,18 @@ WebPeel exposes **13 tools** to your AI coding assistant:
   }
 }
 ```
+
+**Hosted endpoint** (no local server needed):
+```json
+{
+  "mcpServers": {
+    "webpeel": {
+      "url": "https://api.webpeel.dev/mcp",
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
+    }
+  }
+}
+```
 </details>
 
 ---
@@ -220,13 +234,14 @@ npx webpeel research "best practices for rate limiting APIs" --max-sources 8
 npx webpeel research "compare Firecrawl vs Crawl4AI vs WebPeel" --llm-key sk-...
 ```
 
-**How it works:** Search → fetch top results → extract key passages (BM25) → follow the most relevant links → synthesize across sources. No circular references, no duplicate content.
+Search → fetch top results → extract key passages (BM25) → follow the most relevant links → synthesize. No circular references, no duplicate content.
 
 ---
 
 ## 📦 Extraction
 
-Three ways to get structured data out of any page:
+<details>
+<summary>CSS Schema, JSON Schema, and LLM extraction — click to expand</summary>
 
 ### CSS Schema (zero config, auto-detected)
 
@@ -260,22 +275,13 @@ npx webpeel "https://hn.algolia.com" \
   --json
 ```
 
-<details>
-<summary>Node.js extraction example</summary>
-
 ```typescript
 import { peel } from 'webpeel';
 
 // CSS selector extraction
 const result = await peel('https://news.ycombinator.com', {
-  extract: {
-    selectors: {
-      titles: '.titleline > a',
-      scores: '.score',
-    }
-  }
+  extract: { selectors: { titles: '.titleline > a', scores: '.score' } }
 });
-console.log(result.extracted); // { titles: [...], scores: [...] }
 
 // LLM extraction with JSON Schema
 const product = await peel('https://example.com/product', {
@@ -289,14 +295,17 @@ const product = await peel('https://example.com/product', {
 
 ## 🛡️ Stealth & Anti-Bot
 
-WebPeel detects 7 bot-protection vendors and handles them automatically:
+<details>
+<summary>Supported bot-protection vendors and auto-stealth domains — click to expand</summary>
+
+WebPeel detects 7 bot-protection vendors automatically:
 
 - **Cloudflare** (JS challenge, Turnstile, Bot Management)
 - **PerimeterX / HUMAN** (behavioral analysis)
 - **DataDome** (ML-based bot detection)
 - **Akamai Bot Manager**
 - **Distil Networks**
-- **reCAPTCHA / hCaptcha** (page-level detection)
+- **reCAPTCHA / hCaptcha**
 - **Generic challenge pages**
 
 28 high-protection domains (Amazon, LinkedIn, Glassdoor, Zillow, Ticketmaster, and more) automatically route through stealth mode — no flags needed.
@@ -308,42 +317,23 @@ npx webpeel "https://glassdoor.com/jobs" --stealth
 # Auto-escalation (stealth triggers automatically on challenge detection)
 npx webpeel "https://amazon.com/dp/ASIN"
 ```
+</details>
 
 ---
 
-## ⚡ Benchmark
+## 🏨 Hotel Search
 
-Evaluated on 30 real-world URLs across 6 categories (static, dynamic, SPA, protected, documents, international):
+<details>
+<summary>Multi-source hotel search — click to expand</summary>
 
-| | WebPeel | Next best |
-|---|:---:|:---:|
-| **Success rate** | **100%** (30/30) | 93.3% |
-| **Content quality** | **92.3%** | 83.2% |
+Search Kayak, Booking.com, Google Travel, and Expedia in parallel — returns unified results in one call.
 
-WebPeel is the only tool that extracted content from all 30 test URLs. [Full methodology →](https://webpeel.dev/blog/benchmarks)
+```bash
+npx webpeel hotels "Paris" --check-in 2025-06-01 --check-out 2025-06-07 --guests 2 --json
+```
 
----
-
-## 🆚 Comparison
-
-| Feature | **WebPeel** | Firecrawl | Jina Reader | ScrapingBee | Tavily |
-|---------|:-----------:|:---------:|:-----------:|:-----------:|:------:|
-| **Free tier** | ✅ 500/wk recurring | ⚠️ 500 one-time | ❌ | ❌ | ⚠️ 1,000 one-time |
-| **Smart escalation** | ✅ auto HTTP→browser→stealth | ❌ manual | ❌ | ❌ | ❌ |
-| **Stealth mode** | ✅ all plans | ✅ | ❌ | ✅ paid | ❌ |
-| **Challenge detection** | ✅ 7 vendors | ❌ | ❌ | ❌ | ❌ |
-| **MCP tools** | ✅ 13 tools | ⚠️ ~6 | ❌ | ❌ | ✅ |
-| **Deep research** | ✅ multi-hop + BM25 | ⚠️ cloud only | ❌ | ❌ | ✅ |
-| **CSS schema extraction** | ✅ 7 bundled | ❌ | ❌ | ❌ | ❌ |
-| **LLM extraction (BYOK)** | ✅ | ⚠️ cloud only | ❌ | ❌ | ❌ |
-| **Site search (27+ sites)** | ✅ | ❌ | ❌ | ❌ | ⚠️ web only |
-| **Hotel search** | ✅ 4 sources parallel | ❌ | ❌ | ❌ | ❌ |
-| **Browser profiles** | ✅ persistent sessions | ❌ | ❌ | ❌ | ❌ |
-| **Self-hosting** | ✅ Docker Compose | ⚠️ complex | ❌ | ❌ | ❌ |
-| **Python SDK** | ✅ `pip install` | ✅ | ❌ | ✅ | ✅ |
-| **Firecrawl-compatible API** | ✅ drop-in | ✅ native | ❌ | ❌ | ❌ |
-| **License** | AGPL-3.0 | AGPL-3.0 | Proprietary | Proprietary | Proprietary |
-| **Price** | **$0 / $9 / $29** | $0 / $16 / $83 | custom | $49 / $149 | $0 / $99 |
+Available as `webpeel_hotels` MCP tool and via the REST API.
+</details>
 
 ---
 
@@ -355,13 +345,16 @@ WebPeel is the only tool that extracted content from all 30 test URLs. [Full met
 | **Pro** | $9/mo | 1,250/wk | 100/hr |
 | **Max** | $29/mo | 6,250/wk | 500/hr |
 
-All features on all plans. Pro/Max add pay-as-you-go extra usage (fetch $0.002, search $0.001, stealth $0.01). Quota resets every Monday.
+All features on all plans. Pro/Max add pay-as-you-go extra usage. Quota resets every Monday.
 
 [Sign up free →](https://app.webpeel.dev/signup) · [Compare with Firecrawl →](https://webpeel.dev/migrate-from-firecrawl)
 
 ---
 
 ## 🐍 Python SDK
+
+<details>
+<summary>Python SDK usage — click to expand</summary>
 
 ```bash
 pip install webpeel
@@ -370,24 +363,19 @@ pip install webpeel
 ```python
 from webpeel import WebPeel
 
-client = WebPeel(api_key="wp_...")  # or use WEBPEEL_API_KEY env var
+client = WebPeel(api_key="wp_...")  # or WEBPEEL_API_KEY env var
 
-# Fetch a page
 result = client.scrape("https://example.com")
 print(result.content)    # Clean markdown
 print(result.metadata)   # title, description, author, ...
 
-# Search the web
 results = client.search("latest AI research papers")
-
-# Crawl a site
 job = client.crawl("https://docs.example.com", limit=100)
-
-# With browser + stealth
 result = client.scrape("https://protected-site.com", render=True, stealth=True)
 ```
 
 Sync and async clients. Pure Python 3.8+, zero dependencies. [Full SDK docs →](python-sdk/README.md)
+</details>
 
 ---
 
@@ -398,42 +386,12 @@ git clone https://github.com/webpeel/webpeel.git
 cd webpeel && docker compose up
 ```
 
-Full REST API available at `http://localhost:3000`. AGPL-3.0 licensed. [Self-hosting guide →](SELF_HOST.md)
-
-**Just the MCP server:**
-```bash
-docker run -i webpeel/mcp
-```
-
-**Just the API server:**
-```bash
-docker run -p 3000:3000 webpeel/api
-```
-
----
-
-## 📖 API Reference
-
-Full OpenAPI spec at [`openapi.yaml`](openapi.yaml) and [`api.webpeel.dev`](https://api.webpeel.dev).
+Full REST API at `http://localhost:3000`. AGPL-3.0 licensed. [Self-hosting guide →](SELF_HOST.md)
 
 ```bash
-# Fetch
-GET  /v1/fetch?url=<url>
-
-# Search
-GET  /v1/search?q=<query>
-
-# Crawl
-POST /v1/crawl  { "url": "...", "limit": 100 }
-
-# Map
-GET  /v1/map?url=<url>
-
-# Extract
-POST /v1/extract  { "url": "...", "schema": { ... } }
+docker run -i webpeel/mcp          # MCP server only
+docker run -p 3000:3000 webpeel/api  # API server only
 ```
-
-[Full API reference →](https://webpeel.dev/docs/api-reference)
 
 ---
 
@@ -450,7 +408,7 @@ npm test
 - **Feature requests:** [Start a discussion](https://github.com/webpeel/webpeel/discussions)
 - **Code:** See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
-The project has a comprehensive test suite. Please add tests for new features.
+The project has 927 tests. Please add tests for new features.
 
 ---
 
