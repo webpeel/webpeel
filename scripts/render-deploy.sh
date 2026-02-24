@@ -6,7 +6,7 @@ set -e
 SERVICE_ID="srv-d673vsogjchc73ahgj6g"
 
 # Read API key from render CLI config (never print it)
-API_KEY=$(grep 'api-key' ~/.render/cli.yaml 2>/dev/null | awk '{print $2}' | tr -d '"' || true)
+API_KEY=$(grep 'key:' ~/.render/cli.yaml 2>/dev/null | head -1 | awk '{print $2}' | tr -d '"' || true)
 if [ -z "$API_KEY" ]; then
   echo "❌ No Render API key found in ~/.render/cli.yaml"
   echo "   Run: render login"

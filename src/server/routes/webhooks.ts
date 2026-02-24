@@ -1,5 +1,6 @@
 /**
  * Webhook delivery with HMAC-SHA256 signing
+ * // AUTH: Not a route handler — this is an outbound utility function (HMAC-signed payloads)
  * 
  * Sends webhook notifications for job events with retry logic
  */

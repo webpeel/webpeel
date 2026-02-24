@@ -21,6 +21,10 @@ export function createYouTubeRouter(): Router {
    *   curl "https://api.webpeel.dev/v1/youtube?url=https://youtu.be/dQw4w9WgXcQ"
    */
   router.get('/v1/youtube', async (req: Request, res: Response) => {
+    // AUTH: require authentication (global middleware sets req.auth)
+    if (!req.auth?.keyInfo) {
+      res.status(401).json({ error: 'authentication_required', message: 'API key required. Get one at https://app.webpeel.dev/keys' });
+      return;    }
     const { url, language } = req.query;
 
     if (!url || typeof url !== 'string') {

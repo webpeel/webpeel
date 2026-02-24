@@ -13,6 +13,10 @@ export function createQuickAnswerRouter(): Router {
   const router = Router();
 
   router.get('/v1/answer/quick', async (req: Request, res: Response) => {
+    // AUTH: require authentication (global middleware sets req.auth)
+    if (!req.auth?.keyInfo) {
+      res.status(401).json({ error: 'authentication_required', message: 'API key required. Get one at https://app.webpeel.dev/keys' });
+      return;    }
     try {
       const { url, question, render, maxPassages } = req.query as Record<string, string>;
 

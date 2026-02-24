@@ -142,7 +142,7 @@ jobs:
           for route in src/server/routes/*.ts; do
             BASENAME=$(basename "$route" .ts)
             # Skip health (intentionally public) and static/public routes
-            if [[ "$BASENAME" == "health" || "$BASENAME" == "index" ]]; then
+            if [[ "$BASENAME" == "health" || "$BASENAME" == "index" || "$BASENAME" == "webhooks" ]]; then
               continue
             fi
             if ! grep -q "auth\|requireAuth\|jwtAuth\|apiKeyAuth" "$route" 2>/dev/null; then
