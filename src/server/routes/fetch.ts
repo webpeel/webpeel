@@ -21,10 +21,10 @@ interface CacheEntry {
 export function createFetchRouter(authStore: AuthStore): Router {
   const router = Router();
 
-  // LRU cache: 5 minute TTL, max 1000 entries, 100MB total size
+  // LRU cache: 5 minute TTL, max 500 entries, 100MB total size
   const cache = new LRUCache<string, CacheEntry>({
-    max: 1000,
-    ttl: 5 * 60 * 1000, // 5 minutes
+    max: 500,
+    ttl: 5 * 60 * 1000, // 5 minutes default
     maxSize: 100 * 1024 * 1024, // 100MB
     sizeCalculation: (entry) => {
       return JSON.stringify(entry).length;
@@ -48,6 +48,8 @@ export function createFetchRouter(authStore: AuthStore): Router {
         maxAge,
         storeInCache,
         stream,
+        noCache,
+        cacheTtl,
       } = req.query;
 
       // Validate URL parameter
@@ -120,16 +122,26 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const actionsKey = parsedActions ? JSON.stringify(parsedActions) : '';
       const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${stream}:${actionsKey}`;
 
+      // Cache bypass: ?noCache=true or Cache-Control: no-cache header
+      const bypassCache = noCache === 'true' || req.headers['cache-control'] === 'no-cache';
+
+      // Per-request TTL (cacheTtl in seconds, default 300s = 5 min)
+      const cacheTtlMs = cacheTtl !== undefined
+        ? parseInt(cacheTtl as string, 10) * 1000
+        : 5 * 60 * 1000;
+
       // Check cache (with maxAge support)
       const maxAgeMs = maxAge !== undefined ? parseInt(maxAge as string, 10) : 172800000; // Default 2 days
-      const cached = cache.get(cacheKey);
-      if (cached && maxAgeMs > 0) {
-        const cacheAge = Date.now() - cached.timestamp;
-        if (cacheAge < maxAgeMs) {
-          res.setHeader('X-Cache', 'HIT');
-          res.setHeader('X-Cache-Age', Math.floor(cacheAge / 1000).toString());
-          res.json(cached.result);
-          return;
+      if (!bypassCache) {
+        const cached = cache.get(cacheKey);
+        if (cached && maxAgeMs > 0) {
+          const cacheAge = Date.now() - cached.timestamp;
+          if (cacheAge < maxAgeMs && cacheAge < cacheTtlMs) {
+            res.setHeader('X-Cache', 'HIT');
+            res.setHeader('X-Cache-Age', Math.floor(cacheAge / 1000).toString());
+            res.json(cached.result);
+            return;
+          }
         }
       }
 
@@ -269,12 +281,12 @@ export function createFetchRouter(authStore: AuthStore): Router {
         // If soft-limited WITHOUT extra usage, don't track (already over quota)
       }
 
-      // Cache result (unless storeInCache is explicitly false)
-      if (storeInCache !== 'false') {
+      // Cache result (unless storeInCache is explicitly false or cache bypass requested)
+      if (storeInCache !== 'false' && !bypassCache) {
         cache.set(cacheKey, {
           result,
           timestamp: Date.now(),
-        });
+        }, { ttl: cacheTtlMs });
       }
 
       // Add usage headers
@@ -366,6 +378,9 @@ export function createFetchRouter(authStore: AuthStore): Router {
         onlyMainContent,
         actions: rawActions,
         storeInCache: storeFlag,
+        // Cache control
+        noCache: noCacheBody,
+        cacheTtl: cacheTtlBody,
         // Inline extraction (BYOK)
         extract,
         llmProvider,
@@ -387,6 +402,8 @@ export function createFetchRouter(authStore: AuthStore): Router {
         onlyMainContent?: boolean;
         actions?: any[];
         storeInCache?: boolean;
+        noCache?: boolean;
+        cacheTtl?: number;
         extract?: InlineExtractParam;
         llmProvider?: string;
         llmApiKey?: string;
@@ -448,6 +465,25 @@ export function createFetchRouter(authStore: AuthStore): Router {
             message: `Invalid "actions" parameter: ${(e as Error).message}`,
           });
           return;
+        }
+      }
+
+      // --- Cache bypass and lookup -------------------------------------------
+      const postBypassCache = noCacheBody === true || req.headers['cache-control'] === 'no-cache';
+      const postCacheTtlMs = typeof cacheTtlBody === 'number' ? cacheTtlBody * 1000 : 5 * 60 * 1000;
+      const postActionsKey = postActions ? JSON.stringify(postActions) : '';
+      const postCacheKey = `fetch:${url}:${render}:${wait}:${format}:${JSON.stringify(includeTags)}:${JSON.stringify(excludeTags)}:${images}:${location}:${JSON.stringify(languages)}:${onlyMainContent}:${stream}:${postActionsKey}`;
+
+      if (!postBypassCache && !extract) {
+        const cached = cache.get(postCacheKey);
+        if (cached) {
+          const cacheAge = Date.now() - cached.timestamp;
+          if (cacheAge < postCacheTtlMs) {
+            res.setHeader('X-Cache', 'HIT');
+            res.setHeader('X-Cache-Age', Math.floor(cacheAge / 1000).toString());
+            res.json(cached.result);
+            return;
+          }
         }
       }
 
@@ -615,10 +651,9 @@ export function createFetchRouter(authStore: AuthStore): Router {
         }
       }
 
-      // Cache result
-      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${stream}`;
-      if (storeFlag !== false) {
-        cache.set(cacheKey, { result, timestamp: Date.now() });
+      // Cache result (skip extraction results — they depend on user's LLM keys)
+      if (storeFlag !== false && !postBypassCache && !resolvedExtract) {
+        cache.set(postCacheKey, { result, timestamp: Date.now() }, { ttl: postCacheTtlMs });
       }
 
       // --- Build response ------------------------------------------------------

@@ -21,6 +21,7 @@ import {
   ListToolsRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
+import { LRUCache } from 'lru-cache';
 import { peel, peelBatch } from '../../index.js';
 import type { PeelOptions } from '../../types.js';
 import { normalizeActions } from '../../core/actions.js';
@@ -39,6 +40,22 @@ try {
   const pkg = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'package.json'), 'utf-8'));
   pkgVersion = pkg.version;
 } catch { /* fallback */ }
+
+// ---------------------------------------------------------------------------
+// MCP fetch cache — shared across all MCP requests (same node process)
+// ---------------------------------------------------------------------------
+
+interface McpCacheEntry {
+  result: any;
+  timestamp: number;
+}
+
+const mcpFetchCache = new LRUCache<string, McpCacheEntry>({
+  max: 500,
+  ttl: 5 * 60 * 1000, // 5 minutes default
+  maxSize: 100 * 1024 * 1024, // 100MB
+  sizeCalculation: (entry) => JSON.stringify(entry).length,
+});
 
 // ---------------------------------------------------------------------------
 // Helper functions for brand extraction
@@ -342,6 +359,25 @@ async function handleToolCall(name: string, args: Record<string, unknown>): Prom
         actions: parsedActions,
       };
 
+      // Cache key and bypass logic
+      const mcpNoCache = args.noCache === true;
+      const mcpCacheTtlMs = typeof args.cacheTtl === 'number' ? (args.cacheTtl as number) * 1000 : 5 * 60 * 1000;
+      const mcpActionsKey = parsedActions ? JSON.stringify(parsedActions) : '';
+      const mcpCacheKey = `mcp:fetch:${url}:${options.render}:${options.wait}:${options.format}:${options.selector}:${options.images}:${mcpActionsKey}`;
+
+      // Check cache (skip for noCache or inline extraction requests)
+      const hasInlineExtract = args.inlineExtract && ((args.inlineExtract as any).schema || (args.inlineExtract as any).prompt);
+      if (!mcpNoCache && !hasInlineExtract) {
+        const cached = mcpFetchCache.get(mcpCacheKey);
+        if (cached) {
+          const cacheAge = Date.now() - cached.timestamp;
+          if (cacheAge < mcpCacheTtlMs) {
+            const cachedResult = { ...cached.result, _cache: 'HIT', _cacheAge: Math.floor(cacheAge / 1000) };
+            return ok(safeStringify(cachedResult));
+          }
+        }
+      }
+
       const result = await Promise.race([
         peel(url, options),
         timeout(60000, 'Fetch timed out'),
@@ -366,6 +402,11 @@ async function handleToolCall(name: string, args: Record<string, unknown>): Prom
           result.json = extractResult.data;
           result.extractTokensUsed = extractResult.tokensUsed;
         }
+      }
+
+      // Store in cache (skip for inline extraction results — they depend on user's LLM keys)
+      if (!mcpNoCache && !hasInlineExtract) {
+        mcpFetchCache.set(mcpCacheKey, { result, timestamp: Date.now() }, { ttl: mcpCacheTtlMs });
       }
 
       return ok(safeStringify(result));
