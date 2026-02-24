@@ -52,7 +52,7 @@ Base URL: `https://api.webpeel.dev`
 - `POST /v2/scrape` — Firecrawl-compatible endpoint (drop-in replacement)
 - `GET /health` — API health check
 
-Authentication: `Authorization: Bearer YOUR_API_KEY` or anonymous (25 free fetches, no signup).
+Authentication: `Authorization: Bearer YOUR_API_KEY` or anonymous (500 free fetches/week, no signup required).
 
 ## MCP Tools
 
@@ -102,7 +102,7 @@ Hosted MCP (no local install): `https://api.webpeel.dev/mcp`
 
 ## Pricing
 
-- **Free**: 125 fetches/week, 25/hr burst — no credit card, no signup for first 25
+- **Free**: 500 fetches/week, 50/hr burst — no credit card required
 - **Pro**: $9/mo — 1,250/week, 100/hr burst
 - **Max**: $29/mo — 6,250/week, 500/hr burst
 - All features on all plans (no feature-gating)

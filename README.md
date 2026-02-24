@@ -7,15 +7,15 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/v/webpeel.svg" alt="npm version"></a>
   <a href="https://pypi.org/project/webpeel/"><img src="https://img.shields.io/pypi/v/webpeel.svg" alt="PyPI version"></a>
-  <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/dm/webpeel.svg" alt="npm downloads"></a>
+  <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/dm/webpeel.svg" alt="downloads"></a>
   <a href="https://github.com/webpeel/webpeel/stargazers"><img src="https://img.shields.io/github/stars/webpeel/webpeel.svg" alt="GitHub stars"></a>
   <a href="https://github.com/webpeel/webpeel/actions/workflows/ci.yml"><img src="https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.6-blue.svg" alt="TypeScript"></a>
-  <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="AGPL v3 License"></a>
+  <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="AGPL v3"></a>
 </p>
 
 <p align="center">
-  <b>Turn any web page into AI-ready markdown. Smart escalation. Stealth mode. Free to start.</b>
+  <strong>Reliable web access for AI agents.</strong><br>
+  Fetch any page · Extract structured data · Crawl entire sites · Deep research — one tool, three interfaces.
 </p>
 
 <p align="center">
@@ -28,144 +28,29 @@
 
 ---
 
-## Quick Start
+## What is WebPeel?
+
+WebPeel gives your AI agent reliable access to the web. Fetch any page, extract structured data, crawl entire sites, and research topics — all through a single CLI, API, or MCP server.
+
+It automatically handles the hard parts: JavaScript rendering, bot detection, Cloudflare challenges, infinite scroll, pagination, and content noise. Your agent gets clean markdown. You don't think about the plumbing.
+
+---
+
+## 🚀 Quick Start
+
+**Three paths in, all free to try:**
+
+### CLI
 
 ```bash
-# Zero install — just run it
-npx webpeel https://news.ycombinator.com
+npx webpeel "https://news.ycombinator.com"
 ```
 
-```bash
-# Agent mode — JSON + budget + extraction in one flag
-npx webpeel https://example.com --agent
+No install needed. First 25 fetches work without signup. [Get 500/week free →](https://app.webpeel.dev/signup)
 
-# Site search — no URL knowledge needed (27 supported sites)
-npx webpeel search --site ebay "charizard card"
-npx webpeel search --site amazon "laptop stand" --table
+### MCP Server (for Claude, Cursor, VS Code, Windsurf)
 
-# CSS schema extraction — auto-detected by domain
-npx webpeel https://www.amazon.com/s?k=keyboard --json
-npx webpeel https://www.booking.com/searchresults.html --schema booking --json
-npx webpeel --list-schemas
-
-# LLM extraction — structured data from any page (BYOK)
-npx webpeel https://example.com/product --llm-extract "title, price, rating" --json
-npx webpeel https://hn.algolia.com --llm-extract "top 5 posts with scores" --llm-key $OPENAI_API_KEY
-
-# Hotel search — multi-source parallel search
-npx webpeel hotels "Paris" --checkin 2026-03-01 --checkout 2026-03-05 --sort price
-npx webpeel hotels "New York" --checkin 2026-04-10 --json
-
-# Browser profiles — persistent sessions across requests
-npx webpeel profile create myprofile
-npx webpeel https://protected-site.com --profile myprofile --stealth
-npx webpeel profile list
-
-# Stealth mode (auto-detects & bypasses bot protection)
-npx webpeel https://protected-site.com --stealth
-
-# Crawl a website
-npx webpeel crawl https://example.com --max-pages 20
-
-# Search the web
-npx webpeel search "best AI frameworks 2026"
-
-# Extract product listings automatically
-npx webpeel https://store.com/search --extract-all --json
-```
-
-First 25 fetches work instantly, no signup. After that, [sign up free](https://app.webpeel.dev/signup) for 500/week.
-
-## Why WebPeel?
-
-| Feature | **WebPeel** | Firecrawl | Jina Reader | MCP Fetch |
-|---------|:-----------:|:---------:|:-----------:|:---------:|
-| **Free tier** | ✅ 500/wk recurring | 500 one-time | ❌ Cloud only | ✅ Unlimited |
-| **Smart escalation** | ✅ HTTP→Browser→Stealth | Manual | ❌ | ❌ |
-| **Challenge detection** | ✅ 7 vendors auto-detected | ❌ | ❌ | ❌ |
-| **Site search** | ✅ 27 sites built-in | ❌ | ❌ | ❌ |
-| **Stealth mode** | ✅ v2, all plans | ✅ | ⚠️ Limited | ❌ |
-| **Browser profiles** | ✅ Persistent sessions | ❌ | ❌ | ❌ |
-| **Hotel search** | ✅ Multi-source parallel | ❌ | ❌ | ❌ |
-| **CSS schema extraction** | ✅ 7 bundled + auto-detect | ❌ | ❌ | ❌ |
-| **LLM extraction** | ✅ BYOK, cost tracking | ⚠️ Cloud only | ❌ | ❌ |
-| **Firecrawl-compatible** | ✅ Drop-in replacement | ✅ Native | ❌ | ❌ |
-| **Self-hosting** | ✅ Docker compose | ⚠️ Complex | ❌ | N/A |
-| **Autonomous agent** | ✅ BYOK any LLM | ⚠️ Locked | ❌ | ❌ |
-| **Deep research** | ✅ Multi-source + BM25 | ⚠️ Cloud only | ❌ | ❌ |
-| **Content pruning** | ✅ 2-pass, 15-33% savings | ❌ | ❌ | ❌ |
-| **BM25 filtering** | ✅ Query-focused | ❌ | ❌ | ❌ |
-| **Python SDK** | ✅ `pip install` | ✅ | ❌ | ❌ |
-| **MCP tools** | ✅ 13 tools | ~6 | 0 | 1 |
-| **License** | ✅ AGPL-3.0 | AGPL-3.0 | Proprietary | MIT |
-| **Pricing** | **Free / $9 / $29** | $0 / $16 / $83 | Custom | Free |
-
-## Benchmarks
-
-Evaluated on 30 real-world URLs across 6 categories (static, dynamic, SPA, protected, documents, international) against 6 competing web fetching APIs.
-
-| Metric | WebPeel | Next best |
-|--------|:-------:|:---------:|
-| **Success rate** | **100%** (30/30) | 93.3% (Firecrawl, Exa, LinkUp) |
-| **Content quality** | **92.3%** | 83.2% (Exa) |
-
-WebPeel is the only tool that successfully extracted content from all 30 test URLs. Full methodology and per-category breakdown: [webpeel.dev/blog/benchmarks](https://webpeel.dev/blog/benchmarks)
-
-## Install
-
-```bash
-# Node.js
-npm install webpeel        # or: pnpm add webpeel
-
-# Python
-pip install webpeel
-
-# Global CLI
-npm install -g webpeel
-```
-
-## Usage
-
-### Node.js
-
-```typescript
-import { peel } from 'webpeel';
-
-const result = await peel('https://example.com');
-console.log(result.content);    // Clean markdown
-console.log(result.metadata);   // { title, description, author, ... }
-console.log(result.tokens);     // Estimated token count
-
-// With options
-const advanced = await peel('https://example.com', {
-  render: true,           // Browser for JS-heavy sites
-  stealth: true,          // Anti-bot stealth mode
-  maxTokens: 4000,        // Limit output
-  includeTags: ['main'],  // Filter HTML tags
-});
-```
-
-### Python
-
-```python
-from webpeel import WebPeel
-
-client = WebPeel()  # Free tier, no key needed
-
-result = client.scrape("https://example.com")
-print(result.content)  # Clean markdown
-
-results = client.search("python web scraping")
-job = client.crawl("https://docs.example.com", limit=100)
-```
-
-Zero dependencies. Pure Python 3.8+. [Full SDK docs →](python-sdk/README.md)
-
-### MCP Server
-
-11 tools for Claude Desktop, Cursor, VS Code, and Windsurf:
-
-`webpeel_fetch` · `webpeel_search` · `webpeel_crawl` · `webpeel_map` · `webpeel_extract` · `webpeel_batch` · `webpeel_brand` · `webpeel_change_track` · `webpeel_summarize` · `webpeel_answer` · `webpeel_screenshot`
+Add to your MCP config (`~/Library/Application Support/Claude/claude_desktop_config.json` on Mac):
 
 ```json
 {
@@ -181,192 +66,377 @@ Zero dependencies. Pure Python 3.8+. [Full SDK docs →](python-sdk/README.md)
 [![Install in Claude Desktop](https://img.shields.io/badge/Install-Claude%20Desktop-5B3FFF?style=for-the-badge&logo=anthropic)](https://mcp.so/install/webpeel?for=claude)
 [![Install in VS Code](https://img.shields.io/badge/Install-VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode)](https://mcp.so/install/webpeel?for=vscode)
 
-> **Where to add this config:** Claude Desktop → `~/Library/Application Support/Claude/claude_desktop_config.json` · Cursor → Settings → MCP Servers · VS Code → `~/.vscode/mcp.json` · Windsurf → `~/.codeium/windsurf/mcp_config.json`
-
-### Docker
-
-**MCP Server (stdio — for Claude Desktop, Cursor, Windsurf):**
+### REST API
 
 ```bash
-docker run -i webpeel/mcp
+curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
+  -H "Authorization: Bearer wp_YOUR_KEY"
 ```
 
-**MCP Server (HTTP Streamable transport):**
+---
+
+## ✨ Features
+
+### Core
+
+| Feature | Description |
+|---------|-------------|
+| **Web Fetching** | Any URL → clean markdown, text, HTML, or JSON |
+| **Smart Escalation** | Auto-upgrades: HTTP → Browser → Stealth. Uses the fastest method, escalates only when needed |
+| **Content Pruning** | 2-pass HTML reduction — strips nav/footer/sidebar/ads automatically |
+| **Token Budget** | Hard-cap output to N tokens. No surprises in your LLM bill |
+| **Screenshots** | Full-page or viewport screenshots with a single flag |
+| **Batch Mode** | Process multiple URLs concurrently |
+
+### AI Agent
+
+| Feature | Description |
+|---------|-------------|
+| **MCP Server** | 12 tools for Claude Desktop, Cursor, VS Code, and Windsurf |
+| **Deep Research** | Multi-hop agent: search → fetch → analyze → follow leads → synthesize |
+| **Search** | Web search across 27+ structured sources |
+| **Hotel Search** | Kayak, Booking.com, Google Travel, Expedia — in parallel |
+| **Browser Profiles** | Persistent sessions for sites that require login |
+| **Infinite Scroll** | Auto-scrolls lazy-loaded feeds until stable |
+| **Actions** | Click, type, fill, select, hover, press, scroll — full browser automation |
+
+### Extraction
+
+| Feature | Description |
+|---------|-------------|
+| **CSS Schema Extraction** | 7 built-in schemas (Amazon, Booking.com, eBay, Expedia, Hacker News, Walmart, Yelp) — auto-detected by domain |
+| **JSON Schema Extraction** | Pass any JSON Schema and get back typed, structured data |
+| **LLM Extraction (BYOK)** | Natural language → structured data using your own OpenAI-compatible key |
+| **BM25 Filtering** | Query-focused content: only the parts relevant to your question |
+| **Links / Images / Meta** | Extract just the links, images, or metadata from any page |
+
+### Anti-Bot
+
+| Feature | Description |
+|---------|-------------|
+| **Stealth Mode** | Bypasses Cloudflare, PerimeterX, DataDome, Akamai, and more |
+| **28 Auto-Stealth Domains** | Amazon, LinkedIn, Glassdoor, Zillow, and 24 more — stealth kicks in automatically |
+| **Challenge Detection** | 7 bot-protection vendors detected and handled automatically |
+| **Browser Fingerprinting** | Masks WebGL, navigator properties, canvas fingerprint |
+
+### Advanced
+
+| Feature | Description |
+|---------|-------------|
+| **Crawl + Sitemap** | BFS/DFS crawling, sitemap discovery, robots.txt compliance, deduplication |
+| **Site Map** | Map all URLs on a domain up to any depth |
+| **Pagination** | Follow "Next" links automatically for N pages |
+| **Chunking** | Split long content into LLM-sized pieces (fixed, semantic, or paragraph) |
+| **Caching** | Local result cache with configurable TTL (`5m`, `1h`, `1d`) |
+| **Geo-targeting** | ISO country code + language preferences per request |
+| **Change Tracking** | Detect what changed between two fetches of the same page |
+| **Brand Extraction** | Pull logo, colors, fonts, and social links from any site |
+| **PDF Extraction** | Extract text from PDF documents |
+| **Self-Hostable** | Docker Compose for full on-premise deployment |
+| **Python SDK** | Sync + async client, `pip install webpeel` |
+
+---
+
+## 🤖 MCP Integration
+
+WebPeel exposes **13 tools** to your AI coding assistant:
+
+| Tool | What it does |
+|------|--------------|
+| `webpeel_fetch` | Fetch any URL → markdown (smart escalation built in) |
+| `webpeel_search` | Web search with structured results |
+| `webpeel_batch` | Fetch multiple URLs concurrently |
+| `webpeel_crawl` | Crawl a site with depth/page limits |
+| `webpeel_map` | Discover all URLs on a domain |
+| `webpeel_extract` | Structured extraction (CSS, JSON Schema, or LLM) |
+| `webpeel_screenshot` | Screenshot any page |
+| `webpeel_research` | Deep multi-hop research on a topic |
+| `webpeel_summarize` | AI summary of any URL |
+| `webpeel_answer` | Ask a question about a URL's content |
+| `webpeel_change_track` | Detect changes between two fetches |
+| `webpeel_brand` | Extract branding assets from a site |
+
+<details>
+<summary>Setup for each editor</summary>
+
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "webpeel": { "command": "npx", "args": ["-y", "webpeel", "mcp"] }
+  }
+}
+```
+
+**Cursor** (Settings → MCP Servers):
+```json
+{
+  "mcpServers": {
+    "webpeel": { "command": "npx", "args": ["-y", "webpeel", "mcp"] }
+  }
+}
+```
+
+**VS Code** (`~/.vscode/mcp.json`):
+```json
+{
+  "servers": {
+    "webpeel": { "command": "npx", "args": ["-y", "webpeel", "mcp"] }
+  }
+}
+```
+
+**Windsurf** (`~/.codeium/windsurf/mcp_config.json`):
+```json
+{
+  "mcpServers": {
+    "webpeel": { "command": "npx", "args": ["-y", "webpeel", "mcp"] }
+  }
+}
+```
+
+**Docker (stdio)**:
+```json
+{
+  "mcpServers": {
+    "webpeel": { "command": "docker", "args": ["run", "-i", "--rm", "webpeel/mcp"] }
+  }
+}
+```
+</details>
+
+---
+
+## 🔬 Deep Research
+
+Multi-hop research that thinks like a researcher, not a search engine:
 
 ```bash
-docker run -e MCP_HTTP_MODE=true -p 3100:3100 webpeel/mcp
+# Sources only — no API key needed
+npx webpeel research "best practices for rate limiting APIs" --max-sources 8
+
+# Full synthesis with LLM (BYOK)
+npx webpeel research "compare Firecrawl vs Crawl4AI vs WebPeel" --llm-key sk-...
 ```
 
-**API Server (Firecrawl-compatible REST API):**
+**How it works:** Search → fetch top results → extract key passages (BM25) → follow the most relevant links → synthesize across sources. No circular references, no duplicate content.
+
+---
+
+## 📦 Extraction
+
+Three ways to get structured data out of any page:
+
+### CSS Schema (zero config, auto-detected)
 
 ```bash
-docker run -p 3000:3000 webpeel/api
+# Auto-detects Amazon and applies the built-in schema
+npx webpeel "https://www.amazon.com/s?k=mechanical+keyboard" --json
+
+# Force a specific schema
+npx webpeel "https://www.booking.com/searchresults.html?city=Paris" --schema booking --json
+
+# List all built-in schemas
+npx webpeel --list-schemas
 ```
 
-**Self-Hosted (full stack with database):**
+Built-in schemas: `amazon` · `booking` · `ebay` · `expedia` · `hackernews` · `walmart` · `yelp`
+
+### JSON Schema (type-safe structured extraction)
+
+```bash
+npx webpeel "https://example.com/product" \
+  --extract-schema '{"type":"object","properties":{"title":{"type":"string"},"price":{"type":"number"}}}' \
+  --llm-key sk-...
+```
+
+### LLM Extraction (natural language, BYOK)
+
+```bash
+npx webpeel "https://hn.algolia.com" \
+  --llm-extract "top 10 posts with title, score, and comment count" \
+  --llm-key $OPENAI_API_KEY \
+  --json
+```
+
+<details>
+<summary>Node.js extraction example</summary>
+
+```typescript
+import { peel } from 'webpeel';
+
+// CSS selector extraction
+const result = await peel('https://news.ycombinator.com', {
+  extract: {
+    selectors: {
+      titles: '.titleline > a',
+      scores: '.score',
+    }
+  }
+});
+console.log(result.extracted); // { titles: [...], scores: [...] }
+
+// LLM extraction with JSON Schema
+const product = await peel('https://example.com/product', {
+  llmExtract: 'title, price, rating, availability',
+  llmKey: process.env.OPENAI_API_KEY,
+});
+```
+</details>
+
+---
+
+## 🛡️ Stealth & Anti-Bot
+
+WebPeel detects 7 bot-protection vendors and handles them automatically:
+
+- **Cloudflare** (JS challenge, Turnstile, Bot Management)
+- **PerimeterX / HUMAN** (behavioral analysis)
+- **DataDome** (ML-based bot detection)
+- **Akamai Bot Manager**
+- **Distil Networks**
+- **reCAPTCHA / hCaptcha** (page-level detection)
+- **Generic challenge pages**
+
+28 high-protection domains (Amazon, LinkedIn, Glassdoor, Zillow, Ticketmaster, and more) automatically route through stealth mode — no flags needed.
+
+```bash
+# Explicitly enable stealth
+npx webpeel "https://glassdoor.com/jobs" --stealth
+
+# Auto-escalation (stealth triggers automatically on challenge detection)
+npx webpeel "https://amazon.com/dp/ASIN"
+```
+
+---
+
+## ⚡ Benchmark
+
+Evaluated on 30 real-world URLs across 6 categories (static, dynamic, SPA, protected, documents, international):
+
+| | WebPeel | Next best |
+|---|:---:|:---:|
+| **Success rate** | **100%** (30/30) | 93.3% |
+| **Content quality** | **92.3%** | 83.2% |
+
+WebPeel is the only tool that extracted content from all 30 test URLs. [Full methodology →](https://webpeel.dev/blog/benchmarks)
+
+---
+
+## 🆚 Comparison
+
+| Feature | **WebPeel** | Firecrawl | Jina Reader | ScrapingBee | Tavily |
+|---------|:-----------:|:---------:|:-----------:|:-----------:|:------:|
+| **Free tier** | ✅ 500/wk recurring | ⚠️ 500 one-time | ❌ | ❌ | ⚠️ 1,000 one-time |
+| **Smart escalation** | ✅ auto HTTP→browser→stealth | ❌ manual | ❌ | ❌ | ❌ |
+| **Stealth mode** | ✅ all plans | ✅ | ❌ | ✅ paid | ❌ |
+| **Challenge detection** | ✅ 7 vendors | ❌ | ❌ | ❌ | ❌ |
+| **MCP tools** | ✅ 12 tools | ⚠️ ~6 | ❌ | ❌ | ✅ |
+| **Deep research** | ✅ multi-hop + BM25 | ⚠️ cloud only | ❌ | ❌ | ✅ |
+| **CSS schema extraction** | ✅ 7 bundled | ❌ | ❌ | ❌ | ❌ |
+| **LLM extraction (BYOK)** | ✅ | ⚠️ cloud only | ❌ | ❌ | ❌ |
+| **Site search (27+ sites)** | ✅ | ❌ | ❌ | ❌ | ⚠️ web only |
+| **Hotel search** | ✅ 4 sources parallel | ❌ | ❌ | ❌ | ❌ |
+| **Browser profiles** | ✅ persistent sessions | ❌ | ❌ | ❌ | ❌ |
+| **Self-hosting** | ✅ Docker Compose | ⚠️ complex | ❌ | ❌ | ❌ |
+| **Python SDK** | ✅ `pip install` | ✅ | ❌ | ✅ | ✅ |
+| **Firecrawl-compatible API** | ✅ drop-in | ✅ native | ❌ | ❌ | ❌ |
+| **License** | AGPL-3.0 | AGPL-3.0 | Proprietary | Proprietary | Proprietary |
+| **Price** | **$0 / $9 / $29** | $0 / $16 / $83 | custom | $49 / $149 | $0 / $99 |
+
+---
+
+## 💳 Pricing
+
+| Plan | Price | Weekly Fetches | Burst |
+|------|------:|:--------------:|:-----:|
+| **Free** | $0/mo | 500/wk | 50/hr |
+| **Pro** | $9/mo | 1,250/wk | 100/hr |
+| **Max** | $29/mo | 6,250/wk | 500/hr |
+
+All features on all plans. Pro/Max add pay-as-you-go extra usage (fetch $0.002, search $0.001, stealth $0.01). Quota resets every Monday.
+
+[Sign up free →](https://app.webpeel.dev/signup) · [Compare with Firecrawl →](https://webpeel.dev/migrate-from-firecrawl)
+
+---
+
+## 🐍 Python SDK
+
+```bash
+pip install webpeel
+```
+
+```python
+from webpeel import WebPeel
+
+client = WebPeel(api_key="wp_...")  # or use WEBPEEL_API_KEY env var
+
+# Fetch a page
+result = client.scrape("https://example.com")
+print(result.content)    # Clean markdown
+print(result.metadata)   # title, description, author, ...
+
+# Search the web
+results = client.search("latest AI research papers")
+
+# Crawl a site
+job = client.crawl("https://docs.example.com", limit=100)
+
+# With browser + stealth
+result = client.scrape("https://protected-site.com", render=True, stealth=True)
+```
+
+Sync and async clients. Pure Python 3.8+, zero dependencies. [Full SDK docs →](python-sdk/README.md)
+
+---
+
+## 🐳 Self-Hosting
 
 ```bash
 git clone https://github.com/webpeel/webpeel.git
 cd webpeel && docker compose up
 ```
 
-Full API at `http://localhost:3000`. AGPL-3.0 licensed. [Commercial licensing available](mailto:support@webpeel.dev).
+Full REST API available at `http://localhost:3000`. AGPL-3.0 licensed. [Self-hosting guide →](SELF_HOST.md)
 
-**MCP config for Docker:**
-
-```json
-{
-  "mcpServers": {
-    "webpeel": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "webpeel/mcp"]
-    }
-  }
-}
+**Just the MCP server:**
+```bash
+docker run -i webpeel/mcp
 ```
 
-## Features
-
-### 🎯 Smart Escalation
-
-Automatically uses the fastest method, escalates only when needed:
-
-```
-HTTP Fetch (200ms)  →  Browser Rendering (2s)  →  Stealth Mode (5s)
-     80% of sites          15% of sites             5% of sites
+**Just the API server:**
+```bash
+docker run -p 3000:3000 webpeel/api
 ```
 
-### 🎭 Stealth Mode
+---
 
-Bypass Cloudflare and bot detection. Masks browser fingerprints, navigator properties, WebGL vendor.
+## 📖 API Reference
+
+Full OpenAPI spec at [`openapi.yaml`](openapi.yaml) and [`api.webpeel.dev`](https://api.webpeel.dev).
 
 ```bash
-npx webpeel https://protected-site.com --stealth
+# Fetch
+GET  /v1/fetch?url=<url>
+
+# Search
+GET  /v1/search?q=<query>
+
+# Crawl
+POST /v1/crawl  { "url": "...", "limit": 100 }
+
+# Map
+GET  /v1/map?url=<url>
+
+# Extract
+POST /v1/extract  { "url": "...", "schema": { ... } }
 ```
 
-### 🕷️ Crawl & Map
+[Full API reference →](https://webpeel.dev/docs/api-reference)
 
-Crawl websites with link following, sitemap discovery, robots.txt compliance, and deduplication.
+---
 
-```bash
-npx webpeel crawl https://docs.example.com --max-pages 100
-npx webpeel map https://example.com --max-urls 5000
-```
-
-### 🔬 Deep Research
-
-Multi-source research with BM25 relevance ranking. No API key needed for sources mode.
-
-```bash
-# Get ranked sources with relevance scores
-npx webpeel research "best web scraping tools 2025" --max-sources 5
-
-# Full synthesis with LLM (BYOK)
-npx webpeel research "compare Firecrawl vs Crawl4AI" --llm-key sk-...
-```
-
-### 🧹 Token Efficiency
-
-Save 15-77% on AI tokens automatically.
-
-```bash
-# Content pruning (default ON — strips nav/footer/sidebar)
-npx webpeel https://en.wikipedia.org/wiki/Web_scraping
-
-# Query-focused filtering (BM25)
-npx webpeel https://en.wikipedia.org/wiki/Web_scraping --focus "legal issues"
-
-# Token budget (hard cap)
-npx webpeel https://en.wikipedia.org/wiki/Web_scraping --budget 3000
-
-# Combined: prune → focus → budget = 77% savings
-npx webpeel https://en.wikipedia.org/wiki/Web_scraping --focus "legal" --budget 3000
-```
-
-### 🤖 Autonomous Agent (BYOK)
-
-Give it a prompt, it researches the web using your own LLM key.
-
-```bash
-npx webpeel agent "Compare pricing of Notion vs Coda" --llm-key sk-...
-```
-
-### 📊 More Features
-
-| Feature | CLI | Node.js | Python | API |
-|---------|:---:|:-------:|:------:|:---:|
-| Web scraping | ✅ | ✅ | ✅ | ✅ |
-| Deep research | ✅ | ✅ | ✅ | ✅ |
-| Content pruning | ✅ | ✅ | ✅ | ✅ |
-| BM25 query filtering | ✅ | ✅ | — | ✅ |
-| Structured extraction | ✅ | ✅ | ✅ | ✅ |
-| CSS schema extraction | ✅ | ✅ | — | ✅ |
-| LLM extraction (BYOK) | ✅ | ✅ | ✅ | ✅ |
-| Page actions | ✅ | ✅ | ✅ | ✅ |
-| Browser profiles | ✅ | ✅ | — | — |
-| Screenshots | ✅ | ✅ | ✅ | ✅ |
-| Crawling | ✅ | ✅ | ✅ | ✅ |
-| Batch fetching | ✅ | ✅ | ✅ | ✅ |
-| Hotel search | ✅ | — | — | — |
-| Token budget | ✅ | ✅ | ✅ | ✅ |
-| Smart chunking | ✅ | ✅ | — | — |
-| Branding extraction | ✅ | ✅ | — | — |
-| Change tracking | ✅ | ✅ | — | — |
-| AI summarization | ✅ | ✅ | — | ✅ |
-| Batch processing | — | ✅ | — | ✅ |
-| PDF extraction | ✅ | ✅ | — | — |
-
-## Integrations
-
-Works with **CrewAI**, **Dify**, and **n8n** via the Firecrawl-compatible API. LangChain & LlamaIndex integrations coming soon. [Integration docs →](https://webpeel.dev/docs)
-
-## Hosted API
-
-Live at [`api.webpeel.dev`](https://api.webpeel.dev) — Firecrawl-compatible endpoints.
-
-```bash
-# Fetch a page (free, no auth needed for first 25)
-curl "https://api.webpeel.dev/v1/fetch?url=https://example.com"
-
-# With API key
-curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
-  -H "Authorization: Bearer wp_..."
-```
-
-### Pricing
-
-| Plan | Price | Weekly Fetches | Burst | Extra Usage |
-|------|------:|---------------:|:-----:|:-----------:|
-| **Free** | $0 | 500/wk | 50/hr | — |
-| **Pro** | $9/mo | 1,250/wk | 100/hr | ✅ from $0.001 |
-| **Max** | $29/mo | 6,250/wk | 500/hr | ✅ from $0.001 |
-
-Extra credit costs: fetch $0.002, search $0.001, stealth $0.01. Resets every Monday. All features on all plans. [Compare with Firecrawl →](https://webpeel.dev/migrate-from-firecrawl)
-
-## Project Structure
-
-```
-webpeel/
-├── src/
-│   ├── core/           # Core library (fetcher, strategies, markdown, crawl, search)
-│   ├── mcp/            # MCP server (11 tools for AI assistants)
-│   ├── server/         # Express API server (hosted version)
-│   │   ├── routes/     # API route handlers
-│   │   ├── middleware/  # Auth, rate limiting, SSRF protection
-│   │   └── premium/    # Server-only premium features
-│   ├── tests/          # Vitest test suites
-│   ├── cli.ts          # CLI entry point
-│   ├── index.ts        # Library exports
-│   └── types.ts        # TypeScript type definitions
-├── python-sdk/         # Python SDK (PyPI: webpeel)
-├── integrations/       # LangChain, LlamaIndex, CrewAI, Dify, n8n
-├── site/               # Landing page (webpeel.dev)
-├── dashboard/          # Next.js dashboard (app.webpeel.dev)
-├── benchmarks/         # Performance comparison suite
-└── skills/             # AI agent skills (Claude Code, etc.)
-```
-
-## Development
+## 🤝 Contributing
 
 ```bash
 git clone https://github.com/webpeel/webpeel.git
@@ -375,11 +445,13 @@ npm install && npm run build
 npm test
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+- **Bug reports:** [Open an issue](https://github.com/webpeel/webpeel/issues)
+- **Feature requests:** [Start a discussion](https://github.com/webpeel/webpeel/discussions)
+- **Code:** See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
-## Links
+The project has a comprehensive test suite. Please add tests for new features.
 
-[Documentation](https://webpeel.dev/docs) · [Playground](https://webpeel.dev/playground) · [API Reference](https://webpeel.dev/docs/api-reference) · [npm](https://www.npmjs.com/package/webpeel) · [PyPI](https://pypi.org/project/webpeel/) · [Migration Guide](https://webpeel.dev/migrate-from-firecrawl) · [Blog](https://webpeel.dev/blog) · [Discussions](https://github.com/webpeel/webpeel/discussions)
+---
 
 ## Star History
 
@@ -391,23 +463,20 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
   </picture>
 </a>
 
+---
+
 ## License
 
-This project is licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html).
+[AGPL-3.0](LICENSE) — free to use, modify, and distribute. If you run a modified version as a network service, you must release your source under AGPL-3.0.
 
-**What this means:**
-- ✅ Free to use, modify, and distribute
-- ✅ Free for personal and commercial use
-- ⚠️ If you run a modified version as a network service, you must release your source code under AGPL-3.0
+Need a commercial license? [support@webpeel.dev](mailto:support@webpeel.dev)
 
-**Need a commercial license?** Contact us at [support@webpeel.dev](mailto:support@webpeel.dev) for proprietary/enterprise licensing.
-
-> **Note:** Versions 0.7.1 and earlier were released under MIT. Those releases remain MIT-licensed.
-
-© [WebPeel](https://github.com/webpeel)
+> Versions 0.7.1 and earlier were released under MIT and remain MIT-licensed.
 
 ---
 
 <p align="center">
-  <b>Like WebPeel?</b> <a href="https://github.com/webpeel/webpeel">⭐ Star us on GitHub</a> — it helps others discover the project!
+  If WebPeel saves you time, <a href="https://github.com/webpeel/webpeel"><strong>⭐ star the repo</strong></a> — it helps others find it.
 </p>
+
+© [WebPeel](https://github.com/webpeel)
