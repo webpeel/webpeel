@@ -22,7 +22,7 @@ const plans = {
     annualLink: '',
     features: [
       '500 fetches per week',
-      '25/hr burst limit',
+      '50/hr burst limit',
       'All features included',
       'Community support',
     ],

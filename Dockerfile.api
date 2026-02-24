@@ -5,6 +5,9 @@
 
 FROM node:22-slim
 
+# Shared Playwright browser path — ensures install + runtime use the same location
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
+
 # Install Playwright system deps + Chromium for browser rendering
 RUN npx --yes playwright install --with-deps chromium
 
@@ -12,11 +15,12 @@ WORKDIR /app
 
 # Install WebPeel from npm (includes compiled dist/)
 # Pin version to bust Docker layer cache on updates
-RUN npm install webpeel@0.13.3
+RUN npm install webpeel@0.13.4
 
 # Non-root user for security
 RUN groupadd -r webpeel && useradd -r -g webpeel webpeel \
-    && chown -R webpeel:webpeel /app
+    && chown -R webpeel:webpeel /app \
+    && chmod -R o+rx /opt/pw-browsers
 USER webpeel
 
 EXPOSE 3000

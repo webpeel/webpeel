@@ -771,6 +771,18 @@ function createMcpServer(): Server {
 // ---------------------------------------------------------------------------
 
 async function handleMcpPost(req: Request, res: Response): Promise<void> {
+  // Require authentication — reject unauthenticated requests.
+  // The /:apiKey/v2/mcp path validates the key before calling this handler.
+  // The /mcp and /v2/mcp paths rely on the global auth middleware (Bearer token).
+  if (!req.auth?.keyInfo) {
+    res.status(401).json({
+      jsonrpc: '2.0',
+      error: { code: -32001, message: 'Authentication required. Pass API key via Authorization: Bearer <key> header or use /:apiKey/v2/mcp path.' },
+      id: null,
+    });
+    return;
+  }
+
   try {
     const server = createMcpServer();
     const transport = new StreamableHTTPServerTransport({

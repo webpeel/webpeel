@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [0.13.3] - 2026-02-24
+
+### 🆕 Added
+- **Self-hosted stealth search engine** — `StealthSearchProvider` scrapes DDG, Bing, and Ecosia in parallel via stealth browser. Zero external API dependency.
+
+### 🗑️ Removed
+- **Serper dependency removed** — No more external search API costs. All search is self-hosted.
+
+### 🐛 Fixes
+- **Dockerfile: Playwright browser path** — Fixed shared browser path (`/opt/pw-browsers`) so Chromium is accessible to the non-root runtime user.
+- **MCP auth enforcement** — `/mcp` and `/v2/mcp` now require API key authentication. Previously unauthenticated.
+
 ## [0.13.2] - 2026-02-24
 
 ### 🆕 Added

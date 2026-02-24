@@ -26,7 +26,7 @@ npx webpeel screenshot https://example.com --full-page
 npx webpeel answer "What is WebPeel?" --llm openai
 
 # Research agent
-npx webpeel agent "Compare React vs Vue in 2025" --llm-key $OPENAI_API_KEY
+npx webpeel research "Compare React vs Vue in 2025" --llm-key $OPENAI_API_KEY
 
 # Library
 import { peel } from 'webpeel';
@@ -47,6 +47,7 @@ Base URL: `https://api.webpeel.dev`
 - `POST /v1/map` — Discover all URLs on a domain
 - `POST /v1/screenshot` — Screenshot a URL (PNG/JPEG, full-page)
 - `POST /v1/answer` — Search + fetch + LLM answer with citations (BYOK)
+- `POST /v1/deep_fetch` — Search + batch fetch + merge in one call. Params: query (string), count (number, default 5). Returns merged markdown with source attribution. No LLM key needed.
 - `POST /v1/agent` — Autonomous research agent (BYOK)
 - `POST /v1/batch` — Fetch multiple URLs in parallel
 - `POST /v2/scrape` — Firecrawl-compatible endpoint (drop-in replacement)
@@ -62,7 +63,13 @@ Authentication: `Authorization: Bearer YOUR_API_KEY` or anonymous (500 free fetc
 - `webpeel_map` — Discover URLs on a domain. Params: url (required), maxUrls (number)
 - `webpeel_extract` — Extract structured data. Params: url (required), schema (JSON Schema), prompt (string)
 - `webpeel_batch` — Fetch multiple URLs. Params: urls (array), concurrency (number)
-- `webpeel_agent` — Research agent. Params: prompt (required), urls (array), maxPages (number)
+- `webpeel_screenshot` — Capture full-page or viewport screenshot. Params: url (required), fullPage (boolean), format (png|jpeg)
+- `webpeel_summarize` — Fetch and return condensed content summary. Params: url (required), focus (string)
+- `webpeel_answer` — Answer a question about any URL without BYOK. Params: url (required), question (required)
+- `webpeel_brand` — Extract brand info (name, logo, colors, social links). Params: url (required)
+- `webpeel_change_track` — Detect content changes (hash-based monitoring). Params: url (required), previousHash (string)
+- `webpeel_deep_fetch` — Search + batch fetch + merge in one call. Params: query (required), count (1-10)
+- `webpeel_research` — Research agent. Params: prompt (required), urls (array), maxPages (number)
 
 ## MCP Configuration
 
