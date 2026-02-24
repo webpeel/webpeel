@@ -83,9 +83,9 @@ vi.mock('../core/search-provider.js', () => ({
     requiresApiKey = true;
     searchWeb = async () => [];
   },
-  SerperProvider: class {
-    id = 'serper';
-    requiresApiKey = true;
+  StealthSearchProvider: class {
+    id = 'stealth';
+    requiresApiKey = false;
     searchWeb = async () => [];
   },
 }));

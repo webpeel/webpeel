@@ -2,18 +2,21 @@
  * Search provider abstraction
  *
  * WebPeel supports multiple web search backends. DuckDuckGo is the default
- * (no API key required). Additional providers available via API keys:
- * - Serper.dev (SERPER_API_KEY) — 2,500 free queries, Google results
- * - Brave Search (BRAVE_API_KEY / BRAVE_SEARCH_KEY) — independent index
+ * (no API key required). The StealthSearchProvider uses WebPeel's own stealth
+ * browser to scrape multiple search engines in parallel — fully self-hosted,
+ * no external API keys required.
  *
- * On hosted/production servers where DDG is blocked, the system auto-falls
- * back through: DDG → DDG Lite → Serper → Brave → stealth browser.
+ * Provider fallback chain (DDG):
+ *   DDG HTTP → DDG Lite → Brave (if key) → StealthSearchProvider (multi-engine)
+ *
+ * In production with no API keys configured, getBestSearchProvider() returns
+ * StealthSearchProvider since DDG HTTP is often blocked on datacenter IPs.
  */
 
 import { fetch as undiciFetch } from 'undici';
 import { load } from 'cheerio';
 
-export type SearchProviderId = 'duckduckgo' | 'brave' | 'serper';
+export type SearchProviderId = 'duckduckgo' | 'brave' | 'stealth';
 
 export interface WebSearchResult {
   title: string;
@@ -110,6 +113,241 @@ function normalizeUrlForDedupe(rawUrl: string): string {
       .replace(/^www\./, '')
       .replace(/[?#].*$/, '')
       .replace(/\/+$/g, '');
+  }
+}
+
+/**
+ * StealthSearchProvider — self-hosted multi-engine search
+ *
+ * Uses WebPeel's own stealth browser (rebrowser-playwright with anti-detection)
+ * to scrape DuckDuckGo, Bing, and Ecosia in parallel. No external API keys
+ * required. Results are deduplicated by normalized URL before returning.
+ *
+ * Timeout: 15s per engine, 20s total.
+ */
+export class StealthSearchProvider implements SearchProvider {
+  readonly id: SearchProviderId = 'stealth';
+  readonly requiresApiKey = false;
+
+  /** Validate and normalize a URL; returns null if invalid/non-http */
+  private validateUrl(rawUrl: string): string | null {
+    try {
+      const parsed = new URL(rawUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      return parsed.href;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Scrape DuckDuckGo HTML endpoint with stealth browser.
+   * Uses the same HTML endpoint as DuckDuckGoProvider for consistent parsing.
+   */
+  private async scrapeDDG(query: string, count: number): Promise<WebSearchResult[]> {
+    try {
+      const { peel } = await import('../index.js');
+      const params = new URLSearchParams({ q: query });
+      const url = `https://html.duckduckgo.com/html/?${params.toString()}`;
+
+      const result = await Promise.race([
+        peel(url, { render: true, stealth: true, format: 'html', wait: 3000 }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('DDG stealth timeout')), 15_000),
+        ),
+      ]);
+
+      const html = (result as any).content || '';
+      if (!html) return [];
+
+      const $ = load(html);
+      const results: WebSearchResult[] = [];
+      const seen = new Set<string>();
+
+      $('.result').each((_i, elem) => {
+        if (results.length >= count) return;
+        const $r = $(elem);
+        const titleRaw = $r.find('.result__title').text() || $r.find('.result__a').text();
+        const rawUrl = $r.find('.result__a').attr('href') || '';
+        const snippetRaw = $r.find('.result__snippet').text();
+
+        const title = cleanText(titleRaw, { maxLen: 200 });
+        const snippet = cleanText(snippetRaw, { maxLen: 500, stripEllipsisPadding: true });
+        if (!title || !rawUrl) return;
+
+        // Extract real URL from DDG redirect param
+        let finalUrl = rawUrl;
+        try {
+          const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
+          const uddg = ddgUrl.searchParams.get('uddg');
+          if (uddg) finalUrl = decodeURIComponent(uddg);
+        } catch { /* use raw */ }
+
+        const validated = this.validateUrl(finalUrl);
+        if (!validated) return;
+
+        const key = normalizeUrlForDedupe(validated);
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        results.push({ title, url: validated, snippet });
+      });
+
+      return results;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Scrape Bing web search with stealth browser.
+   * Selectors: li.b_algo for result containers.
+   */
+  private async scrapeBing(query: string, count: number): Promise<WebSearchResult[]> {
+    try {
+      const { peel } = await import('../index.js');
+      const params = new URLSearchParams({ q: query });
+      const url = `https://www.bing.com/search?${params.toString()}`;
+
+      const result = await Promise.race([
+        peel(url, { render: true, stealth: true, format: 'html', wait: 2000 }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Bing stealth timeout')), 15_000),
+        ),
+      ]);
+
+      const html = (result as any).content || '';
+      if (!html) return [];
+
+      const $ = load(html);
+      const results: WebSearchResult[] = [];
+      const seen = new Set<string>();
+
+      $('li.b_algo').each((_i, elem) => {
+        if (results.length >= count) return;
+        const $r = $(elem);
+
+        // Title + URL from h2 > a
+        const $a = $r.find('h2 > a');
+        const title = cleanText($a.text(), { maxLen: 200 });
+        const rawUrl = $a.attr('href') || '';
+        if (!title || !rawUrl) return;
+
+        const validated = this.validateUrl(rawUrl);
+        if (!validated) return;
+
+        // Snippet: prefer .b_lineclamp2 > p, then div.b_caption > p
+        const snippetRaw =
+          $r.find('.b_lineclamp2 p').first().text() ||
+          $r.find('div.b_caption > p').first().text() ||
+          $r.find('.b_caption').text();
+        const snippet = cleanText(snippetRaw, { maxLen: 500, stripEllipsisPadding: true });
+
+        const key = normalizeUrlForDedupe(validated);
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        results.push({ title, url: validated, snippet });
+      });
+
+      return results;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Scrape Ecosia web search with stealth browser.
+   * Tries multiple selector patterns since Ecosia updates their HTML frequently.
+   */
+  private async scrapeEcosia(query: string, count: number): Promise<WebSearchResult[]> {
+    try {
+      const { peel } = await import('../index.js');
+      const params = new URLSearchParams({ q: query });
+      const url = `https://www.ecosia.org/search?${params.toString()}`;
+
+      const result = await Promise.race([
+        peel(url, { render: true, stealth: true, format: 'html', wait: 2000 }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Ecosia stealth timeout')), 15_000),
+        ),
+      ]);
+
+      const html = (result as any).content || '';
+      if (!html) return [];
+
+      const $ = load(html);
+      const results: WebSearchResult[] = [];
+      const seen = new Set<string>();
+
+      // Try multiple container selectors — Ecosia changes HTML periodically
+      const containers = $('article.result, .result, [data-test-id="result"]');
+
+      containers.each((_i, elem) => {
+        if (results.length >= count) return;
+        const $r = $(elem);
+
+        // Title + URL: try multiple patterns
+        let $a = $r.find('a.result-title').first();
+        if (!$a.length) $a = $r.find('h2 > a').first();
+        if (!$a.length) $a = $r.find('a[href]').first();
+
+        const title = cleanText($a.text(), { maxLen: 200 });
+        const rawUrl = $a.attr('href') || '';
+        if (!title || !rawUrl) return;
+
+        const validated = this.validateUrl(rawUrl);
+        if (!validated) return;
+
+        // Snippet: try multiple patterns
+        const snippetRaw =
+          $r.find('p.result-snippet').first().text() ||
+          $r.find('.snippet').first().text() ||
+          $r.find('p').first().text();
+        const snippet = cleanText(snippetRaw, { maxLen: 500, stripEllipsisPadding: true });
+
+        const key = normalizeUrlForDedupe(validated);
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        results.push({ title, url: validated, snippet });
+      });
+
+      return results;
+    } catch {
+      return [];
+    }
+  }
+
+  async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
+    const { count } = options;
+
+    // Launch all three engines in parallel; ignore individual engine failures
+    const [ddgOutcome, bingOutcome, ecosiaOutcome] = await Promise.allSettled([
+      this.scrapeDDG(query, count),
+      this.scrapeBing(query, count),
+      this.scrapeEcosia(query, count),
+    ]);
+
+    const allResults: WebSearchResult[] = [];
+    for (const outcome of [ddgOutcome, bingOutcome, ecosiaOutcome]) {
+      if (outcome.status === 'fulfilled') {
+        allResults.push(...outcome.value);
+      }
+    }
+
+    // Deduplicate across engines by normalized URL
+    const seen = new Set<string>();
+    const deduped: WebSearchResult[] = [];
+    for (const r of allResults) {
+      const key = normalizeUrlForDedupe(r.url);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(r);
+      if (deduped.length >= count) break;
+    }
+
+    return deduped;
   }
 }
 
@@ -339,74 +577,6 @@ export class DuckDuckGoProvider implements SearchProvider {
     return results;
   }
 
-  /**
-   * Last-resort fallback: use headless browser with stealth mode to render
-   * DDG search results. Stealth mode bypasses bot detection on datacenter IPs.
-   * Slower (~5-8s) but more reliable than HTTP-only scraping from server IPs.
-   */
-  private async searchRendered(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
-    const { count } = options;
-
-    try {
-      // Dynamic import to avoid loading peel in search-only contexts
-      const { peel } = await import('../index.js');
-      const searchUrl = this.buildSearchUrl(query, options);
-
-      const result = await peel(searchUrl, {
-        render: true,
-        stealth: true,
-        format: 'html',
-        wait: 3000,  // Extra wait for stealth mode + DDG rendering
-      });
-
-      const html = result.content || '';
-      if (!html) return [];
-
-      const { load: cheerioLoad } = await import('cheerio');
-      const $ = cheerioLoad(html);
-      const results: WebSearchResult[] = [];
-      const seen = new Set<string>();
-
-      // Same parsing as searchOnce — DDG HTML structure
-      $('.result').each((_i, elem) => {
-        if (results.length >= count) return;
-
-        const $result = $(elem);
-        const titleRaw = $result.find('.result__title').text() || $result.find('.result__a').text();
-        const rawUrl = $result.find('.result__a').attr('href') || '';
-        const snippetRaw = $result.find('.result__snippet').text();
-
-        let title = cleanText(titleRaw, { maxLen: 200 });
-        let snippet = cleanText(snippetRaw, { maxLen: 500, stripEllipsisPadding: true });
-
-        if (!title || !rawUrl) return;
-
-        let url = rawUrl;
-        try {
-          const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
-          const uddg = ddgUrl.searchParams.get('uddg');
-          if (uddg) url = decodeURIComponent(uddg);
-        } catch { /* use raw */ }
-
-        try {
-          const parsed = new URL(url);
-          if (!['http:', 'https:'].includes(parsed.protocol)) return;
-          url = parsed.href;
-        } catch { return; }
-
-        const dedupeKey = normalizeUrlForDedupe(url);
-        if (seen.has(dedupeKey)) return;
-        seen.add(dedupeKey);
-
-        results.push({ title, url, snippet });
-      });
-
-      return results;
-    } catch {
-      return [];
-    }
-  }
-
   async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
     const attempts = this.buildQueryAttempts(query);
 
@@ -424,18 +594,6 @@ export class DuckDuckGoProvider implements SearchProvider {
       // Lite also failed — try API-based fallbacks
     }
 
-    // Fallback: try Serper API if key is configured (2,500 free queries)
-    const serperKey = process.env.SERPER_API_KEY;
-    if (serperKey) {
-      try {
-        const serperProvider = new SerperProvider();
-        const serperResults = await serperProvider.searchWeb(query, { ...options, apiKey: serperKey });
-        if (serperResults.length > 0) return serperResults;
-      } catch {
-        // Serper failed — continue to next fallback
-      }
-    }
-
     // Fallback: try Brave Search API if key is configured
     const braveKey = process.env.BRAVE_SEARCH_KEY || process.env.BRAVE_API_KEY;
     if (braveKey) {
@@ -448,83 +606,17 @@ export class DuckDuckGoProvider implements SearchProvider {
       }
     }
 
-    // Last resort: browser-rendered search with stealth mode
-    // Only use this on the server (has Chromium), not in CLI (too slow for interactive)
-    if (typeof process !== 'undefined' && (process.env.PLAYWRIGHT_BROWSERS_PATH !== undefined || process.env.NODE_ENV === 'production')) {
-      try {
-        const renderedResults = await this.searchRendered(query, options);
-        if (renderedResults.length > 0) return renderedResults;
-      } catch {
-        // Rendered also failed
-      }
+    // Last resort: stealth multi-engine search (DDG + Bing + Ecosia via stealth browser)
+    // Bypasses bot detection on datacenter IPs where HTTP scraping fails.
+    try {
+      const stealthProvider = new StealthSearchProvider();
+      const stealthResults = await stealthProvider.searchWeb(query, options);
+      if (stealthResults.length > 0) return stealthResults;
+    } catch {
+      // Stealth also failed
     }
 
     return [];
-  }
-}
-
-export class SerperProvider implements SearchProvider {
-  readonly id: SearchProviderId = 'serper';
-  readonly requiresApiKey = true;
-
-  async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
-    const { count, apiKey, signal } = options;
-
-    if (!apiKey || apiKey.trim().length === 0) {
-      throw new Error('Serper requires an API key (SERPER_API_KEY). Get 2,500 free queries at https://serper.dev');
-    }
-
-    const response = await undiciFetch('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: {
-        'X-API-KEY': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        q: query,
-        num: Math.min(Math.max(count, 1), 10),
-      }),
-      signal,
-    });
-
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw new Error(`Serper search failed: HTTP ${response.status}${text ? ` - ${text}` : ''}`);
-    }
-
-    const data = await response.json() as any;
-    const organic: any[] = data?.organic;
-
-    if (!Array.isArray(organic)) {
-      return [];
-    }
-
-    const results: WebSearchResult[] = [];
-
-    for (const r of organic) {
-      if (results.length >= count) break;
-      const title = typeof r?.title === 'string' ? r.title.trim() : '';
-      const rawUrl = typeof r?.link === 'string' ? r.link.trim() : '';
-      const snippet = typeof r?.snippet === 'string' ? r.snippet.trim() : '';
-
-      if (!title || !rawUrl) continue;
-
-      // SECURITY: Validate URL protocol
-      try {
-        const parsed = new URL(rawUrl);
-        if (!['http:', 'https:'].includes(parsed.protocol)) continue;
-      } catch {
-        continue;
-      }
-
-      results.push({
-        title: title.slice(0, 200),
-        url: rawUrl,
-        snippet: snippet.slice(0, 500),
-      });
-    }
-
-    return results;
   }
 }
 
@@ -599,7 +691,7 @@ export class BraveSearchProvider implements SearchProvider {
 export function getSearchProvider(id: SearchProviderId | undefined): SearchProvider {
   if (!id || id === 'duckduckgo') return new DuckDuckGoProvider();
   if (id === 'brave') return new BraveSearchProvider();
-  if (id === 'serper') return new SerperProvider();
+  if (id === 'stealth') return new StealthSearchProvider();
 
   // Exhaustive fallback (should be unreachable due to typing)
   return new DuckDuckGoProvider();
@@ -607,21 +699,22 @@ export function getSearchProvider(id: SearchProviderId | undefined): SearchProvi
 
 /**
  * Get the best available search provider based on configured API keys.
- * Returns the first provider with a configured key, falling back to DDG.
+ * In production with no API keys configured, returns StealthSearchProvider
+ * since DDG HTTP is often blocked on datacenter/server IPs.
  */
 export function getBestSearchProvider(): { provider: SearchProvider; apiKey?: string } {
-  // Check for Serper (best free tier: 2,500 queries)
-  const serperKey = process.env.SERPER_API_KEY;
-  if (serperKey) {
-    return { provider: new SerperProvider(), apiKey: serperKey };
-  }
-
   // Check for Brave
   const braveKey = process.env.BRAVE_SEARCH_KEY || process.env.BRAVE_API_KEY;
   if (braveKey) {
     return { provider: new BraveSearchProvider(), apiKey: braveKey };
   }
 
-  // Default: DuckDuckGo (free, no key, with built-in fallback chain)
+  // In production with no API keys, use StealthSearchProvider — DDG HTTP
+  // is frequently blocked on datacenter IPs, so stealth multi-engine is more reliable.
+  if (process.env.NODE_ENV === 'production') {
+    return { provider: new StealthSearchProvider() };
+  }
+
+  // Default: DuckDuckGo (free, no key, with built-in fallback chain to stealth)
   return { provider: new DuckDuckGoProvider() };
 }

@@ -65,7 +65,7 @@ export function createSearchRouter(authStore: AuthStore): Router {
 
       // --- Search provider (new: BYOK Brave support) ---
       const providerParam = (req.query.provider as string || '').toLowerCase() || 'auto';
-      const validProviders: SearchProviderId[] = ['duckduckgo', 'brave', 'serper'];
+      const validProviders: SearchProviderId[] = ['duckduckgo', 'brave', 'stealth'];
       const providerId: SearchProviderId | 'auto' = validProviders.includes(providerParam as SearchProviderId)
         ? (providerParam as SearchProviderId)
         : providerParam === 'auto' ? 'auto' : 'duckduckgo';
