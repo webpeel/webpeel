@@ -12,7 +12,7 @@ WORKDIR /app
 
 # Install WebPeel from npm (includes compiled dist/)
 # Pin version to bust Docker layer cache on updates
-RUN npm install webpeel@0.13.0
+RUN npm install webpeel@0.13.1
 
 # Non-root user for security
 RUN groupadd -r webpeel && useradd -r -g webpeel webpeel \

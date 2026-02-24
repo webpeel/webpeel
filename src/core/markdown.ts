@@ -152,6 +152,41 @@ function cleanHTML(html: string): string {
   // Only remove sidebar-like asides, not all aside elements
   $('aside.sidebar, aside[role="complementary"], aside[class*="sidebar"]').remove();
 
+  // Convert layout tables to clean divs before Turndown runs.
+  // Layout tables (HN, old Reddit, email HTML etc.) use <table> for positioning,
+  // not data — GFM's table plugin fails on them and emits raw HTML.
+  // Detection: has presentation attributes OR contains nested <table> OR no <th>.
+  $('table').each((_, tableEl) => {
+    const $table = $(tableEl);
+    const hasBorder = $table.attr('border') !== undefined;
+    const hasCellpadding = $table.attr('cellpadding') !== undefined;
+    const hasBgcolor = $table.attr('bgcolor') !== undefined;
+    const hasRolePresentation = $table.attr('role') === 'presentation';
+    const hasNestedTable = $table.find('table').length > 0;
+    const hasTh = $table.find('th').length > 0;
+    const isLayoutTable = hasBorder || hasCellpadding || hasBgcolor || hasRolePresentation || hasNestedTable || !hasTh;
+    if (!isLayoutTable) return;
+    // Extract: links (as list items) + non-empty text from each <td>
+    const lines: string[] = [];
+    $table.find('td').each((_, td) => {
+      const $td = $(td);
+      // Preserve links found in this cell
+      $td.find('a').each((_, a) => {
+        const $a = $(a);
+        const href = $a.attr('href');
+        const label = $a.text().trim();
+        if (label && href) lines.push(`<a href="${href}">${label}</a>`);
+      });
+      // Add non-link text if substantial
+      const nonLinkText = $td.clone().find('a').remove().end().text().trim();
+      if (nonLinkText.length > 10 && !$td.find('a').length) {
+        lines.push(`<p>${nonLinkText}</p>`);
+      }
+    });
+    const replacement = `<div>${lines.join('\n')}</div>`;
+    $table.replaceWith(replacement);
+  });
+
   // Remove empty paragraphs and divs
   $('p:empty, div:empty').remove();
 
