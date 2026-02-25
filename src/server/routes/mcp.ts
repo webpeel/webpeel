@@ -29,6 +29,8 @@ import type { PeelOptions } from '../../types.js';
 import { normalizeActions } from '../../core/actions.js';
 import { runAgent } from '../../core/agent.js';
 import type { AgentDepth, AgentTopic } from '../../core/agent.js';
+import { quickAnswer } from '../../core/quick-answer.js';
+import { getBestSearchProvider } from '../../core/search-provider.js';
 import { extractInlineJson, type LLMProvider as InlineLLMProvider } from '../../core/extract-inline.js';
 import { answerQuestion, type LLMProviderId } from '../../core/answer.js';
 import { readFileSync } from 'fs';
@@ -278,7 +280,7 @@ function getTools(): Tool[] {
         type: 'object',
         properties: {
           question: { type: 'string', description: 'The question to answer' },
-          searchProvider: { type: 'string', enum: ['duckduckgo', 'brave'], description: 'Search provider (default: duckduckgo)', default: 'duckduckgo' },
+          searchProvider: { type: 'string', enum: ['duckduckgo', 'brave', 'stealth', 'google'], description: 'Search provider (default: duckduckgo)', default: 'duckduckgo' },
           searchApiKey: { type: 'string', description: 'API key for Brave Search (required when searchProvider is "brave")' },
           llmProvider: { type: 'string', enum: ['openai', 'anthropic', 'google'], description: 'LLM provider to use for answer generation' },
           llmApiKey: { type: 'string', description: 'API key for the LLM provider (BYOK)' },
@@ -396,6 +398,25 @@ function getTools(): Tool[] {
           limit: { type: 'number', description: 'Max results (default: 20)' },
         },
         required: ['destination'],
+      },
+    },
+    {
+      name: 'agent',
+      description: 'Web data agent — search, fetch, and extract structured data in one call. Give it a prompt and URLs or search query, get back clean structured results. Works without an LLM key using BM25 extraction.',
+      annotations: { title: 'Web Data Agent', readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          prompt: { type: 'string', description: 'What data do you want? e.g. "Find the CEO and revenue for each company"' },
+          urls: { type: 'array', items: { type: 'string' }, description: 'URLs to fetch and extract from' },
+          search: { type: 'string', description: 'Search query to find relevant pages' },
+          schema: { type: 'object', description: 'Output schema as an object of field names to type strings (e.g. {"company":"string","ceo":"string"})' },
+          maxResults: { type: 'number', description: 'Max pages to process (default: 5)' },
+          budget: { type: 'number', description: 'Token budget per page (default: 4000)' },
+          llmApiKey: { type: 'string', description: 'Your LLM API key for AI extraction (optional — works without it using BM25)' },
+          llmProvider: { type: 'string', description: 'LLM provider: openai, anthropic, etc. (default: openai)' },
+        },
+        required: [],
       },
     },
   ];
@@ -687,6 +708,87 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
       return ok(safeStringify(result));
     }
 
+    // agent — LLM-free data agent: search + fetch + BM25 extraction
+    if (name === 'agent') {
+      const llmApiKey = args.llmApiKey as string | undefined;
+
+      // LLM mode: delegate to existing runAgent
+      if (llmApiKey) {
+        const prompt = args.prompt as string;
+        if (!prompt || typeof prompt !== 'string') throw new Error('Missing prompt for LLM agent mode');
+        const result = await Promise.race([
+          runAgent({
+            prompt,
+            llmApiKey,
+            urls: args.urls as string[] | undefined,
+            llmModel: args.llmModel as string | undefined,
+            maxSources: (args.maxResults as number) || (args.maxSources as number) || undefined,
+          }),
+          timeout(180000, 'Agent timed out'),
+        ]);
+        return ok(safeStringify(result));
+      }
+
+      // LLM-free mode: search + fetch + BM25 quickAnswer
+      const urls = (args.urls as string[]) || [];
+      const search = args.search as string | undefined;
+      if ((!urls || urls.length === 0) && !search) {
+        throw new Error('Provide at least "urls" or "search". For LLM-powered research, also pass "llmApiKey".');
+      }
+
+      const prompt = args.prompt as string | undefined;
+      const schema = args.schema as Record<string, string> | undefined;
+      const budget = (args.budget as number) || 4000;
+      const maxResults = Math.min((args.maxResults as number) || 5, 20);
+
+      const targetUrls: string[] = [...urls];
+      if (search) {
+        try {
+          const { provider, apiKey } = getBestSearchProvider();
+          const searchResults = await provider.searchWeb(search, { count: Math.max(maxResults, 5), apiKey });
+          for (const r of searchResults) {
+            if (!targetUrls.includes(r.url)) targetUrls.push(r.url);
+          }
+        } catch { /* continue with provided URLs */ }
+      }
+
+      const urlsToFetch = targetUrls.slice(0, maxResults);
+      const agentResults: Array<{ url: string; title: string; extracted: Record<string, string> | null; content: string; confidence: number }> = [];
+
+      await Promise.all(urlsToFetch.map(async (url) => {
+        try {
+          const page = await peel(url, { budget, format: 'markdown' });
+          const content = page.content || '';
+          const title = page.title || url;
+          let extracted: Record<string, string> | null = null;
+          let confidence = 0;
+
+          if (schema && Object.keys(schema).length > 0) {
+            extracted = {};
+            let total = 0;
+            for (const [field] of Object.entries(schema)) {
+              const question = prompt ? `${prompt} — specifically: what is the ${field}?` : `What is the ${field}?`;
+              const qa = quickAnswer({ question, content, maxPassages: 1, url });
+              extracted[field] = qa.answer || '';
+              total += qa.confidence;
+            }
+            if ('source' in schema) extracted['source'] = url;
+            confidence = Object.keys(schema).length > 0 ? total / Object.keys(schema).length : 0;
+          } else if (prompt) {
+            const qa = quickAnswer({ question: prompt, content, maxPassages: 3, url });
+            confidence = qa.confidence;
+          }
+
+          agentResults.push({ url, title, extracted, content: content.slice(0, 500) + (content.length > 500 ? '…' : ''), confidence });
+        } catch { /* skip */ }
+      }));
+
+      return ok(safeStringify({
+        success: true,
+        data: { results: agentResults, totalSources: agentResults.length },
+      }));
+    }
+
     // webpeel_screenshot
     if (name === 'webpeel_screenshot') {
       const url = args.url as string;
@@ -774,7 +876,10 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
       }
       if (!llmApiKey || typeof llmApiKey !== 'string') throw new Error('Invalid llmApiKey');
 
-      const spId = (args.searchProvider as string) === 'brave' ? 'brave' : 'duckduckgo';
+      const _validSearchProviders = ['duckduckgo', 'brave', 'stealth', 'google'];
+      const spId = _validSearchProviders.includes(args.searchProvider as string)
+        ? (args.searchProvider as string)
+        : 'duckduckgo';
       const maxSources = typeof args.maxSources === 'number' ? Math.min(Math.max(args.maxSources, 1), 10) : 5;
 
       const result = await Promise.race([

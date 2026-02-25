@@ -15,8 +15,10 @@
 
 import { fetch as undiciFetch } from 'undici';
 import { load } from 'cheerio';
+import { existsSync } from 'fs';
+import { resolve as pathResolve } from 'path';
 
-export type SearchProviderId = 'duckduckgo' | 'brave' | 'stealth';
+export type SearchProviderId = 'duckduckgo' | 'brave' | 'stealth' | 'google';
 
 export interface WebSearchResult {
   title: string;
@@ -688,29 +690,326 @@ export class BraveSearchProvider implements SearchProvider {
   }
 }
 
+/**
+ * GoogleSearchProvider — Google Search via stealth browser or Custom Search JSON API
+ *
+ * Two modes:
+ *   1. Custom Search JSON API (BYOK): set GOOGLE_SEARCH_KEY + GOOGLE_SEARCH_CX env vars.
+ *      Reliable, structured, 100 free queries/day. Works from any IP.
+ *   2. Stealth browser scraping (no API key): uses playwright-extra stealth plugin to
+ *      scrape google.com/search directly. Works from datacenter IPs where DDG/Bing/Ecosia
+ *      are blocked. Gracefully returns [] if Playwright is unavailable.
+ *
+ * Docs: https://developers.google.com/custom-search/v1/overview
+ */
+export class GoogleSearchProvider implements SearchProvider {
+  readonly id: SearchProviderId = 'google';
+  /**
+   * requiresApiKey is false: works without API keys via stealth browser fallback.
+   */
+  readonly requiresApiKey = false;
+
+  /**
+   * Map standard freshness values to Google's dateRestrict format.
+   * Google dateRestrict: d[n]=past n days, w[n]=past n weeks,
+   *                      m[n]=past n months, y[n]=past n years.
+   */
+  private mapFreshnessToDateRestrict(tbs: string | undefined): string | undefined {
+    if (!tbs) return undefined;
+    const map: Record<string, string> = {
+      pd: 'd1',
+      pw: 'w1',
+      pm: 'm1',
+      py: 'y1',
+    };
+    return map[tbs];
+  }
+
+  /** Validate URL; returns null if invalid/non-http */
+  private validateUrl(rawUrl: string): string | null {
+    try {
+      const parsed = new URL(rawUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      return parsed.href;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Stealth browser scrape of google.com/search.
+   * Used when no Custom Search API key is configured.
+   * Strategy A: peel() with stealth rendering (consistent with StealthSearchProvider).
+   * Strategy B: direct playwright-extra launch (if peel returns no results).
+   */
+  private async scrapeGoogleStealth(query: string, count: number): Promise<WebSearchResult[]> {
+    // Strategy A: peel() + cheerio parse
+    try {
+      const { peel } = await import('../index.js');
+      const params = new URLSearchParams({
+        q: query,
+        num: String(Math.min(count * 2, 20)),
+        hl: 'en',
+        gl: 'us',
+      });
+      const url = `https://www.google.com/search?${params.toString()}`;
+
+      const result = await Promise.race([
+        peel(url, { render: true, stealth: true, format: 'html', wait: 3000 }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Google stealth peel timeout')), 20_000),
+        ),
+      ]);
+
+      const html = (result as any).content || '';
+      if (html) {
+        const $ = load(html);
+        const results: WebSearchResult[] = [];
+        const seen = new Set<string>();
+
+        // Multiple selector patterns for resilience across Google HTML variants
+        const resultBlocks = $('#search .g, #rso .g, [data-hveid] .g');
+
+        resultBlocks.each((_i, elem) => {
+          if (results.length >= count) return;
+          const $r = $(elem);
+          const $a = $r.find('a[href^="http"]').first();
+          const $h3 = $r.find('h3').first();
+          if (!$a.length || !$h3.length) return;
+
+          const href = $a.attr('href') || '';
+          if (
+            href.includes('google.com/') ||
+            href.includes('accounts.google') ||
+            href.includes('/aclk') ||
+            href.startsWith('#')
+          ) return;
+
+          const validated = this.validateUrl(href);
+          if (!validated) return;
+
+          const key = normalizeUrlForDedupe(validated);
+          if (seen.has(key)) return;
+          seen.add(key);
+
+          const title = cleanText($h3.text(), { maxLen: 200 });
+          if (!title) return;
+
+          const snippetText =
+            $r.find('[data-sncf]').first().text() ||
+            $r.find('.VwiC3b').first().text() ||
+            $r.find('[style*="-webkit-line-clamp"]').first().text() ||
+            $r.find('.st').first().text() ||
+            '';
+          const snippet = cleanText(snippetText, { maxLen: 500, stripEllipsisPadding: true });
+
+          results.push({ title, url: validated, snippet });
+        });
+
+        if (results.length > 0) return results.slice(0, count);
+      }
+    } catch (e) {
+      if (process.env.DEBUG) {
+        console.debug('[webpeel] Google stealth (peel) error:', (e as Error).message);
+      }
+    }
+
+    // Strategy B: direct playwright-extra + stealth plugin
+    let browser: import('playwright').Browser | undefined;
+    let context: import('playwright').BrowserContext | undefined;
+    let page: import('playwright').Page | undefined;
+    try {
+      const pwExtra = await import('playwright-extra');
+      const StealthPlugin = (await import('puppeteer-extra-plugin-stealth')).default;
+      const stealthChromium = pwExtra.chromium as unknown as typeof import('playwright').chromium;
+      (stealthChromium as any).use(StealthPlugin());
+
+      const params = new URLSearchParams({
+        q: query,
+        num: String(Math.min(count * 2, 20)),
+        hl: 'en',
+        gl: 'us',
+      });
+      const url = `https://www.google.com/search?${params.toString()}`;
+
+      browser = await stealthChromium.launch({
+        headless: true,
+        args: [
+          '--disable-blink-features=AutomationControlled',
+          '--disable-dev-shm-usage',
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-gpu',
+        ],
+      });
+      context = await browser.newContext({
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: { width: 1280, height: 720 },
+        locale: 'en-US',
+      });
+      page = await context.newPage();
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+
+      // Use page.content() + cheerio to avoid needing DOM lib types in tsconfig
+      const html = await page.content();
+      return this._parseGoogleHtml(html, count);
+    } catch (e) {
+      if (process.env.DEBUG) {
+        console.debug('[webpeel] Google stealth (playwright) error:', (e as Error).message);
+      }
+      return [];
+    } finally {
+      await page?.close().catch(() => {});
+      await context?.close().catch(() => {});
+      await browser?.close().catch(() => {});
+    }
+  }
+
+  /** Parse Google search result HTML using cheerio. No DOM lib types required. */
+  private _parseGoogleHtml(html: string, count: number): WebSearchResult[] {
+    const $ = load(html);
+    const results: WebSearchResult[] = [];
+    const seen = new Set<string>();
+    const resultBlocks = $('#search .g, #rso .g, [data-hveid] .g');
+
+    resultBlocks.each((_i, elem) => {
+      if (results.length >= count) return;
+      const $r = $(elem);
+      const $a = $r.find('a[href^="http"]').first();
+      const $h3 = $r.find('h3').first();
+      if (!$a.length || !$h3.length) return;
+
+      const href = $a.attr('href') || '';
+      if (
+        href.includes('google.com/') ||
+        href.includes('accounts.google') ||
+        href.includes('/aclk') ||
+        href.startsWith('#')
+      ) return;
+
+      const validated = this.validateUrl(href);
+      if (!validated) return;
+
+      const key = normalizeUrlForDedupe(validated);
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const title = cleanText($h3.text(), { maxLen: 200 });
+      if (!title) return;
+
+      const snippetText =
+        $r.find('[data-sncf]').first().text() ||
+        $r.find('.VwiC3b').first().text() ||
+        $r.find('[style*="-webkit-line-clamp"]').first().text() ||
+        $r.find('.st').first().text() ||
+        '';
+      const snippet = cleanText(snippetText, { maxLen: 500, stripEllipsisPadding: true });
+      results.push({ title, url: validated, snippet });
+    });
+
+    return results.slice(0, count);
+  }
+
+  async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
+    const { count, apiKey: optApiKey, tbs } = options;
+
+    const apiKey = optApiKey || process.env.GOOGLE_SEARCH_KEY || process.env.GOOGLE_API_KEY;
+    const cx = process.env.GOOGLE_SEARCH_CX;
+
+    // No API key — fall back to stealth browser scraping
+    if (!apiKey || !cx) {
+      return this.scrapeGoogleStealth(query, count);
+    }
+
+    // Custom Search JSON API path
+    const params = new URLSearchParams({
+      key: apiKey,
+      cx: cx,
+      q: query,
+      num: String(Math.min(count, 10)), // Google CSE max is 10 per request
+    });
+
+    const dateRestrict = this.mapFreshnessToDateRestrict(tbs);
+    if (dateRestrict) params.set('dateRestrict', dateRestrict);
+
+    const response = await fetch(`https://www.googleapis.com/customsearch/v1?${params}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Google search failed (${response.status}): ${text.substring(0, 200)}`);
+    }
+
+    const data = await response.json() as any;
+
+    return ((data.items || []) as any[]).map((item: any) => ({
+      url: item.link as string,
+      title: item.title as string,
+      snippet: (item.snippet as string) || '',
+    }));
+  }
+}
+
 export function getSearchProvider(id: SearchProviderId | undefined): SearchProvider {
   if (!id || id === 'duckduckgo') return new DuckDuckGoProvider();
   if (id === 'brave') return new BraveSearchProvider();
   if (id === 'stealth') return new StealthSearchProvider();
+  if (id === 'google') return new GoogleSearchProvider();
 
   // Exhaustive fallback (should be unreachable due to typing)
   return new DuckDuckGoProvider();
 }
 
 /**
- * Get the best available search provider based on configured API keys.
- * In production with no API keys configured, returns StealthSearchProvider
- * since DDG HTTP is often blocked on datacenter/server IPs.
+ * Check whether playwright-extra is available synchronously.
+ * Uses fs.existsSync on node_modules to avoid making getBestSearchProvider async.
+ */
+function isPlaywrightExtraAvailable(): boolean {
+  try {
+    const cwd = process.cwd();
+    return (
+      existsSync(pathResolve(cwd, 'node_modules', 'playwright-extra')) ||
+      existsSync(pathResolve(cwd, '..', 'node_modules', 'playwright-extra'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get the best available search provider based on configured API keys and
+ * available runtime dependencies.
+ *
+ * Priority:
+ *   1. Google Custom Search JSON API (if GOOGLE_SEARCH_KEY + GOOGLE_SEARCH_CX set)
+ *   2. Brave Search (if BRAVE_SEARCH_KEY is set)
+ *   3. Google stealth browser scraping (works from datacenter IPs; no API key needed)
+ *      — only when playwright-extra is available in node_modules
+ *   4. DuckDuckGo with full fallback chain (DDG HTTP → DDG Lite → stealth multi-engine)
  */
 export function getBestSearchProvider(): { provider: SearchProvider; apiKey?: string } {
-  // Check for Brave
+  // 1. Google Custom Search JSON API (BYOK) — works from any IP
+  const googleKey = process.env.GOOGLE_SEARCH_KEY || process.env.GOOGLE_API_KEY;
+  const googleCx = process.env.GOOGLE_SEARCH_CX;
+  if (googleKey && googleCx) {
+    return { provider: new GoogleSearchProvider(), apiKey: googleKey };
+  }
+
+  // 2. Brave Search (BYOK)
   const braveKey = process.env.BRAVE_SEARCH_KEY || process.env.BRAVE_API_KEY;
   if (braveKey) {
     return { provider: new BraveSearchProvider(), apiKey: braveKey };
   }
 
-  // Always use DuckDuckGoProvider — it has the full fallback chain:
-  // DDG HTTP → DDG Lite → Brave (if key) → stealth multi-engine.
-  // This ensures search works even if Playwright isn't available (graceful degradation).
+  // 3. Google stealth browser — works from datacenter IPs where DDG/Bing/Ecosia fail.
+  // GoogleSearchProvider.searchWeb() falls back to stealth scraping when no API key is set.
+  if (isPlaywrightExtraAvailable()) {
+    return { provider: new GoogleSearchProvider() };
+  }
+
+  // 4. DuckDuckGo with full internal fallback chain
+  // (DDG HTTP → DDG Lite → stealth multi-engine)
   return { provider: new DuckDuckGoProvider() };
 }
