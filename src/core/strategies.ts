@@ -386,6 +386,33 @@ async function fetchWithBrowserStrategy(
       return { ...result, method: effectiveStealth ? 'stealth' : 'browser' };
     }
 
+    // If network error (HTTP/2 protocol, connection refused, etc.), try stealth as fallback
+    if (!effectiveStealth && error instanceof NetworkError) {
+      try {
+        const result = await browserFetch(url, {
+          userAgent,
+          waitMs,
+          timeoutMs,
+          screenshot,
+          screenshotFullPage,
+          headers,
+          cookies,
+          stealth: true,
+          actions,
+          keepPageOpen,
+          signal,
+          profileDir,
+          headed,
+          storageState,
+          proxy,
+        });
+        return { ...result, method: 'stealth' };
+      } catch (stealthError) {
+        // Stealth also failed — throw original error with helpful message
+        throw error;
+      }
+    }
+
     throw error;
   }
 }

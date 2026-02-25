@@ -102,6 +102,7 @@ function getTools(): Tool[] {
           readable: { type: 'boolean', description: 'Reader mode — extract only article content, strip all noise', default: false },
           question: { type: 'string', description: 'Ask a question about the content (BM25, no LLM needed). Returns the most relevant passages.' },
           budget: { type: 'number', description: 'Smart token budget — distill content to N tokens' },
+          lite: { type: 'boolean', description: 'Lite mode — minimal processing, maximum speed', default: false },
           selector: { type: 'string', description: 'CSS selector to extract specific content' },
           screenshot: { type: 'boolean', description: 'Also take a screenshot', default: false },
           wait: { type: 'number', description: 'Milliseconds to wait for dynamic content', default: 0 },
@@ -432,6 +433,7 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
         maxTokens: args.maxTokens as number | undefined,
         images: args.images as boolean | undefined,
         readable: (args.readable as boolean) || false,
+        lite: (args.lite as boolean) || false,
         budget: args.budget as number | undefined,
         question: args.question as string | undefined,
         screenshot: (args.screenshot as boolean) || false,
@@ -439,7 +441,8 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
       };
 
       // Auto-budget: default to 4000 tokens for MCP when no budget specified
-      if (options.budget === undefined) {
+      // Lite mode disables auto-budget
+      if (options.budget === undefined && !options.lite) {
         options.budget = 4000;
       }
 

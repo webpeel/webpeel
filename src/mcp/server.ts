@@ -210,6 +210,11 @@ const tools: Tool[] = [
           type: 'number',
           description: 'Smart token budget — distill content to N tokens',
         },
+        lite: {
+          type: 'boolean',
+          description: 'Lite mode — minimal processing, maximum speed. Skips pruning, budget, metadata. Use for simple "just get me the text" tasks.',
+          default: false,
+        },
         readable: {
           type: 'boolean',
           description: 'Reader mode — extract only article content, strip all noise',
@@ -1047,10 +1052,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         maxTokens,
         extract,
         readable: readable || false,
+        lite: (args.lite as boolean) || false,
         question,
         // Agent-friendly default: cap tokens at 4000 when no explicit limit is set.
         // User-supplied budget takes priority; fall back to default 4000.
-        budget: budgetArg ?? (maxTokens === undefined ? 4000 : undefined),
+        // Lite mode disables auto-budget (lite = minimal processing).
+        budget: (args.lite as boolean) ? undefined : (budgetArg ?? (maxTokens === undefined ? 4000 : undefined)),
       };
 
       // SECURITY: Wrap in timeout (60 seconds max)

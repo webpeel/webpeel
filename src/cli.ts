@@ -209,6 +209,7 @@ program
   .option('--images', 'Output image URLs from the page')
   .option('--meta', 'Output only the page metadata (title, description, author, etc.)')
   .option('--raw', 'Return full page without smart content extraction')
+  .option('--lite', 'Lite mode — minimal processing, maximum speed (skip pruning, budget, metadata)')
   .option('--action <actions...>', 'Page actions before scraping (e.g., "click:.btn" "wait:2000" "scroll:bottom")')
   .option('--extract <json>', 'Extract structured data using CSS selectors (JSON object of field:selector pairs)')
   .option('--llm-extract [instruction]', 'Extract structured data using LLM (optional instruction, e.g. "extract hotel names and prices")')
@@ -609,6 +610,7 @@ program
         headers,
         cookies: options.cookie,
         raw: options.raw || false,
+        lite: options.lite || false,
         actions,
         maxTokens: options.maxTokens,
         // Note: budget is applied AFTER caching (so cache stores full content)

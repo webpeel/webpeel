@@ -437,6 +437,25 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
     ctx.quality = 1.0; // Documents are inherently structured content
 
   } else if (contentType === 'html') {
+    // === Lite mode — minimal processing, maximum speed ===
+    // Skips pruning, metadata, quality scoring, JSON-LD. Just fetch → markdown.
+    if (ctx.options.lite) {
+      let liteHtml = fetchResult.html;
+      if (selector) {
+        liteHtml = selectContent(liteHtml, selector, exclude);
+      }
+      ctx.timer.mark('convert');
+      switch (format) {
+        case 'html':  ctx.content = liteHtml; break;
+        case 'text':  ctx.content = htmlToText(liteHtml); break;
+        default:      ctx.content = htmlToMarkdown(liteHtml, { raw, prune: false }); break;
+      }
+      ctx.timer.end('convert');
+      ctx.title = liteHtml.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() || '';
+      ctx.quality = 0.5; // Unknown quality in lite mode
+      return;
+    }
+
     // === JSON-LD extraction — first-class content source ===
     // Many sites (recipes, products, articles) embed structured data that's
     // more reliable than DOM parsing, especially on JS-heavy SPAs.
@@ -649,6 +668,9 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
   const fetchResult = ctx.fetchResult!;
   const { contentType, options } = ctx;
   const isHTML = contentType === 'html';
+
+  // Lite mode — skip all post-processing (no readability, no QA, no budget, no domain extract)
+  if (options.lite) return;
 
   // Readability mode
   if (options.readable && isHTML && fetchResult.html) {

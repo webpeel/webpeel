@@ -284,10 +284,43 @@ export async function browserFetch(
     };
 
     const fetchPromise = (async () => {
-      const response = await page!.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: timeoutMs,
-      });
+      let response;
+      try {
+        response = await page!.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: timeoutMs,
+        });
+      } catch (gotoError: any) {
+        const msg = gotoError?.message || String(gotoError);
+        if (/net::ERR_HTTP2_PROTOCOL_ERROR/i.test(msg)) {
+          throw new NetworkError(`Site blocked connection (HTTP/2 protocol error). Try stealth mode or a different source. URL: ${url}`);
+        }
+        if (/net::ERR_CONNECTION_REFUSED/i.test(msg)) {
+          throw new NetworkError(`Connection refused by server. The site may be down or blocking automated access. URL: ${url}`);
+        }
+        if (/net::ERR_CONNECTION_RESET/i.test(msg)) {
+          throw new NetworkError(`Connection reset by server. The site may be blocking automated access. URL: ${url}`);
+        }
+        if (/net::ERR_SSL/i.test(msg)) {
+          throw new NetworkError(`SSL/TLS error connecting to site. URL: ${url}`);
+        }
+        if (/net::ERR_NAME_NOT_RESOLVED/i.test(msg)) {
+          throw new NetworkError(`Domain not found: ${url}`);
+        }
+        if (/net::ERR_CERT/i.test(msg)) {
+          throw new NetworkError(`SSL certificate error for ${url}`);
+        }
+        if (/NS_ERROR_NET_RESET/i.test(msg)) {
+          throw new NetworkError(`Connection reset (Firefox). The site may be blocking automated access. URL: ${url}`);
+        }
+        if (/timeout/i.test(msg)) {
+          throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
+        }
+        if (/net::ERR_/i.test(msg)) {
+          throw new NetworkError(`Network error: ${msg.split('\n')[0]}`);
+        }
+        throw gotoError;
+      }
       throwIfAborted();
 
       // Quick check: if body text is very thin, wait for JS to render more content.
@@ -658,10 +691,42 @@ export async function browserScreenshot(
     let screenshotBuffer: Buffer | undefined;
 
     const doWork = (async () => {
-      await page!.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: timeoutMs,
-      });
+      try {
+        await page!.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: timeoutMs,
+        });
+      } catch (gotoError: any) {
+        const msg = gotoError?.message || String(gotoError);
+        if (/net::ERR_HTTP2_PROTOCOL_ERROR/i.test(msg)) {
+          throw new NetworkError(`Site blocked connection (HTTP/2 protocol error). Try stealth mode or a different source. URL: ${url}`);
+        }
+        if (/net::ERR_CONNECTION_REFUSED/i.test(msg)) {
+          throw new NetworkError(`Connection refused by server. The site may be down or blocking automated access. URL: ${url}`);
+        }
+        if (/net::ERR_CONNECTION_RESET/i.test(msg)) {
+          throw new NetworkError(`Connection reset by server. The site may be blocking automated access. URL: ${url}`);
+        }
+        if (/net::ERR_SSL/i.test(msg)) {
+          throw new NetworkError(`SSL/TLS error connecting to site. URL: ${url}`);
+        }
+        if (/net::ERR_NAME_NOT_RESOLVED/i.test(msg)) {
+          throw new NetworkError(`Domain not found: ${url}`);
+        }
+        if (/net::ERR_CERT/i.test(msg)) {
+          throw new NetworkError(`SSL certificate error for ${url}`);
+        }
+        if (/NS_ERROR_NET_RESET/i.test(msg)) {
+          throw new NetworkError(`Connection reset (Firefox). The site may be blocking automated access. URL: ${url}`);
+        }
+        if (/timeout/i.test(msg)) {
+          throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
+        }
+        if (/net::ERR_/i.test(msg)) {
+          throw new NetworkError(`Network error: ${msg.split('\n')[0]}`);
+        }
+        throw gotoError;
+      }
 
       if (waitMs > 0) {
         await page!.waitForTimeout(waitMs);

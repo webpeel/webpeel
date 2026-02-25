@@ -329,6 +329,64 @@ function tryDirectExtraction(
 }
 
 // ---------------------------------------------------------------------------
+// Content cleaning — strip citation/reference noise before BM25 scoring
+// ---------------------------------------------------------------------------
+
+/**
+ * Strip citation/reference noise from content before BM25 scoring.
+ * Wikipedia and academic pages contain citation metadata that BM25
+ * scores highly due to unique terms (CS1_maint, arXiv, doi, etc.)
+ */
+function cleanContentForQA(content: string): string {
+  let cleaned = content;
+
+  // Remove Wikipedia citation metadata (CS1_maint, Category:, etc.)
+  cleaned = cleaned.replace(/CS1[_\s]\w+[:\s][^\n]*/gi, '');
+  cleaned = cleaned.replace(/Category:[^\n]*/gi, '');
+
+  // Remove reference number markers [1], [2], [309], etc.
+  cleaned = cleaned.replace(/\[\d{1,4}\]/g, '');
+
+  // Remove academic citation noise (arXiv, doi, ISBN, ISSN, Bibcode, PMID, S2CID)
+  cleaned = cleaned.replace(/\b(arXiv|doi|ISBN|ISSN|Bibcode|PMID|S2CID|JSTOR|OCLC)\s*[:=]\s*\S+/gi, '');
+
+  // Remove bare URLs on their own line (often in reference sections)
+  cleaned = cleaned.replace(/^https?:\/\/\S+$/gm, '');
+
+  // Remove "Retrieved DATE" and "Archived from the original" patterns
+  cleaned = cleaned.replace(/\b(retrieved|archived from the original)\b[^\n]{0,100}/gi, '');
+
+  // Remove "External links" and everything after (usually just URLs)
+  cleaned = cleaned.replace(/^#{1,3}\s*External\s+links[\s\S]*$/im, '');
+
+  // Remove section headers for reference-like sections
+  // (but keep real content that happens to be after these headings)
+  cleaned = cleaned.replace(/^#{1,3}\s*References\s*$/im, '');
+  cleaned = cleaned.replace(/^#{1,3}\s*Further\s+reading\s*$/im, '');
+  cleaned = cleaned.replace(/^#{1,3}\s*See\s+also\s*$/im, '');
+  cleaned = cleaned.replace(/^#{1,3}\s*Notes\s*$/im, '');
+
+  // Remove lines that are mostly citation-like (very short with lots of punctuation/numbers)
+  cleaned = cleaned.split('\n').filter(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return true; // keep blank lines
+    // Remove lines that look like citation entries:
+    // - Start with "^" (Wikipedia footnote)
+    if (trimmed.startsWith('^')) return false;
+    if (trimmed.length < 10) return true; // keep very short real lines
+    // If more than 60% of chars are non-alphabetic, likely a citation
+    const alphaCount = (trimmed.match(/[a-zA-Z]/g) || []).length;
+    if (trimmed.length > 30 && alphaCount / trimmed.length < 0.4) return false;
+    return true;
+  }).join('\n');
+
+  // Collapse multiple blank lines
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+  return cleaned;
+}
+
+// ---------------------------------------------------------------------------
 // Main quickAnswer function
 // ---------------------------------------------------------------------------
 
@@ -353,12 +411,15 @@ export function quickAnswer(options: QuickAnswerOptions): QuickAnswerResult {
   if (!content || !content.trim()) return emptyResult;
   if (!question || !question.trim()) return emptyResult;
 
+  // Clean content to remove citation/reference noise before BM25 scoring
+  const cleanedContent = cleanContentForQA(content);
+
   // Step 0: Direct pattern extraction — try to find structured answers before BM25
   // This catches infobox patterns (e.g. "TypeScript: Designed by · Anders Hejlsberg")
   // and definition sentences (e.g. "TypeScript is ... developed by Microsoft")
   const questionType = detectQuestionType(question);
   const topicTerms = tokenizeQuestion(question);
-  const directAnswer = tryDirectExtraction(content, questionType, topicTerms, question as string);
+  const directAnswer = tryDirectExtraction(cleanedContent, questionType, topicTerms, question as string);
   if (directAnswer) {
     return {
       question,
@@ -371,7 +432,7 @@ export function quickAnswer(options: QuickAnswerOptions): QuickAnswerResult {
   }
 
   // Step 1: Split into sentences
-  const sentences = splitIntoSentences(content);
+  const sentences = splitIntoSentences(cleanedContent);
   if (sentences.length === 0) return emptyResult;
 
   // Step 2: Tokenize question (remove stopwords)
@@ -395,7 +456,7 @@ export function quickAnswer(options: QuickAnswerOptions): QuickAnswerResult {
   const sentenceScores = sentences.map((s, i) => {
     // A "topic sentence" is the first sentence in a paragraph/section
     // We detect this by checking if the previous character in the content is a newline
-    const isTopicSentence = i === 0 || content.slice(Math.max(0, s.start - 2), s.start).includes('\n');
+    const isTopicSentence = i === 0 || cleanedContent.slice(Math.max(0, s.start - 2), s.start).includes('\n');
 
     const base = bm25Scores[i];
     const boost = computeBoost(s.text, questionType, isTopicSentence);
@@ -462,7 +523,20 @@ export function quickAnswer(options: QuickAnswerOptions): QuickAnswerResult {
   const meanScore = bm25Scores.reduce((a, b) => a + b, 0) / bm25Scores.length;
   const scoreGap = maxPossibleScore > 0 ? (topBase - meanScore) / maxPossibleScore : 0;
   // 0.3 baseline (we found something), up to 1.0 if top answer dominates
-  const confidence = Math.min(1, Math.max(0, 0.3 + scoreGap * 0.7));
+  const rawConfidence = Math.min(1, Math.max(0, 0.3 + scoreGap * 0.7));
+
+  // Penalty: if the top answer still looks like citation/metadata noise, reduce confidence
+  const topAnswerText = sorted[0]?.text?.toLowerCase() || '';
+  const noisePenalty = (
+    /\bcs1[_\s]/i.test(topAnswerText) ||
+    /\bcategory:/i.test(topAnswerText) ||
+    /\b(archived|retrieved)\s+(from|on)\b/i.test(topAnswerText) ||
+    /\b(isbn|issn|doi|arxiv|bibcode|pmid)\b/i.test(topAnswerText) ||
+    // Line is mostly URLs
+    (topAnswerText.match(/https?:\/\//g) || []).length > 2
+  ) ? 0.5 : 0;
+
+  const confidence = Math.max(0, rawConfidence - noisePenalty);
 
   // Step 9: Build answer — best passage text, trimmed to maxChars
   let answerText = selectedPassages[0]?.context || selectedPassages[0]?.text || '';

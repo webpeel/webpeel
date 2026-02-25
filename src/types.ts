@@ -68,6 +68,12 @@ export interface InlineExtractParam {
 export type InlineLLMProvider = 'openai' | 'anthropic' | 'google';
 
 export interface PeelOptions {
+  /**
+   * Lite mode — minimal processing for maximum speed.
+   * Skips pruning, budget, quality scoring, and metadata extraction.
+   * Just fetch → convert to markdown. ~50% faster on typical pages.
+   */
+  lite?: boolean;
   /** Use headless browser instead of simple HTTP fetch */
   render?: boolean;
   /** Use stealth mode to bypass bot detection (requires render=true, auto-enables if not set) */

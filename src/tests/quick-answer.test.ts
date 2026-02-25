@@ -398,3 +398,63 @@ It adds static typing to JavaScript.`;
     expect(result.answer).toMatch(/hejlsberg|microsoft/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// QA noise filtering
+// ---------------------------------------------------------------------------
+
+describe('QA noise filtering', () => {
+  it('should not return citation metadata as answer', () => {
+    const content = `
+# Large Language Models
+
+Large language models have several known limitations including hallucination, bias, and high computational costs.
+
+## Limitations
+
+The main limitations of LLMs include:
+- Hallucination: generating plausible but incorrect information
+- Bias: reflecting biases present in training data
+- Cost: requiring significant computational resources
+- Context window: limited input length
+
+## References
+
+[1] Smith, J. (2024). "Understanding LLMs". arXiv:2401.12345
+[2] CS1_maint: multiple_names: authors_list Category:Articles with short description
+[309] Retrieved 2024-01-15. Archived from the original on 2024-01-10.
+    `;
+
+    const result = quickAnswer({ question: 'What are the main limitations of LLMs?', content });
+    expect(result.answer).not.toContain('CS1_maint');
+    expect(result.answer).not.toContain('arXiv');
+    expect(result.answer).toContain('limitation');
+    expect(result.confidence).toBeGreaterThan(0.5);
+  });
+
+  it('should strip reference numbers from content', () => {
+    const content = 'Python[1] is a programming language[2] created by Guido van Rossum[3] in 1991.[4]';
+    const result = quickAnswer({ question: 'Who created Python?', content });
+    expect(result.answer).toContain('Guido van Rossum');
+    expect(result.answer).not.toContain('[1]');
+  });
+
+  it('should handle pages with heavy citation noise', () => {
+    const content = `
+Artificial intelligence is intelligence demonstrated by machines.
+
+John McCarthy coined the term "artificial intelligence" in 1956.
+
+## References
+^ a b c Congressional Research Service (2019). Artificial Intelligence and National Security (PDF).
+^ Wong, Matteo (19 May 2023), "ChatGPT Is Already Obsolete", The Atlantic
+^ Yudkowsky, E (2008), "Artificial Intelligence as a Positive and Negative Factor"
+## External links
+https://en.wikipedia.org/wiki/AI
+https://ai.google/
+    `;
+    const result = quickAnswer({ question: 'Who coined the term artificial intelligence?', content });
+    expect(result.answer).toContain('John McCarthy');
+    expect(result.confidence).toBeGreaterThan(0.5);
+  });
+});

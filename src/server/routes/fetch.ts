@@ -60,6 +60,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         exclude,
         fullPage,
         raw,
+        lite,
         timeout,
       } = req.query;
 
@@ -206,12 +207,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
         exclude: exclude ? (exclude as string).split(',').map(s => s.trim()).filter(Boolean) : undefined,
         fullPage: fullPage === 'true',
         raw: raw === 'true',
+        lite: lite === 'true',
         timeout: timeout ? parseInt(timeout as string, 10) : undefined,
       };
 
       // Auto-budget: default to 4000 tokens for API requests when no budget specified
-      // Opt-out: budget=0 explicitly disables
-      if (options.budget === undefined) {
+      // Opt-out: budget=0 explicitly disables. Lite mode disables auto-budget.
+      if (options.budget === undefined && !options.lite) {
         options.budget = 4000;
         res.setHeader('X-Auto-Budget', '4000');
       }
@@ -435,6 +437,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         exclude,
         fullPage,
         raw,
+        lite,
         timeout,
       } = req.body as {
         url?: string;
@@ -467,6 +470,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         exclude?: string | string[];
         fullPage?: boolean;
         raw?: boolean;
+        lite?: boolean;
         timeout?: number;
       };
 
@@ -641,12 +645,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
         exclude: excludeArray,
         fullPage: fullPage === true,
         raw: raw === true,
+        lite: lite === true,
         timeout: typeof timeout === 'number' ? timeout : undefined,
       };
 
       // Auto-budget: default to 4000 tokens for API requests when no budget specified
-      // Opt-out: budget=0 explicitly disables
-      if (options.budget === undefined) {
+      // Opt-out: budget=0 explicitly disables. Lite mode disables auto-budget.
+      if (options.budget === undefined && !options.lite) {
         options.budget = 4000;
         res.setHeader('X-Auto-Budget', '4000');
       }
