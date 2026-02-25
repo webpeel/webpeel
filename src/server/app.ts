@@ -9,6 +9,7 @@ import dns from 'dns';
 dns.setDefaultResultOrder('ipv4first');
 
 import express, { Express, Request, Response, NextFunction } from 'express';
+import './types.js'; // Augments Express.Request with requestId
 import cors from 'cors';
 import { InMemoryAuthStore } from './auth-store.js';
 import { PostgresAuthStore } from './pg-auth-store.js';
@@ -40,6 +41,34 @@ import { createExtractRouter } from './routes/extract.js';
 import { createSentryHooks } from './sentry.js';
 import { warmup, cleanup as cleanupFetcher } from '../core/fetcher.js';
 import { registerPremiumHooks } from './premium/index.js';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Resolve path to the OpenAPI spec (works from both src/ and dist/)
+const __dirname_app = dirname(fileURLToPath(import.meta.url));
+let _openApiYaml: string | null = null;
+function getOpenApiYaml(): string {
+  if (_openApiYaml !== null) return _openApiYaml;
+  try {
+    // Try src/server/openapi.yaml relative to compiled dist/server/
+    const candidates = [
+      join(__dirname_app, 'openapi.yaml'),
+      join(__dirname_app, '..', '..', 'src', 'server', 'openapi.yaml'),
+    ];
+    for (const candidate of candidates) {
+      try {
+        _openApiYaml = readFileSync(candidate, 'utf-8');
+        return _openApiYaml;
+      } catch {
+        // try next
+      }
+    }
+    throw new Error('openapi.yaml not found');
+  } catch (e) {
+    return '# openapi.yaml not found\n';
+  }
+}
 
 export interface ServerConfig {
   port?: number;
@@ -53,6 +82,15 @@ export function createApp(config: ServerConfig = {}): Express {
 
   // SECURITY: Trust proxy for Render/production (HTTPS only)
   app.set('trust proxy', 1);
+
+  // ─── Request ID ─────────────────────────────────────────────────────────────
+  // Generate a UUID v4 for every request so errors and logs are traceable.
+  // Must run before all other middleware so req.requestId is always set.
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    req.requestId = crypto.randomUUID();
+    res.setHeader('X-Request-Id', req.requestId);
+    next();
+  });
 
   // Optional error tracking (enabled only when SENTRY_DSN is set)
   const sentry = createSentryHooks();
@@ -102,11 +140,17 @@ export function createApp(config: ServerConfig = {}): Express {
   });
 
   // SECURITY: JSON parse error handler
-  app.use((err: Error, _req: Request, res: Response, next: NextFunction): void => {
+  app.use((err: Error, req: Request, res: Response, next: NextFunction): void => {
     if (err instanceof SyntaxError && 'body' in err) {
-      res.status(400).json({ 
-        error: 'invalid_json', 
-        message: 'Malformed JSON in request body' 
+      res.status(400).json({
+        success: false,
+        error: {
+          type: 'invalid_request',
+          message: 'Malformed JSON in request body',
+          hint: 'Ensure the request body is valid JSON',
+          docs: 'https://webpeel.dev/docs/api-reference#errors',
+        },
+        requestId: req.requestId,
       });
       return;
     }
@@ -144,6 +188,13 @@ export function createApp(config: ServerConfig = {}): Express {
   // Render hits /health every ~30s; rate-limiting it causes 429 → service marked as failed
   app.use(createHealthRouter());
 
+  // OpenAPI spec — public, no auth required
+  app.get('/openapi.yaml', (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/yaml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(getOpenApiYaml());
+  });
+
   // Apply auth middleware globally
   app.use(createAuthMiddleware(authStore));
 
@@ -174,8 +225,13 @@ export function createApp(config: ServerConfig = {}): Express {
   // 404 handler
   app.use((req: Request, res: Response) => {
     res.status(404).json({
-      error: 'not_found',
-      message: `Route not found: ${req.method} ${req.path}`,
+      success: false,
+      error: {
+        type: 'not_found',
+        message: `Route not found: ${req.method} ${req.path}`,
+        docs: 'https://webpeel.dev/docs/api-reference',
+      },
+      requestId: req.requestId,
     });
   });
 
@@ -187,7 +243,7 @@ export function createApp(config: ServerConfig = {}): Express {
   // Error handler - SECURITY: sanitize errors in production to prevent leaking
   // Playwright stack traces, internal paths, or other sensitive details.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     console.error('Unhandled error:', err); // Log full error server-side
     if (res.headersSent) return; // Avoid double-send crash
 
@@ -198,13 +254,23 @@ export function createApp(config: ServerConfig = {}): Express {
         .replace(/at\s+\S.*\n?/g, '') // strip "at <location>" stack lines
         .trim() || 'An unexpected error occurred';
       res.status(500).json({
-        error: 'internal_error',
-        message: sanitized,
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: sanitized,
+          docs: 'https://webpeel.dev/docs/api-reference#errors',
+        },
+        requestId: req.requestId,
       });
     } else {
       res.status(500).json({
-        error: 'internal_error',
-        message: err.message || 'An unexpected error occurred',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: err.message || 'An unexpected error occurred',
+          docs: 'https://webpeel.dev/docs/api-reference#errors',
+        },
+        requestId: req.requestId,
         stack: err.stack,
       });
     }

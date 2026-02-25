@@ -95,6 +95,7 @@ export interface PipelineContext {
   jsonLdType?: string;
 
   // ---- Set by post-processing (all optional) ----
+  budgetFallback?: boolean;
   readabilityResult?: ReadabilityResult;
   imagesList?: ImageInfo[];
   extracted?: Record<string, any>;
@@ -591,7 +592,28 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
     ctx.metadata = metaResult.metadata;
     ctx.links = metaResult.links;
     ctx.content = convertedContent;
-    ctx.quality = calculateQuality(convertedContent, fetchResult.html);
+
+    // Safety net: if budget pre-truncation produced thin content but the full HTML
+    // has substantial content, redo conversion WITHOUT pre-truncation.
+    // This catches pages where the actual content is in the second half of the HTML
+    // (common for listing/index pages, SPAs with shell-first layouts).
+    if (htmlForConvert !== contentHtml && convertedContent.length < 200 && contentHtml.length > 20000) {
+      if (process.env.DEBUG) {
+        console.debug('[webpeel]', `budget pre-truncation produced thin content (${convertedContent.length} chars from ${htmlForConvert.length} HTML). Retrying with full HTML (${contentHtml.length} chars).`);
+      }
+      ctx.timer.mark('convert-retry');
+      let retryConverted: string;
+      switch (format) {
+        case 'html':  retryConverted = contentHtml; break;
+        case 'text':  retryConverted = htmlToText(contentHtml); break;
+        case 'markdown':
+        default:      retryConverted = htmlToMarkdown(contentHtml, { raw, prune: false }); break;
+      }
+      ctx.timer.end('convert-retry');
+      ctx.content = retryConverted;
+    }
+
+    ctx.quality = calculateQuality(ctx.content, fetchResult.html);
 
   } else if (contentType === 'json') {
     // JSON content — format nicely
@@ -748,9 +770,33 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
     const budgetFormat: 'markdown' | 'text' | 'json' =
       ctx.contentType === 'json' ? 'json' :
       ctx.format === 'text' ? 'text' : 'markdown';
+    const originalContent = ctx.content;
     ctx.timer.mark('budget');
-    ctx.content = distillToBudget(ctx.content, options.budget, budgetFormat);
+    let budgetedContent = distillToBudget(ctx.content, options.budget, budgetFormat);
     ctx.timer.end('budget');
+    if (process.env.DEBUG) {
+      console.debug('[webpeel]', `budget result: ${originalContent.length} → ${budgetedContent.length} chars`);
+    }
+
+    // Safety net: if BM25 distillation stripped too much (< 10% of original)
+    // on a substantial page, fall back to simple head truncation.
+    // This happens on listing/index pages with no clear topic to rank by.
+    if (budgetedContent.length < originalContent.length * 0.10 && originalContent.length > 500) {
+      const estimatedChars = options.budget * 4; // rough: 1 token ≈ 4 chars
+      // Trim at a word boundary to avoid cutting mid-word
+      let truncated = originalContent.slice(0, estimatedChars);
+      const lastSpace = truncated.lastIndexOf(' ');
+      if (lastSpace > estimatedChars * 0.8) {
+        truncated = truncated.slice(0, lastSpace);
+      }
+      budgetedContent = truncated;
+      ctx.budgetFallback = true;
+      if (process.env.DEBUG) {
+        console.debug('[webpeel]', `budget distillation fallback: BM25 produced ${budgetedContent.length} chars (< 10% of ${originalContent.length}), using head truncation`);
+      }
+    }
+
+    ctx.content = budgetedContent;
   }
 
   // Domain-aware structured extraction (Twitter, Reddit, GitHub, HN)
@@ -898,6 +944,18 @@ export function buildResult(ctx: PipelineContext): PeelResult {
     ...(fetchResult.responseHeaders?.['cache-control'] ? { cacheControl: fetchResult.responseHeaders['cache-control'] } : {}),
   };
 
+  // Detect and warn about potential content issues
+  let warning: string | undefined;
+  const contentLen = ctx.content.length;
+  const htmlLen = ctx.fetchResult?.html?.length || 0;
+  if (contentLen < 100 && htmlLen > 1000) {
+    warning = 'Content extraction produced very little text from a substantial page. The site may use heavy JavaScript rendering. Try adding render: true.';
+  } else if (ctx.budgetFallback) {
+    warning = 'Budget distillation was unable to identify key content. Showing first portion of page instead. This may be a listing or index page — try fetching without a budget for full content.';
+  } else if (contentLen < 50) {
+    warning = 'Very little content extracted. The page may be empty, behind a login wall, or require JavaScript rendering.';
+  }
+
   return {
     url: fetchResult.url,
     title: ctx.title,
@@ -918,6 +976,7 @@ export function buildResult(ctx: PipelineContext): PeelResult {
     images: ctx.imagesList,
     linkCount: ctx.links.length,
     freshness,
+    ...(warning !== undefined ? { warning } : {}),
     ...(ctx.prunedPercent !== undefined ? { prunedPercent: ctx.prunedPercent } : {}),
     ...(ctx.domainData !== undefined ? { domainData: ctx.domainData } : {}),
     ...(ctx.readabilityResult !== undefined ? { readability: ctx.readabilityResult } : {}),

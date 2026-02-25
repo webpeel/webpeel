@@ -45,6 +45,8 @@ export interface CrawlOptions extends Omit<PeelOptions, 'format'> {
   includePatterns?: string[];
   /** Progress callback called after each page */
   onProgress?: (status: CrawlProgress) => void;
+  /** Per-page callback — receives the full result as soon as a page completes */
+  onPage?: (result: CrawlResult) => void;
 }
 
 export interface CrawlProgress {
@@ -195,6 +197,7 @@ export async function crawl(
     deduplication = true,
     includePatterns = [],
     onProgress,
+    onPage,
     ...peelOptions
   } = options;
 
@@ -333,6 +336,11 @@ export async function crawl(
 
       results.push(crawlResult);
 
+      // Call per-page callback with full result
+      if (onPage) {
+        onPage(crawlResult);
+      }
+
       // Call progress callback
       if (onProgress) {
         onProgress({
@@ -367,7 +375,7 @@ export async function crawl(
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[Crawler] Failed to fetch ${url}: ${errorMessage}`);
       
-      results.push({
+      const errorResult: CrawlResult = {
         url,
         title: '',
         markdown: '',
@@ -376,7 +384,14 @@ export async function crawl(
         parent,
         elapsed: 0,
         error: errorMessage,
-      });
+      };
+
+      results.push(errorResult);
+
+      // Call per-page callback with error result
+      if (onPage) {
+        onPage(errorResult);
+      }
 
       // Call progress callback even for failed pages
       if (onProgress) {

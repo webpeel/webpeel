@@ -3,6 +3,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import '../types.js'; // Augments Express.Request with requestId
 import { peel } from '../../index.js';
 import type { PeelOptions, PageAction, InlineExtractParam, InlineLLMProvider } from '../../types.js';
 import { normalizeActions } from '../../core/actions.js';
@@ -10,6 +11,7 @@ import { extractInlineJson } from '../../core/extract-inline.js';
 import { LRUCache } from 'lru-cache';
 import { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
+import { wantsEnvelope, successResponse } from '../utils/response.js';
 
 const VALID_LLM_PROVIDERS: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
 
@@ -67,10 +69,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
       // Validate URL parameter
       if (!url || typeof url !== 'string') {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Missing or invalid "url" parameter. Pass a URL as a query parameter: GET /v1/fetch?url=https://example.com',
-          example: 'curl "https://api.webpeel.dev/v1/fetch?url=https://example.com"',
-          docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Missing or invalid "url" parameter.',
+            hint: 'Pass a URL as a query parameter: GET /v1/fetch?url=https://example.com',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -78,8 +84,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
       // SECURITY: Validate URL format and length
       if (url.length > 2048) {
         res.status(400).json({
-          error: 'invalid_url',
-          message: 'URL too long (max 2048 characters)',
+          success: false,
+          error: {
+            type: 'invalid_url',
+            message: 'URL too long (max 2048 characters)',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -95,8 +106,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
         }
       } catch {
         res.status(400).json({
-          error: 'invalid_url',
-          message: 'Invalid URL format',
+          success: false,
+          error: {
+            type: 'invalid_url',
+            message: 'Invalid URL format',
+            hint: 'Ensure the URL includes a scheme (https://) and a valid hostname',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -107,8 +124,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
       } catch (error) {
         if (error instanceof SSRFError) {
           res.status(400).json({
-            error: 'forbidden_url',
-            message: 'Cannot fetch localhost, private networks, or non-HTTP URLs',
+            success: false,
+            error: {
+              type: 'forbidden_url',
+              message: 'Cannot fetch localhost, private networks, or non-HTTP URLs',
+              docs: 'https://webpeel.dev/docs/api-reference#fetch',
+            },
+            requestId: req.requestId,
           });
           return;
         }
@@ -123,8 +145,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
           parsedActions = normalizeActions(raw);
         } catch (e) {
           res.status(400).json({
-            error: 'invalid_request',
-            message: 'Invalid "actions" parameter: must be a valid JSON array',
+            success: false,
+            error: {
+              type: 'invalid_request',
+              message: 'Invalid "actions" parameter: must be a valid JSON array',
+              docs: 'https://webpeel.dev/docs/api-reference#fetch',
+            },
+            requestId: req.requestId,
           });
           return;
         }
@@ -151,7 +178,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
           if (cacheAge < maxAgeMs && cacheAge < cacheTtlMs) {
             res.setHeader('X-Cache', 'HIT');
             res.setHeader('X-Cache-Age', Math.floor(cacheAge / 1000).toString());
-            res.json(cached.result);
+            if (wantsEnvelope(req)) {
+              successResponse(res, cached.result, {
+                requestId: req.requestId,
+                cached: true,
+              });
+            } else {
+              res.json(cached.result);
+            }
             return;
           }
         }
@@ -232,8 +266,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
       // Validate wait parameter
       if (options.wait !== undefined && (isNaN(options.wait) || options.wait < 0 || options.wait > 60000)) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Invalid "wait" parameter: must be between 0 and 60000ms',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Invalid "wait" parameter: must be between 0 and 60000ms',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -241,8 +280,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
       // Validate format parameter
       if (!['markdown', 'text', 'html'].includes(options.format || '')) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -326,13 +370,23 @@ export function createFetchRouter(authStore: AuthStore): Router {
         }, { ttl: cacheTtlMs });
       }
 
-      // Add usage headers
+      // Add usage headers (kept for backward compat; also surfaced in envelope metadata)
       res.setHeader('X-Cache', 'MISS');
       res.setHeader('X-Credits-Used', '1');
       res.setHeader('X-Processing-Time', elapsed.toString());
       res.setHeader('X-Fetch-Type', fetchType);
 
-      res.json(result);
+      if (wantsEnvelope(req)) {
+        successResponse(res, result, {
+          requestId: req.requestId,
+          processingTimeMs: elapsed,
+          creditsUsed: 1,
+          cached: false,
+          fetchType,
+        });
+      } else {
+        res.json(result);
+      }
     } catch (error: any) {
       const err = error as any;
       
@@ -378,18 +432,26 @@ export function createFetchRouter(authStore: AuthStore): Router {
         };
 
         res.status(statusCode).json({
-          error: err.code,
-          message: safeMessage,
-          hint: hints[err.code] || undefined,
-          docs: 'https://webpeel.dev/docs/api-reference#errors',
+          success: false,
+          error: {
+            type: err.code,
+            message: safeMessage,
+            hint: hints[err.code] || undefined,
+            docs: 'https://webpeel.dev/docs/api-reference#errors',
+          },
+          requestId: req.requestId,
         });
       } else {
         // Unexpected error - generic message only
         console.error('Fetch error:', err); // Log full error server-side
         res.status(500).json({
-          error: 'internal_error',
-          message: 'An unexpected error occurred while fetching the URL. If this persists, check https://webpeel.dev/status',
-          docs: 'https://webpeel.dev/docs/api-reference#errors',
+          success: false,
+          error: {
+            type: 'internal_error',
+            message: 'An unexpected error occurred while fetching the URL. If this persists, check https://webpeel.dev/status',
+            docs: 'https://webpeel.dev/docs/api-reference#errors',
+          },
+          requestId: req.requestId,
         });
       }
     }
@@ -477,18 +539,27 @@ export function createFetchRouter(authStore: AuthStore): Router {
       // --- Validate URL -------------------------------------------------------
       if (!url || typeof url !== 'string') {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Missing or invalid "url" in request body. Send JSON: { "url": "https://example.com" }',
-          example: 'curl -X POST https://api.webpeel.dev/v1/fetch -H "Content-Type: application/json" -d \'{"url":"https://example.com"}\'',
-          docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Missing or invalid "url" in request body.',
+            hint: 'Send JSON: { "url": "https://example.com" }',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
 
       if (url.length > 2048) {
         res.status(400).json({
-          error: 'invalid_url',
-          message: 'URL too long (max 2048 characters)',
+          success: false,
+          error: {
+            type: 'invalid_url',
+            message: 'URL too long (max 2048 characters)',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -497,8 +568,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
         new URL(url);
       } catch {
         res.status(400).json({
-          error: 'invalid_url',
-          message: 'Invalid URL format',
+          success: false,
+          error: {
+            type: 'invalid_url',
+            message: 'Invalid URL format',
+            hint: 'Ensure the URL includes a scheme (https://) and a valid hostname',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -508,8 +585,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
       } catch (error) {
         if (error instanceof SSRFError) {
           res.status(400).json({
-            error: 'forbidden_url',
-            message: 'Cannot fetch localhost, private networks, or non-HTTP URLs',
+            success: false,
+            error: {
+              type: 'forbidden_url',
+              message: 'Cannot fetch localhost, private networks, or non-HTTP URLs',
+              docs: 'https://webpeel.dev/docs/api-reference#fetch',
+            },
+            requestId: req.requestId,
           });
           return;
         }
@@ -523,8 +605,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
           postActions = normalizeActions(rawActions);
         } catch (e) {
           res.status(400).json({
-            error: 'invalid_request',
-            message: `Invalid "actions" parameter: ${(e as Error).message}`,
+            success: false,
+            error: {
+              type: 'invalid_request',
+              message: `Invalid "actions" parameter: ${(e as Error).message}`,
+              docs: 'https://webpeel.dev/docs/api-reference#fetch',
+            },
+            requestId: req.requestId,
           });
           return;
         }
@@ -543,7 +630,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
           if (cacheAge < postCacheTtlMs) {
             res.setHeader('X-Cache', 'HIT');
             res.setHeader('X-Cache-Age', Math.floor(cacheAge / 1000).toString());
-            res.json(cached.result);
+            if (wantsEnvelope(req)) {
+              successResponse(res, cached.result, {
+                requestId: req.requestId,
+                cached: true,
+              });
+            } else {
+              res.json(cached.result);
+            }
             return;
           }
         }
@@ -569,15 +663,26 @@ export function createFetchRouter(authStore: AuthStore): Router {
       if (resolvedExtract && (resolvedExtract.schema || resolvedExtract.prompt)) {
         if (!llmProvider || !VALID_LLM_PROVIDERS.includes(llmProvider as InlineLLMProvider)) {
           res.status(400).json({
-            error: 'invalid_request',
-            message: `"llmProvider" is required for inline extraction and must be one of: ${VALID_LLM_PROVIDERS.join(', ')}`,
+            success: false,
+            error: {
+              type: 'invalid_request',
+              message: `"llmProvider" is required for inline extraction and must be one of: ${VALID_LLM_PROVIDERS.join(', ')}`,
+              docs: 'https://webpeel.dev/docs/api-reference#fetch',
+            },
+            requestId: req.requestId,
           });
           return;
         }
         if (!llmApiKey || typeof llmApiKey !== 'string' || llmApiKey.trim().length === 0) {
           res.status(400).json({
-            error: 'invalid_request',
-            message: 'Missing or invalid "llmApiKey" (BYOK required for inline extraction)',
+            success: false,
+            error: {
+              type: 'invalid_request',
+              message: 'Missing or invalid "llmApiKey" (BYOK required for inline extraction)',
+              hint: 'Pass your LLM provider API key in the "llmApiKey" field',
+              docs: 'https://webpeel.dev/docs/api-reference#fetch',
+            },
+            requestId: req.requestId,
           });
           return;
         }
@@ -598,8 +703,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const resolvedFormat = (format as 'markdown' | 'text' | 'html') || 'markdown';
       if (!['markdown', 'text', 'html'].includes(resolvedFormat)) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -607,8 +717,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const resolvedWait = typeof wait === 'number' ? wait : undefined;
       if (resolvedWait !== undefined && (isNaN(resolvedWait) || resolvedWait < 0 || resolvedWait > 60000)) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Invalid "wait" parameter: must be between 0 and 60000ms',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Invalid "wait" parameter: must be between 0 and 60000ms',
+            docs: 'https://webpeel.dev/docs/api-reference#fetch',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -749,6 +864,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
       }
 
       // --- Build response ------------------------------------------------------
+      // Headers kept for backward compat; also surfaced in envelope metadata.
       res.setHeader('X-Cache', 'MISS');
       res.setHeader('X-Credits-Used', '1');
       res.setHeader('X-Processing-Time', elapsed.toString());
@@ -762,7 +878,17 @@ export function createFetchRouter(authStore: AuthStore): Router {
         responseBody.extractTokensUsed = extractTokensUsed;
       }
 
-      res.json(responseBody);
+      if (wantsEnvelope(req)) {
+        successResponse(res, responseBody, {
+          requestId: req.requestId,
+          processingTimeMs: elapsed,
+          creditsUsed: 1,
+          cached: false,
+          fetchType,
+        });
+      } else {
+        res.json(responseBody);
+      }
     } catch (error: any) {
       const err = error as any;
       console.error('POST fetch/scrape error:', err);
@@ -781,16 +907,24 @@ export function createFetchRouter(authStore: AuthStore): Router {
         };
 
         res.status(statusCode).json({
-          error: err.code,
-          message: safeMessage,
-          hint: hints[err.code] || undefined,
-          docs: 'https://webpeel.dev/docs/api-reference#errors',
+          success: false,
+          error: {
+            type: err.code,
+            message: safeMessage,
+            hint: hints[err.code] || undefined,
+            docs: 'https://webpeel.dev/docs/api-reference#errors',
+          },
+          requestId: req.requestId,
         });
       } else {
         res.status(500).json({
-          error: 'internal_error',
-          message: 'An unexpected error occurred. If this persists, check https://webpeel.dev/status',
-          docs: 'https://webpeel.dev/docs/api-reference#errors',
+          success: false,
+          error: {
+            type: 'internal_error',
+            message: 'An unexpected error occurred. If this persists, check https://webpeel.dev/status',
+            docs: 'https://webpeel.dev/docs/api-reference#errors',
+          },
+          requestId: req.requestId,
         });
       }
     }

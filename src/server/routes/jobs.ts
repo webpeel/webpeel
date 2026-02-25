@@ -10,12 +10,13 @@ import type { JobSearchOptions } from '../../core/jobs.js';
 import type { AuthStore } from '../auth-store.js';
 import type { IJobQueue } from '../job-queue.js';
 import { sendWebhook } from './webhooks.js';
+import { initSSE, sendSSE, endSSE, wantsSSE } from '../utils/sse.js';
 
 export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Router {
   const router = Router();
 
   /**
-   * POST /v1/crawl - Start async crawl job
+   * POST /v1/crawl - Start async crawl job (or stream via SSE)
    */
   router.post('/v1/crawl', async (req: Request, res: Response) => {
     try {
@@ -41,8 +42,130 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
         return;
       }
 
-      // Create job (with owner for authorization)
       const ownerId = req.auth?.keyInfo?.accountId;
+
+      // ── SSE streaming path ────────────────────────────────────────────────
+      if (wantsSSE(req)) {
+        const job = await jobQueue.createJob('crawl', webhook, ownerId);
+
+        // Set SSE headers (X-Request-Id is already set by global middleware)
+        initSSE(res);
+
+        // Send started event
+        sendSSE(res, 'started', {
+          jobId: job.id,
+          url,
+          depth: maxDepth || 3,
+        });
+
+        // Heartbeat every 15 seconds to keep connection alive
+        let closed = false;
+        const heartbeat = setInterval(() => {
+          if (!closed) {
+            res.write('event: ping\ndata: {}\n\n');
+          }
+        }, 15_000);
+
+        req.on('close', () => {
+          closed = true;
+          clearInterval(heartbeat);
+        });
+
+        let completedCount = 0;
+        let failedCount = 0;
+        const startTime = Date.now();
+
+        try {
+          jobQueue.updateJob(job.id, { status: 'processing' });
+
+          const resolvedLocation = location || languages ? {
+            country: location,
+            languages: Array.isArray(languages) ? languages : (languages ? [languages] : undefined),
+          } : undefined;
+
+          const crawlOptions: CrawlOptions = {
+            maxPages: limit || 100,
+            maxDepth: maxDepth || 3,
+            onProgress: (progress) => {
+              const total = progress.crawled + progress.queued;
+              jobQueue.updateJob(job.id, {
+                total,
+                completed: progress.crawled,
+                creditsUsed: progress.crawled,
+              });
+            },
+            onPage: (pageResult) => {
+              if (closed) return;
+              const total = completedCount + failedCount + 1;
+              if (pageResult.error) {
+                failedCount++;
+                sendSSE(res, 'error', {
+                  url: pageResult.url,
+                  error: 'FETCH_ERROR',
+                  message: pageResult.error,
+                });
+              } else {
+                completedCount++;
+                sendSSE(res, 'page', {
+                  url: pageResult.url,
+                  content: pageResult.markdown,
+                  metadata: {
+                    title: pageResult.title,
+                    depth: pageResult.depth,
+                    parent: pageResult.parent,
+                    elapsed: pageResult.elapsed,
+                  },
+                  progress: {
+                    completed: completedCount,
+                    total,
+                  },
+                });
+              }
+            },
+            ...scrapeOptions,
+            location: resolvedLocation,
+          };
+
+          const results = await crawl(url, crawlOptions);
+
+          jobQueue.updateJob(job.id, {
+            status: 'completed',
+            data: results,
+            total: results.length,
+            completed: results.length,
+            creditsUsed: results.length,
+          });
+
+          if (!closed) {
+            sendSSE(res, 'done', {
+              jobId: job.id,
+              completed: completedCount,
+              failed: failedCount,
+              duration: Date.now() - startTime,
+            });
+          }
+        } catch (error: any) {
+          jobQueue.updateJob(job.id, {
+            status: 'failed',
+            error: error.message || 'Unknown error',
+          });
+          if (!closed) {
+            sendSSE(res, 'error', {
+              error: 'CRAWL_FAILED',
+              message: error.message || 'Unknown error',
+            });
+          }
+        } finally {
+          clearInterval(heartbeat);
+          if (!closed) {
+            endSSE(res);
+          }
+        }
+
+        return;
+      }
+
+      // ── Regular async job path (backward compat) ─────────────────────────
       const job = await jobQueue.createJob('crawl', webhook, ownerId);
 
       // Start crawl in background

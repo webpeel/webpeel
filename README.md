@@ -28,7 +28,7 @@
 
 ---
 
-> **WebPeel** gives AI agents reliable web access in one call. It handles JavaScript rendering, bot detection, and content extraction automatically — your agent gets clean, structured data. 18 MCP tools, 927 tests, 100% open source.
+> **WebPeel** gives AI agents reliable web access in one call. It handles JavaScript rendering, bot detection, and content extraction automatically — your agent gets clean, structured data. 18 MCP tools, 1,098 tests, 100% open source.
 
 ---
 
@@ -414,7 +414,7 @@ npm test
 - **Feature requests:** [Start a discussion](https://github.com/webpeel/webpeel/discussions)
 - **Code:** See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
-The project has 927 tests. Please add tests for new features.
+The project has 1,098 tests. Please add tests for new features.
 
 ---
 

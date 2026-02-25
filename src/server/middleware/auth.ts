@@ -14,13 +14,14 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthStore, ApiKeyInfo } from '../auth-store.js';
 import { PostgresAuthStore } from '../pg-auth-store.js';
+import '../types.js'; // Augments Express.Request with requestId
 
 declare global {
   namespace Express {
     interface Request {
       auth?: {
         keyInfo: ApiKeyInfo | null;
-        tier: 'free' | 'starter' | 'pro' | 'enterprise' | 'max';
+        tier: 'free' | 'starter' | 'pro' | 'enterprise' | 'max' | 'admin';
         rateLimit: number;
         softLimited: boolean;  // true when over quota — degrade, don't block
         extraUsageAvailable: boolean; // true when extra usage is enabled and can be used
@@ -118,9 +119,14 @@ export function createAuthMiddleware(authStore: AuthStore) {
           }
 
           res.status(401).json({
-            error: 'invalid_key',
-            message: 'Invalid or expired API key. Check your key at https://app.webpeel.dev/keys or generate a new one.',
-            docs: 'https://webpeel.dev/docs/api-reference#authentication',
+            success: false,
+            error: {
+              type: 'invalid_key',
+              message: 'Invalid or expired API key.',
+              hint: 'Check your key at https://app.webpeel.dev/keys or generate a new one.',
+              docs: 'https://webpeel.dev/docs/errors#unauthorized',
+            },
+            metadata: { requestId: req.requestId },
           });
           return;
         }
@@ -144,11 +150,14 @@ export function createAuthMiddleware(authStore: AuthStore) {
               ? ' Upgrade to Max ($29/mo) for 500/hr → https://webpeel.dev/#pricing'
               : '';
             res.status(429).json({
-              error: 'burst_limit_exceeded',
-              message: `Hourly burst limit exceeded (${burst.count}/${burst.limit} on ${tier} plan). Resets in ${burst.resetsIn}.${upgradeHint}`,
-              retryAfter: burst.resetsIn,
-              plan: tier,
-              docs: 'https://webpeel.dev/docs/api-reference#rate-limits',
+              success: false,
+              error: {
+                type: 'burst_limit_exceeded',
+                message: `Hourly burst limit exceeded (${burst.count}/${burst.limit} on ${tier} plan). Resets in ${burst.resetsIn}.`,
+                hint: `Retry after ${burst.resetsIn}.${upgradeHint}`,
+                docs: 'https://webpeel.dev/docs/errors#rate-limited',
+              },
+              metadata: { requestId: req.requestId },
             });
             return;
           }
@@ -215,11 +224,15 @@ export function createAuthMiddleware(authStore: AuthStore) {
       };
 
       next();
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
       res.status(500).json({
-        error: 'auth_error',
-        message: err.message || 'Authentication failed',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Authentication failed',
+          docs: 'https://webpeel.dev/docs/errors#internal-error',
+        },
+        metadata: { requestId: req.requestId },
       });
     }
   };

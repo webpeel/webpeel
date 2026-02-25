@@ -283,6 +283,8 @@ export interface PeelResult {
     fetchedAt: string;
     cacheControl?: string;
   };
+  /** Warning message when content may be incomplete or degraded */
+  warning?: string;
 }
 
 export interface PageMetadata {

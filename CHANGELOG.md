@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## v0.15.2 (2026-02-25)
+
+### 🐛 Fixed
+- **Budget pre-truncation fix** — Content is now correctly trimmed before token budget is applied, preventing off-by-one overflows on long pages.
+
+### ✨ Quick Answer Phase 2
+- **Porter stemmer** — Queries and passages are now stemmed before BM25 scoring, dramatically improving recall on morphological variants ("run"/"running", "extract"/"extraction").
+- **Synonym expansion** — Common query terms automatically expand to include related words (e.g. "price" also matches "cost", "fee", "rate").
+- **Sliding window scoring** — Passage scoring now uses overlapping windows to find the best answer span, not just fixed sentence boundaries.
+- **Real-world validation** — Tested across 30 live pages; answer quality up ~18% vs v0.15.0 baseline.
+
+---
+
+## v0.15.1 (2026-02-25)
+
+### ✨ Added
+- **JSON-LD extraction** — Structured data embedded in `<script type="application/ld+json">` is now extracted and included in the `metadata.jsonLd` field on all responses.
+- **Zero-token safety net** — If the budget calculation produces zero tokens (edge case on very short pages), the response now returns the full content rather than an empty string.
+- **UI chrome removal** — Improved heuristics strip persistent headers, cookie banners, newsletter popups, and sticky footers more aggressively, especially on news and media sites.
+
+---
+
+## v0.15.0 (2026-02-24)
+
+### ✨ Added
+- **Auto-budget 4000** — `budget=4000` is now the default in MCP tools. AI agents receive token-efficient output by default without needing to pass any extra flags.
+- **Rich metadata** — Responses now include expanded metadata: `author`, `published`, `modified`, `canonicalUrl`, `language`, `readingTimeMin`, `wordCount`, and `jsonLd`.
+- **`linkCount` field** — All fetch responses include a `linkCount` integer so agents can quickly gauge page density without parsing the content.
+
+### 📊 Stats
+- **1,098 tests** (was 927)
+
+---
 
 ## v0.14.0 (2026-02-24)
 
@@ -424,7 +459,6 @@ The killer feature for AI agents — search + batch fetch + merge in one call. N
 
 #### Blog
 - 4 SEO-optimized blog posts at `/blog/`: Firecrawl comparison, MCP guide, AI scraping guide, token optimization
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.4.0] - 2026-02-14
 

@@ -1,0 +1,4182 @@
+openapi: 3.1.0
+
+info:
+  title: WebPeel API
+  description: |
+    **WebPeel** is a high-performance web scraping and data extraction API. It turns any
+    website into clean, structured content — markdown, text, JSON, or screenshots — with
+    built-in bot detection bypass, JavaScript rendering, and smart token budgeting.
+
+    ## Authentication
+
+    All endpoints (except `/health` and `/openapi.yaml`) require an API key. Pass it in
+    the `Authorization` header:
+
+    ```
+    Authorization: Bearer wp_YOUR_KEY
+    ```
+
+    API keys start with the `wp_` prefix. Get one free at [app.webpeel.dev](https://app.webpeel.dev).
+
+    ## Rate Limits
+
+    Rate limit information is returned in response headers:
+
+    | Header | Description |
+    |---|---|
+    | `X-RateLimit-Limit` | Requests allowed per window |
+    | `X-RateLimit-Remaining` | Requests remaining in current window |
+    | `X-RateLimit-Reset` | Unix timestamp when window resets |
+
+    When the limit is exceeded, the server responds with `429 Too Many Requests`.
+
+    ## Caching
+
+    Fetch and search responses are cached automatically (5 min for fetch, 15 min for search).
+    Cache behaviour is communicated via response headers:
+
+    | Header | Description |
+    |---|---|
+    | `X-Cache` | `HIT` or `MISS` |
+    | `X-Cache-Age` | Age of cached response in seconds |
+
+    To bypass the cache, pass `?noCache=true` (GET) / `"noCache": true` (POST) or set
+    the `Cache-Control: no-cache` request header.
+
+    ## Errors
+
+    All errors follow a consistent shape:
+
+    ```json
+    {
+      "success": false,
+      "error": {
+        "type": "invalid_request",
+        "message": "Human-readable description of the error.",
+        "hint": "Optional suggestion to fix the error.",
+        "docs": "https://webpeel.dev/docs/api-reference#errors"
+      },
+      "metadata": {
+        "requestId": "req_abc123"
+      }
+    }
+    ```
+
+    ### Error Codes
+
+    | Code | HTTP Status | Description |
+    |---|---|---|
+    | `invalid_request` | 400 | Missing or malformed parameters |
+    | `invalid_url` | 400 | URL is malformed or too long |
+    | `forbidden_url` | 400 | SSRF protection: private/localhost URLs not allowed |
+    | `unauthorized` | 401 | No API key provided |
+    | `invalid_api_key` | 401 | API key is invalid or revoked |
+    | `quota_exceeded` | 429 | Weekly request quota exceeded |
+    | `rate_limited` | 429 | Too many requests in time window |
+    | `TIMEOUT` | 504 | Request timed out |
+    | `BLOCKED` | 403 | Target site is blocking automated requests |
+    | `NETWORK` | 502 | Could not reach the target URL |
+    | `internal_error` | 500 | Unexpected server error |
+
+  version: 0.15.2
+  contact:
+    name: WebPeel Support
+    url: https://webpeel.dev
+    email: hello@webpeel.dev
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-logo:
+    url: https://webpeel.dev/logo.png
+    altText: WebPeel
+
+servers:
+  - url: https://api.webpeel.dev
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Health
+    description: Server health and status checks. No authentication required.
+  - name: Fetch
+    description: |
+      Fetch any URL and return clean, structured content. The core WebPeel operation.
+      Supports markdown, text, and HTML output; browser rendering; JavaScript execution;
+      bot detection bypass; screenshots; and smart token budgeting.
+  - name: Search
+    description: |
+      Search the web and return structured results with titles, URLs, and snippets.
+      Supports DuckDuckGo (free, no key) and Brave Search (BYOK for higher quality).
+  - name: Crawl
+    description: |
+      Crawl a website starting from a URL up to a configurable depth and page limit.
+      Jobs run asynchronously — poll the job status endpoint to retrieve results.
+  - name: Map
+    description: |
+      Discover all URLs on a domain via sitemap parsing and link crawling.
+      Returns a flat list of URLs found on the site.
+  - name: Extract
+    description: |
+      Extract structured data from a URL using JSON Schema + LLM (BYOK) or
+      auto-detection heuristics (no LLM key required).
+  - name: Answer
+    description: |
+      LLM-free question answering on a URL using BM25 relevance scoring.
+      No external API key required.
+  - name: YouTube
+    description: Extract full transcripts and metadata from YouTube videos.
+  - name: Screenshot
+    description: Capture full-page or viewport screenshots of any URL.
+  - name: Batch
+    description: |
+      Submit multiple URLs for concurrent scraping. Jobs are processed asynchronously
+      and results can be retrieved via the jobs API or delivered to a webhook.
+  - name: Research
+    description: |
+      Multi-source deep research: search the web, fetch top results, and synthesise
+      into a merged or structured report in a single API call.
+  - name: Watch
+    description: |
+      Monitor URLs for content changes. Create watchers with configurable check intervals
+      and receive notifications via webhooks when changes are detected.
+  - name: Auth
+    description: |
+      User registration, login, and API key management. These endpoints use JWT
+      tokens for session management, separate from the API key auth used by all
+      other endpoints.
+  - name: MCP
+    description: |
+      Model Context Protocol (MCP) endpoints for AI assistant integration.
+      Connect Claude, GPT-4, and other AI tools directly to WebPeel's capabilities.
+      Uses [MCP Streamable HTTP transport](https://modelcontextprotocol.io/) (JSON-RPC over HTTP).
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "wp_<key>"
+      description: |
+        WebPeel API key. All keys start with the `wp_` prefix.
+        Get one free at [app.webpeel.dev](https://app.webpeel.dev).
+
+  schemas:
+    # -------------------------------------------------------------------------
+    # Core result types
+    # -------------------------------------------------------------------------
+
+    PeelResult:
+      type: object
+      description: The result of a fetch or scrape operation.
+      required: [url, title, content, metadata, links, tokens, method, elapsed]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Final URL after any redirects.
+          example: https://example.com/page
+        title:
+          type: string
+          description: Page title extracted from `<title>` or Open Graph tags.
+          example: "Example Domain"
+        content:
+          type: string
+          description: Page content in the requested format (markdown, text, or HTML).
+          example: "# Example Domain\n\nThis domain is for use in illustrative examples..."
+        metadata:
+          $ref: "#/components/schemas/PageMetadata"
+        links:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: All unique links found on the page (absolute URLs).
+          example: ["https://www.iana.org/domains/example"]
+        tokens:
+          type: integer
+          description: Estimated token count (content.length / 4, rough estimate).
+          example: 42
+        method:
+          type: string
+          enum: [simple, browser, stealth]
+          description: Fetch method used.
+          example: simple
+        elapsed:
+          type: integer
+          description: Time elapsed in milliseconds.
+          example: 234
+        screenshot:
+          type: string
+          description: Base64-encoded PNG screenshot. Only present when `screenshot=true`.
+          example: "iVBORw0KGgoAAAANSUhEUgAA..."
+        contentType:
+          type: string
+          description: Content type detected (html, json, xml, text, rss, etc.).
+          example: html
+        quality:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Content quality score — how clean the extraction was.
+          example: 0.87
+        fingerprint:
+          type: string
+          description: SHA256 hash of content (first 16 chars) for change detection.
+          example: "a1b2c3d4e5f6g7h8"
+        extracted:
+          type: object
+          additionalProperties: true
+          description: Structured data from CSS selector or heuristic extraction.
+        json:
+          type: object
+          additionalProperties: true
+          description: Structured JSON from inline LLM extraction (BYOK).
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImageInfo"
+          description: Extracted images. Only present when `images=true`.
+        prunedPercent:
+          type: integer
+          description: Percentage of HTML pruned by content density scoring (0–100).
+          example: 43
+        readability:
+          type: object
+          description: Reader mode metadata. Only present when `readable=true`.
+          properties:
+            title:
+              type: string
+            author:
+              type: string
+            publishDate:
+              type: string
+            readingTime:
+              type: integer
+              description: Estimated reading time in minutes.
+            wordCount:
+              type: integer
+            excerpt:
+              type: string
+        linkCount:
+          type: integer
+          description: Number of unique links found on the page.
+          example: 12
+        quickAnswer:
+          type: object
+          description: BM25 quick answer result. Only present when `question` is set.
+          properties:
+            question:
+              type: string
+            answer:
+              type: string
+            confidence:
+              type: number
+            passages:
+              type: array
+              items:
+                type: string
+            method:
+              type: string
+        timing:
+          type: object
+          description: Per-stage timing breakdown in milliseconds.
+          additionalProperties:
+            type: integer
+        freshness:
+          type: object
+          description: Content freshness metadata from HTTP response headers.
+          properties:
+            lastModified:
+              type: string
+            etag:
+              type: string
+            fetchedAt:
+              type: string
+              format: date-time
+            cacheControl:
+              type: string
+        warning:
+          type: string
+          description: Warning when content may be incomplete or degraded.
+
+    PageMetadata:
+      type: object
+      description: Metadata extracted from the page.
+      properties:
+        description:
+          type: string
+          description: Meta description.
+          example: "An example page for documentation."
+        author:
+          type: string
+          description: Author name.
+          example: "Jane Doe"
+        published:
+          type: string
+          format: date-time
+          description: Published date (ISO 8601).
+        image:
+          type: string
+          format: uri
+          description: Open Graph image URL.
+        canonical:
+          type: string
+          format: uri
+          description: Canonical URL.
+        contentType:
+          type: string
+          description: MIME content type (set for PDF, DOCX, etc.).
+        wordCount:
+          type: integer
+          description: Word count.
+        language:
+          type: string
+          description: "Page language (e.g., \"en\", \"en-US\")."
+          example: en
+
+    QuickAnswerResult:
+      type: object
+      description: Result from LLM-free BM25 question answering on a URL.
+      required: [url, question, answer, confidence, passages, method]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Final URL after any redirects.
+          example: https://example.com/pricing
+        title:
+          type: string
+          description: Page title.
+          example: "Pricing – Example"
+        question:
+          type: string
+          description: The question that was asked.
+          example: "What is the price of the pro plan?"
+        answer:
+          type: string
+          description: Best answer extracted from the page content using BM25 ranking.
+          example: "The Pro plan costs $49 per month."
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Confidence score for the answer (0–1).
+          example: 0.83
+        passages:
+          type: array
+          items:
+            type: string
+          description: Top-ranked text passages relevant to the question.
+          example:
+            - "Pro plan: $49/month — includes unlimited projects and priority support."
+            - "All plans include a 14-day free trial."
+        source:
+          type: string
+          format: uri
+          description: URL the answer was extracted from.
+          example: https://example.com/pricing
+        method:
+          type: string
+          description: Scoring method used (always `bm25`).
+          example: bm25
+
+    SearchResult:
+      type: object
+      description: A single search result entry.
+      required: [title, url, snippet]
+      properties:
+        title:
+          type: string
+          description: Page title.
+          example: "Latest AI News – TechCrunch"
+        url:
+          type: string
+          format: uri
+          description: Page URL.
+          example: https://techcrunch.com/2025/01/01/latest-ai-news
+        snippet:
+          type: string
+          description: Short description or excerpt.
+          example: "Here's everything you need to know about the latest developments in AI..."
+        content:
+          type: string
+          description: Full page content in markdown. Only present when `scrapeResults=true`.
+
+    SearchWebResult:
+      $ref: "#/components/schemas/SearchResult"
+
+    SearchImageResult:
+      type: object
+      required: [title, url, thumbnail, source]
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        thumbnail:
+          type: string
+          format: uri
+        source:
+          type: string
+
+    SearchNewsResult:
+      type: object
+      required: [title, url, snippet, source]
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        snippet:
+          type: string
+        source:
+          type: string
+        date:
+          type: string
+
+    ImageInfo:
+      type: object
+      description: Information about an image found on the page.
+      required: [src, alt]
+      properties:
+        src:
+          type: string
+          format: uri
+          description: Absolute URL of the image.
+        alt:
+          type: string
+          description: Alt text.
+        title:
+          type: string
+          description: Title attribute.
+        width:
+          type: integer
+        height:
+          type: integer
+
+    PageAction:
+      type: object
+      description: A browser interaction to perform before extracting content.
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [click, type, fill, scroll, wait, press, hover, select, waitForSelector, screenshot]
+          description: Action type.
+        selector:
+          type: string
+          description: CSS selector for element-targeted actions.
+          example: "#search-input"
+        value:
+          type: string
+          description: Value/text for type, fill, or select actions.
+          example: "hello world"
+        text:
+          type: string
+          description: Alias for `value` (Firecrawl compatibility).
+        key:
+          type: string
+          description: Keyboard key for press actions.
+          example: "Enter"
+        ms:
+          type: integer
+          description: Wait duration in milliseconds (for wait actions).
+          example: 1000
+        milliseconds:
+          type: integer
+          description: Alias for `ms` (Firecrawl compatibility).
+        direction:
+          type: string
+          enum: [up, down, left, right]
+          description: Scroll direction.
+        amount:
+          type: integer
+          description: Scroll amount in pixels.
+          example: 500
+        timeout:
+          type: integer
+          description: Per-action timeout override in milliseconds.
+
+    InlineExtract:
+      type: object
+      description: Inline LLM-powered JSON extraction configuration (BYOK).
+      properties:
+        schema:
+          type: object
+          additionalProperties: true
+          description: JSON Schema describing the desired output structure.
+        prompt:
+          type: string
+          description: Natural language extraction prompt.
+          example: "Extract the product name, price, and availability."
+
+    WatchEntry:
+      type: object
+      description: A URL watcher entry.
+      required: [id, accountId, url, status, checkIntervalMinutes, createdAt]
+      properties:
+        id:
+          type: string
+          description: Unique watcher ID.
+          example: "watch_a1b2c3d4"
+        accountId:
+          type: string
+          format: uuid
+          description: Account that owns this watcher.
+        url:
+          type: string
+          format: uri
+          description: The URL being monitored.
+          example: https://example.com/pricing
+        webhookUrl:
+          type: string
+          format: uri
+          description: Webhook URL to notify when changes are detected.
+          example: https://your-server.com/webhook
+        checkIntervalMinutes:
+          type: integer
+          description: How often to check for changes (1–44640 minutes).
+          example: 60
+        selector:
+          type: string
+          description: CSS selector to limit change detection to a specific element.
+          example: ".price"
+        status:
+          type: string
+          enum: [active, paused]
+          description: Whether the watcher is active or paused.
+          example: active
+        lastCheckedAt:
+          type: string
+          format: date-time
+          description: When the URL was last checked.
+        lastChangeAt:
+          type: string
+          format: date-time
+          description: When the last change was detected.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the watcher was created.
+
+    YouTubeSegment:
+      type: object
+      description: A single timed transcript segment.
+      required: [start, end, text]
+      properties:
+        start:
+          type: number
+          description: Start time in seconds.
+          example: 12.5
+        end:
+          type: number
+          description: End time in seconds.
+          example: 15.2
+        text:
+          type: string
+          description: Transcript text for this segment.
+          example: "Welcome to the tutorial."
+
+    # -------------------------------------------------------------------------
+    # Request bodies
+    # -------------------------------------------------------------------------
+
+    FetchPostBody:
+      type: object
+      description: Request body for POST /v1/fetch.
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The URL to fetch. Must be HTTP or HTTPS. Max 2048 characters.
+          example: https://example.com
+        render:
+          type: boolean
+          default: false
+          description: Use headless browser rendering for JavaScript-heavy sites.
+        wait:
+          type: integer
+          minimum: 0
+          maximum: 60000
+          description: Milliseconds to wait after page load (only with render=true).
+          example: 2000
+        format:
+          type: string
+          enum: [markdown, text, html]
+          default: markdown
+          description: Output format.
+        stream:
+          type: boolean
+          default: false
+          description: Prepare a streaming response.
+        includeTags:
+          type: array
+          items:
+            type: string
+          description: Only include content from these HTML elements.
+          example: ["article", "main", ".content"]
+        excludeTags:
+          type: array
+          items:
+            type: string
+          description: Remove these HTML elements from the output.
+          example: ["nav", "footer", "header", ".sidebar"]
+        images:
+          type: boolean
+          default: false
+          description: Extract image URLs and alt text.
+        location:
+          type: string
+          description: ISO 3166-1 alpha-2 country code for geo-targeted content.
+          example: US
+        languages:
+          type: array
+          items:
+            type: string
+          description: Language preferences for browser rendering.
+          example: ["en-US"]
+        onlyMainContent:
+          type: boolean
+          default: false
+          description: Shortcut to include only main/article content (strips boilerplate).
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PageAction"
+          description: Browser interactions to execute before extracting content. Auto-enables rendering.
+        noCache:
+          type: boolean
+          default: false
+          description: Bypass cache and force a fresh fetch.
+        cacheTtl:
+          type: integer
+          description: Cache TTL in seconds for this response. Default is 300 (5 minutes).
+          example: 600
+        budget:
+          type: integer
+          description: |
+            Smart token budget — distill content to fit within N tokens using heuristic
+            compression (no LLM needed). Default: 4000. Set to 0 to disable.
+          example: 4000
+        question:
+          type: string
+          description: Ask a question about the content. Uses BM25 relevance scoring (no LLM key needed).
+          example: "What is the pricing?"
+        readable:
+          type: boolean
+          default: false
+          description: Reader mode — extract only the main article, strip all noise.
+        stealth:
+          type: boolean
+          default: false
+          description: Stealth mode for bot-protected sites (Amazon, LinkedIn, etc.).
+        screenshot:
+          type: boolean
+          default: false
+          description: Also capture a screenshot (returned as base64 PNG in `screenshot` field).
+        maxTokens:
+          type: integer
+          description: Maximum token count — hard truncation (vs `budget` which is smart compression).
+          example: 8000
+        selector:
+          type: string
+          description: CSS selector to extract specific content only.
+          example: "article.post"
+        exclude:
+          type: array
+          items:
+            type: string
+          description: CSS selectors to exclude from output.
+          example: [".ads", ".sidebar"]
+        fullPage:
+          type: boolean
+          default: false
+          description: Disable smart pruning and return the full page content.
+        raw:
+          type: boolean
+          default: false
+          description: Skip smart content extraction — return full HTML without stripping boilerplate.
+        lite:
+          type: boolean
+          default: false
+          description: Lite mode — minimal processing for maximum speed (~50% faster).
+        timeout:
+          type: integer
+          description: Request timeout in milliseconds. Default is 30000.
+          example: 30000
+        extract:
+          $ref: "#/components/schemas/InlineExtract"
+        llmProvider:
+          type: string
+          enum: [openai, anthropic, google]
+          description: LLM provider for inline extraction (required when `extract` is set).
+        llmApiKey:
+          type: string
+          description: LLM API key (BYOK, required when `extract` is set).
+          example: "sk-..."
+        llmModel:
+          type: string
+          description: LLM model name (optional, uses provider default).
+          example: "gpt-4o-mini"
+        formats:
+          type: array
+          description: Firecrawl-compatible formats array. Use `{ "type": "json", "schema": {...} }` for extraction.
+          items:
+            oneOf:
+              - type: string
+                enum: [markdown, html, text, json]
+              - type: object
+                properties:
+                  type:
+                    type: string
+                    enum: [json]
+                  schema:
+                    type: object
+                    additionalProperties: true
+                  prompt:
+                    type: string
+
+    # -------------------------------------------------------------------------
+    # Error response
+    # -------------------------------------------------------------------------
+
+    Error:
+      type: object
+      description: Standard error response envelope.
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: object
+          required: [type, message]
+          properties:
+            type:
+              type: string
+              description: Machine-readable error code.
+              example: invalid_request
+              enum:
+                - invalid_request
+                - invalid_url
+                - forbidden_url
+                - unauthorized
+                - rate_limited
+                - TIMEOUT
+                - BLOCKED
+                - NETWORK
+                - internal_error
+            message:
+              type: string
+              description: Human-readable error description.
+              example: "Missing or invalid \"url\" parameter."
+            hint:
+              type: string
+              description: Optional suggestion to fix the error.
+              example: "Try increasing timeout with ?wait=10000."
+            docs:
+              type: string
+              format: uri
+              description: Link to relevant documentation.
+              example: https://webpeel.dev/docs/api-reference#errors
+        metadata:
+          type: object
+          properties:
+            requestId:
+              type: string
+              description: Unique request ID for support and debugging.
+              example: req_abc123
+
+    ErrorResponse:
+      $ref: "#/components/schemas/Error"
+
+    # -------------------------------------------------------------------------
+    # Auth types
+    # -------------------------------------------------------------------------
+
+    UserObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        tier:
+          type: string
+          enum: [free, starter, pro, enterprise]
+          example: free
+        weeklyLimit:
+          type: integer
+          description: Weekly request quota.
+          example: 500
+        burstLimit:
+          type: integer
+          description: Burst rate limit (requests per minute).
+          example: 50
+        rateLimit:
+          type: integer
+          description: Hourly rate limit.
+          example: 10
+        createdAt:
+          type: string
+          format: date-time
+
+    # -------------------------------------------------------------------------
+    # Screenshot types
+    # -------------------------------------------------------------------------
+
+    ScreenshotResult:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: object
+          required: [url, screenshot, metadata]
+          properties:
+            url:
+              type: string
+              format: uri
+              description: Final URL after any redirects.
+            screenshot:
+              type: string
+              description: Data URL containing base64-encoded screenshot image (e.g., `data:image/png;base64,...`).
+              example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+            metadata:
+              type: object
+              properties:
+                sourceURL:
+                  type: string
+                  format: uri
+                format:
+                  type: string
+                  enum: [png, jpeg]
+                width:
+                  type: integer
+                  example: 1280
+                height:
+                  type: integer
+                  example: 720
+                fullPage:
+                  type: boolean
+
+    # -------------------------------------------------------------------------
+    # Batch types
+    # -------------------------------------------------------------------------
+
+    BatchJobResponse:
+      type: object
+      required: [success, id]
+      properties:
+        success:
+          type: boolean
+          const: true
+        id:
+          type: string
+          description: Job ID for polling status.
+          example: "job_a1b2c3d4"
+        url:
+          type: string
+          description: URL to poll for job status.
+          example: "/v1/batch/scrape/job_a1b2c3d4"
+
+    BatchJobStatus:
+      type: object
+      required: [success, status]
+      properties:
+        success:
+          type: boolean
+          const: true
+        status:
+          type: string
+          enum: [queued, processing, completed, failed, cancelled]
+          example: completed
+        total:
+          type: integer
+          description: Total number of URLs in the batch.
+          example: 10
+        completed:
+          type: integer
+          description: Number of URLs processed so far.
+          example: 10
+        creditsUsed:
+          type: integer
+          description: Number of credits consumed so far.
+          example: 10
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PeelResult"
+          description: Scrape results. Populated when status is `completed`.
+        error:
+          type: string
+          description: Error message if status is `failed`.
+        expiresAt:
+          type: string
+          format: date-time
+          description: When job data expires and is deleted.
+
+  # ---------------------------------------------------------------------------
+  # Reusable response headers
+  # ---------------------------------------------------------------------------
+
+  headers:
+    X-Cache:
+      schema:
+        type: string
+        enum: [HIT, MISS]
+      description: Whether the response was served from cache.
+    X-Cache-Age:
+      schema:
+        type: integer
+      description: Age of the cached response in seconds.
+    X-Credits-Used:
+      schema:
+        type: integer
+      description: Number of credits consumed by this request.
+    X-Processing-Time:
+      schema:
+        type: integer
+      description: Server-side processing time in milliseconds.
+    X-Request-Id:
+      schema:
+        type: string
+      description: Unique request identifier for debugging and support.
+    X-Fetch-Type:
+      schema:
+        type: string
+        enum: [basic, stealth, search, screenshot]
+      description: Fetch method used internally.
+    X-Auto-Budget:
+      schema:
+        type: integer
+      description: "Token budget automatically applied (default: 4000). Present only when auto-applied."
+    X-Degraded:
+      schema:
+        type: string
+      description: Reason for request degradation (e.g., quota exceeded).
+    X-RateLimit-Limit:
+      schema:
+        type: integer
+      description: Requests allowed per rate-limit window.
+    X-RateLimit-Remaining:
+      schema:
+        type: integer
+      description: Requests remaining in current rate-limit window.
+    X-RateLimit-Reset:
+      schema:
+        type: integer
+      description: Unix timestamp when the rate-limit window resets.
+
+  # ---------------------------------------------------------------------------
+  # Reusable responses
+  # ---------------------------------------------------------------------------
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            success: false
+            error:
+              type: unauthorized
+              message: "API key required. Get one free at https://app.webpeel.dev"
+              docs: "https://webpeel.dev/docs/api-reference#authentication"
+            metadata:
+              requestId: "req_abc123"
+
+    RateLimited:
+      description: Rate limit exceeded.
+      headers:
+        X-RateLimit-Limit:
+          $ref: "#/components/headers/X-RateLimit-Limit"
+        X-RateLimit-Remaining:
+          $ref: "#/components/headers/X-RateLimit-Remaining"
+        X-RateLimit-Reset:
+          $ref: "#/components/headers/X-RateLimit-Reset"
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until the rate limit resets.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            success: false
+            error:
+              type: rate_limited
+              message: "Too many requests. Please wait before retrying."
+              hint: "Upgrade your plan for higher limits."
+            metadata:
+              requestId: "req_abc123"
+
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            success: false
+            error:
+              type: internal_error
+              message: "An unexpected error occurred. If this persists, check https://webpeel.dev/status"
+            metadata:
+              requestId: "req_abc123"
+
+paths:
+  # ===========================================================================
+  # Health
+  # ===========================================================================
+
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      description: |
+        Returns the current health status, version, and uptime of the server.
+        No authentication required. Used by load balancers and monitoring tools.
+      tags: [Health]
+      security: []
+      responses:
+        "200":
+          description: Server is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version, uptime, timestamp]
+                properties:
+                  status:
+                    type: string
+                    const: healthy
+                    example: healthy
+                  version:
+                    type: string
+                    description: Server version (semver).
+                    example: 0.15.2
+                  uptime:
+                    type: integer
+                    description: Server uptime in seconds.
+                    example: 3600
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: Current server time (ISO 8601).
+                    example: "2025-02-25T08:00:00.000Z"
+              example:
+                status: healthy
+                version: "0.15.2"
+                uptime: 3600
+                timestamp: "2025-02-25T08:00:00.000Z"
+
+  # ===========================================================================
+  # OpenAPI Spec
+  # ===========================================================================
+
+  /openapi.yaml:
+    get:
+      operationId: getOpenApiSpec
+      summary: OpenAPI specification
+      description: Returns this OpenAPI 3.1.0 specification in YAML format.
+      tags: [Health]
+      security: []
+      responses:
+        "200":
+          description: The OpenAPI specification.
+          content:
+            application/yaml:
+              schema:
+                type: string
+
+  # ===========================================================================
+  # Fetch
+  # ===========================================================================
+
+  /v1/fetch:
+    get:
+      operationId: fetchUrlGet
+      summary: Fetch a URL (GET)
+      description: |
+        Fetch any URL and return clean content in markdown, text, or HTML format.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+
+        **With browser rendering:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/fetch?url=https://spa-example.com&render=true" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+
+        Results are cached for 5 minutes by default. Pass `noCache=true` to bypass.
+      tags: [Fetch]
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: The URL to fetch. Must be HTTP or HTTPS. Max 2048 characters.
+          schema:
+            type: string
+            format: uri
+          example: https://example.com
+        - name: render
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Use headless browser for JavaScript-heavy sites or SPAs.
+        - name: wait
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 60000
+          description: Milliseconds to wait after page load (used with `render=true`).
+          example: 2000
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [markdown, text, html]
+            default: markdown
+          description: Output format.
+        - name: includeTags
+          in: query
+          schema:
+            type: string
+          description: Comma-separated HTML elements to include (e.g., `article,main`).
+          example: "article,main"
+        - name: excludeTags
+          in: query
+          schema:
+            type: string
+          description: Comma-separated HTML elements to remove (e.g., `nav,footer`).
+          example: "nav,footer,header"
+        - name: images
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include image URLs and alt text in the response.
+        - name: location
+          in: query
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code for geo-targeted content.
+          example: US
+        - name: languages
+          in: query
+          schema:
+            type: string
+          description: Comma-separated language preferences (e.g., `en-US,de`).
+        - name: onlyMainContent
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Shortcut to strip boilerplate and return only main/article content.
+        - name: actions
+          in: query
+          schema:
+            type: string
+          description: JSON-encoded array of `PageAction` objects to execute before extraction.
+          example: '[{"type":"click","selector":"#load-more"}]'
+        - name: maxAge
+          in: query
+          schema:
+            type: integer
+          description: Maximum acceptable cache age in milliseconds. Default is 172800000 (2 days).
+        - name: noCache
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Bypass cache and force a fresh fetch.
+        - name: cacheTtl
+          in: query
+          schema:
+            type: integer
+          description: Cache TTL in seconds for this response. Default is 300 (5 minutes).
+        - name: stream
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Prepare a streaming response.
+        - name: budget
+          in: query
+          schema:
+            type: integer
+          description: |
+            Smart token budget — distill content to N tokens using heuristic
+            compression (no LLM required). Default: 4000. Set to 0 to disable.
+          example: 4000
+        - name: question
+          in: query
+          schema:
+            type: string
+          description: Ask a question about the content using BM25 relevance scoring (no LLM key needed).
+          example: "What is the pricing?"
+        - name: readable
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Reader mode — extract only the main article, strip all noise.
+        - name: stealth
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Stealth mode to bypass bot detection on sites like Amazon, LinkedIn.
+        - name: screenshot
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Also capture a screenshot (returned as base64 PNG).
+        - name: maxTokens
+          in: query
+          schema:
+            type: integer
+          description: Maximum token count — hard truncation.
+        - name: selector
+          in: query
+          schema:
+            type: string
+          description: CSS selector to extract specific content only.
+          example: "article.post"
+        - name: exclude
+          in: query
+          schema:
+            type: string
+          description: Comma-separated CSS selectors to exclude from output.
+          example: ".ads,.sidebar"
+        - name: fullPage
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Disable smart pruning and return the complete page content.
+        - name: raw
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Skip content extraction — return raw HTML without stripping boilerplate.
+        - name: lite
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Lite mode — minimal processing, maximum speed (~50% faster).
+        - name: timeout
+          in: query
+          schema:
+            type: integer
+          description: Request timeout in milliseconds. Default is 30000.
+          example: 30000
+        - name: storeInCache
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Whether to cache the response. Set to `false` to skip caching.
+      responses:
+        "200":
+          description: Successfully fetched the URL.
+          headers:
+            X-Cache:
+              $ref: "#/components/headers/X-Cache"
+            X-Cache-Age:
+              $ref: "#/components/headers/X-Cache-Age"
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+            X-Request-Id:
+              $ref: "#/components/headers/X-Request-Id"
+            X-Fetch-Type:
+              $ref: "#/components/headers/X-Fetch-Type"
+            X-Auto-Budget:
+              $ref: "#/components/headers/X-Auto-Budget"
+            X-Degraded:
+              $ref: "#/components/headers/X-Degraded"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeelResult"
+              example:
+                url: https://example.com
+                title: "Example Domain"
+                content: "# Example Domain\n\nThis domain is for use in illustrative examples in documents."
+                metadata:
+                  description: "Example Domain"
+                  language: en
+                links: ["https://www.iana.org/domains/example"]
+                tokens: 42
+                method: simple
+                elapsed: 187
+                quality: 0.91
+                fingerprint: "a1b2c3d4e5f6a1b2"
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missing_url:
+                  summary: Missing URL parameter
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Missing or invalid "url" parameter. Pass a URL as a query parameter: GET /v1/fetch?url=https://example.com'
+                      hint: 'curl "https://api.webpeel.dev/v1/fetch?url=https://example.com"'
+                      docs: https://webpeel.dev/docs/api-reference#fetch
+                    metadata:
+                      requestId: "req_abc123"
+                invalid_url:
+                  summary: Malformed URL
+                  value:
+                    success: false
+                    error:
+                      type: invalid_url
+                      message: "Invalid URL format"
+                    metadata:
+                      requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Target site is blocking automated requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: BLOCKED
+                  message: "This site actively blocks automated requests."
+                  hint: "Try adding render=true or stealth=true."
+                  docs: https://webpeel.dev/docs/api-reference#errors
+                metadata:
+                  requestId: "req_abc123"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          description: Network error — could not reach the target URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: NETWORK
+                  message: "Could not reach https://example.com — connection refused."
+                metadata:
+                  requestId: "req_abc123"
+        "504":
+          description: Request timed out.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: TIMEOUT
+                  message: "Request timed out after 30000ms"
+                  hint: "Try increasing timeout with ?timeout=60000, or use render=true for JS-heavy sites."
+                  docs: https://webpeel.dev/docs/api-reference#errors
+                metadata:
+                  requestId: "req_abc123"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: fetchUrlPost
+      summary: Fetch a URL (POST)
+      description: |
+        POST variant of `/v1/fetch`. Accepts a JSON body with all the same options as the GET
+        endpoint, plus **inline LLM extraction** (BYOK) via the `extract` field.
+
+        Use POST when you need to:
+        - Pass complex `actions` arrays
+        - Use inline LLM extraction (JSON Schema or prompt)
+        - Pass complex CSS selector/tag arrays
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/fetch \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com"}'
+        ```
+
+        **With inline extraction:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/fetch \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "url": "https://shop.example.com/product",
+            "extract": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "string"},
+                  "price": {"type": "number"}
+                }
+              }
+            },
+            "llmProvider": "openai",
+            "llmApiKey": "sk-..."
+          }'
+        ```
+      tags: [Fetch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FetchPostBody"
+            examples:
+              basic:
+                summary: Basic fetch
+                value:
+                  url: https://example.com
+              with_render:
+                summary: Browser rendering for SPA
+                value:
+                  url: https://spa-example.com
+                  render: true
+                  wait: 2000
+                  format: markdown
+              with_actions:
+                summary: Click login form and extract
+                value:
+                  url: https://example.com/login
+                  render: true
+                  actions:
+                    - type: fill
+                      selector: "#email"
+                      value: user@example.com
+                    - type: fill
+                      selector: "#password"
+                      value: "secret"
+                    - type: click
+                      selector: "[type=submit]"
+                  budget: 4000
+              with_extraction:
+                summary: Inline LLM extraction (BYOK)
+                value:
+                  url: https://shop.example.com/product/123
+                  extract:
+                    schema:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        price:
+                          type: number
+                        inStock:
+                          type: boolean
+                  llmProvider: openai
+                  llmApiKey: "sk-..."
+                  llmModel: "gpt-4o-mini"
+      responses:
+        "200":
+          description: Successfully fetched the URL.
+          headers:
+            X-Cache:
+              $ref: "#/components/headers/X-Cache"
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+            X-Request-Id:
+              $ref: "#/components/headers/X-Request-Id"
+            X-Fetch-Type:
+              $ref: "#/components/headers/X-Fetch-Type"
+            X-Auto-Budget:
+              $ref: "#/components/headers/X-Auto-Budget"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeelResult"
+              examples:
+                basic_response:
+                  summary: Basic fetch response
+                  value:
+                    url: https://example.com
+                    title: "Example Domain"
+                    content: "# Example Domain\n\nThis domain is for use in illustrative examples."
+                    metadata:
+                      description: "Example Domain"
+                    links: ["https://www.iana.org/domains/example"]
+                    tokens: 42
+                    method: simple
+                    elapsed: 187
+                extraction_response:
+                  summary: Response with LLM extraction
+                  value:
+                    url: https://shop.example.com/product/123
+                    title: "Acme Widget Pro"
+                    content: "# Acme Widget Pro\n\nPrice: $49.99..."
+                    metadata: {}
+                    links: []
+                    tokens: 312
+                    method: simple
+                    elapsed: 850
+                    json:
+                      name: "Acme Widget Pro"
+                      price: 49.99
+                      inStock: true
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v2/scrape:
+    post:
+      operationId: scrapeUrlV2
+      summary: Scrape a URL (v2, Firecrawl-compatible)
+      description: |
+        Alias for `POST /v1/fetch` with identical behaviour. Provided for
+        **Firecrawl API compatibility** — existing Firecrawl integrations work
+        without modification.
+
+        Accepts the same request body as `POST /v1/fetch`, including the
+        `formats` array for Firecrawl-style JSON extraction.
+      tags: [Fetch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FetchPostBody"
+            examples:
+              firecrawl_compat:
+                summary: Firecrawl-compatible request
+                value:
+                  url: https://example.com
+                  formats:
+                    - type: json
+                      schema:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          description:
+                            type: string
+                  llmProvider: openai
+                  llmApiKey: "sk-..."
+      responses:
+        "200":
+          description: Successfully scraped the URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeelResult"
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Search
+  # ===========================================================================
+
+  /v1/search:
+    get:
+      operationId: searchWeb
+      summary: Search the web
+      description: |
+        Search the web and return structured results with titles, URLs, and snippets.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/search?q=latest+AI+news&count=5" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+
+        **Search providers:**
+        - `auto` (default) — picks the best available provider automatically
+        - `duckduckgo` — free, no API key needed
+        - `brave` — higher quality results; requires `searchApiKey` (BYOK)
+
+        **Data sources** (comma-separated via `sources`):
+        - `web` (default) — standard web results
+        - `news` — news articles
+        - `images` — image results
+
+        Results are cached for 15 minutes.
+      tags: [Search]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query.
+          schema:
+            type: string
+          example: "latest AI news"
+        - name: count
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 5
+          description: Number of results to return (1–10).
+          example: 5
+        - name: sources
+          in: query
+          schema:
+            type: string
+            default: web
+          description: Comma-separated data sources — `web`, `news`, `images`.
+          example: "web,news"
+        - name: provider
+          in: query
+          schema:
+            type: string
+            enum: [auto, duckduckgo, brave, stealth]
+            default: auto
+          description: Search provider. Use `brave` with `searchApiKey` for higher quality.
+        - name: searchApiKey
+          in: query
+          schema:
+            type: string
+          description: Brave Search API key (BYOK). Required when `provider=brave`.
+        - name: scrapeResults
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: |
+            Fetch full content for each result URL and include in `content` field.
+            Significantly increases response time and credits used.
+        - name: categories
+          in: query
+          schema:
+            type: string
+          description: |
+            Comma-separated category filters: `github`, `pdf`, `docs`, `blog`, `news`,
+            `video`, `social`. Filters results by URL pattern.
+          example: "docs,github"
+        - name: tbs
+          in: query
+          schema:
+            type: string
+          description: Time-based search filter (e.g., `qdr:d` for last 24h, `qdr:w` for last week).
+          example: "qdr:d"
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code for geo-specific results.
+          example: US
+        - name: location
+          in: query
+          schema:
+            type: string
+          description: Location string for localized results.
+          example: "New York, NY"
+      responses:
+        "200":
+          description: Search results.
+          headers:
+            X-Cache:
+              $ref: "#/components/headers/X-Cache"
+            X-Cache-Age:
+              $ref: "#/components/headers/X-Cache-Age"
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+            X-Request-Id:
+              $ref: "#/components/headers/X-Request-Id"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    type: object
+                    properties:
+                      web:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SearchResult"
+                        description: Web search results. Present when `sources` includes `web`.
+                      news:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SearchNewsResult"
+                        description: News results. Present when `sources` includes `news`.
+                      images:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SearchImageResult"
+                        description: Image results. Present when `sources` includes `images`.
+              example:
+                success: true
+                data:
+                  web:
+                    - title: "GPT-5 Released: What You Need to Know"
+                      url: https://techcrunch.com/2025/02/gpt5
+                      snippet: "OpenAI has released GPT-5, a major leap forward in AI capabilities..."
+                    - title: "Google Gemini 2.0 Ultra Benchmarks"
+                      url: https://blog.google/gemini-2-ultra
+                      snippet: "Gemini 2.0 Ultra achieves state-of-the-art results across all major benchmarks..."
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: invalid_request
+                  message: 'Missing or invalid "q" parameter. Pass a search query: GET /v1/search?q=your+search+terms'
+                  hint: 'curl "https://api.webpeel.dev/v1/search?q=latest+AI+news&count=5"'
+                  docs: https://webpeel.dev/docs/api-reference#search
+                metadata:
+                  requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          description: Search request failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: internal_error
+                  message: "Search request failed. If using Brave provider, verify your API key. Otherwise try again."
+                  hint: "Free search uses DuckDuckGo (no key required). For higher quality, add provider=brave&searchApiKey=YOUR_KEY"
+                  docs: https://webpeel.dev/docs/api-reference#search
+                metadata:
+                  requestId: "req_abc123"
+
+  # ===========================================================================
+  # Crawl
+  # ===========================================================================
+
+  /v1/crawl:
+    post:
+      operationId: crawlSite
+      summary: Crawl a website
+      description: |
+        Start an asynchronous crawl of a website. The crawl follows internal links
+        up to the configured `maxDepth` and `limit`, then returns a job ID.
+
+        **Workflow:**
+        1. `POST /v1/crawl` → returns `{ success: true, id: "job_..." }`
+        2. Poll `GET /v1/crawl/{id}` until `status === "completed"`
+        3. Results are in the `data` array
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/crawl \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://docs.example.com", "limit": 50, "maxDepth": 3}'
+        ```
+      tags: [Crawl]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The start URL to crawl. Must be HTTP or HTTPS.
+                  example: https://docs.example.com
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 10000
+                  default: 100
+                  description: Maximum number of pages to crawl.
+                  example: 50
+                maxDepth:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 3
+                  description: Maximum link depth from the start URL.
+                  example: 3
+                includePaths:
+                  type: array
+                  items:
+                    type: string
+                  description: |
+                    URL path patterns to include (glob or prefix match).
+                    Only URLs matching at least one pattern will be crawled.
+                  example: ["/docs/", "/blog/"]
+                excludePaths:
+                  type: array
+                  items:
+                    type: string
+                  description: URL path patterns to exclude from crawling.
+                  example: ["/login", "/checkout", "/cart"]
+                scrapeOptions:
+                  type: object
+                  description: Options to apply when fetching each page (same as POST /v1/fetch body).
+                  properties:
+                    format:
+                      type: string
+                      enum: [markdown, text, html]
+                      default: markdown
+                    budget:
+                      type: integer
+                      description: Smart token budget per page.
+                      example: 4000
+                    maxTokens:
+                      type: integer
+                      description: Hard token limit per page.
+                webhook:
+                  type: string
+                  format: uri
+                  description: Webhook URL to notify when the crawl completes.
+                  example: https://your-server.com/webhook
+            examples:
+              basic_crawl:
+                summary: Crawl a documentation site
+                value:
+                  url: https://docs.example.com
+                  limit: 50
+                  maxDepth: 3
+                  includePaths: ["/docs/"]
+              with_webhook:
+                summary: Crawl with webhook notification
+                value:
+                  url: https://docs.example.com
+                  limit: 100
+                  maxDepth: 2
+                  webhook: https://your-server.com/webhook/crawl-done
+      responses:
+        "200":
+          description: Crawl job started.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, id]
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  id:
+                    type: string
+                    description: Job ID. Use with `GET /v1/crawl/{id}` to check status.
+                    example: "job_a1b2c3d4"
+              example:
+                success: true
+                id: "job_a1b2c3d4"
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: invalid_request
+                  message: 'Missing or invalid "url" parameter'
+                metadata:
+                  requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/crawl/{id}:
+    get:
+      operationId: getCrawlStatus
+      summary: Get crawl job status
+      description: |
+        Poll the status and results of a crawl job started with `POST /v1/crawl`.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/crawl/job_a1b2c3d4" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+
+        Poll until `status === "completed"` or `status === "failed"`.
+      tags: [Crawl]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Crawl job ID returned by `POST /v1/crawl`.
+          schema:
+            type: string
+          example: "job_a1b2c3d4"
+      responses:
+        "200":
+          description: Crawl job status and (when complete) results.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, status, completed, total]
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  status:
+                    type: string
+                    enum: [queued, scraping, completed, failed, cancelled]
+                    description: "`scraping` is the in-progress state (matches Firecrawl format)."
+                    example: completed
+                  completed:
+                    type: integer
+                    description: Number of pages scraped so far.
+                    example: 47
+                  total:
+                    type: integer
+                    description: Total pages discovered.
+                    example: 50
+                  creditsUsed:
+                    type: integer
+                    description: Credits consumed so far.
+                    example: 47
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: When job data expires.
+                  data:
+                    type: array
+                    description: Scraped page results. Present when `status === "completed"`.
+                    items:
+                      type: object
+                      properties:
+                        url:
+                          type: string
+                          format: uri
+                        markdown:
+                          type: string
+                        metadata:
+                          type: object
+                          properties:
+                            title:
+                              type: string
+                            description:
+                              type: string
+                            sourceURL:
+                              type: string
+                              format: uri
+                        links:
+                          type: array
+                          items:
+                            type: string
+                            format: uri
+              example:
+                success: true
+                status: completed
+                completed: 47
+                total: 50
+                creditsUsed: 47
+                expiresAt: "2025-02-26T08:00:00.000Z"
+                data:
+                  - url: https://docs.example.com/getting-started
+                    markdown: "# Getting Started\n\nWelcome to the docs..."
+                    metadata:
+                      title: "Getting Started"
+                      sourceURL: https://docs.example.com/getting-started
+                    links: ["https://docs.example.com/installation"]
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Job not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Map
+  # ===========================================================================
+
+  /v1/map:
+    post:
+      operationId: mapDomain
+      summary: Map all URLs on a domain
+      description: |
+        Discover all accessible URLs on a domain by parsing its sitemap and
+        following internal links. Returns a flat list of URLs.
+
+        Useful for building a URL inventory before running a batch fetch or crawl.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/map \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com"}'
+        ```
+      tags: [Map]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The domain or URL to map. Must be HTTP or HTTPS.
+                  example: https://example.com
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 5000
+                  default: 5000
+                  description: Maximum number of URLs to return.
+                  example: 1000
+                search:
+                  type: string
+                  description: Optional keyword to filter results — only URLs containing this string are returned.
+                  example: "/blog/"
+            examples:
+              basic_map:
+                summary: Map all URLs on a domain
+                value:
+                  url: https://example.com
+                  limit: 500
+              filtered_map:
+                summary: Map only blog URLs
+                value:
+                  url: https://example.com
+                  search: "/blog/"
+      responses:
+        "200":
+          description: List of URLs discovered on the domain.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, links]
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  links:
+                    type: array
+                    items:
+                      type: string
+                      format: uri
+                    description: Discovered URLs, deduplicated and normalised.
+              example:
+                success: true
+                links:
+                  - https://example.com/
+                  - https://example.com/about
+                  - https://example.com/blog
+                  - https://example.com/blog/post-1
+                  - https://example.com/pricing
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Extract
+  # ===========================================================================
+
+  /v1/extract:
+    post:
+      operationId: extractStructuredData
+      summary: Extract structured data from a URL
+      description: |
+        Fetch a URL and extract structured data using an LLM (BYOK) guided by a
+        JSON Schema and/or a natural language prompt.
+
+        This is a Firecrawl-compatible endpoint for structured data extraction.
+        You must supply your own LLM API key.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/extract \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "url": "https://shop.example.com/product/123",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "price": {"type": "number"},
+                "inStock": {"type": "boolean"}
+              }
+            },
+            "llmApiKey": "sk-..."
+          }'
+        ```
+      tags: [Extract]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to fetch and extract from. Must be HTTP or HTTPS. Max 2048 characters.
+                  example: https://shop.example.com/product/123
+                schema:
+                  type: object
+                  additionalProperties: true
+                  description: |
+                    JSON Schema defining the desired output structure.
+                    At least one of `schema` or `prompt` is required.
+                  example:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      price:
+                        type: number
+                      inStock:
+                        type: boolean
+                prompt:
+                  type: string
+                  description: |
+                    Natural language extraction instruction.
+                    At least one of `schema` or `prompt` is required.
+                  example: "Extract the product name, price in USD, and whether it is in stock."
+                llmApiKey:
+                  type: string
+                  description: |
+                    Your LLM API key (BYOK). If not provided, uses the server's `OPENAI_API_KEY`
+                    environment variable (if configured).
+                  example: "sk-..."
+                model:
+                  type: string
+                  description: LLM model to use. Defaults to `gpt-4o-mini`.
+                  example: "gpt-4o-mini"
+                baseUrl:
+                  type: string
+                  format: uri
+                  description: |
+                    Custom LLM base URL (for OpenAI-compatible endpoints).
+                    Defaults to `https://api.openai.com/v1`.
+                  example: "https://api.openai.com/v1"
+            examples:
+              product_extraction:
+                summary: Extract product details
+                value:
+                  url: https://shop.example.com/product/123
+                  schema:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      price:
+                        type: number
+                      inStock:
+                        type: boolean
+                      images:
+                        type: array
+                        items:
+                          type: string
+                  llmApiKey: "sk-..."
+              prompt_only:
+                summary: Prompt-guided extraction
+                value:
+                  url: https://example.com/contact
+                  prompt: "Extract all email addresses, phone numbers, and physical addresses."
+                  llmApiKey: "sk-..."
+      responses:
+        "200":
+          description: Structured data extracted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data, metadata]
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    description: Extracted data conforming to the provided schema. May be an object or array.
+                    oneOf:
+                      - type: object
+                        additionalProperties: true
+                      - type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+                  metadata:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                      title:
+                        type: string
+                      tokensUsed:
+                        type: integer
+                        description: Total LLM tokens consumed.
+                      model:
+                        type: string
+                        description: LLM model used.
+                      cost:
+                        type: number
+                        description: Approximate LLM cost in USD.
+                      elapsed:
+                        type: integer
+                        description: Total processing time in milliseconds.
+              example:
+                success: true
+                data:
+                  name: "Acme Widget Pro"
+                  price: 49.99
+                  inStock: true
+                metadata:
+                  url: https://shop.example.com/product/123
+                  title: "Acme Widget Pro – Shop"
+                  tokensUsed: 620
+                  model: "gpt-4o-mini"
+                  cost: 0.0003
+                  elapsed: 1250
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missing_url:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Missing or invalid "url" field in request body.'
+                    metadata:
+                      requestId: "req_abc123"
+                missing_schema_and_prompt:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Either "schema" or "prompt" is required for structured extraction.'
+                    metadata:
+                      requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/extract/auto:
+    get:
+      operationId: autoExtract
+      summary: Auto-detect and extract structured data
+      description: |
+        Fetch a URL and automatically detect the page type (article, product, recipe,
+        job listing, event, profile, etc.) then extract structured data without
+        requiring an LLM API key.
+
+        Uses heuristic extraction — no LLM required, always free to use.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/extract/auto?url=https://shop.example.com/product/123" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+      tags: [Extract]
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: The URL to fetch and auto-extract from.
+          schema:
+            type: string
+            format: uri
+          example: https://shop.example.com/product/123
+      responses:
+        "200":
+          description: Auto-extracted structured data.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, pageType, structured]
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: The URL that was fetched.
+                  pageType:
+                    type: string
+                    description: Detected page type.
+                    enum: [article, product, recipe, job, event, profile, generic]
+                    example: product
+                  structured:
+                    type: object
+                    additionalProperties: true
+                    description: Extracted structured data specific to the detected page type.
+              examples:
+                product_page:
+                  summary: Product page extraction
+                  value:
+                    url: https://shop.example.com/product/123
+                    pageType: product
+                    structured:
+                      type: product
+                      title: "Acme Widget Pro"
+                      price: "$49.99"
+                      description: "The best widget for all your needs."
+                      images: ["https://shop.example.com/img/widget.jpg"]
+                article_page:
+                  summary: Article page extraction
+                  value:
+                    url: https://blog.example.com/post/ai-news
+                    pageType: article
+                    structured:
+                      type: article
+                      title: "AI News Roundup"
+                      author: "Jane Doe"
+                      publishedAt: "2025-02-25T08:00:00.000Z"
+                      wordCount: 1200
+        "400":
+          description: Missing or invalid URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Answer
+  # ===========================================================================
+
+  /v1/answer/quick:
+    get:
+      operationId: quickAnswer
+      summary: Quick Q&A on a URL (LLM-free)
+      description: |
+        Fetch a URL and answer a question about its content using BM25 relevance scoring.
+        No LLM API key required — purely heuristic, always fast.
+
+        Ideal for extracting specific facts from pages (pricing, contact info, specs, etc.)
+        without incurring LLM costs.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/answer/quick?url=https://example.com/pricing&question=What+is+the+pro+plan+price%3F" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+      tags: [Answer]
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: The URL to fetch and query. Must be HTTP or HTTPS. Max 2048 characters.
+          schema:
+            type: string
+            format: uri
+          example: https://example.com/pricing
+        - name: question
+          in: query
+          required: true
+          description: The question to answer. Max 1000 characters.
+          schema:
+            type: string
+          example: "What is the price of the pro plan?"
+        - name: render
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Use browser rendering for JavaScript-heavy pages.
+        - name: maxPassages
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 3
+          description: Maximum number of relevant passages to return (1–10).
+          example: 3
+      responses:
+        "200":
+          description: Question answered successfully.
+          headers:
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickAnswerResult"
+              example:
+                url: https://example.com/pricing
+                title: "Pricing – Example"
+                question: "What is the price of the pro plan?"
+                answer: "The Pro plan costs $49 per month."
+                confidence: 0.83
+                passages:
+                  - "Pro plan: $49/month — includes unlimited projects and priority support."
+                  - "All plans include a 14-day free trial. No credit card required."
+                source: https://example.com/pricing
+                method: bm25
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missing_url:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Missing or invalid "url" parameter'
+                    metadata:
+                      requestId: "req_abc123"
+                missing_question:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Missing or invalid "question" parameter'
+                    metadata:
+                      requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # YouTube
+  # ===========================================================================
+
+  /v1/youtube:
+    get:
+      operationId: getYouTubeTranscript
+      summary: Extract YouTube transcript
+      description: |
+        Extract the full transcript and metadata from any YouTube video.
+
+        Returns the complete text transcript, timed segments, and video metadata
+        (title, channel, duration, available languages).
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/youtube?url=https://youtu.be/dQw4w9WgXcQ" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+
+        **Supported URL formats:**
+        - `https://www.youtube.com/watch?v=VIDEO_ID`
+        - `https://youtu.be/VIDEO_ID`
+        - `https://www.youtube.com/embed/VIDEO_ID`
+        - `https://m.youtube.com/watch?v=VIDEO_ID`
+      tags: [YouTube]
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: YouTube video URL. Any standard YouTube URL format is accepted.
+          schema:
+            type: string
+            format: uri
+          example: "https://youtu.be/dQw4w9WgXcQ"
+        - name: language
+          in: query
+          schema:
+            type: string
+            default: en
+          description: |
+            Preferred transcript language (BCP 47 language code, e.g., `en`, `fr`, `de`).
+            Falls back to any available language if the preferred one is unavailable.
+          example: en
+      responses:
+        "200":
+          description: Transcript extracted successfully.
+          headers:
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, videoId, fullText, segments]
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  videoId:
+                    type: string
+                    description: YouTube video ID.
+                    example: dQw4w9WgXcQ
+                  title:
+                    type: string
+                    description: Video title.
+                    example: "Rick Astley - Never Gonna Give You Up (Official Music Video)"
+                  channel:
+                    type: string
+                    description: Channel name.
+                    example: "Rick Astley"
+                  duration:
+                    type: number
+                    description: Video duration in seconds.
+                    example: 213
+                  language:
+                    type: string
+                    description: Language of the returned transcript.
+                    example: en
+                  availableLanguages:
+                    type: array
+                    items:
+                      type: string
+                    description: All language codes for which transcripts are available.
+                    example: ["en", "de", "fr", "es"]
+                  fullText:
+                    type: string
+                    description: Complete transcript as a single string.
+                    example: "We're no strangers to love You know the rules and so do I..."
+                  segments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/YouTubeSegment"
+                    description: Timed transcript segments.
+                  url:
+                    type: string
+                    format: uri
+                    description: Canonical YouTube URL.
+                    example: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+              example:
+                success: true
+                videoId: dQw4w9WgXcQ
+                title: "Rick Astley - Never Gonna Give You Up (Official Music Video)"
+                channel: "Rick Astley"
+                duration: 213
+                language: en
+                availableLanguages: ["en", "de", "fr"]
+                fullText: "We're no strangers to love You know the rules and so do I..."
+                segments:
+                  - start: 0
+                    end: 3.5
+                    text: "We're no strangers to love"
+                  - start: 3.5
+                    end: 7.2
+                    text: "You know the rules and so do I"
+                url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        "400":
+          description: Invalid or unsupported YouTube URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missing_url:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Missing or invalid "url" parameter. Pass a YouTube URL: GET /v1/youtube?url=https://youtu.be/VIDEO_ID'
+                    metadata:
+                      requestId: "req_abc123"
+                invalid_youtube_url:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: "The provided URL is not a valid YouTube video URL."
+                    metadata:
+                      requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Video has no captions/subtitles available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: invalid_request
+                  message: "No captions are available for this video. The video may not have subtitles."
+                metadata:
+                  requestId: "req_abc123"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Batch
+  # ===========================================================================
+
+  /v1/batch/scrape:
+    post:
+      operationId: batchScrape
+      summary: Batch scrape URLs
+      description: |
+        Submit a batch of up to 100 URLs for concurrent scraping. The job is
+        queued immediately and processed asynchronously.
+
+        **Workflow:**
+        1. `POST /v1/batch/scrape` → returns `{ success: true, id: "job_..." }`
+        2. Poll `GET /v1/batch/scrape/{id}` to check progress
+        3. When `status === "completed"`, results are in the `data` field
+
+        **Alternatively**, pass a `webhook` URL to receive results automatically
+        when the job completes.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/batch/scrape \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "urls": ["https://example.com", "https://another.com"],
+            "formats": ["markdown"]
+          }'
+        ```
+      tags: [Batch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [urls]
+              properties:
+                urls:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                  minItems: 1
+                  maxItems: 100
+                  description: URLs to scrape (1–100).
+                  example: ["https://example.com", "https://another-example.com"]
+                formats:
+                  type: array
+                  items:
+                    type: string
+                    enum: [markdown, html, text]
+                  description: Output formats to include for each URL.
+                  example: ["markdown"]
+                extract:
+                  $ref: "#/components/schemas/InlineExtract"
+                maxTokens:
+                  type: integer
+                  description: Maximum token count per page.
+                  example: 4000
+                webhook:
+                  type: string
+                  format: uri
+                  description: Webhook URL to receive results when the job completes.
+                  example: https://your-server.com/webhook
+            examples:
+              basic_batch:
+                summary: Basic batch scrape
+                value:
+                  urls:
+                    - https://example.com
+                    - https://another-example.com
+                    - https://third-example.com
+                  formats: [markdown]
+              with_webhook:
+                summary: Batch with webhook delivery
+                value:
+                  urls:
+                    - https://example.com
+                    - https://another-example.com
+                  formats: [markdown]
+                  maxTokens: 4000
+                  webhook: https://your-server.com/webhook/results
+      responses:
+        "202":
+          description: Batch job created and queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchJobResponse"
+              example:
+                success: true
+                id: "job_a1b2c3d4"
+                url: "/v1/batch/scrape/job_a1b2c3d4"
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missing_urls:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Missing or invalid "urls" parameter (must be non-empty array)'
+                    metadata:
+                      requestId: "req_abc123"
+                too_many_urls:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: "Batch size too large (max 100 URLs)"
+                    metadata:
+                      requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/batch/scrape/{id}:
+    get:
+      operationId: getBatchStatus
+      summary: Get batch job status
+      description: |
+        Poll the status and results of a batch scrape job.
+
+        Poll until `status === "completed"` or `status === "failed"`.
+      tags: [Batch]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Batch job ID returned by `POST /v1/batch/scrape`.
+          schema:
+            type: string
+          example: "job_a1b2c3d4"
+      responses:
+        "200":
+          description: Batch job status and (when complete) results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchJobStatus"
+              example:
+                success: true
+                status: completed
+                total: 3
+                completed: 3
+                creditsUsed: 3
+                data:
+                  - url: https://example.com
+                    title: "Example Domain"
+                    content: "# Example Domain\n\n..."
+                    elapsed: 187
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Job not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: cancelBatchJob
+      summary: Cancel batch job
+      description: Cancel a queued or in-progress batch scrape job.
+      tags: [Batch]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Batch job ID to cancel.
+          schema:
+            type: string
+          example: "job_a1b2c3d4"
+      responses:
+        "200":
+          description: Job cancelled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  message:
+                    type: string
+              example:
+                success: true
+                message: "Job cancelled"
+        "400":
+          description: Job cannot be cancelled (already completed or failed).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Job not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Deep Fetch (Research)
+  # ===========================================================================
+
+  /v1/deep-fetch:
+    post:
+      operationId: deepFetch
+      summary: Multi-source deep research
+      description: |
+        Search the web, fetch the top results, and synthesise everything into a
+        merged or structured report — all in a single API call.
+
+        No LLM API key required. Uses BM25 heuristics and text merging.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/deep-fetch \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"query": "What are the best practices for React performance?"}'
+        ```
+      tags: [Research]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  description: The research query or question.
+                  example: "What are the best practices for React performance optimization?"
+                count:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 5
+                  description: Number of search results to fetch and synthesise.
+                  example: 5
+                format:
+                  type: string
+                  enum: [merged, structured, comparison]
+                  default: merged
+                  description: |
+                    Output format:
+                    - `merged` — combined content from all sources
+                    - `structured` — structured JSON output per source
+                    - `comparison` — side-by-side comparison of sources
+                maxChars:
+                  type: integer
+                  default: 32000
+                  description: Maximum characters in the synthesised output.
+                  example: 16000
+            examples:
+              basic_research:
+                summary: Basic research query
+                value:
+                  query: "What are the best practices for React performance optimization?"
+                  count: 5
+                  format: merged
+              structured_research:
+                summary: Structured output
+                value:
+                  query: "Compare PostgreSQL vs MySQL for high-traffic applications"
+                  count: 7
+                  format: structured
+                  maxChars: 20000
+      responses:
+        "200":
+          description: Research results synthesised successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Research result shape varies by `format` parameter.
+                properties:
+                  query:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        url:
+                          type: string
+                          format: uri
+                        title:
+                          type: string
+                        content:
+                          type: string
+                  merged:
+                    type: string
+                    description: Merged content from all sources (when format=merged).
+                  structured:
+                    type: array
+                    description: Per-source structured output (when format=structured).
+                    items:
+                      type: object
+                      additionalProperties: true
+                  elapsed:
+                    type: integer
+                    description: Total processing time in milliseconds.
+              example:
+                query: "What are the best practices for React performance optimization?"
+                sources:
+                  - url: https://react.dev/learn/render-and-commit
+                    title: "Render and Commit – React"
+                    content: "React renders your components in three steps..."
+                  - url: https://web.dev/react-performance
+                    title: "Optimizing React Performance – web.dev"
+                    content: "To optimize React performance, start with..."
+                merged: "## React Performance Best Practices\n\nReact renders your components in three steps..."
+                elapsed: 3200
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: invalid_request
+                  message: "Missing required field: query"
+                metadata:
+                  requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Screenshot
+  # ===========================================================================
+
+  /v1/screenshot:
+    post:
+      operationId: takeScreenshot
+      summary: Take a screenshot
+      description: |
+        Capture a screenshot of any URL. Returns a base64-encoded data URL image.
+
+        Supports full-page capture, custom viewport sizing, JPEG quality control,
+        page actions (e.g., click a button before screenshotting), and stealth mode.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/screenshot \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com", "fullPage": true}'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to screenshot. Must be HTTP or HTTPS. Max 2048 characters.
+                  example: https://example.com
+                fullPage:
+                  type: boolean
+                  default: false
+                  description: Capture the full scrollable page (default is viewport only).
+                width:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 1280
+                  description: Viewport width in pixels.
+                height:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 720
+                  description: Viewport height in pixels.
+                format:
+                  type: string
+                  enum: [png, jpeg, jpg]
+                  default: png
+                  description: Image format.
+                quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: JPEG quality (1–100). Ignored for PNG.
+                  example: 85
+                waitFor:
+                  type: integer
+                  minimum: 0
+                  maximum: 60000
+                  description: Milliseconds to wait after page load before capturing.
+                  example: 1000
+                timeout:
+                  type: integer
+                  description: Request timeout in milliseconds. Default is 30000.
+                  example: 30000
+                stealth:
+                  type: boolean
+                  default: false
+                  description: Use stealth mode to bypass bot detection.
+                actions:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/PageAction"
+                  description: Browser actions to perform before taking the screenshot.
+                headers:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Custom HTTP headers to send with the request.
+                  example:
+                    Accept-Language: "en-US"
+                cookies:
+                  type: array
+                  items:
+                    type: string
+                  description: Cookies to set (key=value format).
+                  example: ["session_id=abc123", "pref=dark"]
+            examples:
+              viewport:
+                summary: Viewport screenshot
+                value:
+                  url: https://example.com
+                  width: 1440
+                  height: 900
+                  format: png
+              full_page:
+                summary: Full-page JPEG
+                value:
+                  url: https://example.com
+                  fullPage: true
+                  format: jpeg
+                  quality: 85
+              with_actions:
+                summary: Screenshot after clicking a button
+                value:
+                  url: https://example.com/dashboard
+                  actions:
+                    - type: click
+                      selector: "#expand-all"
+                    - type: wait
+                      ms: 1000
+                  fullPage: true
+      responses:
+        "200":
+          description: Screenshot captured successfully.
+          headers:
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+            X-Request-Id:
+              $ref: "#/components/headers/X-Request-Id"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreenshotResult"
+              example:
+                success: true
+                data:
+                  url: https://example.com
+                  screenshot: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+                  metadata:
+                    sourceURL: https://example.com
+                    format: png
+                    width: 1280
+                    height: 720
+                    fullPage: false
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missing_url:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Missing or invalid "url" parameter'
+                    metadata:
+                      requestId: "req_abc123"
+                invalid_dimensions:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: "Invalid width: must be between 100 and 5000"
+                    metadata:
+                      requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Watch
+  # ===========================================================================
+
+  /v1/watch:
+    post:
+      operationId: createWatch
+      summary: Create a URL watcher
+      description: |
+        Monitor a URL for content changes. The watcher checks the URL at the configured
+        interval and notifies a webhook URL when changes are detected.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/watch \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "url": "https://example.com/pricing",
+            "webhookUrl": "https://your-server.com/webhook",
+            "checkIntervalMinutes": 60
+          }'
+        ```
+      tags: [Watch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to monitor. Must be HTTP or HTTPS. Max 2048 characters.
+                  example: https://example.com/pricing
+                webhookUrl:
+                  type: string
+                  format: uri
+                  description: Webhook URL to notify when changes are detected.
+                  example: https://your-server.com/webhook/price-change
+                checkIntervalMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 44640
+                  default: 60
+                  description: How often to check for changes, in minutes (1–44640, i.e., up to 31 days).
+                  example: 60
+                selector:
+                  type: string
+                  description: CSS selector to limit change detection to a specific part of the page.
+                  example: ".price"
+            examples:
+              basic_watch:
+                summary: Watch a pricing page
+                value:
+                  url: https://example.com/pricing
+                  webhookUrl: https://your-server.com/webhook
+                  checkIntervalMinutes: 60
+              selector_watch:
+                summary: Watch only a specific element
+                value:
+                  url: https://example.com/product/123
+                  webhookUrl: https://your-server.com/webhook/price
+                  selector: ".product-price"
+                  checkIntervalMinutes: 30
+      responses:
+        "201":
+          description: Watcher created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, watch]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  watch:
+                    $ref: "#/components/schemas/WatchEntry"
+              example:
+                ok: true
+                watch:
+                  id: "watch_a1b2c3d4"
+                  accountId: "550e8400-e29b-41d4-a716-446655440000"
+                  url: https://example.com/pricing
+                  webhookUrl: https://your-server.com/webhook
+                  checkIntervalMinutes: 60
+                  status: active
+                  createdAt: "2025-02-25T08:00:00.000Z"
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missing_url:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: 'Missing or invalid "url" parameter.'
+                    metadata:
+                      requestId: "req_abc123"
+                invalid_interval:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: '"checkIntervalMinutes" must be between 1 and 44640 (31 days).'
+                    metadata:
+                      requestId: "req_abc123"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    get:
+      operationId: listWatches
+      summary: List URL watchers
+      description: |
+        Return all URL watchers for the authenticated account.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/watch" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+      tags: [Watch]
+      responses:
+        "200":
+          description: List of watchers.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, watches]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  watches:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WatchEntry"
+              example:
+                ok: true
+                watches:
+                  - id: "watch_a1b2c3d4"
+                    accountId: "550e8400-e29b-41d4-a716-446655440000"
+                    url: https://example.com/pricing
+                    webhookUrl: https://your-server.com/webhook
+                    checkIntervalMinutes: 60
+                    status: active
+                    createdAt: "2025-02-25T08:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/watch/{id}:
+    get:
+      operationId: getWatch
+      summary: Get a URL watcher
+      description: Retrieve a specific URL watcher by ID.
+      tags: [Watch]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Watcher ID.
+          schema:
+            type: string
+          example: "watch_a1b2c3d4"
+      responses:
+        "200":
+          description: Watcher details.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, watch]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  watch:
+                    $ref: "#/components/schemas/WatchEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Access denied — watcher belongs to another account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Watcher not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteWatch
+      summary: Delete a URL watcher
+      description: |
+        Delete a URL watcher. The watcher will stop checking the URL immediately.
+
+        **Quick start:**
+        ```bash
+        curl -X DELETE "https://api.webpeel.dev/v1/watch/watch_a1b2c3d4" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+      tags: [Watch]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Watcher ID to delete.
+          schema:
+            type: string
+          example: "watch_a1b2c3d4"
+      responses:
+        "200":
+          description: Watcher deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, deleted]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  deleted:
+                    type: string
+                    description: ID of the deleted watcher.
+                    example: "watch_a1b2c3d4"
+              example:
+                ok: true
+                deleted: "watch_a1b2c3d4"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Access denied — watcher belongs to another account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Watcher not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    patch:
+      operationId: updateWatch
+      summary: Update a URL watcher
+      description: Update the configuration of an existing watcher (pause, resume, change interval, etc.).
+      tags: [Watch]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Watcher ID to update.
+          schema:
+            type: string
+          example: "watch_a1b2c3d4"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, paused]
+                  description: Set to `paused` to pause checking, `active` to resume.
+                webhookUrl:
+                  type: string
+                  format: uri
+                  description: New webhook URL.
+                checkIntervalMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 44640
+                  description: New check interval in minutes.
+                selector:
+                  type: string
+                  description: New CSS selector for change detection scope.
+            examples:
+              pause:
+                summary: Pause a watcher
+                value:
+                  status: paused
+              change_interval:
+                summary: Change check interval
+                value:
+                  checkIntervalMinutes: 30
+      responses:
+        "200":
+          description: Watcher updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, watch]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  watch:
+                    $ref: "#/components/schemas/WatchEntry"
+        "400":
+          description: Invalid update parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Access denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Watcher not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/watch/{id}/check:
+    post:
+      operationId: triggerWatchCheck
+      summary: Manually trigger a content check
+      description: Trigger an immediate content check for a watcher, outside its normal schedule.
+      tags: [Watch]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Watcher ID.
+          schema:
+            type: string
+          example: "watch_a1b2c3d4"
+      responses:
+        "200":
+          description: Check completed. Returns the diff (if any change was detected).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  diff:
+                    type: object
+                    description: Change diff if content changed since last check. Null if no change.
+                    nullable: true
+                    properties:
+                      changed:
+                        type: boolean
+                      previous:
+                        type: string
+                      current:
+                        type: string
+                      diffText:
+                        type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Access denied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Watcher not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Auth
+  # ===========================================================================
+
+  /v1/auth/register:
+    post:
+      operationId: registerUser
+      summary: Register a new account
+      description: |
+        Create a new WebPeel account. Returns the user profile and an API key.
+
+        > **Important:** The API key is returned **only once** in this response.
+        > Store it securely — it cannot be retrieved again. If lost, create a new one
+        > via the dashboard at [app.webpeel.dev](https://app.webpeel.dev).
+
+        **Password requirements:** 8–128 characters.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/auth/register \
+          -H "Content-Type: application/json" \
+          -d '{"email": "user@example.com", "password": "MySecureP@ssw0rd"}'
+        ```
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Account email address.
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+                  description: Password (8–128 characters).
+                  example: "MySecureP@ssw0rd"
+            example:
+              email: user@example.com
+              password: "MySecureP@ssw0rd"
+      responses:
+        "201":
+          description: Account created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user, apiKey]
+                properties:
+                  user:
+                    $ref: "#/components/schemas/UserObject"
+                  apiKey:
+                    type: string
+                    description: |
+                      Your WebPeel API key. **Shown only once — store it securely.**
+                    example: "wp_abc123def456..."
+              example:
+                user:
+                  id: "550e8400-e29b-41d4-a716-446655440000"
+                  email: user@example.com
+                  tier: free
+                  weeklyLimit: 500
+                  burstLimit: 50
+                  rateLimit: 10
+                  createdAt: "2025-02-25T08:00:00.000Z"
+                apiKey: "wp_abc123def456ghi789..."
+        "400":
+          description: Invalid input (email format, weak password).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missing_fields:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: "Email and password are required"
+                    metadata:
+                      requestId: "req_abc123"
+                invalid_email:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: "Invalid email format"
+                    metadata:
+                      requestId: "req_abc123"
+                weak_password:
+                  value:
+                    success: false
+                    error:
+                      type: invalid_request
+                      message: "Password must be at least 8 characters"
+                    metadata:
+                      requestId: "req_abc123"
+        "409":
+          description: Email already registered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: invalid_request
+                  message: "Email already registered"
+                metadata:
+                  requestId: "req_abc123"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/auth/login:
+    post:
+      operationId: loginUser
+      summary: Log in with email and password
+      description: |
+        Authenticate with email and password. Returns a short-lived JWT access token
+        (1 hour) and a long-lived refresh token (30 days).
+
+        Use the JWT token to authenticate requests to user management endpoints.
+        Use your API key (returned at registration) to authenticate API requests.
+
+        **Rate limiting:** Limited to 5 attempts per email per 15 minutes.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/auth/login \
+          -H "Content-Type: application/json" \
+          -d '{"email": "user@example.com", "password": "MySecureP@ssw0rd"}'
+        ```
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  example: "MySecureP@ssw0rd"
+            example:
+              email: user@example.com
+              password: "MySecureP@ssw0rd"
+      responses:
+        "200":
+          description: Login successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, refreshToken, expiresIn, user]
+                properties:
+                  token:
+                    type: string
+                    description: JWT access token (valid for 1 hour).
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refreshToken:
+                    type: string
+                    description: Refresh token (valid for 30 days).
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  expiresIn:
+                    type: integer
+                    description: Access token lifetime in seconds.
+                    example: 3600
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        format: email
+                      tier:
+                        type: string
+                        enum: [free, starter, pro, enterprise]
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                expiresIn: 3600
+                user:
+                  id: "550e8400-e29b-41d4-a716-446655440000"
+                  email: user@example.com
+                  tier: free
+        "400":
+          description: Missing fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: invalid_request
+                  message: "Email and password are required"
+                metadata:
+                  requestId: "req_abc123"
+        "401":
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: unauthorized
+                  message: "Invalid email or password"
+                metadata:
+                  requestId: "req_abc123"
+        "429":
+          description: Too many login attempts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: rate_limited
+                  message: "Too many login attempts. Please try again in 15 minutes."
+                  hint: "Wait 15 minutes before retrying."
+                metadata:
+                  requestId: "req_abc123"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/auth/refresh:
+    post:
+      operationId: refreshToken
+      summary: Refresh access token
+      description: |
+        Exchange a valid refresh token for a new access token and refresh token.
+        The old refresh token is immediately invalidated (rotation).
+
+        **Rate limiting:** Limited to 10 attempts per IP per 15 minutes.
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  description: The refresh token received from login.
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            example:
+              refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: New access token issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, refreshToken, expiresIn]
+                properties:
+                  token:
+                    type: string
+                    description: New JWT access token (valid for 1 hour).
+                  refreshToken:
+                    type: string
+                    description: New refresh token (valid for 30 days). Old token is invalidated.
+                  expiresIn:
+                    type: integer
+                    example: 3600
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                expiresIn: 3600
+        "400":
+          description: Missing refresh token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Invalid or expired refresh token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many refresh attempts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # MCP
+  # ===========================================================================
+
+  /mcp:
+    post:
+      operationId: mcpPost
+      summary: MCP endpoint (Streamable HTTP)
+      description: |
+        Model Context Protocol (MCP) endpoint using [Streamable HTTP transport](https://modelcontextprotocol.io/).
+        Accepts JSON-RPC 2.0 messages and returns MCP-formatted responses.
+
+        Connect your AI assistant:
+        ```json
+        { "url": "https://api.webpeel.dev/mcp" }
+        ```
+
+        **Available MCP tools:**
+        - `webpeel_fetch` — Fetch any URL
+        - `webpeel_search` — Web search
+        - `webpeel_crawl` — Crawl a website
+        - `webpeel_map` — Discover all URLs on a domain
+        - `webpeel_extract` — LLM-powered structured extraction (BYOK)
+        - `webpeel_auto_extract` — Heuristic auto-extraction (no LLM)
+        - `webpeel_batch` — Fetch multiple URLs concurrently
+        - `webpeel_screenshot` — Take a screenshot
+        - `webpeel_youtube` — Extract YouTube transcripts
+        - `webpeel_quick_answer` — BM25 Q&A (no LLM)
+        - `webpeel_deep_fetch` — Multi-source research
+        - `webpeel_watch` — Monitor URLs for changes
+      tags: [MCP]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: MCP JSON-RPC 2.0 request.
+              required: [jsonrpc, method]
+              properties:
+                jsonrpc:
+                  type: string
+                  const: "2.0"
+                method:
+                  type: string
+                  description: JSON-RPC method name.
+                  example: tools/call
+                params:
+                  type: object
+                  description: Method parameters.
+                id:
+                  oneOf:
+                    - type: string
+                    - type: integer
+                    - type: "null"
+            examples:
+              list_tools:
+                summary: List available tools
+                value:
+                  jsonrpc: "2.0"
+                  method: tools/list
+                  id: 1
+              call_fetch:
+                summary: Fetch a URL via MCP
+                value:
+                  jsonrpc: "2.0"
+                  method: tools/call
+                  params:
+                    name: webpeel_fetch
+                    arguments:
+                      url: https://example.com
+                      format: markdown
+                      budget: 4000
+                  id: 2
+      responses:
+        "200":
+          description: MCP JSON-RPC response.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: MCP JSON-RPC 2.0 response.
+                required: [jsonrpc, id]
+                properties:
+                  jsonrpc:
+                    type: string
+                    const: "2.0"
+                  result:
+                    type: object
+                    description: Result on success.
+                  error:
+                    type: object
+                    description: Error on failure.
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                  id:
+                    oneOf:
+                      - type: string
+                      - type: integer
+                      - type: "null"
+              example:
+                jsonrpc: "2.0"
+                result:
+                  content:
+                    - type: text
+                      text: '{"url":"https://example.com","title":"Example Domain","content":"# Example Domain\n\n..."}'
+                id: 2
+        "401":
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                jsonrpc: "2.0"
+                error:
+                  code: -32001
+                  message: "Authentication required. Pass API key via Authorization: Bearer <key> header."
+                id: null
+        "405":
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                type: object
+
+    get:
+      operationId: mcpGetNotAllowed
+      summary: MCP endpoint (GET — not allowed)
+      description: Returns 405. Use POST to send MCP JSON-RPC messages.
+      tags: [MCP]
+      responses:
+        "405":
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v2/mcp:
+    post:
+      operationId: mcpPostV2
+      summary: MCP endpoint v2 (canonical)
+      description: |
+        Canonical v2 MCP endpoint. Identical behaviour to `POST /mcp`.
+
+        Connect your AI assistant:
+        ```json
+        { "url": "https://api.webpeel.dev/v2/mcp" }
+        ```
+
+        See `POST /mcp` for full documentation and available tools.
+      tags: [MCP]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: MCP JSON-RPC 2.0 request.
+              required: [jsonrpc, method]
+              properties:
+                jsonrpc:
+                  type: string
+                  const: "2.0"
+                method:
+                  type: string
+                params:
+                  type: object
+                id:
+                  oneOf:
+                    - type: string
+                    - type: integer
+                    - type: "null"
+      responses:
+        "200":
+          description: MCP JSON-RPC response.
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+        "405":
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                type: object
+
+    get:
+      operationId: mcpGetV2NotAllowed
+      summary: MCP v2 endpoint (GET — not allowed)
+      description: Returns 405. Use POST to send MCP JSON-RPC messages.
+      tags: [MCP]
+      responses:
+        "405":
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                type: object

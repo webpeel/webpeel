@@ -14,6 +14,7 @@
 import { Router, Request, Response } from 'express';
 import { IncomingMessage, ServerResponse } from 'node:http';
 import type { AuthStore } from '../auth-store.js';
+import '../types.js'; // Augments Express.Request with requestId
 import type { Pool } from 'pg';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -1174,11 +1175,16 @@ export function createMcpRouter(_authStore?: AuthStore, pool?: Pool | null): Rou
   // SECURITY: /:apiKey/v2/mcp — BLOCKED. API keys in URLs are insecure because
   // they get recorded in server logs, browser history, and proxy access logs.
   // All methods return 400 with instructions to use the Authorization header.
-  const mcpInsecureAuthHandler = (_req: Request, res: Response): void => {
+  const mcpInsecureAuthHandler = (req: Request, res: Response): void => {
     res.status(400).json({
-      error: 'insecure_auth',
-      message: 'API keys in URLs are insecure. Use the Authorization header instead: Authorization: Bearer wp_your_key',
-      docs: 'https://webpeel.dev/docs/api-reference#authentication',
+      success: false,
+      error: {
+        type: 'insecure_auth',
+        message: 'API keys in URLs are insecure.',
+        hint: 'Use the Authorization header instead: Authorization: Bearer wp_your_key',
+        docs: 'https://webpeel.dev/docs/api-reference#authentication',
+      },
+      requestId: req.requestId,
     });
   };
 

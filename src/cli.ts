@@ -319,7 +319,7 @@ program
     // --- #5: Concise error for missing URL (no help dump) ---
     if (!url || url.trim() === '') {
       if (isJson) {
-        await writeStdout(JSON.stringify({ error: 'URL is required', code: 'URL_REQUIRED' }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: 'invalid_request', message: 'URL is required' } }) + '\n');
       } else {
         console.error('Error: URL is required');
         console.error('Usage: webpeel <url> [options]');
@@ -331,7 +331,10 @@ program
     // --- #6: Helper to output JSON errors and exit ---
     function exitWithJsonError(message: string, code: string): never {
       if (isJson) {
-        process.stdout.write(JSON.stringify({ error: message, code }) + '\n');
+        process.stdout.write(JSON.stringify({
+          success: false,
+          error: { type: code.toLowerCase(), message },
+        }) + '\n');
       } else {
         console.error(`Error: ${message}`);
       }
@@ -364,7 +367,7 @@ program
     const usageCheck = await checkUsage();
     if (!usageCheck.allowed) {
       if (isJson) {
-        await writeStdout(JSON.stringify({ error: usageCheck.message, code: 'BLOCKED' }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: 'rate_limited', message: usageCheck.message } }) + '\n');
         process.exit(1);
       }
       console.error(usageCheck.message);
@@ -448,6 +451,36 @@ program
           }
           process.exit(0);
         }
+        // --- LLM-free Quick Answer (also on cached content) ---
+        if (options.question && cachedResult.content) {
+          const { quickAnswer } = await import('./core/quick-answer.js');
+          const qa = quickAnswer({
+            question: options.question as string,
+            content: cachedResult.content,
+            url: cachedResult.url,
+          });
+          (cachedResult as any).quickAnswer = qa;
+
+          if (!isJson) {
+            const conf = (qa.confidence * 100).toFixed(0);
+            await writeStdout(`\n\x1b[36m📋 ${qa.question}\x1b[0m\n\n`);
+            if (qa.answer) {
+              await writeStdout(`\x1b[32m💡 Answer (${conf}% confidence):\x1b[0m\n${qa.answer}\n`);
+            } else {
+              await writeStdout(`\x1b[33m💡 No relevant answer found (${conf}% confidence)\x1b[0m\n`);
+            }
+            if (qa.passages && qa.passages.length > 1) {
+              await writeStdout(`\n\x1b[33m📝 Supporting evidence:\x1b[0m\n`);
+              for (const p of qa.passages.slice(1, 4)) {
+                await writeStdout(`  • [${(p.score * 100).toFixed(0)}%] ${p.text.substring(0, 200)}${p.text.length > 200 ? '...' : ''}\n`);
+              }
+            }
+            await writeStdout('\n');
+            await cleanup();
+            process.exit(0);
+          }
+        }
+
         await outputResult(cachedResult as PeelResult, options, { cached: true });
         process.exit(0);
       }
@@ -1028,7 +1061,7 @@ program
       if (isJson) {
         const errMsg = error instanceof Error ? error.message : 'Unknown error';
         const errCode = classifyErrorCode(error);
-        await writeStdout(JSON.stringify({ error: errMsg, code: errCode }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: errCode.toLowerCase(), message: errMsg } }) + '\n');
         await cleanup();
         process.exit(1);
       }
@@ -1672,7 +1705,7 @@ program
       const parsed = new URL(url);
       if (!['http:', 'https:'].includes(parsed.protocol)) {
         if (isJson) {
-          await writeStdout(JSON.stringify({ error: 'Only HTTP and HTTPS protocols are allowed', code: 'INVALID_URL' }) + '\n');
+          await writeStdout(JSON.stringify({ success: false, error: { type: 'invalid_url', message: 'Only HTTP and HTTPS protocols are allowed' } }) + '\n');
         } else {
           console.error('Error: Only HTTP and HTTPS protocols are allowed');
         }
@@ -1680,7 +1713,7 @@ program
       }
     } catch {
       if (isJson) {
-        await writeStdout(JSON.stringify({ error: `Invalid URL format: ${url}`, code: 'INVALID_URL' }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: 'invalid_url', message: `Invalid URL format: ${url}` } }) + '\n');
       } else {
         console.error(`Error: Invalid URL format: ${url}`);
       }
@@ -3001,7 +3034,7 @@ applyCmd
     } catch {
       const msg = `Could not load profile from ${profilePath}. Run "webpeel apply init" to create one.`;
       if (isJson) {
-        await writeStdout(JSON.stringify({ error: msg }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: 'fetch_failed', message: msg } }) + '\n');
       } else {
         console.error(`Error: ${msg}`);
       }
@@ -3046,7 +3079,7 @@ applyCmd
       if (spinner) spinner.fail('Application failed');
       const msg = error instanceof Error ? error.message : 'Unknown error';
       if (isJson) {
-        await writeStdout(JSON.stringify({ error: msg }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: 'fetch_failed', message: msg } }) + '\n');
       } else {
         console.error(`Error: ${msg}`);
       }
@@ -3422,7 +3455,7 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (isJson) {
-        await writeStdout(JSON.stringify({ error: msg, code: 'INVALID_DATE' }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: 'invalid_request', message: msg } }) + '\n');
       } else {
         console.error(`Error: ${msg}`);
       }
@@ -3534,7 +3567,7 @@ program
       if (searchSpinner) searchSpinner.fail('Hotel search failed');
       const msg = error instanceof Error ? error.message : 'Unknown error';
       if (isJson) {
-        await writeStdout(JSON.stringify({ error: msg, code: 'FETCH_FAILED' }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: 'fetch_failed', message: msg } }) + '\n');
       } else {
         console.error(`\nError: ${msg}`);
       }
@@ -3621,7 +3654,7 @@ program
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
       if (isJson) {
-        await writeStdout(JSON.stringify({ error: msg, code: 'RESEARCH_FAILED' }) + '\n');
+        await writeStdout(JSON.stringify({ success: false, error: { type: 'fetch_failed', message: msg } }) + '\n');
       } else {
         console.error(`\nError: ${msg}`);
       }

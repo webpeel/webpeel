@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Error Reference — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/errors">
+  <meta property="og:title" content="Error Reference — WebPeel">
+  <meta property="og:description" content="Every error the WebPeel API can return — HTTP status codes, error types, causes, and how to fix each one.">
+  <meta property="og:url" content="https://webpeel.dev/docs/errors">
+  <meta property="og:type" content="website">
+  <meta name="description" content="Every error the WebPeel API can return — HTTP status codes, error types, causes, and how to fix each one.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    /* Error Reference page extras */
+    .error-status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .status-4xx { background: #FEF3C7; color: #92400E; }
+    .status-401 { background: #FEE2E2; color: #DC2626; }
+    .status-403 { background: #FEF3C7; color: #B45309; }
+    .status-429 { background: #FDE8D8; color: #C2410C; }
+    .status-5xx { background: #F0FDF4; color: #15803D; }
+    .status-502 { background: #DBEAFE; color: #1D4ED8; }
+    .status-504 { background: #EDE9FE; color: #6D28D9; }
+
+    .error-section {
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 28px 32px; margin: 32px 0;
+      scroll-margin-top: 80px;
+    }
+    .error-section h3 {
+      margin-top: 0; margin-bottom: 8px;
+      font-size: 18px; font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+    }
+    .error-section h3 code {
+      background: none; padding: 0; font-size: inherit;
+      color: inherit; font-weight: 700;
+    }
+    .error-meta {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .error-type-pill {
+      display: inline-block; padding: 2px 10px; border-radius: 100px;
+      font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+      background: var(--surface); border: 1px solid var(--border); color: var(--text-3);
+    }
+    .retryable-yes { background: #F0FDF4; border-color: rgba(22,163,74,0.3); color: #16A34A; }
+    .retryable-no { background: #FEF2F2; border-color: rgba(220,38,38,0.2); color: #DC2626; }
+    .retryable-maybe { background: #FFFBEB; border-color: rgba(245,158,11,0.3); color: #B45309; }
+
+    .quick-ref-table { margin: 24px 0 40px; }
+    .quick-ref-table th:nth-child(1) { width: 220px; }
+    .quick-ref-table th:nth-child(2) { width: 100px; }
+    .quick-ref-table th:nth-child(3) { width: 100px; }
+
+    .http-status-heading {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--text-4);
+      margin: 48px 0 0; padding: 0;
+    }
+
+    .footer-docs {
+      border-top: 1px solid var(--border); padding: 32px 0; margin-top: 64px;
+    }
+    .footer-docs-inner {
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+    }
+    .footer-docs-left { font-size: 13px; color: var(--text-4); }
+    .footer-docs-links { display: flex; gap: 20px; }
+    .footer-docs-links a { font-size: 13px; color: var(--text-3); transition: color 0.15s; }
+    .footer-docs-links a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .error-section { padding: 20px; }
+      .footer-docs-inner { flex-direction: column; gap: 12px; text-align: center; }
+      .footer-docs-links { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#8B5CF6" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/><path d="M8 16h10" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link active">Error Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">On This Page</div>
+        <a href="#error-format" class="sidebar-link">Error Format</a>
+        <a href="#quick-reference" class="sidebar-link">Quick Reference</a>
+        <a href="#invalid-request" class="sidebar-link">400 invalid_request</a>
+        <a href="#invalid-url" class="sidebar-link">400 invalid_url</a>
+        <a href="#unauthorized" class="sidebar-link">401 unauthorized</a>
+        <a href="#invalid-token" class="sidebar-link">401 invalid_token</a>
+        <a href="#forbidden-url" class="sidebar-link">403 forbidden_url</a>
+        <a href="#blocked" class="sidebar-link">403 blocked</a>
+        <a href="#rate-limited" class="sidebar-link">429 rate_limited</a>
+        <a href="#network-error" class="sidebar-link">502 network_error</a>
+        <a href="#timeout" class="sidebar-link">504 timeout</a>
+        <a href="#internal-error" class="sidebar-link">500 internal_error</a>
+        <a href="#handling-errors" class="sidebar-link">Handling Errors</a>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Error Reference</span>
+      </div>
+
+      <h1>Error Reference</h1>
+      <p class="lead">Every error the WebPeel API can return — with HTTP status codes, causes, and step-by-step fixes.</p>
+
+      <!-- ================================================================== -->
+      <!-- ERROR FORMAT                                                        -->
+      <!-- ================================================================== -->
+
+      <h2 id="error-format">Error Format</h2>
+      <p>All errors follow a consistent JSON envelope regardless of the endpoint. Check the HTTP status code first, then branch on <code>error.type</code> in your code.</p>
+
+      <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "rate_limited",
+    "message": "Rate limit exceeded. You've made 26 requests in the current window.",
+    "hint": "Wait 45 seconds or upgrade to Pro for 100/hr burst limit.",
+    "docs": "https://webpeel.dev/docs/errors#rate-limited"
+  },
+  "metadata": {
+    "requestId": "req_abc123"
+  }
+}</code></pre>
+
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>success</code></td>
+            <td><code>false</code></td>
+            <td>Always <code>false</code> on error responses</td>
+          </tr>
+          <tr>
+            <td><code>error.type</code></td>
+            <td>string</td>
+            <td>Machine-readable error code — branch on this in your code</td>
+          </tr>
+          <tr>
+            <td><code>error.message</code></td>
+            <td>string</td>
+            <td>Human-readable explanation of what went wrong</td>
+          </tr>
+          <tr>
+            <td><code>error.hint</code></td>
+            <td>string?</td>
+            <td>Actionable suggestion for fixing the error (present on most errors)</td>
+          </tr>
+          <tr>
+            <td><code>error.docs</code></td>
+            <td>string?</td>
+            <td>Direct link to the relevant section of this page</td>
+          </tr>
+          <tr>
+            <td><code>metadata.requestId</code></td>
+            <td>string?</td>
+            <td>Unique request ID — include this in bug reports and support tickets</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Retry-After Header</div>
+        On <strong>429</strong> responses, the server also sends a <code>Retry-After</code> header with the number of seconds to wait before retrying. Always respect this header — ignoring it will extend your lockout window.
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- QUICK REFERENCE TABLE                                               -->
+      <!-- ================================================================== -->
+
+      <h2 id="quick-reference">Quick Reference</h2>
+      <p>Scan this table to quickly identify an error. Click any type to jump to the full description.</p>
+
+      <table class="quick-ref-table">
+        <thead>
+          <tr>
+            <th>Error type</th>
+            <th>HTTP status</th>
+            <th>Retryable?</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="#invalid-request"><code>invalid_request</code></a></td>
+            <td>400</td>
+            <td><span class="error-type-pill retryable-no">❌ Fix request</span></td>
+            <td>Missing or invalid parameters</td>
+          </tr>
+          <tr>
+            <td><a href="#invalid-url"><code>invalid_url</code></a></td>
+            <td>400</td>
+            <td><span class="error-type-pill retryable-no">❌ Fix request</span></td>
+            <td>Malformed URL or URL exceeds 2048 chars</td>
+          </tr>
+          <tr>
+            <td><a href="#unauthorized"><code>unauthorized</code></a></td>
+            <td>401</td>
+            <td><span class="error-type-pill retryable-no">❌ Fix auth</span></td>
+            <td>Missing or invalid API key</td>
+          </tr>
+          <tr>
+            <td><a href="#invalid-token"><code>invalid_token</code></a></td>
+            <td>401</td>
+            <td><span class="error-type-pill retryable-no">❌ Fix auth</span></td>
+            <td>API token expired or revoked</td>
+          </tr>
+          <tr>
+            <td><a href="#forbidden-url"><code>forbidden_url</code></a></td>
+            <td>403</td>
+            <td><span class="error-type-pill retryable-no">❌ Not allowed</span></td>
+            <td>SSRF attempt — localhost or private IP</td>
+          </tr>
+          <tr>
+            <td><a href="#blocked"><code>blocked</code></a></td>
+            <td>403</td>
+            <td><span class="error-type-pill retryable-maybe">⚡ Use stealth</span></td>
+            <td>Target site blocked automated access</td>
+          </tr>
+          <tr>
+            <td><a href="#rate-limited"><code>rate_limited</code></a></td>
+            <td>429</td>
+            <td><span class="error-type-pill retryable-maybe">⏳ After reset</span></td>
+            <td>Hourly burst limit exceeded</td>
+          </tr>
+          <tr>
+            <td><a href="#network-error"><code>network_error</code></a></td>
+            <td>502</td>
+            <td><span class="error-type-pill retryable-yes">✅ Yes</span></td>
+            <td>Could not reach target URL</td>
+          </tr>
+          <tr>
+            <td><a href="#timeout"><code>timeout</code></a></td>
+            <td>504</td>
+            <td><span class="error-type-pill retryable-yes">✅ Yes</span></td>
+            <td>Page load timed out</td>
+          </tr>
+          <tr>
+            <td><a href="#internal-error"><code>internal_error</code></a></td>
+            <td>500</td>
+            <td><span class="error-type-pill retryable-yes">✅ Yes</span></td>
+            <td>Unexpected server-side error</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ================================================================== -->
+      <!-- 400 BAD REQUEST                                                     -->
+      <!-- ================================================================== -->
+
+      <p class="http-status-heading">400 — Bad Request</p>
+
+      <!-- invalid_request -->
+      <div class="error-section" id="invalid-request">
+        <h3><code>invalid_request</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-4xx">400 Bad Request</span>
+          <span class="error-type-pill retryable-no">❌ Fix your request — not retryable</span>
+        </div>
+
+        <p><strong>What causes it:</strong> The request is missing a required parameter, or a parameter has an invalid value or type. This is always a client-side mistake.</p>
+
+        <p><strong>Common triggers:</strong></p>
+        <ul>
+          <li>Missing the required <code>url</code> parameter on <code>GET /v1/fetch</code></li>
+          <li>Invalid <code>format</code> value (must be <code>markdown</code>, <code>text</code>, or <code>html</code>)</li>
+          <li><code>wait</code> or <code>maxDepth</code> is not a valid number, or out of range</li>
+          <li>Sending a malformed JSON body on a POST endpoint</li>
+          <li><code>actions</code> array contains an unsupported action type</li>
+        </ul>
+
+        <p><strong>How to fix:</strong> Check the <a href="/docs/api-reference">API Reference</a> for required fields and accepted values. The <code>error.message</code> field will name the specific parameter that failed validation.</p>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "invalid_request",
+    "message": "Missing required parameter: url",
+    "hint": "Pass ?url=https://example.com as a query parameter or include 'url' in the request body.",
+    "docs": "https://webpeel.dev/docs/errors#invalid-request"
+  },
+  "metadata": { "requestId": "req_abc123" }
+}</code></pre>
+      </div>
+
+      <!-- invalid_url -->
+      <div class="error-section" id="invalid-url">
+        <h3><code>invalid_url</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-4xx">400 Bad Request</span>
+          <span class="error-type-pill retryable-no">❌ Fix your request — not retryable</span>
+        </div>
+
+        <p><strong>What causes it:</strong> A <code>url</code> parameter was provided, but it cannot be parsed as a valid URL or exceeds the maximum allowed length of 2048 characters.</p>
+
+        <p><strong>Common triggers:</strong></p>
+        <ul>
+          <li>URL is missing the scheme — use <code>https://example.com</code>, not <code>example.com</code></li>
+          <li>URL length exceeds 2048 characters (common with data URIs or very long query strings)</li>
+          <li>Special characters in the URL were not percent-encoded (e.g., spaces, <code>[</code>, <code>]</code>)</li>
+          <li>URL contains a fragment identifier (<code>#</code>) — fragments are client-side only and cannot be fetched</li>
+        </ul>
+
+        <p><strong>How to fix:</strong> Ensure the URL starts with <code>https://</code> or <code>http://</code> and is properly encoded. Use <code>encodeURIComponent()</code> when passing a URL as a query parameter value.</p>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "invalid_url",
+    "message": "URL exceeds the maximum allowed length of 2048 characters.",
+    "hint": "Shorten the URL or remove unnecessary query parameters. Max length: 2048 chars.",
+    "docs": "https://webpeel.dev/docs/errors#invalid-url"
+  },
+  "metadata": { "requestId": "req_abc124" }
+}</code></pre>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 401 UNAUTHORIZED                                                    -->
+      <!-- ================================================================== -->
+
+      <p class="http-status-heading">401 — Unauthorized</p>
+
+      <!-- unauthorized -->
+      <div class="error-section" id="unauthorized">
+        <h3><code>unauthorized</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-401">401 Unauthorized</span>
+          <span class="error-type-pill retryable-no">❌ Fix authentication</span>
+        </div>
+
+        <p><strong>What causes it:</strong> The request reached a protected endpoint (such as <code>GET /v1/stats</code> or <code>POST /mcp</code>) without a valid API key, or the API key is malformed.</p>
+
+        <p><strong>Common triggers:</strong></p>
+        <ul>
+          <li>No <code>Authorization</code> header or <code>X-API-Key</code> header was sent</li>
+          <li>API key was passed in the wrong format — must be <code>Bearer wp_live_…</code></li>
+          <li>Typo or extra whitespace in the key value</li>
+          <li>Using a test-mode key (<code>wp_test_…</code>) against a production endpoint</li>
+        </ul>
+
+        <p><strong>How to fix:</strong> Add your API key via the <code>Authorization: Bearer &lt;key&gt;</code> header. You can find your key in the <a href="https://app.webpeel.dev">Dashboard</a>. Most endpoints are also accessible without authentication — check the API Reference for which ones require auth.</p>
+
+        <pre><code class="language-bash"># Correct usage
+curl https://api.webpeel.dev/v1/stats \
+  -H "Authorization: Bearer wp_live_abc123..."</code></pre>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "unauthorized",
+    "message": "This endpoint requires a valid API key.",
+    "hint": "Pass your API key via 'Authorization: Bearer &lt;key&gt;' or 'X-API-Key: &lt;key&gt;'.",
+    "docs": "https://webpeel.dev/docs/errors#unauthorized"
+  },
+  "metadata": { "requestId": "req_abc125" }
+}</code></pre>
+      </div>
+
+      <!-- invalid_token -->
+      <div class="error-section" id="invalid-token">
+        <h3><code>invalid_token</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-401">401 Unauthorized</span>
+          <span class="error-type-pill retryable-no">❌ Refresh or replace token</span>
+        </div>
+
+        <p><strong>What causes it:</strong> An API key was provided and is correctly formatted, but the token has expired, been revoked, or does not exist in the database.</p>
+
+        <p><strong>Common triggers:</strong></p>
+        <ul>
+          <li>Key was manually revoked in the Dashboard</li>
+          <li>Account was deleted or suspended</li>
+          <li>Key was rotated and you're still using the old one</li>
+          <li>Hardcoded key in a deployment that is out-of-date</li>
+        </ul>
+
+        <p><strong>How to fix:</strong> Go to the <a href="https://app.webpeel.dev">Dashboard</a> to generate a new API key. Update all deployments and environment variables that reference the old key. Avoid committing API keys to source control — use environment variables or a secrets manager.</p>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "invalid_token",
+    "message": "The provided API key has been revoked or does not exist.",
+    "hint": "Generate a new API key at https://app.webpeel.dev/settings/api-keys.",
+    "docs": "https://webpeel.dev/docs/errors#invalid-token"
+  },
+  "metadata": { "requestId": "req_abc126" }
+}</code></pre>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 403 FORBIDDEN                                                       -->
+      <!-- ================================================================== -->
+
+      <p class="http-status-heading">403 — Forbidden</p>
+
+      <!-- forbidden_url -->
+      <div class="error-section" id="forbidden-url">
+        <h3><code>forbidden_url</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-403">403 Forbidden</span>
+          <span class="error-type-pill retryable-no">❌ Not allowed — SSRF protection</span>
+        </div>
+
+        <p><strong>What causes it:</strong> The URL is syntactically valid but targets a resource that WebPeel is not allowed to fetch. This is SSRF (Server-Side Request Forgery) protection — it prevents the API from being used to probe internal infrastructure.</p>
+
+        <p><strong>Blocked URL patterns:</strong></p>
+        <ul>
+          <li>Localhost and loopback addresses: <code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code></li>
+          <li>Private IP ranges: <code>10.x.x.x</code>, <code>172.16–31.x.x</code>, <code>192.168.x.x</code></li>
+          <li>Link-local addresses: <code>169.254.x.x</code>, <code>fe80::/10</code></li>
+          <li>Non-HTTP/HTTPS schemes: <code>ftp://</code>, <code>file://</code>, <code>gopher://</code>, etc.</li>
+          <li>Hostnames that resolve to private IPs after DNS lookup</li>
+        </ul>
+
+        <p><strong>How to fix:</strong> Only pass publicly reachable URLs starting with <code>https://</code> or <code>http://</code>. If you are self-hosting WebPeel and need to fetch internal services, you can disable SSRF protection via the <code>DISABLE_SSRF_PROTECTION=true</code> environment variable — never do this on a publicly accessible instance.</p>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "forbidden_url",
+    "message": "Fetching private or loopback addresses is not permitted.",
+    "hint": "Only publicly routable URLs (http:// or https://) are allowed.",
+    "docs": "https://webpeel.dev/docs/errors#forbidden-url"
+  },
+  "metadata": { "requestId": "req_abc127" }
+}</code></pre>
+      </div>
+
+      <!-- blocked -->
+      <div class="error-section" id="blocked">
+        <h3><code>blocked</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-403">403 Forbidden</span>
+          <span class="error-type-pill retryable-maybe">⚡ Retry with stealth mode</span>
+        </div>
+
+        <p><strong>What causes it:</strong> WebPeel successfully connected to the target server, but the server returned a bot-detection challenge or access-denied page (Cloudflare, PerimeterX, DataDome, Akamai, etc.) that could not be bypassed automatically. This corresponds to the <code>BLOCKED</code> internal error code.</p>
+
+        <p><strong>Common triggers:</strong></p>
+        <ul>
+          <li>Site aggressively blocks datacenter IP ranges</li>
+          <li>Request requires JavaScript execution to pass a challenge page</li>
+          <li>Site detects headless browser fingerprints and returns a 403</li>
+          <li>Cloudflare "Under Attack Mode" or similar high-security configurations</li>
+        </ul>
+
+        <p><strong>How to fix:</strong></p>
+        <ul>
+          <li>Add <code>render=true</code> to the request — browser rendering solves most JS challenges</li>
+          <li>Add <code>stealth=true</code> for sites with advanced bot detection (uses a full stealth browser profile)</li>
+          <li>If both fail, the site may require session cookies or human interaction — consider if automated access is appropriate</li>
+          <li>Some sites explicitly prohibit crawling; check the site's <code>robots.txt</code> and Terms of Service</li>
+        </ul>
+
+        <pre><code class="language-bash"># Retry with browser rendering
+curl "https://api.webpeel.dev/v1/fetch?url=https://example.com&render=true" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "blocked",
+    "message": "The target site blocked this request. Bot detection was triggered.",
+    "hint": "Retry with render=true or stealth=true to bypass JavaScript challenges.",
+    "docs": "https://webpeel.dev/docs/errors#blocked"
+  },
+  "metadata": { "requestId": "req_abc128" }
+}</code></pre>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 429 RATE LIMITED                                                    -->
+      <!-- ================================================================== -->
+
+      <p class="http-status-heading">429 — Too Many Requests</p>
+
+      <!-- rate_limited -->
+      <div class="error-section" id="rate-limited">
+        <h3><code>rate_limited</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-429">429 Too Many Requests</span>
+          <span class="error-type-pill retryable-maybe">⏳ Retry after Retry-After header</span>
+        </div>
+
+        <p><strong>What causes it:</strong> You've exceeded your plan's hourly burst limit. WebPeel enforces a sliding-window rate limit to protect the service and ensure fair usage for all users.</p>
+
+        <div class="callout callout-info">
+          <div class="callout-title">Check the Retry-After Header</div>
+          Every 429 response includes a <code>Retry-After</code> header with the exact number of seconds until your burst window resets. Build this into your retry logic to avoid extended lockouts.
+        </div>
+
+        <h4>Rate limits by plan</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th>Burst limit</th>
+              <th>Weekly quota</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Free</strong></td>
+              <td>25 / hour</td>
+              <td>125 / week</td>
+              <td>$0</td>
+            </tr>
+            <tr>
+              <td><strong>Starter</strong></td>
+              <td>50 / hour</td>
+              <td>500 / week</td>
+              <td>$5/mo</td>
+            </tr>
+            <tr>
+              <td><strong>Pro</strong></td>
+              <td>100 / hour</td>
+              <td>1,250 / week</td>
+              <td>$9/mo</td>
+            </tr>
+            <tr>
+              <td><strong>Max</strong></td>
+              <td>250 / hour</td>
+              <td>6,250 / week</td>
+              <td>$29/mo</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>How to fix:</strong></p>
+        <ul>
+          <li>Read the <code>Retry-After</code> response header and wait that many seconds before retrying</li>
+          <li>Implement exponential backoff with jitter in your client code</li>
+          <li>Monitor <code>X-Burst-Remaining</code> on each response and throttle proactively before hitting the limit</li>
+          <li>Cache responses locally for frequently fetched URLs — use <code>maxAge</code> to control freshness</li>
+          <li><a href="https://app.webpeel.dev">Upgrade your plan</a> for higher burst limits</li>
+        </ul>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "rate_limited",
+    "message": "Rate limit exceeded. You've made 26 requests in the current window.",
+    "hint": "Wait 45 seconds or upgrade to Pro for 100/hr burst limit.",
+    "docs": "https://webpeel.dev/docs/errors#rate-limited"
+  },
+  "metadata": {
+    "requestId": "req_abc129"
+  }
+}</code></pre>
+
+        <p><strong>Relevant response headers:</strong></p>
+        <table>
+          <thead>
+            <tr><th>Header</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>Retry-After</code></td><td>Seconds until the burst window resets</td></tr>
+            <tr><td><code>X-Burst-Limit</code></td><td>Your plan's hourly burst limit</td></tr>
+            <tr><td><code>X-Burst-Used</code></td><td>Requests made in the current window</td></tr>
+            <tr><td><code>X-Burst-Remaining</code></td><td>Requests remaining in the current window</td></tr>
+            <tr><td><code>X-RateLimit-Reset</code></td><td>Unix timestamp when the window resets</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 502 BAD GATEWAY                                                     -->
+      <!-- ================================================================== -->
+
+      <p class="http-status-heading">502 — Bad Gateway</p>
+
+      <!-- network_error -->
+      <div class="error-section" id="network-error">
+        <h3><code>network_error</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-502">502 Bad Gateway</span>
+          <span class="error-type-pill retryable-yes">✅ Retryable with backoff</span>
+        </div>
+
+        <p><strong>What causes it:</strong> A network-level error occurred while WebPeel attempted to reach the target URL. The request never completed. This corresponds to the <code>NETWORK</code> internal error code.</p>
+
+        <p><strong>Common triggers:</strong></p>
+        <ul>
+          <li>DNS resolution failure — domain does not exist or has no A/AAAA record</li>
+          <li>Connection refused — server is not listening on port 80 or 443</li>
+          <li>TLS/SSL handshake failure — invalid, expired, or self-signed certificate</li>
+          <li>Connection reset mid-response — server closed the socket unexpectedly</li>
+          <li>Target server is offline, overloaded, or temporarily unreachable</li>
+          <li>Firewall or network policy blocking outbound connections from WebPeel's IP range</li>
+        </ul>
+
+        <p><strong>How to fix:</strong></p>
+        <ul>
+          <li>Verify the URL is correct and the site is currently online — open it in a browser or run <code>curl -I &lt;url&gt;</code></li>
+          <li>For transient failures, retry with exponential backoff (start at 1 s, double each attempt, cap at 30 s)</li>
+          <li>For SSL certificate errors on self-hosted instances, ensure your cert is valid and not expired</li>
+          <li>If the error is systematic for a specific domain, the site may have blocked WebPeel's IP range — try <code>render=true</code> to route through a different network path</li>
+        </ul>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "network_error",
+    "message": "DNS resolution failed for 'example-nonexistent.xyz'.",
+    "hint": "Verify the domain exists and is publicly accessible. Check for typos in the URL.",
+    "docs": "https://webpeel.dev/docs/errors#network-error"
+  },
+  "metadata": { "requestId": "req_abc130" }
+}</code></pre>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 504 GATEWAY TIMEOUT                                                 -->
+      <!-- ================================================================== -->
+
+      <p class="http-status-heading">504 — Gateway Timeout</p>
+
+      <!-- timeout -->
+      <div class="error-section" id="timeout">
+        <h3><code>timeout</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-504">504 Gateway Timeout</span>
+          <span class="error-type-pill retryable-yes">✅ Retryable</span>
+        </div>
+
+        <p><strong>What causes it:</strong> The target page did not fully load within WebPeel's fetch timeout. This corresponds to the <code>TIMEOUT</code> internal error code. Timeouts vary by fetch mode: 30 s for simple HTTP, 60 s for browser rendering.</p>
+
+        <p><strong>Common triggers:</strong></p>
+        <ul>
+          <li>Target server is slow or temporarily overloaded</li>
+          <li>JavaScript-heavy SPA that never fires a <code>load</code> or <code>networkidle</code> event</li>
+          <li>Page contains long-running scripts or infinite polling loops</li>
+          <li>Server-side rendering that takes too long (e.g., complex database queries)</li>
+          <li>Very large pages with many assets and no streaming</li>
+        </ul>
+
+        <p><strong>How to fix:</strong></p>
+        <ul>
+          <li>Retry the request — the timeout may be transient due to a momentary spike in server load</li>
+          <li>For JS-heavy SPAs, pass <code>render=true</code> and tune the <code>wait</code> parameter (milliseconds after page load event) to give dynamic content time to settle</li>
+          <li>If the site consistently times out, try fetching during off-peak hours</li>
+          <li>For very slow pages, consider whether a lighter endpoint (e.g., the site's own API or RSS feed) is available</li>
+        </ul>
+
+        <pre><code class="language-bash"># Allow extra wait time for slow SPAs
+curl "https://api.webpeel.dev/v1/fetch?url=https://slow-spa.com&render=true&wait=5000" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "timeout",
+    "message": "Page load timed out after 30000ms.",
+    "hint": "Try render=true with a higher wait value (e.g., wait=5000) for JS-heavy pages.",
+    "docs": "https://webpeel.dev/docs/errors#timeout"
+  },
+  "metadata": { "requestId": "req_abc131" }
+}</code></pre>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 500 INTERNAL ERROR                                                  -->
+      <!-- ================================================================== -->
+
+      <p class="http-status-heading">500 — Internal Server Error</p>
+
+      <!-- internal_error -->
+      <div class="error-section" id="internal-error">
+        <h3><code>internal_error</code></h3>
+        <div class="error-meta">
+          <span class="error-status-badge status-5xx">500 Internal Server Error</span>
+          <span class="error-type-pill retryable-yes">✅ Retryable — likely transient</span>
+        </div>
+
+        <p><strong>What causes it:</strong> An unexpected error occurred inside WebPeel's infrastructure. This is not caused by your request and indicates a bug or transient infrastructure failure.</p>
+
+        <p><strong>Common triggers:</strong></p>
+        <ul>
+          <li>A bug in WebPeel's content extraction pipeline triggered by an unusual page structure</li>
+          <li>Out-of-memory condition during browser rendering of an unusually large page</li>
+          <li>Transient database or cache connection failure</li>
+          <li>Brief infrastructure blip during a deployment</li>
+        </ul>
+
+        <p><strong>How to fix:</strong></p>
+        <ul>
+          <li>Retry the request — most 500 errors are transient and resolve on the next attempt</li>
+          <li>Implement retry logic with exponential backoff (e.g., 3 retries at 1 s, 2 s, 4 s)</li>
+          <li>Check <a href="https://webpeel.dev/status">webpeel.dev/status</a> for any active incidents</li>
+          <li>If the error persists for the same URL, <a href="https://github.com/webpeel/webpeel/issues">open a bug report</a> and include the <code>metadata.requestId</code> from the response</li>
+        </ul>
+
+        <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "type": "internal_error",
+    "message": "An unexpected error occurred. Our team has been notified.",
+    "hint": "Retry the request. If this persists, check https://webpeel.dev/status.",
+    "docs": "https://webpeel.dev/docs/errors#internal-error"
+  },
+  "metadata": { "requestId": "req_abc132" }
+}</code></pre>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- HANDLING ERRORS IN CODE                                             -->
+      <!-- ================================================================== -->
+
+      <h2 id="handling-errors">Handling Errors in Code</h2>
+      <p>Use the pattern below to handle all error types robustly. Branch on <code>error.type</code> and implement retry logic for transient errors.</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="err-js">JavaScript</button>
+        <button class="tab-btn" data-tab="err-py">Python</button>
+        <button class="tab-btn" data-tab="err-curl">cURL</button>
+      </div>
+
+      <div class="tab-content active" data-content="err-js">
+        <pre><code class="language-javascript">async function fetchWithRetry(url, maxRetries = 3) {
+  for (let attempt = 0; attempt &lt; maxRetries; attempt++) {
+    const resp = await fetch(
+      `https://api.webpeel.dev/v1/fetch?url=${encodeURIComponent(url)}`,
+      { headers: { 'Authorization': 'Bearer YOUR_API_KEY' } }
+    );
+
+    if (resp.ok) return resp.json();
+
+    const body = await resp.json();
+    const { type, hint } = body.error;
+
+    switch (type) {
+      // Client errors — don't retry, fix the request
+      case 'invalid_request':
+      case 'invalid_url':
+      case 'unauthorized':
+      case 'invalid_token':
+      case 'forbidden_url':
+        throw new Error(`[${type}] ${body.error.message}\nHint: ${hint}`);
+
+      // Blocked — retry with stealth mode
+      case 'blocked':
+        if (attempt === 0) {
+          url = url + (url.includes('?') ? '&' : '?') + 'render=true&stealth=true';
+          break;
+        }
+        throw new Error(`[blocked] Site blocked all fetch strategies.`);
+
+      // Rate limited — wait for the reset window
+      case 'rate_limited': {
+        const retryAfter = parseInt(resp.headers.get('Retry-After') ?? '60', 10);
+        console.warn(`Rate limited. Waiting ${retryAfter}s...`);
+        await new Promise(r => setTimeout(r, retryAfter * 1000));
+        break;
+      }
+
+      // Transient — exponential backoff
+      case 'network_error':
+      case 'timeout':
+      case 'internal_error': {
+        if (attempt === maxRetries - 1) throw new Error(`[${type}] ${body.error.message}`);
+        const wait = Math.pow(2, attempt) * 1000;
+        console.warn(`Transient error (${type}). Retrying in ${wait}ms...`);
+        await new Promise(r => setTimeout(r, wait));
+        break;
+      }
+
+      default:
+        throw new Error(`[${type}] ${body.error.message}`);
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="err-py">
+        <pre><code class="language-python">import urllib.request, urllib.parse, json, time
+
+def fetch_with_retry(url, max_retries=3, api_key="YOUR_API_KEY"):
+    for attempt in range(max_retries):
+        encoded = urllib.parse.quote(url, safe="")
+        req = urllib.request.Request(
+            f"https://api.webpeel.dev/v1/fetch?url={encoded}"
+        )
+        req.add_header("Authorization", f"Bearer {api_key}")
+
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            body = json.loads(e.read())
+            error_type = body["error"]["type"]
+            message = body["error"]["message"]
+
+            if error_type in ("invalid_request", "invalid_url",
+                              "unauthorized", "invalid_token", "forbidden_url"):
+                # Client errors — don't retry
+                raise ValueError(f"[{error_type}] {message}") from e
+
+            elif error_type == "blocked":
+                if attempt == 0:
+                    url += ("&" if "?" in url else "?") + "render=true"
+                    continue
+                raise RuntimeError("Site blocked all fetch strategies.") from e
+
+            elif error_type == "rate_limited":
+                retry_after = int(e.headers.get("Retry-After", 60))
+                print(f"Rate limited. Waiting {retry_after}s...")
+                time.sleep(retry_after)
+
+            elif error_type in ("network_error", "timeout", "internal_error"):
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"[{error_type}] {message}") from e
+                wait = 2 ** attempt
+                print(f"Transient error ({error_type}). Retrying in {wait}s...")
+                time.sleep(wait)
+
+            else:
+                raise RuntimeError(f"[{error_type}] {message}") from e
+
+    return None</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="err-curl">
+        <pre><code class="language-bash">#!/usr/bin/env bash
+
+fetch_url() {
+  local URL="$1"
+  local MAX_RETRIES=3
+  local ATTEMPT=0
+
+  while [ $ATTEMPT -lt $MAX_RETRIES ]; do
+    RESPONSE=$(curl -s -w "\n%{http_code}" \
+      "https://api.webpeel.dev/v1/fetch?url=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$URL")" \
+      -H "Authorization: Bearer YOUR_API_KEY")
+
+    HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+    BODY=$(echo "$RESPONSE" | sed '$d')
+
+    if [ "$HTTP_CODE" -eq 200 ]; then
+      echo "$BODY"
+      return 0
+    fi
+
+    ERROR_TYPE=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['error']['type'])")
+
+    case "$ERROR_TYPE" in
+      invalid_request|invalid_url|unauthorized|invalid_token|forbidden_url)
+        echo "Non-retryable error: $ERROR_TYPE" >&2
+        return 1
+        ;;
+      blocked)
+        URL="${URL}$(echo $URL | grep -q '?' && echo '&' || echo '?')render=true"
+        ;;
+      rate_limited)
+        RETRY_AFTER=$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(60)")
+        echo "Rate limited. Waiting ${RETRY_AFTER}s..." >&2
+        sleep "$RETRY_AFTER"
+        ;;
+      network_error|timeout|internal_error)
+        WAIT=$((2 ** ATTEMPT))
+        echo "Transient error ($ERROR_TYPE). Retrying in ${WAIT}s..." >&2
+        sleep "$WAIT"
+        ;;
+    esac
+
+    ATTEMPT=$((ATTEMPT + 1))
+  done
+
+  echo "Max retries exceeded." >&2
+  return 1
+}
+
+fetch_url "https://example.com"</code></pre>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer-docs">
+    <div class="footer-docs-inner">
+      <div class="footer-docs-left">© 2026 WebPeel. Open source under AGPL-3.0.</div>
+      <div class="footer-docs-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="../scripts/docs.js"></script>
+</body>
+</html>

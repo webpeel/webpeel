@@ -156,6 +156,12 @@ function shouldResetAnonymousUsage(config: CLIConfig): boolean {
 export async function checkUsage(): Promise<UsageCheckResult> {
   const config = loadConfig();
 
+  // Support WEBPEEL_API_KEY env var (e.g. for CI, admin use, non-interactive)
+  const envApiKey = process.env.WEBPEEL_API_KEY;
+  if (envApiKey && !config.apiKey) {
+    config.apiKey = envApiKey;
+  }
+
   // Check if anonymous usage needs reset
   if (shouldResetAnonymousUsage(config)) {
     config.anonymousUsage = 0;

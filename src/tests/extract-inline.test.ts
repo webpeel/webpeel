@@ -187,8 +187,8 @@ describe('POST /v1/fetch — inline extraction', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('invalid_request');
-    expect(res.body.message).toContain('llmProvider');
+    expect(res.body.error.type).toBe('invalid_request');
+    expect(res.body.error.message).toContain('llmProvider');
   });
 
   it('returns 400 if extract is provided but llmApiKey is missing', async () => {
@@ -201,8 +201,8 @@ describe('POST /v1/fetch — inline extraction', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('invalid_request');
-    expect(res.body.message).toContain('llmApiKey');
+    expect(res.body.error.type).toBe('invalid_request');
+    expect(res.body.error.message).toContain('llmApiKey');
   });
 
   it('works without extract param (normal fetch)', async () => {
@@ -219,7 +219,7 @@ describe('POST /v1/fetch — inline extraction', () => {
   it('returns 400 for missing URL', async () => {
     const res = await request(app).post('/v1/fetch').send({});
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error.type).toBe('invalid_request');
   });
 
   it('returns 400 for invalid llmProvider value', async () => {
@@ -233,7 +233,7 @@ describe('POST /v1/fetch — inline extraction', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('llmProvider');
+    expect(res.body.error.message).toContain('llmProvider');
   });
 });
 

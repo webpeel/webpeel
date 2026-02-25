@@ -3,6 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import '../types.js'; // Augments Express.Request with requestId
 
 interface RateLimitEntry {
   timestamps: number[];
@@ -85,6 +86,7 @@ const TIER_BURST_LIMITS: Record<string, number> = {
   pro: 100,
   enterprise: 250,
   max: 500,
+  admin: 999999,
 };
 
 export function createRateLimitMiddleware(limiter: RateLimiter) {
@@ -125,7 +127,8 @@ export function createRateLimitMiddleware(limiter: RateLimiter) {
       }
 
       if (!result.allowed) {
-        res.setHeader('Retry-After', result.retryAfter!.toString());
+        const retryAfterSecs = result.retryAfter!;
+        res.setHeader('Retry-After', retryAfterSecs.toString());
         const tier = req.auth?.tier || 'free';
         const upgradeHint = tier === 'free'
           ? ' Upgrade to Pro ($9/mo) for 100/hr burst limit → https://webpeel.dev/#pricing'
@@ -133,22 +136,28 @@ export function createRateLimitMiddleware(limiter: RateLimiter) {
           ? ' Upgrade to Max ($29/mo) for 500/hr burst limit → https://webpeel.dev/#pricing'
           : '';
         res.status(429).json({
-          error: 'rate_limited',
-          message: `Hourly rate limit exceeded (${limit} requests/hr on ${tier} plan). Try again in ${result.retryAfter}s.${upgradeHint}`,
-          retryAfter: result.retryAfter,
-          limit,
-          plan: tier,
-          docs: 'https://webpeel.dev/docs/api-reference#rate-limits',
+          success: false,
+          error: {
+            type: 'rate_limited',
+            message: `Hourly rate limit exceeded (${limit} requests/hr on ${tier} plan). Try again in ${retryAfterSecs}s.`,
+            hint: `Retry after ${retryAfterSecs} seconds.${upgradeHint}`,
+            docs: 'https://webpeel.dev/docs/errors#rate-limited',
+          },
+          metadata: { requestId: req.requestId },
         });
         return; // Stop processing - rate limit exceeded
       }
 
       next();
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
       res.status(500).json({
-        error: 'rate_limit_error',
-        message: err.message || 'Rate limiting failed',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Rate limiting failed',
+          docs: 'https://webpeel.dev/docs/errors#internal-error',
+        },
+        metadata: { requestId: req.requestId },
       });
     }
   };

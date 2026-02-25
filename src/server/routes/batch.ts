@@ -7,6 +7,7 @@ import { peel } from '../../index.js';
 import type { PeelOptions } from '../../index.js';
 import type { IJobQueue } from '../job-queue.js';
 import { sendWebhook } from './webhooks.js';
+import { initSSE, sendSSE, endSSE, wantsSSE } from '../utils/sse.js';
 
 export function createBatchRouter(jobQueue: IJobQueue): Router {
   const router = Router();
@@ -57,8 +58,148 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
         }
       }
 
-      // Create job (with owner for authorization)
       const ownerId = req.auth?.keyInfo?.accountId;
+
+      // ── SSE streaming path ────────────────────────────────────────────────
+      if (wantsSSE(req)) {
+        const job = await jobQueue.createJob('batch', webhook, ownerId);
+        await jobQueue.updateJob(job.id, { total: urls.length });
+
+        // Set SSE headers (X-Request-Id already set by global middleware)
+        initSSE(res);
+
+        sendSSE(res, 'started', {
+          batchId: job.id,
+          totalUrls: urls.length,
+        });
+
+        let closed = false;
+        const heartbeat = setInterval(() => {
+          if (!closed) res.write('event: ping\ndata: {}\n\n');
+        }, 15_000);
+
+        req.on('close', () => {
+          closed = true;
+          clearInterval(heartbeat);
+        });
+
+        const startTime = Date.now();
+        let completedCount = 0;
+        let failedCount = 0;
+
+        try {
+          jobQueue.updateJob(job.id, { status: 'processing' });
+
+          const peelOptions: PeelOptions = {
+            format: formats?.[0] || 'markdown',
+            extract,
+            maxTokens,
+          };
+
+          // Process URLs with bounded concurrency (max 5)
+          const results: unknown[] = new Array(urls.length);
+          const maxConcurrent = 5;
+          let activeCount = 0;
+          let urlIndex = 0;
+
+          const runBatch = async () => {
+            while (urlIndex < urls.length) {
+              // Check cancellation
+              const currentJob = await jobQueue.getJob(job.id);
+              if (currentJob?.status === 'cancelled') break;
+
+              while (activeCount >= maxConcurrent) {
+                await new Promise<void>(resolve => setTimeout(resolve, 50));
+              }
+
+              const url = urls[urlIndex] as string;
+              const index = urlIndex;
+              urlIndex++;
+              activeCount++;
+
+              (async () => {
+                try {
+                  const result = await peel(url, peelOptions);
+                  results[index] = result;
+                  completedCount++;
+
+                  jobQueue.updateJob(job.id, {
+                    completed: completedCount + failedCount,
+                    creditsUsed: completedCount + failedCount,
+                  });
+
+                  if (!closed) {
+                    sendSSE(res, 'result', {
+                      url,
+                      content: result.content,
+                      metadata: result.metadata,
+                      index,
+                    });
+                  }
+                } catch (err: any) {
+                  failedCount++;
+                  results[index] = { url, error: err.message || 'Unknown error' };
+
+                  jobQueue.updateJob(job.id, {
+                    completed: completedCount + failedCount,
+                    creditsUsed: completedCount + failedCount,
+                  });
+
+                  if (!closed) {
+                    sendSSE(res, 'error', {
+                      url,
+                      error: 'FETCH_ERROR',
+                      message: err.message || 'Unknown error',
+                      index,
+                    });
+                  }
+                } finally {
+                  activeCount--;
+                }
+              })();
+            }
+
+            // Wait for all in-flight requests
+            while (activeCount > 0) {
+              await new Promise<void>(resolve => setTimeout(resolve, 50));
+            }
+          };
+
+          await runBatch();
+
+          jobQueue.updateJob(job.id, {
+            status: 'completed',
+            data: results,
+          });
+
+          if (!closed) {
+            sendSSE(res, 'done', {
+              batchId: job.id,
+              completed: completedCount,
+              failed: failedCount,
+              duration: Date.now() - startTime,
+            });
+          }
+        } catch (error: any) {
+          jobQueue.updateJob(job.id, {
+            status: 'failed',
+            error: error.message || 'Unknown error',
+          });
+          if (!closed) {
+            sendSSE(res, 'error', {
+              error: 'BATCH_FAILED',
+              message: error.message || 'Unknown error',
+            });
+          }
+        } finally {
+          clearInterval(heartbeat);
+          if (!closed) endSSE(res);
+        }
+
+        return;
+      }
+
+      // ── Regular async job path (backward compat) ─────────────────────────
       const job = await jobQueue.createJob('batch', webhook, ownerId);
       await jobQueue.updateJob(job.id, {
         total: urls.length,
