@@ -1,6 +1,6 @@
 {
   "name": "webpeel",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "Fast web fetcher for AI agents - stealth mode, crawl mode, page actions, structured extraction, PDF parsing, smart escalation from simple HTTP to headless browser",
   "author": "Jake Liu",
   "license": "AGPL-3.0-only",
@@ -43,6 +43,7 @@
     "dist/types.d.ts",
     "dist/types.d.ts.map",
     "dist/core",
+    "dist/integrations",
     "dist/mcp",
     "README.md",
     "LICENSE",

@@ -35,7 +35,7 @@ async function resolveRedditShareUrl(url: string): Promise<string> {
       const req = client.get(
         url,
         {
-          headers: { 'User-Agent': 'WebPeel/0.17.0 (web data platform; https://webpeel.dev) Node.js' },
+          headers: { 'User-Agent': 'WebPeel/0.17.1 (web data platform; https://webpeel.dev) Node.js' },
           timeout: 10000,
         },
         (res) => {
@@ -498,7 +498,7 @@ async function redditExtractor(_html: string, url: string): Promise<DomainExtrac
   // Normalize old.reddit.com → www.reddit.com for JSON API
   const normalizedUrl = workingUrl.replace(/old\.reddit\.com/, 'www.reddit.com');
 
-  const REDDIT_UA = { 'User-Agent': 'WebPeel/0.17.0 (web data platform; https://webpeel.dev) Node.js' };
+  const REDDIT_UA = { 'User-Agent': 'WebPeel/0.17.1 (web data platform; https://webpeel.dev) Node.js' };
 
   // Detect page type
   const isPost = /\/r\/[^/]+\/comments\//.test(path) || /^\/comments\//.test(path);
@@ -1152,7 +1152,7 @@ async function wikipediaExtractor(_html: string, url: string): Promise<DomainExt
   const apiUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(articleTitle)}`;
 
   // Wikipedia REST API requires a descriptive User-Agent (https://meta.wikimedia.org/wiki/User-Agent_policy)
-  const wikiHeaders = { 'User-Agent': 'WebPeel/0.17.0 (https://webpeel.dev; jake@jakeliu.me) Node.js', 'Api-User-Agent': 'WebPeel/0.17.0 (https://webpeel.dev; jake@jakeliu.me)' };
+  const wikiHeaders = { 'User-Agent': 'WebPeel/0.17.1 (https://webpeel.dev; jake@jakeliu.me) Node.js', 'Api-User-Agent': 'WebPeel/0.17.1 (https://webpeel.dev; jake@jakeliu.me)' };
 
   try {
     const data = await fetchJson(apiUrl, wikiHeaders);
@@ -1263,7 +1263,7 @@ async function arxivExtractor(_html: string, url: string): Promise<DomainExtract
   try {
     // Use ArXiv API
     const apiUrl = `https://export.arxiv.org/api/query?id_list=${paperId}`;
-    const result = await simpleFetch(apiUrl, 'WebPeel/0.17.0', 15000, { Accept: 'application/xml' });
+    const result = await simpleFetch(apiUrl, 'WebPeel/0.17.1', 15000, { Accept: 'application/xml' });
 
     if (!result?.html) return null;
     const xml = result.html;
