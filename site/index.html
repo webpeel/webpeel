@@ -122,20 +122,7 @@
     .section-label { display: inline-block; padding: 4px 14px; border-radius: 999px; background: var(--surface-muted); color: var(--text-2); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; border: 1px solid var(--border-card); }
 
     /* SCROLL ANIMATIONS */
-    .reveal { opacity: 0; transform: translateY(24px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-    .reveal-stagger > * { opacity: 0; transform: translateY(16px); transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-    .reveal-stagger.visible > *:nth-child(1) { transition-delay: 0ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(2) { transition-delay: 80ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(3) { transition-delay: 160ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(4) { transition-delay: 240ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(5) { transition-delay: 320ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(6) { transition-delay: 400ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(7) { transition-delay: 480ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(8) { transition-delay: 560ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(9) { transition-delay: 640ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(10) { transition-delay: 720ms; opacity: 1; transform: translateY(0); }
-    .reveal-stagger.visible > *:nth-child(11) { transition-delay: 800ms; opacity: 1; transform: translateY(0); }
+    /* reveal animations handled entirely by GSAP — no CSS opacity:0 needed */
     .reveal-stagger.visible > *:nth-child(12) { transition-delay: 860ms; opacity: 1; transform: translateY(0); }
     .reveal-stagger.visible > *:nth-child(13) { transition-delay: 920ms; opacity: 1; transform: translateY(0); }
     .reveal-stagger.visible > *:nth-child(n+14) { transition-delay: 980ms; opacity: 1; transform: translateY(0); }
@@ -1787,14 +1774,14 @@ client = <span class="hl-fn">WebPeel</span>()
 
     // Section reveals — each section animates on scroll
     gsap.utils.toArray('.section-header, [data-reveal]').forEach((el) => {
-      gsap.from(el, {
+      gsap.fromTo(el, { y: 15, opacity: 0 }, {
         scrollTrigger: {
           trigger: el,
           start: 'top 85%',
           toggleActions: 'play none none none',
         },
-        y: 15,
-        opacity: 0,
+        y: 0,
+        opacity: 1,
         duration: 0.5,
         ease: 'power2.out',
       });
@@ -1803,14 +1790,14 @@ client = <span class="hl-fn">WebPeel</span>()
     // Feature cards — staggered grid entrance
     gsap.utils.toArray('.features-grid, .steps-grid, .stats-row').forEach((grid) => {
       const children = grid.children;
-      gsap.from(children, {
+      gsap.fromTo(children, { y: 15, opacity: 0 }, {
         scrollTrigger: {
           trigger: grid,
           start: 'top 80%',
           toggleActions: 'play none none none',
         },
-        y: 15,
-        opacity: 0,
+        y: 0,
+        opacity: 1,
         duration: 0.5,
         stagger: 0.08,
         ease: 'power2.out',
@@ -1833,16 +1820,16 @@ client = <span class="hl-fn">WebPeel</span>()
       });
     });
 
-    // Pricing cards — staggered with slight rotation
+    // Pricing cards — staggered
     gsap.utils.toArray('.pricing-grid').forEach((grid) => {
       const cards = grid.children;
-      gsap.from(cards, {
+      gsap.fromTo(cards, { y: 30, opacity: 0 }, {
         scrollTrigger: {
           trigger: grid,
           start: 'top 80%',
         },
-        y: 30,
-        opacity: 0,
+        y: 0,
+        opacity: 1,
         duration: 0.5,
         stagger: 0.1,
         ease: 'power2.out',
@@ -1852,13 +1839,13 @@ client = <span class="hl-fn">WebPeel</span>()
     // Comparison table — rows stagger in
     gsap.utils.toArray('.plan-compare tr').forEach((row, i) => {
       if (i === 0) return;
-      gsap.from(row, {
+      gsap.fromTo(row, { y: 15, opacity: 0 }, {
         scrollTrigger: {
           trigger: row,
           start: 'top 90%',
         },
-        y: 15,
-        opacity: 0,
+        y: 0,
+        opacity: 1,
         duration: 0.4,
         delay: i * 0.03,
         ease: 'power2.out',
