@@ -1,0 +1,87 @@
+# WebPeel — Complete API Reference
+
+> For the quick overview, see llms.txt
+
+## Library Usage (Node.js)
+
+import { peel } from 'webpeel';
+
+// Basic fetch
+const result = await peel('https://example.com');
+console.log(result.content);  // Clean markdown
+console.log(result.metadata); // { title, description, wordCount, ... }
+
+// With options
+const result = await peel('https://example.com', {
+  format: 'clean',        // 'markdown' | 'text' | 'html' | 'clean'
+  budget: 4000,           // Token budget for content
+  question: 'What is X?', // Quick answer mode
+  render: true,           // Use headless browser
+  stealth: true,          // Anti-bot stealth mode
+  proxy: 'http://...',    // Proxy URL
+  proxies: ['http://...', 'socks5://...'], // Proxy rotation
+  timeout: 30000,         // Request timeout (ms)
+  selector: '.article',   // CSS selector
+  mode: 'lite',           // Skip heavy processing
+});
+
+## API Endpoints
+
+All endpoints require `Authorization: Bearer <api_key>` header.
+Base URL: https://api.webpeel.dev
+
+### POST /v1/fetch
+Fetch and extract content from a URL.
+Body: { url, format?, budget?, question?, render?, stealth?, proxy?, proxies?, selector?, timeout? }
+
+### POST /v1/search
+Search the web.
+Body: { query, count?, provider? }
+
+### POST /v1/crawl
+Crawl a website (SSE streaming).
+Body: { url, maxPages?, maxDepth?, includes?, excludes? }
+
+### POST /v1/map
+Discover URLs on a site.
+Body: { url, maxPages? }
+
+### POST /v1/batch
+Fetch multiple URLs.
+Body: { urls: [{ url, format?, budget? }] }
+
+### POST /v1/extract
+Extract structured data with CSS selectors.
+Body: { url, selectors: { name: "css selector" } }
+
+### POST /v1/screenshot
+Take a screenshot.
+Body: { url, fullPage?, selector? }
+
+## Domain Extractors (instant, no browser)
+
+These domains are fetched via native APIs — faster and more reliable:
+- reddit.com — Posts, subreddits, user pages, galleries
+- github.com — Repos, issues, PRs, user profiles
+- news.ycombinator.com — Stories and comments
+- twitter.com / x.com — Tweets and profiles (via FxTwitter)
+- wikipedia.org — Articles with clean content
+- youtube.com — Video metadata (via oEmbed)
+- arxiv.org — Papers with title, authors, abstract
+- stackoverflow.com — Questions with answers
+- npmjs.com — Package info with downloads
+
+## Error Types
+
+| Type | HTTP | Description |
+|------|------|-------------|
+| validation_error | 400 | Bad request parameters |
+| auth_error | 401 | Missing or invalid API key |
+| rate_limit | 429 | Rate limit exceeded (see Retry-After header) |
+| blocked | 403 | Site blocked the request |
+| timeout | 408 | Request timed out |
+| network_error | 502 | Network/DNS failure |
+| content_error | 422 | Content extraction failed |
+| server_error | 500 | Internal server error |
+
+All errors return: { success: false, error: { type, message, hint?, docs? }, metadata: { requestId } }

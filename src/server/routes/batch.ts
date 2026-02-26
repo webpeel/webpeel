@@ -17,7 +17,7 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
    */
   router.post('/v1/batch/scrape', async (req: Request, res: Response) => {
     try {
-      const { urls, formats, extract, maxTokens, webhook } = req.body;
+      const { urls, formats, extract, maxTokens, webhook, concurrency } = req.body;
 
       // Validate required parameters
       if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -96,9 +96,9 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
             maxTokens,
           };
 
-          // Process URLs with bounded concurrency (max 5)
+          // Process URLs with bounded concurrency (caller-specified, max 10)
           const results: unknown[] = new Array(urls.length);
-          const maxConcurrent = 5;
+          const maxConcurrent = Math.min(Math.max(parseInt(concurrency) || 5, 1), 10);
           let activeCount = 0;
           let urlIndex = 0;
 
@@ -226,9 +226,9 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
             maxTokens,
           };
 
-          // Process URLs with semaphore (max 5 concurrent)
+          // Process URLs with semaphore (caller-specified, max 10 concurrent)
           const results: any[] = [];
-          const maxConcurrent = 5;
+          const maxConcurrent = Math.min(Math.max(parseInt(concurrency) || 5, 1), 10);
           let activeCount = 0;
           let urlIndex = 0;
 

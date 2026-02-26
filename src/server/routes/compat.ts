@@ -288,6 +288,7 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
           const crawlOptions: any = {
             maxPages: limit,
             maxDepth,
+            tier: req.auth?.tier,
             onProgress: (progress: any) => {
               const total = progress.crawled + progress.queued;
               jobQueue.updateJob(job.id, {

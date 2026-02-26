@@ -92,6 +92,33 @@ export function createApp(config: ServerConfig = {}): Express {
     next();
   });
 
+  // Hard server-side timeouts — no request runs longer than this
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const path = req.path;
+    let timeoutMs = 30000; // 30s default
+    if (path.includes('/crawl') || path.includes('/map')) timeoutMs = 300000; // 5min for crawls
+    else if (path.includes('/batch')) timeoutMs = 120000; // 2min for batch
+    else if (path.includes('/screenshot')) timeoutMs = 60000; // 1min for screenshots
+    else if (req.query?.render === 'true') timeoutMs = 60000; // 1min for rendered fetches
+
+    req.setTimeout(timeoutMs);
+    res.setTimeout(timeoutMs, () => {
+      if (!res.headersSent) {
+        res.status(504).json({
+          success: false,
+          error: {
+            type: 'timeout',
+            message: `Request timed out after ${timeoutMs / 1000}s`,
+            hint: 'Try reducing the scope of your request or upgrading your plan for higher limits.',
+            docs: 'https://webpeel.dev/docs/errors#timeout',
+          },
+          metadata: { requestId: req.requestId },
+        });
+      }
+    });
+    next();
+  });
+
   // Optional error tracking (enabled only when SENTRY_DSN is set)
   const sentry = createSentryHooks();
   if (sentry.requestHandler) {

@@ -10,12 +10,14 @@ import { smartFetch } from './strategies.js';
 import {
   htmlToMarkdown,
   htmlToText,
+  cleanForAI,
   estimateTokens,
   selectContent,
   detectMainContent,
   calculateQuality,
   truncateToTokenBudget,
   filterByTags,
+  cleanMarkdownNoise,
 } from './markdown.js';
 import { pruneContent } from './content-pruner.js';
 import { distillToBudget } from './budget.js';
@@ -28,7 +30,9 @@ import { extractDomainData, getDomainExtractor, type DomainExtractResult } from 
 import { extractReadableContent, type ReadabilityResult } from './readability.js';
 import { quickAnswer as runQuickAnswer, type QuickAnswerResult } from './quick-answer.js';
 import { Timer } from './timing.js';
+import { chunkContent, type ChunkOptions } from './chunker.js';
 import type { PeelOptions, PeelResult, ImageInfo } from '../types.js';
+import { BlockedError } from '../types.js';
 import type { BrandingProfile } from './branding.js';
 import type { ChangeResult } from './change-tracking.js';
 
@@ -43,7 +47,7 @@ export interface PipelineContext {
   render: boolean;
   stealth: boolean;
   wait: number;
-  format: 'markdown' | 'text' | 'html';
+  format: 'markdown' | 'text' | 'html' | 'clean';
   timeout: number;
   userAgent?: string;
   screenshot: boolean;
@@ -105,6 +109,10 @@ export interface PipelineContext {
   changeResult?: ChangeResult;
   summaryText?: string;
   screenshotBase64?: string;
+  /** True when domain API extraction handled the content (skip redundant extraction) */
+  domainApiHandled?: boolean;
+  /** Non-fatal warnings accumulated during the pipeline run */
+  warnings: string[];
 }
 
 /** Create the initial PipelineContext with defaults */
@@ -154,6 +162,12 @@ export function createContext(url: string, options: PeelOptions): PipelineContex
 
     // Link count — filled by parseContent() / buildResult
     linkCount: 0,
+
+    // Domain API first-pass flag
+    domainApiHandled: false,
+
+    // Warnings accumulator
+    warnings: [],
   };
 }
 
@@ -338,24 +352,134 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
   const needsBranding = ctx.options.branding && ctx.render;
   const needsAutoScroll = !!ctx.autoScrollOpts && ctx.render;
 
+  // Try API-based domain extraction first (Reddit, GitHub, HN use APIs, not HTML)
+  // This avoids expensive browser fetches that often get blocked
+  if (getDomainExtractor(ctx.url)) {
+    try {
+      ctx.timer.mark('domainApiFirst');
+      const ddResult = await extractDomainData('', ctx.url);
+      ctx.timer.end('domainApiFirst');
+      if (ddResult && ddResult.cleanContent.length > 50) {
+        ctx.domainData = ddResult;
+        ctx.content = ddResult.cleanContent;
+        // Create minimal fetchResult so downstream stages don't crash
+        ctx.fetchResult = {
+          html: ddResult.cleanContent,
+          url: ctx.url,
+          status: 200,
+          contentType: 'text/html',
+          method: 'domain-api',
+        };
+        ctx.title = ddResult.structured?.title || '';
+        ctx.quality = 0.95; // High quality — structured API data
+        // Compute basic metadata so downstream stages have wordCount etc.
+        const domainWordCount = ddResult.cleanContent.split(/\s+/).filter(Boolean).length;
+        ctx.metadata = {
+          ...(ctx.metadata || {}),
+          title: ddResult.structured?.title || ctx.title,
+          description: ddResult.structured?.description || ddResult.structured?.extract || '',
+          wordCount: domainWordCount,
+          language: ddResult.structured?.language || 'en',
+        } as any;
+        ctx.domainApiHandled = true;
+        return; // Skip browser fetch entirely
+      }
+    } catch (e) {
+      // Domain API failed — fall through to normal fetch
+      if (process.env.DEBUG) console.debug('[webpeel]', 'domain API first-pass failed, falling back to fetch:', e instanceof Error ? e.message : e);
+    }
+  }
+
   ctx.timer.mark('fetch');
-  const fetchResult = await smartFetch(ctx.url, {
-    forceBrowser: ctx.render,
-    stealth: ctx.stealth,
-    waitMs: ctx.wait,
-    userAgent: ctx.userAgent,
-    timeoutMs: ctx.timeout,
-    screenshot: ctx.screenshot,
-    screenshotFullPage: ctx.screenshotFullPage,
-    headers: ctx.headers,
-    cookies: ctx.cookies,
-    actions: ctx.actions,
-    keepPageOpen: needsBranding || needsAutoScroll,
-    profileDir: ctx.profileDir,
-    headed: ctx.headed,
-    storageState: ctx.storageState,
-    proxy: ctx.proxy,
-  });
+  let fetchResult: any;
+  try {
+    fetchResult = await smartFetch(ctx.url, {
+      forceBrowser: ctx.render,
+      stealth: ctx.stealth,
+      waitMs: ctx.wait,
+      userAgent: ctx.userAgent,
+      timeoutMs: ctx.timeout,
+      screenshot: ctx.screenshot,
+      screenshotFullPage: ctx.screenshotFullPage,
+      headers: ctx.headers,
+      cookies: ctx.cookies,
+      actions: ctx.actions,
+      keepPageOpen: needsBranding || needsAutoScroll,
+      profileDir: ctx.profileDir,
+      headed: ctx.headed,
+      storageState: ctx.storageState,
+      proxy: ctx.proxy,
+      proxies: ctx.options.proxies,
+      device: ctx.options.device,
+      viewportWidth: ctx.options.viewportWidth,
+      viewportHeight: ctx.options.viewportHeight,
+      waitUntil: ctx.options.waitUntil,
+      waitSelector: ctx.options.waitSelector,
+      blockResources: ctx.options.blockResources,
+      cloaked: ctx.options.cloaked,
+      cycle: ctx.options.cycle,
+    });
+  } catch (fetchError) {
+    // If fetch failed but we have a domain extractor, try it as fallback
+    if (getDomainExtractor(ctx.url)) {
+      try {
+        const ddResult = await extractDomainData('', ctx.url);
+        if (ddResult && ddResult.cleanContent.length > 50) {
+          ctx.timer.end('fetch');
+          ctx.domainData = ddResult;
+          ctx.content = ddResult.cleanContent;
+          ctx.fetchResult = {
+            html: ddResult.cleanContent,
+            url: ctx.url,
+            status: 200,
+            contentType: 'text/html',
+            method: 'domain-api-fallback',
+          };
+          ctx.title = ddResult.structured?.title || '';
+          ctx.quality = 0.90;
+          const fallbackWordCount = ddResult.cleanContent.split(/\s+/).filter(Boolean).length;
+          ctx.metadata = { ...(ctx.metadata || {}), title: ddResult.structured?.title || ctx.title, wordCount: fallbackWordCount, language: 'en' } as any;
+          ctx.domainApiHandled = true;
+          return;
+        }
+      } catch (e) {
+        // Domain API also failed — throw original error
+      }
+    }
+
+    // Search-as-proxy fallback for blocked requests (BlockedError before pipeline)
+    // When all fetch strategies fail with a bot-protection block, try DDG search
+    // to get the title/snippet from the search engine's cached version.
+    if (fetchError instanceof BlockedError) {
+      try {
+        const { searchFallback } = await import('./search-fallback.js');
+        const searchResult = await searchFallback(ctx.url);
+        if (searchResult.cachedContent && searchResult.cachedContent.length > 50) {
+          ctx.timer.end('fetch');
+          ctx.content = searchResult.cachedContent;
+          ctx.title = searchResult.title || ctx.title;
+          ctx.quality = 0.4;
+          ctx.warnings.push('Content retrieved from search engine cache because the original page blocked direct access. Results may be incomplete.');
+          ctx.fetchResult = {
+            html: searchResult.cachedContent,
+            url: ctx.url,
+            status: 0,
+            contentType: 'text/markdown',
+            method: 'search-fallback',
+          };
+          ctx.metadata = {
+            ...(ctx.metadata || {}),
+            title: searchResult.title || ctx.title,
+            blocked: true,
+            fallbackSource: searchResult.source,
+          } as any;
+          return;
+        }
+      } catch { /* Search fallback also failed — rethrow original BlockedError */ }
+    }
+
+    throw fetchError;
+  }
   ctx.timer.end('fetch');
 
   // Auto-scroll to load lazy content, then grab fresh HTML
@@ -385,6 +509,11 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
   }
 
   ctx.fetchResult = fetchResult;
+
+  // Warn when a challenge/CAPTCHA page was detected
+  if (fetchResult.challengeDetected) {
+    ctx.warnings.push('Challenge/CAPTCHA page detected. Content may be incomplete or from a bot-detection page.');
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -395,6 +524,9 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
  * Detect and set ctx.contentType based on response headers and content.
  */
 export function detectContentType(ctx: PipelineContext): void {
+  // Skip HTML parsing stages — domain API already provided clean content
+  if (ctx.domainApiHandled) return;
+
   const fetchResult = ctx.fetchResult!;
   const ct = (fetchResult.contentType || '').toLowerCase();
   const urlLower = fetchResult.url.toLowerCase();
@@ -420,16 +552,21 @@ export function detectContentType(ctx: PipelineContext): void {
  * Sets ctx.content, ctx.title, ctx.metadata, ctx.links, ctx.quality, ctx.prunedPercent.
  */
 export async function parseContent(ctx: PipelineContext): Promise<void> {
+  // Skip HTML parsing stages — domain API already provided clean content
+  if (ctx.domainApiHandled) return;
+
   const fetchResult = ctx.fetchResult!;
   const { contentType, format, fullPage, raw, selector, exclude, includeTags, excludeTags } = ctx;
   const hasBuffer = !!fetchResult.buffer;
 
   if (contentType === 'document' && hasBuffer) {
     // Document parsing pipeline (PDF/DOCX)
+    // 'clean' maps to 'markdown' for extraction; cleanForAI is applied in buildResult
+    const docFormat = format === 'clean' ? 'markdown' : format;
     const docResult = await extractDocumentToFormat(fetchResult.buffer!, {
       url: fetchResult.url,
       contentType: fetchResult.contentType,
-      format,
+      format: docFormat,
     });
 
     ctx.content = docResult.content;
@@ -449,6 +586,7 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
       switch (format) {
         case 'html':  ctx.content = liteHtml; break;
         case 'text':  ctx.content = htmlToText(liteHtml); break;
+        case 'clean': ctx.content = cleanForAI(htmlToMarkdown(liteHtml, { raw, prune: false })); break;
         default:      ctx.content = htmlToMarkdown(liteHtml, { raw, prune: false }); break;
       }
       ctx.timer.end('convert');
@@ -577,6 +715,12 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
         case 'text':
           converted = htmlToText(htmlForConvert);
           break;
+        case 'clean': {
+          // First convert to markdown, then strip link syntax
+          const md = htmlToMarkdown(htmlForConvert, { raw, prune: false });
+          converted = cleanForAI(md);
+          break;
+        }
         case 'markdown':
         default:
           // prune:false — already pruned above; avoid double-pruning in htmlToMarkdown
@@ -606,11 +750,17 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
       switch (format) {
         case 'html':  retryConverted = contentHtml; break;
         case 'text':  retryConverted = htmlToText(contentHtml); break;
+        case 'clean': retryConverted = cleanForAI(htmlToMarkdown(contentHtml, { raw, prune: false })); break;
         case 'markdown':
         default:      retryConverted = htmlToMarkdown(contentHtml, { raw, prune: false }); break;
       }
       ctx.timer.end('convert-retry');
       ctx.content = retryConverted;
+    }
+
+    // Clean up markdown noise (empty links, excess newlines, trailing spaces)
+    if (format === 'markdown') {
+      ctx.content = cleanMarkdownNoise(ctx.content);
     }
 
     ctx.quality = calculateQuality(ctx.content, fetchResult.html);
@@ -791,6 +941,7 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
       }
       budgetedContent = truncated;
       ctx.budgetFallback = true;
+      ctx.warnings.push('Content was truncated to fit budget using head truncation (BM25 distillation produced insufficient content)');
       if (process.env.DEBUG) {
         console.debug('[webpeel]', `budget distillation fallback: BM25 produced ${budgetedContent.length} chars (< 10% of ${originalContent.length}), using head truncation`);
       }
@@ -801,7 +952,7 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
 
   // Domain-aware structured extraction (Twitter, Reddit, GitHub, HN)
   // Fires when URL matches a known domain. Replaces content with clean markdown.
-  if (getDomainExtractor(fetchResult.url)) {
+  if (getDomainExtractor(fetchResult.url) && !ctx.domainApiHandled) {
     try {
       ctx.timer.mark('domainExtract');
       const ddResult = await extractDomainData(fetchResult.html, fetchResult.url);
@@ -816,9 +967,64 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
     }
   }
 
+  // === Challenge / bot-protection page detection ===
+  // If the extracted content looks like a challenge page (not real content),
+  // mark it and try the search-as-proxy fallback to get the real info.
+  if (ctx.content && ctx.content.length < 2000) {
+    const lowerContent = ctx.content.toLowerCase();
+    const challengeSignals = [
+      'please verify you are a human',
+      'access denied',
+      'enable javascript and cookies',
+      'checking your browser',
+      'cloudflare',
+      'just a moment',
+      'ray id',
+      'attention required',
+      'please wait while we verify',
+      'bot protection',
+      'are you a robot',
+      'captcha',
+      'page not found',
+      'not found',
+      'forbidden',
+      'error 403',
+      'error 404',
+      '403 forbidden',
+      '404 not found',
+      'sorry, this page',
+      'blocked',
+    ];
+    const isChallengeContent = challengeSignals.some(s => lowerContent.includes(s))
+      || (ctx.content.length < 100 && (ctx.stealth || ctx.fetchResult?.method === 'stealth' || ctx.fetchResult?.method === 'browser'));
+
+    if (isChallengeContent) {
+      ctx.warnings.push('Bot protection detected. Content is a challenge page, not the actual page content.');
+      if (ctx.metadata) {
+        (ctx.metadata as any).blocked = true;
+        (ctx.metadata as any).challengeDetected = true;
+      }
+      // Try search fallback for the real content
+      try {
+        const { searchFallback } = await import('./search-fallback.js');
+        const searchResult = await searchFallback(ctx.url);
+        if (searchResult.cachedContent && searchResult.cachedContent.length > 50) {
+          ctx.content = searchResult.cachedContent;
+          ctx.title = searchResult.title || ctx.title;
+          ctx.quality = 0.4;
+          ctx.warnings.push('Content retrieved from search engine cache because the original page blocked direct access. Results may be incomplete.');
+          if (ctx.metadata) {
+            (ctx.metadata as any).fallbackSource = searchResult.source;
+          }
+        }
+      } catch { /* Search fallback failed — continue with challenge page content */ }
+    }
+  }
+
   // === Zero-token safety net ===
   // NEVER return empty content. If pipeline produced nothing, fall back.
   if (!ctx.content || ctx.content.trim().length === 0) {
+    ctx.warnings.push('Primary extraction failed; content sourced from fallback (meta description or raw HTML)');
     // Try 1: JSON-LD (may not have been tried if selector/raw was used)
     if (fetchResult.html) {
       const { extractJsonLd } = await import('./json-ld.js');
@@ -854,6 +1060,24 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
         return;
       }
     }
+
+    // Try 4: Search-as-proxy fallback (when page appears blocked)
+    // Search engines already crawled this page — use their cached snippet.
+    try {
+      const { searchFallback } = await import('./search-fallback.js');
+      const searchResult = await searchFallback(ctx.url);
+      if (searchResult.cachedContent && searchResult.cachedContent.length > 50) {
+        ctx.content = searchResult.cachedContent;
+        ctx.title = searchResult.title || ctx.title;
+        ctx.quality = 0.4; // Low quality — it's a search snippet, not the full page
+        ctx.warnings.push('Content retrieved from search engine cache because the original page blocked direct access. Results may be incomplete.');
+        if (ctx.metadata) {
+          (ctx.metadata as any).blocked = true;
+          (ctx.metadata as any).fallbackSource = searchResult.source;
+        }
+        return;
+      }
+    } catch { /* Search fallback failed — continue to final empty handler */ }
   }
 }
 
@@ -953,7 +1177,35 @@ export function buildResult(ctx: PipelineContext): PeelResult {
   } else if (ctx.budgetFallback) {
     warning = 'Budget distillation was unable to identify key content. Showing first portion of page instead. This may be a listing or index page — try fetching without a budget for full content.';
   } else if (contentLen < 50) {
-    warning = 'Very little content extracted. The page may be empty, behind a login wall, or require JavaScript rendering.';
+    // Check if this looks like a blocked request
+    const fetchMethod = ctx.fetchResult?.method || 'unknown';
+    const triedStealth = fetchMethod === 'stealth' || ctx.options.stealth;
+    const triedBrowser = fetchMethod === 'browser' || ctx.options.render;
+
+    if (triedStealth || triedBrowser) {
+      warning = 'This site appears to use bot protection (Cloudflare, Akamai, PerimeterX). Try: --cloaked flag, a residential proxy (--proxy), or check if the URL requires authentication.';
+      // Set blocked flag in metadata
+      if (ctx.metadata) {
+        (ctx.metadata as any).blocked = true;
+      }
+    } else {
+      warning = 'Very little content extracted. The page may require JavaScript rendering (try --render), be behind a login wall, or use bot protection.';
+    }
+  }
+
+  // Apply clean format if requested (after all other processing)
+  if (ctx.format === 'clean' && ctx.content) {
+    ctx.content = cleanForAI(ctx.content);
+  }
+
+  // Chunking for RAG pipelines
+  let ragChunks: PeelResult['chunks'] | undefined;
+  if (ctx.options.chunk) {
+    const chunkOpts: ChunkOptions = typeof ctx.options.chunk === 'object'
+      ? ctx.options.chunk
+      : {};
+    const chunkResult = chunkContent(ctx.content, chunkOpts);
+    ragChunks = chunkResult.chunks;
   }
 
   return {
@@ -977,11 +1229,14 @@ export function buildResult(ctx: PipelineContext): PeelResult {
     linkCount: ctx.links.length,
     freshness,
     ...(warning !== undefined ? { warning } : {}),
+    ...(ctx.metadata && (ctx.metadata as any).blocked ? { blocked: true } : {}),
     ...(ctx.prunedPercent !== undefined ? { prunedPercent: ctx.prunedPercent } : {}),
     ...(ctx.domainData !== undefined ? { domainData: ctx.domainData } : {}),
     ...(ctx.readabilityResult !== undefined ? { readability: ctx.readabilityResult } : {}),
     ...(ctx.quickAnswerResult !== undefined ? { quickAnswer: ctx.quickAnswerResult } : {}),
     timing: ctx.timer.toTiming(),
     ...(ctx.jsonLdType !== undefined ? { jsonLdType: ctx.jsonLdType } : {}),
+    ...(ctx.warnings.length > 0 ? { warnings: ctx.warnings } : {}),
+    ...(ragChunks !== undefined ? { chunks: ragChunks } : {}),
   };
 }

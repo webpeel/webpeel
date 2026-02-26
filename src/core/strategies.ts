@@ -270,6 +270,26 @@ export interface StrategyOptions {
    * Format: protocol://[user:pass@]host:port
    */
   proxy?: string;
+  /** Array of proxy URLs for rotation on failure */
+  proxies?: string[];
+  /** Device emulation: 'desktop' (default), 'mobile', 'tablet' */
+  device?: 'desktop' | 'mobile' | 'tablet';
+  /** Browser viewport width in pixels */
+  viewportWidth?: number;
+  /** Browser viewport height in pixels */
+  viewportHeight?: number;
+  /** Wait condition: 'domcontentloaded' (default), 'networkidle', 'load', 'commit' */
+  waitUntil?: string;
+  /** CSS selector to wait for before extracting content */
+  waitSelector?: string;
+  /** Block resource types for faster loading: 'image', 'stylesheet', 'font', 'media', 'script' */
+  blockResources?: string[];
+  /** Use CloakBrowser patched Chromium for maximum stealth */
+  cloaked?: boolean;
+  /** Use PeelTLS TLS fingerprint spoofing */
+  cycle?: boolean; // @deprecated — use tls instead
+  /** Use PeelTLS TLS fingerprint spoofing */
+  tls?: boolean;
 }
 
 /* ---------- browser-level fetch helper ---------------------------------- */
@@ -290,6 +310,12 @@ interface BrowserStrategyOptions {
   headed?: boolean;
   storageState?: any;
   proxy?: string;
+  device?: 'desktop' | 'mobile' | 'tablet';
+  viewportWidth?: number;
+  viewportHeight?: number;
+  waitUntil?: string;
+  waitSelector?: string;
+  blockResources?: string[];
 }
 
 async function fetchWithBrowserStrategy(
@@ -312,6 +338,12 @@ async function fetchWithBrowserStrategy(
     headed,
     storageState,
     proxy,
+    device,
+    viewportWidth,
+    viewportHeight,
+    waitUntil,
+    waitSelector,
+    blockResources,
   } = options;
 
   try {
@@ -331,6 +363,12 @@ async function fetchWithBrowserStrategy(
       headed,
       proxy,
       storageState,
+      device,
+      viewportWidth,
+      viewportHeight,
+      waitUntil,
+      waitSelector,
+      blockResources,
     });
 
     return {
@@ -447,13 +485,31 @@ export async function smartFetch(
     headed = false,
     storageState,
     proxy,
+    proxies,
+    device,
+    viewportWidth,
+    viewportHeight,
+    waitUntil,
+    waitSelector,
+    blockResources,
+    cloaked = false,
+    cycle = false,
+    tls = false,
   } = options;
+  const usePeelTLS = tls || cycle;
+
+  // Build effective proxy list: explicit proxies array, or single proxy, or empty
+  const effectiveProxies: (string | undefined)[] =
+    proxies?.length ? proxies :
+    proxy ? [proxy] :
+    [undefined]; // undefined = direct connection (no proxy)
+  const firstProxy = effectiveProxies[0];
 
   const hooks = getStrategyHooks();
   const fetchStartMs = Date.now();
 
   const recordMethod = (method: StrategyResult['method']): void => {
-    if (method === 'cached') return;
+    if (method === 'cached' || method === 'cloaked' || method === 'cycle' || method === 'peeltls' || method === 'cf-worker' || method === 'google-cache') return;
     hooks.recordDomainResult?.(url, method, Date.now() - fetchStartMs);
   };
 
@@ -487,7 +543,70 @@ export async function smartFetch(
     !cookies &&
     waitMs === 0 &&
     !userAgent &&
-    !proxy;
+    !proxy &&
+    !proxies?.length;
+
+  /* ---- CloakBrowser direct path (if explicitly requested) -------------- */
+
+  if (cloaked) {
+    try {
+      const { cloakFetch, isCloakBrowserAvailable } = await import('./cloak-fetch.js');
+      if (!isCloakBrowserAvailable()) {
+        throw new Error('CloakBrowser not installed. Run: npm install cloakbrowser playwright-core');
+      }
+      if (process.env.DEBUG) console.debug('[webpeel]', 'Using CloakBrowser stealth (explicitly requested)');
+      const result = await cloakFetch({
+        url,
+        proxy: effectiveProxies[0],
+        userAgent,
+        viewportWidth,
+        viewportHeight,
+        waitMs,
+        waitSelector,
+        waitUntil,
+        timeoutMs,
+        screenshot,
+        screenshotFullPage,
+        actions,
+        headers,
+        headed,
+      });
+      if (canUseCache && !result.challengeDetected) {
+        hooks.setCache?.(url, result) ?? setBasicCache(url, result);
+      }
+      recordMethod(result.method);
+      return result;
+    } catch (e) {
+      if (isAbortError(e)) throw e;
+      throw e; // Don't fall back — user explicitly requested cloaked mode
+    }
+  }
+
+  /* ---- PeelTLS direct path (if explicitly requested via --tls or --cycle) */
+
+  if (usePeelTLS) {
+    try {
+      const { peelTLSFetch, isPeelTLSAvailable } = await import('./peel-tls.js');
+      if (!isPeelTLSAvailable()) {
+        throw new Error('PeelTLS binary not found. Build it with: cd peeltls && bash build.sh');
+      }
+      if (process.env.DEBUG) console.debug('[webpeel]', 'Using PeelTLS fingerprint spoofing (explicitly requested)');
+      const result = await peelTLSFetch(url, {
+        proxy: firstProxy,
+        headers,
+        timeout: timeoutMs,
+      });
+      const peelResult: StrategyResult = { ...result, method: 'peeltls' };
+      if (canUseCache) {
+        hooks.setCache?.(url, peelResult) ?? setBasicCache(url, peelResult);
+      }
+      recordMethod('peeltls');
+      return peelResult;
+    } catch (e) {
+      if (isAbortError(e)) throw e;
+      throw e; // Don't fall back — user explicitly requested tls mode
+    }
+  }
 
   /* ---- hook-based cache check (premium) -------------------------------- */
 
@@ -498,7 +617,7 @@ export async function smartFetch(
         // Background revalidation — fire-and-forget
         void (async () => {
           try {
-            const fresh = await simpleFetch(url, userAgent, timeoutMs, undefined, undefined, proxy);
+            const fresh = await simpleFetch(url, userAgent, timeoutMs, undefined, undefined, firstProxy);
             if (!looksLikeShellPage(fresh)) {
               hooks.setCache?.(url, { ...fresh, method: 'simple' as const });
             }
@@ -550,7 +669,13 @@ export async function smartFetch(
     profileDir,
     headed,
     storageState,
-    proxy,
+    proxy: firstProxy,
+    device,
+    viewportWidth,
+    viewportHeight,
+    waitUntil,
+    waitSelector,
+    blockResources,
   };
 
   /* ---- Strategy: simple fetch (with optional race) --------------------- */
@@ -566,7 +691,7 @@ export async function smartFetch(
           timeoutMs,
           headers,
           simpleAbortController.signal,
-          proxy,
+          firstProxy,
         ),
       3,
     ).then((result) => {
@@ -743,58 +868,201 @@ export async function smartFetch(
 
   /* ---- browser / stealth fallback with challenge-detection cascade ----- */
 
-  // Attempt 1: browser (or stealth, if already forced)
-  let finalResult = await fetchWithBrowserStrategy(url, browserOptions);
+  // Try each proxy in sequence until one succeeds
+  let lastError: unknown;
+  for (let proxyIdx = 0; proxyIdx < effectiveProxies.length; proxyIdx++) {
+    const currentProxy = effectiveProxies[proxyIdx];
+    const isLastProxy = proxyIdx === effectiveProxies.length - 1;
 
-  // Check if the browser result is itself a bot-challenge page
-  const browserChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+    try {
+      const currentBrowserOptions: BrowserStrategyOptions = { ...browserOptions, proxy: currentProxy };
 
-  if (browserChallengeCheck.isChallenge && browserChallengeCheck.confidence >= 0.7) {
-    if (!browserOptions.effectiveStealth) {
-      // Attempt 2: escalate to stealth
-      const stealthOptions: BrowserStrategyOptions = {
-        ...browserOptions,
-        effectiveStealth: true,
-      };
-      finalResult = await fetchWithBrowserStrategy(url, stealthOptions);
+      // Attempt 1: browser (or stealth, if already forced)
+      let finalResult = await fetchWithBrowserStrategy(url, currentBrowserOptions);
 
-      const stealthChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+      // Check if the browser result is itself a bot-challenge page
+      const browserChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
 
-      if (stealthChallengeCheck.isChallenge && stealthChallengeCheck.confidence >= 0.7) {
-        // Attempt 3: stealth + 5s extra wait
-        const stealthExtraOptions: BrowserStrategyOptions = {
-          ...stealthOptions,
-          waitMs: stealthOptions.waitMs + 5000,
-        };
-        finalResult = await fetchWithBrowserStrategy(url, stealthExtraOptions);
+      if (browserChallengeCheck.isChallenge && browserChallengeCheck.confidence >= 0.7) {
+        if (!currentBrowserOptions.effectiveStealth) {
+          // Attempt 2: escalate to stealth
+          const stealthOptions: BrowserStrategyOptions = {
+            ...currentBrowserOptions,
+            effectiveStealth: true,
+          };
+          finalResult = await fetchWithBrowserStrategy(url, stealthOptions);
 
-        const finalChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
-        if (finalChallengeCheck.isChallenge && finalChallengeCheck.confidence >= 0.7) {
-          // Give up — return with warning flag
-          finalResult = { ...finalResult, challengeDetected: true };
+          const stealthChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+
+          if (stealthChallengeCheck.isChallenge && stealthChallengeCheck.confidence >= 0.7) {
+            // Attempt 3: stealth + 5s extra wait
+            const stealthExtraOptions: BrowserStrategyOptions = {
+              ...stealthOptions,
+              waitMs: stealthOptions.waitMs + 5000,
+            };
+            finalResult = await fetchWithBrowserStrategy(url, stealthExtraOptions);
+
+            const finalChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+            if (finalChallengeCheck.isChallenge && finalChallengeCheck.confidence >= 0.7) {
+              if (!isLastProxy) {
+                // More proxies to try — move on to the next one
+                lastError = new BlockedError(`Challenge detected with proxy ${currentProxy || 'direct'}`);
+                continue;
+              }
+              // Last proxy: give up and return with warning flag (preserve original behaviour)
+              finalResult = { ...finalResult, challengeDetected: true };
+            }
+          }
+        } else {
+          // Already in stealth mode; retry with 5s extra wait
+          const stealthExtraOptions: BrowserStrategyOptions = {
+            ...currentBrowserOptions,
+            waitMs: currentBrowserOptions.waitMs + 5000,
+          };
+          finalResult = await fetchWithBrowserStrategy(url, stealthExtraOptions);
+
+          const finalChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
+          if (finalChallengeCheck.isChallenge && finalChallengeCheck.confidence >= 0.7) {
+            if (!isLastProxy) {
+              // More proxies to try — move on to the next one
+              lastError = new BlockedError(`Challenge detected with proxy ${currentProxy || 'direct'}`);
+              continue;
+            }
+            // Last proxy: give up and return with warning flag (preserve original behaviour)
+            finalResult = { ...finalResult, challengeDetected: true };
+          }
         }
       }
-    } else {
-      // Already in stealth mode; retry with 5s extra wait
-      const stealthExtraOptions: BrowserStrategyOptions = {
-        ...browserOptions,
-        waitMs: browserOptions.waitMs + 5000,
-      };
-      finalResult = await fetchWithBrowserStrategy(url, stealthExtraOptions);
 
-      const finalChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);
-      if (finalChallengeCheck.isChallenge && finalChallengeCheck.confidence >= 0.7) {
-        // Give up — return with warning flag
-        finalResult = { ...finalResult, challengeDetected: true };
+      // If still challenged after stealth+wait, try PeelTLS (TLS fingerprint spoofing)
+      if (finalResult.challengeDetected) {
+        try {
+          const { peelTLSFetch, isPeelTLSAvailable } = await import('./peel-tls.js');
+          if (isPeelTLSAvailable()) {
+            if (process.env.DEBUG) console.debug('[webpeel]', 'Escalating to PeelTLS fingerprint spoofing');
+            const peelResult = await peelTLSFetch(url, {
+              proxy: currentProxy,
+              headers,
+              timeout: timeoutMs,
+            });
+            const peelStrategyResult: StrategyResult = { ...peelResult, method: 'peeltls' };
+            const peelChallengeCheck = detectChallenge(peelResult.html, peelResult.statusCode);
+            if (!peelChallengeCheck.isChallenge || peelChallengeCheck.confidence < 0.7) {
+              // PeelTLS succeeded
+              if (canUseCache) {
+                hooks.setCache?.(url, peelStrategyResult) ?? setBasicCache(url, peelStrategyResult);
+              }
+              recordMethod('peeltls');
+              return peelStrategyResult;
+            }
+            // PeelTLS still challenged — fall through to CloakBrowser
+            if (process.env.DEBUG) console.debug('[webpeel]', 'PeelTLS still challenged, escalating to CloakBrowser');
+          }
+        } catch (peelError) {
+          if (process.env.DEBUG) console.debug('[webpeel]', 'PeelTLS failed:', peelError instanceof Error ? peelError.message : peelError);
+          // Fall through to CloakBrowser
+        }
       }
+
+      // If still challenged after PeelTLS, try Cloudflare Worker proxy (clean edge IPs)
+      if (finalResult.challengeDetected) {
+        try {
+          const { cfWorkerFetch, isCfWorkerAvailable } = await import('./cf-worker-proxy.js');
+          if (isCfWorkerAvailable()) {
+            if (process.env.DEBUG) console.debug('[webpeel]', 'Escalating to CF Worker proxy');
+            const cfResult = await cfWorkerFetch(url, {
+              headers,
+              timeout: timeoutMs,
+            });
+            const cfStrategyResult: StrategyResult = { ...cfResult, method: 'cf-worker' as any };
+            const cfChallengeCheck = detectChallenge(cfResult.html, cfResult.statusCode);
+            if (!cfChallengeCheck.isChallenge || cfChallengeCheck.confidence < 0.7) {
+              // CF Worker succeeded
+              if (canUseCache) {
+                hooks.setCache?.(url, cfStrategyResult) ?? setBasicCache(url, cfStrategyResult);
+              }
+              recordMethod('cf-worker' as any);
+              return cfStrategyResult;
+            }
+            if (process.env.DEBUG) console.debug('[webpeel]', 'CF Worker still challenged, escalating to CloakBrowser');
+          }
+        } catch (cfError) {
+          if (process.env.DEBUG) console.debug('[webpeel]', 'CF Worker proxy failed:', cfError instanceof Error ? cfError.message : cfError);
+        }
+      }
+
+      // If still challenged after CF Worker, try CloakBrowser
+      if (finalResult.challengeDetected) {
+        try {
+          const { cloakFetch, isCloakBrowserAvailable } = await import('./cloak-fetch.js');
+          if (isCloakBrowserAvailable()) {
+            if (process.env.DEBUG) console.debug('[webpeel]', 'Escalating to CloakBrowser stealth');
+            const cloakResult = await cloakFetch({
+              url,
+              proxy: currentProxy,
+              userAgent,
+              viewportWidth,
+              viewportHeight,
+              waitMs,
+              waitSelector,
+              waitUntil,
+              timeoutMs,
+              screenshot,
+              screenshotFullPage,
+              actions,
+              headers,
+              headed,
+            });
+            if (canUseCache && !cloakResult.challengeDetected) {
+              hooks.setCache?.(url, cloakResult) ?? setBasicCache(url, cloakResult);
+            }
+            recordMethod(cloakResult.method);
+            return cloakResult;
+          }
+        } catch (cloakError) {
+          if (process.env.DEBUG) console.debug('[webpeel]', 'CloakBrowser failed:', cloakError instanceof Error ? cloakError.message : cloakError);
+          // Fall through to Google Cache fallback
+        }
+      }
+
+      // If still challenged after PeelTLS/CloakBrowser, try Google Cache
+      if (finalResult.challengeDetected) {
+        try {
+          const { fetchGoogleCache } = await import('./google-cache.js');
+          const cacheResult = await fetchGoogleCache(url, { timeout: timeoutMs });
+          if (cacheResult && cacheResult.html.length > 200) {
+            if (process.env.DEBUG) console.debug('[webpeel]', 'Using Google Cache fallback');
+            const cacheStrategyResult: StrategyResult = {
+              html: cacheResult.html,
+              url: cacheResult.url,
+              statusCode: cacheResult.statusCode,
+              contentType: 'text/html',
+              method: 'google-cache' as any,
+            };
+            return cacheStrategyResult;
+          }
+        } catch (cacheError) {
+          if (process.env.DEBUG) console.debug('[webpeel]', 'Google Cache failed:', cacheError);
+        }
+      }
+
+      // Success (or gave up with challengeDetected=true on the last proxy)
+      if (canUseCache && !finalResult.challengeDetected) {
+        hooks.setCache?.(url, finalResult) ?? setBasicCache(url, finalResult);
+      }
+      recordMethod(finalResult.method);
+      return finalResult;
+    } catch (e) {
+      lastError = e;
+      if (isAbortError(e)) throw e; // Don't retry on abort
+      // Log and try next proxy
+      if (process.env.DEBUG) console.debug('[webpeel]', `proxy ${currentProxy || 'direct'} failed:`, e instanceof Error ? e.message : e);
+      // If last proxy, throw below; otherwise continue loop
     }
   }
 
-  if (canUseCache && !finalResult.challengeDetected) {
-    hooks.setCache?.(url, finalResult) ?? setBasicCache(url, finalResult);
-  }
-  recordMethod(finalResult.method);
-  return finalResult;
+  // All proxies exhausted — throw the last error
+  throw lastError;
 }
 
 /* ---------- legacy export for tests ------------------------------------- */

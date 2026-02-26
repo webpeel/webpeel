@@ -1,0 +1,42 @@
+{
+  "_comment": "WebPeel MCP Server Configuration",
+  "_docs": "https://webpeel.dev/docs/mcp",
+
+  "mcpServers": {
+    "webpeel": {
+      "command": "npx",
+      "args": ["-y", "webpeel", "mcp"],
+      "env": {
+        "WEBPEEL_API_KEY": "wp_your_key_here"
+      }
+    }
+  },
+
+  "_usage": {
+    "claude_desktop": "Copy mcpServers block into ~/.claude/claude_desktop_config.json",
+    "cursor": "Copy mcpServers block into .cursor/mcp.json in your project root",
+    "vscode": "Copy mcpServers block into .vscode/mcp.json or user settings",
+    "windsurf": "Copy mcpServers block into ~/.codeium/windsurf/mcp_config.json"
+  },
+
+  "_available_tools": [
+    "fetch          — Fetch any URL as markdown or JSON",
+    "search         — Search the web, get structured results",
+    "extract        — Extract structured data with a schema",
+    "crawl          — Crawl an entire site",
+    "screenshot     — Capture a full-page screenshot",
+    "youtube        — Get YouTube video transcripts",
+    "monitor_start  — Watch a URL for changes",
+    "monitor_stop   — Stop watching a URL",
+    "monitor_list   — List active monitors",
+    "batch_fetch    — Fetch multiple URLs in parallel",
+    "map_site       — Discover all URLs on a site",
+    "diff           — Compare two versions of a page",
+    "summarize      — Summarize a page with AI",
+    "qa             — Ask a question about a page",
+    "pdf            — Extract content from a PDF URL",
+    "reddit         — Get structured Reddit thread data",
+    "twitter        — Get tweets from a profile or thread",
+    "github         — Get structured GitHub repo/issue data"
+  ]
+}

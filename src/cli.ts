@@ -24,6 +24,7 @@ import { checkUsage, showUsageFooter, handleLogin, handleLogout, handleUsage, lo
 import { getCache, setCache, parseTTL, clearCache, cacheStats } from './cache.js';
 import { estimateTokens } from './core/markdown.js';
 import { distillToBudget, budgetListings } from './core/budget.js';
+import { SCHEMA_TEMPLATES, getSchemaTemplate, listSchemaTemplates } from './core/schema-templates.js';
 
 const program = new Command();
 
@@ -180,10 +181,15 @@ program
   .argument('[url]', 'URL to fetch')
   .option('-r, --render', 'Use headless browser (for JS-heavy sites)')
   .option('--stealth', 'Use stealth mode to bypass bot detection (auto-enables --render)')
+  .option('--cloaked', 'Use CloakBrowser stealth (requires: npm install cloakbrowser)')
+  .option('--tls', 'Use PeelTLS TLS fingerprint spoofing (built-in, no install needed)')
+  .option('--cycle', 'Use PeelTLS TLS fingerprint spoofing (alias for --tls)', false)
   .option('--proxy <url>', 'Proxy URL for requests (http://host:port, socks5://user:pass@host:port)')
+  .option('--proxies <urls>', 'Comma-separated list of proxy URLs for rotation (tried in order on failure)', (val: string) => val.split(',').map((s: string) => s.trim()).filter(Boolean))
   .option('-w, --wait <ms>', 'Wait time after page load (ms)', parseInt)
   .option('--html', 'Output raw HTML instead of markdown')
   .option('--text', 'Output plain text instead of markdown')
+  .option('--clean', 'Output clean text optimized for AI (strips URLs, keeps structure)')
   .option('--json', 'Output as JSON')
   .option('-t, --timeout <ms>', 'Request timeout (ms)', (v: string) => parseInt(v, 10), 30000)
   .option('--ua <agent>', 'Custom user agent')
@@ -198,9 +204,10 @@ program
   .option('--full-content', 'Return full page content (disable automatic content density pruning)')
   .option('--readable', 'Reader mode — extract only the main article content, strip all noise (like browser Reader Mode)')
   .option('--focus <query>', 'Query-focused filtering — only return content relevant to this query (BM25 ranking)')
-  .option('--chunk <size>', 'Split content into N-token chunks for LLM processing (default strategy: semantic)', parseInt)
-  .option('--chunk-overlap <tokens>', 'Overlap tokens between chunks (default: 200)', parseInt)
-  .option('--chunk-strategy <strategy>', 'Chunking strategy: fixed, semantic (default), paragraph')
+  .option('--chunk', 'Split content into RAG-ready chunks')
+  .option('--chunk-size <tokens>', 'Max tokens per chunk (default: 512)', parseInt)
+  .option('--chunk-overlap <tokens>', 'Overlap tokens between chunks (default: 50)', parseInt)
+  .option('--chunk-strategy <strategy>', 'Chunking strategy: section (default), paragraph, fixed')
   .option('-H, --header <header...>', 'Custom headers (e.g., "Authorization: Bearer token")')
   .option('--cookie <cookie...>', 'Cookies to set (e.g., "session=abc123")')
   .option('--cache <ttl>', 'Cache results locally (e.g., "5m", "1h", "1d") — default: 5m')
@@ -234,6 +241,14 @@ program
   .option('--headed', 'Run browser in headed (visible) mode — useful for profile setup and debugging')
   .option('-q, --question <q>', 'Ask a question about the page content (BM25-powered, no LLM key needed)')
   .option('--agent', 'Agent mode: sets --json, --silent, --extract-all, and --budget 4000 (override with --budget N)')
+  .option('--device <type>', 'Device emulation: desktop (default), mobile, tablet (auto-enables --render)')
+  .option('--viewport <WxH>', 'Browser viewport size (e.g., "1920x1080") (auto-enables --render)', (val: string) => {
+    const [w, h] = val.split('x').map(Number);
+    return { width: w, height: h };
+  })
+  .option('--wait-until <event>', 'Page load event: domcontentloaded, networkidle, load, commit (auto-enables --render)')
+  .option('--wait-selector <css>', 'Wait for CSS selector before extracting (auto-enables --render)')
+  .option('--block-resources <types>', 'Block resource types, comma-separated: image,stylesheet,font,media,script (auto-enables --render)')
 
 program.configureHelp({
   sortSubcommands: true,
@@ -277,10 +292,24 @@ Examples:
   $ webpeel "https://nytimes.com/article" --readable           Reader mode
   $ webpeel search "best restaurants in NYC"                   Web search
   $ webpeel hotels "Manhattan" --checkin tomorrow              Hotel search
+
+Agent Integration:
+  $ webpeel mcp                                                Start MCP server
+  $ cat urls.txt | webpeel batch                               Batch from stdin
+  $ webpeel pipe "https://example.com" | jq .content           Pipe-friendly JSON
+  $ webpeel "https://site.com" --json --silent                 Same as pipe
+  $ curl https://webpeel.dev/llms.txt                          AI-readable docs
 `);
 
-program
-  .action(async (url: string | undefined, options) => {
+// Main fetch handler — shared with the `pipe` subcommand
+async function runFetch(url: string | undefined, options: any): Promise<void> {
+    // Smart defaults: when piped (not a TTY), default to silent JSON
+    const isPiped = !process.stdout.isTTY;
+    if (isPiped && !options.html && !options.text) {
+      if (!options.json) options.json = true;
+      if (!options.silent) options.silent = true;
+    }
+
     // --agent sets sensible defaults for AI agents; explicit flags override
     if (options.agent) {
       if (!options.json) options.json = true;
@@ -481,6 +510,27 @@ program
           }
         }
 
+        // --- BM25 Schema Template Extraction (cached path) ---
+        if (options.schema && cachedResult.content) {
+          const { getSchemaTemplate: getSchTmplCached } = await import('./core/schema-templates.js');
+          const schTemplateCached = getSchTmplCached(options.schema as string);
+          if (schTemplateCached) {
+            const { quickAnswer: qaCached } = await import('./core/quick-answer.js');
+            const { smartExtractSchemaFields: smartExtractCached } = await import('./core/schema-postprocess.js');
+            const extractedCached = smartExtractCached(
+              cachedResult.content,
+              schTemplateCached.fields,
+              qaCached,
+              {
+                pageTitle: (cachedResult as any).title,
+                pageUrl: (cachedResult as any).url,
+                metadata: (cachedResult as any).metadata as Record<string, any>,
+              },
+            );
+            (cachedResult as any).extracted = extractedCached;
+          }
+        }
+
         await outputResult(cachedResult as PeelResult, options, { cached: true });
         process.exit(0);
       }
@@ -616,7 +666,13 @@ program
         ? 0
         : (scrollExtractRaw !== undefined ? scrollExtractRaw : 0);
 
-      const useRender = options.render || options.stealth || (actions && actions.length > 0) || scrollExtractCount > 0 || isAutoScroll || false;
+      const useRender = options.render || options.stealth || (actions && actions.length > 0) || scrollExtractCount > 0 || isAutoScroll
+        || (options.device && options.device !== 'desktop')
+        || !!options.viewport
+        || !!options.waitUntil
+        || !!options.waitSelector
+        || !!options.blockResources
+        || false;
 
       // Inject scroll actions when --scroll-extract N (fixed count) is used
       if (scrollExtractCount > 0) {
@@ -656,13 +712,36 @@ program
         headed: options.headed || false,
         storageState: resolvedStorageState,
         proxy: options.proxy as string | undefined,
+        proxies: options.proxies as string[] | undefined,
         fullPage: options.fullContent || false,
         readable: options.readable || false,
         // Smart auto-scroll (bare --scroll-extract flag)
         autoScroll: isAutoScroll
           ? { timeout: options.scrollExtractTimeout }
           : undefined,
+        device: options.device as 'desktop' | 'mobile' | 'tablet' | undefined,
+        viewportWidth: options.viewport ? (options.viewport as { width: number; height: number }).width : undefined,
+        viewportHeight: options.viewport ? (options.viewport as { width: number; height: number }).height : undefined,
+        waitUntil: options.waitUntil as 'domcontentloaded' | 'networkidle' | 'load' | 'commit' | undefined,
+        waitSelector: options.waitSelector as string | undefined,
+        blockResources: options.blockResources ? (options.blockResources as string).split(',').map((s: string) => s.trim()) : undefined,
+        cloaked: options.cloaked ? true : undefined,
+        cycle: options.cycle ? true : undefined,
+        tls: (options.tls || options.cycle) ? true : undefined,
       };
+
+      if (options.cloaked) {
+        peelOptions.render = true; // CloakBrowser is a browser
+      }
+
+      // Add chunk option if requested
+      if (options.chunk) {
+        peelOptions.chunk = {
+          maxTokens: options.chunkSize || 512,
+          overlap: options.chunkOverlap || 50,
+          strategy: (options.chunkStrategy as 'section' | 'paragraph' | 'fixed') || 'section',
+        };
+      }
 
       // Add summary option if requested
       if (options.summary) {
@@ -683,6 +762,8 @@ program
         peelOptions.format = 'html';
       } else if (options.text) {
         peelOptions.format = 'text';
+      } else if (options.clean) {
+        peelOptions.format = 'clean';
       } else {
         peelOptions.format = 'markdown';
       }
@@ -807,29 +888,15 @@ program
         }
       }
 
-      // --- Smart Chunking ---
-      if (options.chunk && options.chunk > 0 && result.content) {
-        const { chunkContent } = await import('./core/chunking.js');
-        const chunkResult = chunkContent(result.content, {
-          chunkSize: options.chunk,
-          overlap: options.chunkOverlap || 200,
-          strategy: (options.chunkStrategy as 'fixed' | 'semantic' | 'paragraph') || 'semantic',
-        });
-        // Replace content with chunked output
-        if (isJson) {
-          (result as any).chunks = chunkResult.chunks;
-          (result as any).totalChunks = chunkResult.totalChunks;
-          (result as any).originalTokens = chunkResult.originalTokens;
-          // Keep content as first chunk for non-JSON fallback
-          (result as any).content = chunkResult.chunks[0]?.content || '';
-          (result as any).tokens = chunkResult.chunks[0]?.tokens || 0;
-        } else {
-          // Plain text mode: output chunks separated by markers
-          const chunkOutput = chunkResult.chunks.map((c, i) =>
-            `--- Chunk ${i + 1}/${chunkResult.totalChunks} (${c.tokens} tokens) ---\n${c.content}`
-          ).join('\n\n');
-          (result as any).content = chunkOutput;
-          (result as any).tokens = chunkResult.totalTokens;
+      // --- RAG Chunking output (chunks come from pipeline via peelOptions.chunk) ---
+      if (result.chunks && result.chunks.length > 0 && !isJson) {
+        console.log(`\n${'─'.repeat(60)}`);
+        console.log(`📦 ${result.chunks.length} chunks (${options.chunkStrategy || 'section'} strategy)\n`);
+        for (const chunk of result.chunks) {
+          const sectionLabel = chunk.section ? ` [${chunk.section}]` : '';
+          console.log(`── Chunk ${chunk.index + 1}${sectionLabel} (${chunk.tokenCount} tokens, ${chunk.wordCount} words) ──`);
+          console.log(chunk.text.substring(0, 200) + (chunk.text.length > 200 ? '...' : ''));
+          console.log('');
         }
       }
 
@@ -1042,6 +1109,27 @@ program
           console.error('--csv / --table require --extract-all or --extract to produce structured data.');
         }
       } else {
+        // --- BM25 Schema Template Extraction (no LLM needed) ---
+        if (options.schema && result.content) {
+          const { getSchemaTemplate: getSchTmpl } = await import('./core/schema-templates.js');
+          const schTemplate = getSchTmpl(options.schema as string);
+          if (schTemplate) {
+            const { quickAnswer: qa } = await import('./core/quick-answer.js');
+            const { smartExtractSchemaFields } = await import('./core/schema-postprocess.js');
+            const extracted = smartExtractSchemaFields(
+              result.content,
+              schTemplate.fields,
+              qa,
+              {
+                pageTitle: result.title,
+                pageUrl: result.url,
+                metadata: result.metadata as Record<string, any>,
+              },
+            );
+            (result as any).extracted = extracted;
+          }
+        }
+
         // Output results (default path)
         await outputResult(result, options, {
           cached: false,
@@ -1075,6 +1163,11 @@ program
       await cleanup();
       process.exit(1);
     }
+}
+
+program
+  .action(async (url: string | undefined, options) => {
+    await runFetch(url, options);
   });
 
 // Search command
@@ -1488,6 +1581,7 @@ program
   .option('--stealth', 'Use stealth mode for all pages')
   .option('-s, --silent', 'Silent mode (no spinner)')
   .option('--json', 'Output as JSON')
+  .option('--resume', 'Resume an interrupted crawl from its last checkpoint')
   .action(async (url: string, options) => {
     // Check usage quota
     const usageCheck = await checkUsage();
@@ -1510,6 +1604,7 @@ program
         rateLimitMs: options.rateLimit,
         render: options.render || false,
         stealth: options.stealth || false,
+        resume: options.resume || false,
       });
 
       if (spinner) {
@@ -1863,6 +1958,24 @@ program
     await import('./mcp/server.js');
   });
 
+// Pipe command — always JSON, no UI (agent-friendly)
+program
+  .command('pipe <url>')
+  .description('Pipe-friendly fetch (always JSON, no UI). Alias for: webpeel <url> --json --silent')
+  .option('-r, --render', 'Use headless browser')
+  .option('--stealth', 'Stealth mode')
+  .option('--budget <n>', 'Token budget', parseInt)
+  .option('--clean', 'Clean format for AI')
+  .option('-q, --question <q>', 'Quick answer')
+  .option('--proxy <url>', 'Proxy URL')
+  .option('--timeout <ms>', 'Timeout in ms', parseInt)
+  .action(async (url: string, opts) => {
+    // Force JSON + silent — always, unconditionally
+    opts.json = true;
+    opts.silent = true;
+    await runFetch(url, opts);
+  });
+
 // Config command  —  webpeel config [get|set] [key] [value]
 program
   .command('config')
@@ -2176,73 +2289,212 @@ program
 // Agent command - autonomous web research
 program
   .command('agent <prompt>')
-  .description('Autonomous web research — finds and extracts data from the web using AI')
+  .description('Web research agent — LLM-free by default, add --llm-key for AI synthesis')
   .option('--llm-key <key>', 'LLM API key (or use OPENAI_API_KEY env var)')
   .option('--llm-model <model>', 'LLM model to use (default: gpt-4o-mini)')
   .option('--llm-base-url <url>', 'LLM API base URL')
   .option('--urls <urls>', 'Comma-separated starting URLs')
   .option('--max-pages <n>', 'Maximum pages to visit (default: 10)', '10')
-  .option('--schema <json>', 'JSON schema for structured output')
+  .option('--schema <json>', 'Schema template name (e.g. product, article) or JSON schema for structured output')
   .option('-s, --silent', 'Silent mode (no spinner)')
   .option('--json', 'Output as JSON')
   .action(async (prompt: string, options) => {
     const llmApiKey = options.llmKey || process.env.OPENAI_API_KEY;
+    const urls = options.urls ? options.urls.split(',').map((u: string) => u.trim()) : undefined;
 
-    if (!llmApiKey) {
-      console.error('Error: --llm-key or OPENAI_API_KEY environment variable is required');
-      process.exit(1);
-    }
-
-    const spinner = options.silent ? null : ora('Running agent research...').start();
-
-    try {
-      const { runAgent } = await import('./core/agent.js');
-
-      let schema: Record<string, any> | undefined;
-      if (options.schema) {
+    // Parse schema (support templates)
+    let schema: Record<string, string> | undefined;
+    if (options.schema) {
+      const template = getSchemaTemplate(options.schema);
+      if (template) {
+        schema = template.fields;
+      } else {
         try {
           schema = JSON.parse(options.schema);
         } catch {
-          console.error('Error: --schema must be valid JSON');
+          console.error(`Error: --schema must be a template name (${listSchemaTemplates().join(', ')}) or valid JSON`);
           process.exit(1);
         }
       }
+    }
 
-      const result = await runAgent({
-        prompt,
-        urls: options.urls ? options.urls.split(',').map((u: string) => u.trim()) : undefined,
-        schema,
-        llmApiKey,
-        llmModel: options.llmModel,
-        llmApiBase: options.llmBaseUrl,
-        maxPages: parseInt(options.maxPages, 10),
-        onProgress: (progress) => {
-          if (spinner) {
-            spinner.text = progress.message;
+    if (llmApiKey) {
+      // Full LLM agent mode (existing code)
+      const spinner = options.silent ? null : ora('Running agent research...').start();
+      try {
+        const { runAgent } = await import('./core/agent.js');
+        const result = await runAgent({
+          prompt,
+          urls,
+          schema,
+          llmApiKey,
+          llmModel: options.llmModel,
+          llmApiBase: options.llmBaseUrl,
+          maxPages: parseInt(options.maxPages, 10),
+          onProgress: (progress) => {
+            if (spinner) spinner.text = progress.message;
+          },
+        });
+        if (spinner) spinner.succeed(`Agent finished: ${result.pagesVisited} pages`);
+        if (options.json) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          console.log(`\nSources (${result.sources.length}):`);
+          result.sources.forEach(s => console.log(`  • ${s}`));
+          console.log(`\nResults:`);
+          console.log(JSON.stringify(result.data, null, 2));
+        }
+        await cleanup();
+        process.exit(0);
+      } catch (e) {
+        if (spinner) spinner.fail('Agent failed');
+        console.error(e instanceof Error ? e.message : e);
+        await cleanup();
+        process.exit(1);
+      }
+    } else {
+      // LLM-free mode: search + fetch + BM25 extraction
+      const spinner = options.silent ? null : ora('Running LLM-free research...').start();
+
+      try {
+        // Import needed modules
+        const { quickAnswer } = await import('./core/quick-answer.js');
+
+        // Step 1: Get URLs to process
+        let targetUrls: string[] = urls || [];
+
+        // If no URLs, search the web
+        if (targetUrls.length === 0) {
+          if (spinner) spinner.text = 'Searching the web...';
+          try {
+            const { getBestSearchProvider } = await import('./core/search-provider.js');
+            const { provider, apiKey: searchApiKey } = getBestSearchProvider();
+            const searchResults = await provider.searchWeb(prompt, {
+              count: Math.min(parseInt(options.maxPages, 10) || 5, 10),
+              apiKey: searchApiKey,
+            });
+            targetUrls = searchResults.map((r: { url: string }) => r.url);
+          } catch {
+            // Fallback: try DuckDuckGo HTML
+            if (spinner) spinner.text = 'Searching via DuckDuckGo...';
+            try {
+              const duckUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(prompt)}`;
+              const searchResult = await peel(duckUrl, { budget: 4000 });
+              // Extract URLs from search results content
+              const urlMatches = searchResult.content.match(/https?:\/\/[^\s\)]+/g) || [];
+              targetUrls = urlMatches
+                .filter((u: string) => !u.includes('duckduckgo.com'))
+                .slice(0, parseInt(options.maxPages, 10) || 5);
+            } catch {
+              // No search results
+            }
           }
-        },
-      });
+        }
 
-      if (spinner) {
-        spinner.succeed(`Agent finished: ${result.pagesVisited} pages, ${result.creditsUsed} credits`);
+        if (targetUrls.length === 0) {
+          if (spinner) spinner.fail('No URLs found. Provide --urls or a more specific prompt.');
+          process.exit(1);
+        }
+
+        if (spinner) spinner.text = `Processing ${targetUrls.length} pages...`;
+
+        // Step 2: Fetch and extract from each URL
+        const results: Array<{
+          url: string;
+          title: string;
+          extracted: Record<string, string> | null;
+          content: string;
+          confidence: number;
+        }> = [];
+
+        for (const url of targetUrls) {
+          try {
+            if (spinner) spinner.text = `Fetching: ${url.substring(0, 60)}...`;
+            const pageResult = await peel(url, { budget: 4000 });
+
+            let extracted: Record<string, string> | null = null;
+            let confidence = 0;
+
+            if (schema) {
+              // Extract each schema field using smartExtractSchemaFields
+              const { smartExtractSchemaFields: smartExtractResearch } = await import('./core/schema-postprocess.js');
+              extracted = smartExtractResearch(
+                pageResult.content,
+                schema as Record<string, string>,
+                quickAnswer,
+                {
+                  pageTitle: (pageResult as any).title,
+                  pageUrl: url,
+                  metadata: (pageResult as any).metadata as Record<string, any>,
+                },
+              );
+              // Calculate confidence from quickAnswer for any field
+              for (const question of Object.values(schema)) {
+                try {
+                  const qa = quickAnswer({ content: pageResult.content, question: typeof question === 'string' ? question : '' });
+                  confidence = Math.max(confidence, qa.confidence || 0);
+                } catch { /* ignore */ }
+                break; // just need one confidence estimate
+              }
+            } else {
+              // Answer the prompt directly
+              try {
+                const qa = quickAnswer({ content: pageResult.content, question: prompt });
+                extracted = { answer: qa.answer || '' };
+                confidence = qa.confidence || 0;
+              } catch {
+                extracted = null;
+              }
+            }
+
+            results.push({
+              url,
+              title: pageResult.metadata?.title || url,
+              extracted,
+              content: pageResult.content.substring(0, 500),
+              confidence,
+            });
+          } catch (e) {
+            // Skip failed URLs
+            if (process.env.DEBUG) {
+              console.debug('[webpeel]', `Failed to fetch ${url}:`, e instanceof Error ? e.message : e);
+            }
+          }
+        }
+
+        if (spinner) spinner.succeed(`Processed ${results.length}/${targetUrls.length} pages (LLM-free)`);
+
+        if (options.json) {
+          console.log(JSON.stringify({
+            mode: 'llm-free',
+            prompt,
+            schema: schema || null,
+            results,
+            sources: results.map(r => r.url),
+            pagesVisited: results.length,
+          }, null, 2));
+        } else {
+          console.log(`\n📊 Results (${results.length} pages, LLM-free):\n`);
+          for (const r of results) {
+            console.log(`── ${r.title} ──`);
+            console.log(`   ${r.url}`);
+            if (r.extracted) {
+              for (const [k, v] of Object.entries(r.extracted)) {
+                if (v) console.log(`   ${k}: ${v}`);
+              }
+            }
+            console.log(`   Confidence: ${(r.confidence * 100).toFixed(0)}%\n`);
+          }
+        }
+
+        await cleanup();
+        process.exit(0);
+      } catch (e) {
+        if (spinner) spinner.fail('Research failed');
+        console.error(e instanceof Error ? e.message : e);
+        await cleanup();
+        process.exit(1);
       }
-
-      if (options.json) {
-        console.log(JSON.stringify(result, null, 2));
-      } else {
-        console.log(`\nSources (${result.sources.length}):`);
-        result.sources.forEach(s => console.log(`  • ${s}`));
-        console.log(`\nResults:`);
-        console.log(JSON.stringify(result.data, null, 2));
-      }
-
-      await cleanup();
-      process.exit(0);
-    } catch (error) {
-      if (spinner) spinner.fail('Agent research failed');
-      console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      await cleanup();
-      process.exit(1);
     }
   });
 
@@ -3663,6 +3915,21 @@ program
     }
   });
 
+// Schema templates listing command
+program
+  .command('schemas')
+  .description('List available extraction schema templates')
+  .action(() => {
+    console.log('\nAvailable schema templates:\n');
+    for (const [key, template] of Object.entries(SCHEMA_TEMPLATES)) {
+      console.log(`  ${key.padEnd(12)} ${template.description}`);
+      console.log(`  ${''.padEnd(12)} Fields: ${Object.keys(template.fields).join(', ')}`);
+      console.log('');
+    }
+    console.log('Usage: webpeel "https://example.com" --schema product');
+    console.log('       webpeel "https://example.com" --schema \'{"field":"description"}\'');
+  });
+
 program.parse();
 
 // ============================================================
@@ -3860,6 +4127,7 @@ async function outputResult(result: PeelResult, options: any, extra: OutputExtra
     if ((result as any).warning) output.warning = (result as any).warning;
     if ((result as any).focusQuery) output.focusQuery = (result as any).focusQuery;
     if ((result as any).focusReduction) output.focusReduction = (result as any).focusReduction;
+    if ((result as any).extracted) output.extracted = (result as any).extracted;
     if (extra.cached) output.cached = true;
     if (extra.truncated) output.truncated = true;
     if (extra.totalAvailable !== undefined) output.totalAvailable = extra.totalAvailable;

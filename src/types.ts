@@ -81,7 +81,7 @@ export interface PeelOptions {
   /** Wait time in milliseconds after page load (only with render=true) */
   wait?: number;
   /** Output format */
-  format?: 'markdown' | 'text' | 'html';
+  format?: 'markdown' | 'text' | 'html' | 'clean';
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
   /** Prepare streaming responses (API plumbing only; full SSE/chunked stream not yet implemented) */
@@ -151,6 +151,13 @@ export interface PeelOptions {
    */
   proxy?: string;
   /**
+   * Array of proxy URLs for rotation. Tried in order on BlockedError.
+   * Format: http://user:pass@host:port
+   * When a proxy is blocked or fails, the next proxy in the list is tried automatically.
+   * Takes precedence over the single `proxy` option when both are provided.
+   */
+  proxies?: string[];
+  /**
    * Path to a persistent Chrome user-data-dir directory.
    * When set, cookies, history, and login sessions survive between fetch calls
    * in the same process. Each unique profileDir gets its own browser instance.
@@ -207,6 +214,33 @@ export interface PeelOptions {
   autoScroll?: boolean | import('./core/actions.js').AutoScrollOptions;
   /** Ask a question about the page content. Uses BM25 to find relevant passages — no LLM key needed. */
   question?: string;
+  /** Device emulation: 'desktop' (default), 'mobile', 'tablet' */
+  device?: 'desktop' | 'mobile' | 'tablet';
+  /** Browser viewport width in pixels */
+  viewportWidth?: number;
+  /** Browser viewport height in pixels */
+  viewportHeight?: number;
+  /** Wait condition: 'domcontentloaded' (default), 'networkidle', 'load', 'commit' */
+  waitUntil?: 'domcontentloaded' | 'networkidle' | 'load' | 'commit';
+  /** CSS selector to wait for before extracting content */
+  waitSelector?: string;
+  /** Block resource types for faster loading: 'image', 'stylesheet', 'font', 'media', 'script' */
+  blockResources?: string[];
+  /** Use CloakBrowser for maximum stealth (requires: npm install cloakbrowser) */
+  cloaked?: boolean;
+  /** Use CycleTLS TLS fingerprint spoofing (requires: npm install cycletls) */
+  cycle?: boolean; // @deprecated — use tls instead
+  /** Use PeelTLS TLS fingerprint spoofing */
+  tls?: boolean;
+  /** Chunk content for RAG pipelines */
+  chunk?: boolean | {
+    /** Max tokens per chunk (default: 512) */
+    maxTokens?: number;
+    /** Overlap tokens between chunks (default: 50) */
+    overlap?: number;
+    /** Strategy: 'section' (default), 'paragraph', 'fixed' */
+    strategy?: 'section' | 'paragraph' | 'fixed';
+  };
 }
 
 export interface ImageInfo {
@@ -235,8 +269,8 @@ export interface PeelResult {
   links: string[];
   /** Estimated token count (rough: content.length / 4) */
   tokens: number;
-  /** Method used: 'simple' | 'browser' | 'stealth' */
-  method: 'simple' | 'browser' | 'stealth';
+  /** Method used: 'simple' | 'browser' | 'stealth' | 'cycle' | 'cloaked' | 'peeltls' | 'cf-worker' | 'google-cache' */
+  method: 'simple' | 'browser' | 'stealth' | 'cycle' | 'cloaked' | 'peeltls' | 'cf-worker' | 'google-cache';
   /** Time elapsed in milliseconds */
   elapsed: number;
   /** Base64-encoded screenshot (PNG), only if screenshot option was set */
@@ -285,6 +319,21 @@ export interface PeelResult {
   };
   /** Warning message when content may be incomplete or degraded */
   warning?: string;
+  /** True when the site appears to be blocking bot access (Cloudflare, Akamai, PerimeterX, etc.) */
+  blocked?: boolean;
+  /** Non-fatal warnings about content quality or extraction issues */
+  warnings?: string[];
+  /** Content chunks (when chunk option is enabled) */
+  chunks?: Array<{
+    index: number;
+    text: string;
+    tokenCount: number;
+    wordCount: number;
+    section: string | null;
+    sectionDepth: number | null;
+    startOffset: number;
+    endOffset: number;
+  }>;
 }
 
 export interface PageMetadata {
@@ -372,9 +421,13 @@ export class TimeoutError extends WebPeelError {
 }
 
 export class BlockedError extends WebPeelError {
-  constructor(message: string) {
+  public readonly blocked = true;
+  public readonly retryable: boolean;
+
+  constructor(message: string, retryable = true) {
     super(message, 'BLOCKED');
     this.name = 'BlockedError';
+    this.retryable = retryable;
   }
 }
 

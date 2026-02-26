@@ -10,7 +10,6 @@ import { detectChallenge } from './challenge-detection.js';
 import { getRealisticUserAgent } from './user-agents.js';
 import {
   getRandomUserAgent,
-  getRandomViewport,
   applyStealthScripts,
   takePooledPage,
   ensurePagePool,
@@ -22,6 +21,7 @@ import {
   MAX_CONCURRENT_PAGES,
   getPooledPagesCount,
 } from './browser-pool.js';
+import { applyStealthPatches, applyAcceptLanguageHeader } from './stealth-patches.js';
 import { validateUrl, validateUserAgent, createAbortError, type FetchResult } from './http-fetch.js';
 
 // ── Concurrency state (owned by this module) ─────────────────────────────────
@@ -71,6 +71,18 @@ export async function browserFetch(
      * Examples: 'http://proxy.example.com:8080', 'socks5://user:pass@host:1080'
      */
     proxy?: string;
+    /** Device emulation: 'desktop' (default), 'mobile', 'tablet' */
+    device?: 'desktop' | 'mobile' | 'tablet';
+    /** Browser viewport width in pixels */
+    viewportWidth?: number;
+    /** Browser viewport height in pixels */
+    viewportHeight?: number;
+    /** Wait condition: 'domcontentloaded' (default), 'networkidle', 'load', 'commit' */
+    waitUntil?: string;
+    /** CSS selector to wait for before extracting content */
+    waitSelector?: string;
+    /** Block resource types for faster loading: 'image', 'stylesheet', 'font', 'media', 'script' */
+    blockResources?: string[];
   } = {}
 ): Promise<FetchResult> {
   // SECURITY: Validate URL to prevent SSRF
@@ -92,7 +104,32 @@ export async function browserFetch(
     headed = false,
     storageState,
     proxy,
+    device = 'desktop',
+    viewportWidth: optViewportWidth,
+    viewportHeight: optViewportHeight,
+    waitUntil: optWaitUntil,
+    waitSelector,
+    blockResources,
   } = options;
+
+  // Device emulation profiles
+  const deviceProfiles = {
+    desktop: { width: 1920, height: 1080, userAgent: undefined as string | undefined },
+    mobile: {
+      width: 390,
+      height: 844,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    },
+    tablet: {
+      width: 820,
+      height: 1180,
+      userAgent: 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    },
+  };
+  const deviceProfile = deviceProfiles[device] ?? deviceProfiles.desktop;
+  const effectiveViewportWidth = optViewportWidth ?? deviceProfile.width;
+  const effectiveViewportHeight = optViewportHeight ?? deviceProfile.height;
+  const effectiveWaitUntil = (optWaitUntil as 'domcontentloaded' | 'networkidle' | 'load' | 'commit') || 'domcontentloaded';
 
   // Validate user agent if provided
   // In stealth mode with no custom UA, always use a realistic Chrome UA
@@ -160,7 +197,6 @@ export async function browserFetch(
     }
 
     if (!page) {
-      const fetchVp = getRandomViewport();
       const pageOptions = {
         userAgent: validatedUserAgent,
         // viewport: null lets the browser use its natural window size (set via --window-size),
@@ -195,7 +231,7 @@ export async function browserFetch(
         ownedContext = await browser.newContext({
           ...pageOptions,
           proxy: playwrightProxy,
-          viewport: { width: fetchVp.width, height: fetchVp.height },
+          viewport: { width: effectiveViewportWidth, height: effectiveViewportHeight },
           ...(storageState ? { storageState } : {}),
         });
         page = await ownedContext.newPage();
@@ -204,16 +240,26 @@ export async function browserFetch(
         ownedContext = await browser.newContext({
           ...pageOptions,
           storageState,
-          viewport: { width: fetchVp.width, height: fetchVp.height },
+          viewport: { width: effectiveViewportWidth, height: effectiveViewportHeight },
         });
         page = await ownedContext.newPage();
       } else {
         page = await browser.newPage(pageOptions);
+        // Apply viewport for device emulation or explicit viewport overrides
+        if (device !== 'desktop' || optViewportWidth !== undefined || optViewportHeight !== undefined) {
+          await page.setViewportSize({ width: effectiveViewportWidth, height: effectiveViewportHeight }).catch(() => {});
+        }
       }
       await applyStealthScripts(page);
+      // Apply supplemental stealth patches (canvas noise, connection API, battery, etc.)
+      // These go beyond what puppeteer-extra-plugin-stealth provides.
+      if (stealth) {
+        await applyStealthPatches(page);
+        await applyAcceptLanguageHeader(page, 'en-US');
+      }
       usingPooledPage = false;
     } else {
-      await page.setViewportSize({ width: 1280, height: 720 }).catch(() => {});
+      await page.setViewportSize({ width: effectiveViewportWidth, height: effectiveViewportHeight }).catch(() => {});
     }
 
     if (signal) {
@@ -230,6 +276,10 @@ export async function browserFetch(
     const mergedHeaders: Record<string, string> = { ...(headers || {}) };
     if (usingPooledPage) {
       mergedHeaders['User-Agent'] = validatedUserAgent;
+    }
+    // Apply device user-agent (mobile/tablet) unless caller overrode userAgent
+    if (deviceProfile.userAgent && !userAgent) {
+      mergedHeaders['User-Agent'] = deviceProfile.userAgent;
     }
     if (usingPooledPage || Object.keys(mergedHeaders).length > 0) {
       await page.setExtraHTTPHeaders(mergedHeaders);
@@ -259,9 +309,20 @@ export async function browserFetch(
       throw createAbortError();
     }
 
-    // Block images/fonts/etc for speed in non-stealth mode.
+    // Block resources: custom list takes precedence; otherwise use defaults in non-screenshot/non-stealth mode.
     // In stealth mode, blocking common resources can be a bot-detection signal.
-    if (!screenshot && !stealth) {
+    if (blockResources && blockResources.length > 0) {
+      const blockedTypes = new Set(blockResources);
+      await page.route('**/*', (route) => {
+        const resourceType = route.request().resourceType();
+        if (blockedTypes.has(resourceType)) {
+          route.abort();
+        } else {
+          route.continue();
+        }
+      });
+    } else if (!screenshot && !stealth) {
+      // Default: block images/fonts/etc for speed in non-stealth mode.
       await page.route('**/*', (route) => {
         const resourceType = route.request().resourceType();
         if (['image', 'font', 'media', 'stylesheet'].includes(resourceType)) {
@@ -287,19 +348,19 @@ export async function browserFetch(
       let response;
       try {
         response = await page!.goto(url, {
-          waitUntil: 'domcontentloaded',
+          waitUntil: effectiveWaitUntil,
           timeout: timeoutMs,
         });
       } catch (gotoError: any) {
         const msg = gotoError?.message || String(gotoError);
         if (/net::ERR_HTTP2_PROTOCOL_ERROR/i.test(msg)) {
-          throw new NetworkError(`Site blocked connection (HTTP/2 protocol error). Try stealth mode or a different source. URL: ${url}`);
+          throw new BlockedError(`Site blocked the request (HTTP/2 protocol error). The site likely has anti-bot protection. Try using stealth mode or a proxy.`);
         }
         if (/net::ERR_CONNECTION_REFUSED/i.test(msg)) {
-          throw new NetworkError(`Connection refused by server. The site may be down or blocking automated access. URL: ${url}`);
+          throw new NetworkError(`Connection refused by the server at ${url}. The server may be down or blocking your IP.`);
         }
         if (/net::ERR_CONNECTION_RESET/i.test(msg)) {
-          throw new NetworkError(`Connection reset by server. The site may be blocking automated access. URL: ${url}`);
+          throw new BlockedError(`Connection was reset by the server. This typically indicates anti-bot protection or IP blocking. Try using stealth mode or a different IP.`);
         }
         if (/net::ERR_SSL/i.test(msg)) {
           throw new NetworkError(`SSL/TLS error connecting to site. URL: ${url}`);
@@ -317,11 +378,19 @@ export async function browserFetch(
           throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
         }
         if (/net::ERR_/i.test(msg)) {
-          throw new NetworkError(`Network error: ${msg.split('\n')[0]}`);
+          throw new NetworkError(`Browser network error: ${msg.match(/net::ERR_\w+/i)?.[0] || msg}`);
         }
         throw gotoError;
       }
       throwIfAborted();
+
+      // Wait for a specific CSS selector if requested
+      if (waitSelector) {
+        await page!.waitForSelector(waitSelector, { timeout: timeoutMs }).catch(() => {
+          if (process.env.DEBUG) console.debug('[webpeel]', `waitSelector "${waitSelector}" not found within timeout`);
+        });
+        throwIfAborted();
+      }
 
       // Quick check: if body text is very thin, wait for JS to render more content.
       // Only adds latency when the page clearly hasn't loaded yet.
@@ -699,13 +768,13 @@ export async function browserScreenshot(
       } catch (gotoError: any) {
         const msg = gotoError?.message || String(gotoError);
         if (/net::ERR_HTTP2_PROTOCOL_ERROR/i.test(msg)) {
-          throw new NetworkError(`Site blocked connection (HTTP/2 protocol error). Try stealth mode or a different source. URL: ${url}`);
+          throw new BlockedError(`Site blocked the request (HTTP/2 protocol error). The site likely has anti-bot protection. Try using stealth mode or a proxy.`);
         }
         if (/net::ERR_CONNECTION_REFUSED/i.test(msg)) {
-          throw new NetworkError(`Connection refused by server. The site may be down or blocking automated access. URL: ${url}`);
+          throw new NetworkError(`Connection refused by the server at ${url}. The server may be down or blocking your IP.`);
         }
         if (/net::ERR_CONNECTION_RESET/i.test(msg)) {
-          throw new NetworkError(`Connection reset by server. The site may be blocking automated access. URL: ${url}`);
+          throw new BlockedError(`Connection was reset by the server. This typically indicates anti-bot protection or IP blocking. Try using stealth mode or a different IP.`);
         }
         if (/net::ERR_SSL/i.test(msg)) {
           throw new NetworkError(`SSL/TLS error connecting to site. URL: ${url}`);
@@ -723,7 +792,7 @@ export async function browserScreenshot(
           throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
         }
         if (/net::ERR_/i.test(msg)) {
-          throw new NetworkError(`Network error: ${msg.split('\n')[0]}`);
+          throw new NetworkError(`Browser network error: ${msg.match(/net::ERR_\w+/i)?.[0] || msg}`);
         }
         throw gotoError;
       }

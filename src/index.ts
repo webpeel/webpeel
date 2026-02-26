@@ -109,7 +109,11 @@ export {
 } from './core/diff.js';
 export { extractReadableContent, type ReadabilityResult, type ReadabilityOptions } from './core/readability.js';
 export { quickAnswer, type QuickAnswerOptions, type QuickAnswerResult } from './core/quick-answer.js';
+export { extractValueFromPassage, smartExtractSchemaFields } from './core/schema-postprocess.js';
 export { Timer, type PipelineTiming } from './core/timing.js';
+export { chunkContent, type ChunkOptions, type ContentChunk, type ChunkResult } from './core/chunker.js';
+export { searchFallback, type SearchFallbackResult } from './core/search-fallback.js';
+export { peelTLSFetch, isPeelTLSAvailable, shutdownPeelTLS, type PeelTLSOptions, type PeelTLSResult } from './core/peel-tls.js';
 
 /**
  * Fetch and extract content from a URL
@@ -165,30 +169,39 @@ export async function peel(url: string, options: PeelOptions = {}): Promise<Peel
  */
 export async function peelBatch(
   urls: string[],
-  options: PeelOptions & { concurrency?: number } = {}
+  options: PeelOptions & {
+    concurrency?: number;
+    onProgress?: (completed: number, total: number) => void;
+  } = {}
 ): Promise<(PeelResult | { url: string; error: string })[]> {
-  const { concurrency = 3, ...peelOpts } = options;
-  const results: (PeelResult | { url: string; error: string })[] = [];
-  
-  // Process in batches
-  for (let i = 0; i < urls.length; i += concurrency) {
-    const batch = urls.slice(i, i + concurrency);
-    const batchResults = await Promise.allSettled(
-      batch.map(url => peel(url, peelOpts))
-    );
-    
-    batchResults.forEach((result, j) => {
-      if (result.status === 'fulfilled') {
-        results.push(result.value);
-      } else {
-        results.push({ 
-          url: batch[j], 
-          error: result.reason?.message || 'Unknown error' 
-        });
+  const { concurrency = 3, onProgress, ...peelOpts } = options;
+  const results: (PeelResult | { url: string; error: string })[] = new Array(urls.length);
+  let nextIndex = 0;
+  let completedCount = 0;
+
+  async function worker(): Promise<void> {
+    while (nextIndex < urls.length) {
+      const index = nextIndex++;
+      const url = urls[index];
+      try {
+        results[index] = await peel(url, peelOpts);
+      } catch (error) {
+        results[index] = {
+          url,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
       }
-    });
+      completedCount++;
+      onProgress?.(completedCount, urls.length);
+    }
   }
-  
+
+  // Launch concurrent workers (true worker-pool, not sequential batches)
+  const workerCount = Math.min(concurrency, urls.length);
+  if (workerCount > 0) {
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  }
+
   return results;
 }
 
@@ -219,3 +232,17 @@ export {
   humanToggle,
   type HumanConfig,
 } from './core/human.js';
+
+export { SCHEMA_TEMPLATES, getSchemaTemplate, listSchemaTemplates, type SchemaTemplate } from './core/schema-templates.js';
+
+// Framework integrations
+export { WebPeelLoader, type WebPeelLoaderOptions } from './integrations/langchain.js';
+export { WebPeelReader, type WebPeelReaderOptions } from './integrations/llamaindex.js';
+
+// Advanced stealth utilities — for power users who want to apply extra evasions
+// to their own Playwright pages.
+export { applyStealthPatches, applyAcceptLanguageHeader } from './core/stealth-patches.js';
+
+// Google Cache fallback — fetch cached copies of blocked pages
+export { fetchGoogleCache, isGoogleCacheAvailable, type GoogleCacheResult } from './core/google-cache.js';
+export { cfWorkerFetch, isCfWorkerAvailable, type CfWorkerProxyOptions, type CfWorkerProxyResult } from './core/cf-worker-proxy.js';

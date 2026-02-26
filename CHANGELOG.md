@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.17.0 (2026-02-26)
+
+### 🛡️ Anti-Bot Bypass — New Escalation Layers
+
+**3-layer $0 bypass stack** built on top of PeelTLS (Chrome TLS fingerprinting):
+
+- **Cloudflare Worker Proxy** (`src/core/cf-worker-proxy.ts`) — Routes blocked requests through Cloudflare's edge network. Different IP reputation than typical datacenter IPs. 100K requests/day free. Set `WEBPEEL_CF_WORKER_URL` + `WEBPEEL_CF_WORKER_TOKEN` env vars. Deploy with `cd worker && npx wrangler deploy`.
+- **Google Cache fallback** (`src/core/google-cache.ts`) — Fetches cached copies of pages from Google's cache when live access is blocked. Automatically detects and rejects JS challenge pages (returns `null` cleanly). Integrated into strategies escalation chain.
+
+**Escalation chain** (updated):
+```
+PeelTLS → CF Worker (if WEBPEEL_CF_WORKER_URL set) → Google Cache → search-fallback
+```
+
+### 🛒 E-Commerce Domain API Extractors
+
+WebPeel now has domain-first extractors for major e-commerce sites (bypasses HTML scraping entirely):
+
+- **Best Buy** (`www.bestbuy.com`) — Uses Best Buy Products API. Returns price, availability, specs, ratings. Set `BESTBUY_API_KEY` (free key at developer.bestbuy.com, 50K queries/day). Falls back to HTML pipeline if key not set.
+- **Walmart** (`www.walmart.com`) — Tries Walmart's frontend API for structured product data. Gracefully falls through to HTML pipeline when blocked.
+
+### ✨ Added
+- `src/core/cf-worker-proxy.ts` — CF Worker proxy client with auth token support
+- `src/core/google-cache.ts` — Google Cache fetcher with JS challenge detection
+- `worker/` directory — Cloudflare Worker source (`worker/src/index.ts`) + deployment docs (`worker/README.md`)
+- Exports: `cfWorkerFetch`, `isCfWorkerAvailable`, `fetchGoogleCache`, `isGoogleCacheAvailable`
+- Method types: `'cf-worker'`, `'google-cache'` added to `PeelResult.method` union
+
+### 🏗️ Changed
+- `src/types.ts` — `method` union now includes `'cf-worker'` and `'google-cache'`
+- `src/core/strategy-hooks.ts` — method type updated
+- User-Agent strings updated to `WebPeel/0.17.0`
+
+---
+
 ## v0.15.2 (2026-02-25)
 
 ### 🐛 Fixed

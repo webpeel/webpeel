@@ -8,6 +8,13 @@ import { SearchResource } from './resources/search.js';
 import { ScreenshotResource } from './resources/screenshot.js';
 import { CrawlResource } from './resources/crawl.js';
 import { BatchResource } from './resources/batch.js';
+import { AgentResource } from './resources/agent.js';
+import { ExtractResource } from './resources/extract.js';
+import { AnswerResource } from './resources/answer.js';
+import { DeepFetchResource } from './resources/deepFetch.js';
+import { YoutubeResource } from './resources/youtube.js';
+import { WatchResource } from './resources/watch.js';
+import { JobsResource } from './resources/jobs.js';
 import type { RequestCallOptions } from './resources/base.js';
 import type {
   FetchOptions,
@@ -71,6 +78,13 @@ export class WebPeelClient {
   private readonly _screenshotResource: ScreenshotResource;
   private readonly _crawlResource: CrawlResource;
   private readonly _batchResource: BatchResource;
+  private readonly _agentResource: AgentResource;
+  private readonly _extractResource: ExtractResource;
+  private readonly _answerResource: AnswerResource;
+  private readonly _deepFetchResource: DeepFetchResource;
+  private readonly _youtubeResource: YoutubeResource;
+  private readonly _watchResource: WatchResource;
+  private readonly _jobsResource: JobsResource;
 
   constructor(options: WebPeelOptions) {
     if (!options.apiKey) {
@@ -82,12 +96,43 @@ export class WebPeelClient {
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
 
     const boundRequest = this._request.bind(this);
+    const boundRawFetch = this._rawFetch.bind(this);
     this._fetchResource = new FetchResource(boundRequest);
     this._searchResource = new SearchResource(boundRequest);
     this._screenshotResource = new ScreenshotResource(boundRequest);
     this._crawlResource = new CrawlResource(boundRequest);
     this._batchResource = new BatchResource(boundRequest);
+    this._agentResource = new AgentResource(boundRequest, boundRawFetch);
+    this._extractResource = new ExtractResource(boundRequest);
+    this._answerResource = new AnswerResource(boundRequest);
+    this._deepFetchResource = new DeepFetchResource(boundRequest);
+    this._youtubeResource = new YoutubeResource(boundRequest);
+    this._watchResource = new WatchResource(boundRequest);
+    this._jobsResource = new JobsResource(boundRequest);
   }
+
+  // ─── Resource accessors ────────────────────────────────────────────────────
+
+  /** Agent resource — orchestrated multi-step AI runs */
+  get agent(): AgentResource { return this._agentResource; }
+
+  /** Extract resource — structured data extraction from URLs */
+  get extract(): ExtractResource { return this._extractResource; }
+
+  /** Answer resource — question answering from a URL */
+  get answer(): AnswerResource { return this._answerResource; }
+
+  /** Deep Fetch resource — recursive deep page fetching */
+  get deepFetch(): DeepFetchResource { return this._deepFetchResource; }
+
+  /** YouTube resource — video transcript retrieval */
+  get youtube(): YoutubeResource { return this._youtubeResource; }
+
+  /** Watch resource — page-change monitoring */
+  get watch(): WatchResource { return this._watchResource; }
+
+  /** Jobs resource — async job management and polling */
+  get jobs(): JobsResource { return this._jobsResource; }
 
   // ─── Public API ────────────────────────────────────────────────────────────
 
@@ -142,6 +187,69 @@ export class WebPeelClient {
   }
 
   // ─── Internal HTTP layer ────────────────────────────────────────────────────
+
+  /**
+   * @internal
+   * Low-level method that returns the raw `Response` — used for SSE streaming.
+   */
+  async _rawFetch(path: string, options: RequestCallOptions = {}): Promise<Response> {
+    const { signal, timeout: perRequestTimeout, method = 'POST', body } = options;
+    const url = `${this.baseUrl}${path}`;
+    const effectiveTimeout = perRequestTimeout ?? this.timeout;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), effectiveTimeout);
+
+    if (signal) {
+      if (signal.aborted) {
+        clearTimeout(timer);
+        throw new DOMException('Request aborted', 'AbortError');
+      }
+      signal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      'User-Agent': '@webpeel/sdk/0.1.0',
+    };
+
+    const init: RequestInit = {
+      method,
+      headers,
+      signal: controller.signal,
+    };
+
+    if (body !== undefined) {
+      init.body = JSON.stringify(body);
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, init);
+    } catch (err) {
+      clearTimeout(timer);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        if (!signal?.aborted) {
+          throw new TimeoutError({ message: `Request timed out after ${effectiveTimeout}ms` });
+        }
+        throw err;
+      }
+      throw new NetworkError(err instanceof Error ? err.message : 'Network request failed');
+    }
+
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      let errorBody: Record<string, unknown> = {};
+      try { errorBody = (await response.json()) as Record<string, unknown>; } catch { /* ignore */ }
+      const requestId = response.headers.get('x-request-id') ?? undefined;
+      throw createApiError(response.status, errorBody, requestId);
+    }
+
+    return response;
+  }
 
   async _request<T>(path: string, options: RequestCallOptions = {}): Promise<T> {
     const { signal, timeout: perRequestTimeout, method = 'GET', body } = options;

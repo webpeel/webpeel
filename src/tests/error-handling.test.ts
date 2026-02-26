@@ -1,5 +1,29 @@
 import { describe, it, expect } from 'vitest';
 import { peel } from '../index.js';
+import { BlockedError } from '../types.js';
+
+describe('BlockedError metadata', () => {
+  it('has blocked flag set to true', () => {
+    const err = new BlockedError('test message');
+    expect(err.blocked).toBe(true);
+  });
+
+  it('has retryable flag defaulting to true', () => {
+    const err = new BlockedError('test message');
+    expect(err.retryable).toBe(true);
+  });
+
+  it('supports non-retryable BlockedError', () => {
+    const err = new BlockedError('test message', false);
+    expect(err.retryable).toBe(false);
+    expect(err.blocked).toBe(true);
+  });
+
+  it('has correct error name', () => {
+    const err = new BlockedError('test');
+    expect(err.name).toBe('BlockedError');
+  });
+});
 
 describe('graceful error handling', () => {
   it('should throw NetworkError for unreachable domains', async () => {

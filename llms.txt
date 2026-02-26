@@ -1,90 +1,60 @@
-# WebPeel
+# WebPeel — Fast web data for AI agents
 
-> Version: 0.14.0 | 18 MCP tools | 927 tests | The web data API for AI agents. Fetch, search, crawl, extract, and research — one tool, zero config.
-
-WebPeel is an open-source web fetcher that converts any URL to clean, AI-ready markdown. Smart escalation tries fast HTTP first (~150ms), auto-escalates to headless browser when needed, and uses stealth mode for heavily protected sites. v0.14.0 adds YouTube transcript extraction, domain-aware extractors (Twitter/X, Reddit, GitHub, HN), LLM-free BM25 Q&A, reader mode, auto-extract, deep fetch intelligence, and URL monitoring.
+> Open source web fetcher, scraper, and data extractor. One call to fetch any URL as clean markdown, extract structured data, or search the web.
 
 ## Quick Start
 
-```bash
-# CLI
-npx webpeel https://example.com
+npm install webpeel
+npx webpeel "https://example.com"
 
-# With browser rendering (JS-heavy sites)
-npx webpeel https://example.com --render
+## API
 
-# Search the web
-npx webpeel search "latest AI news"
+POST https://api.webpeel.dev/v1/fetch
+Content-Type: application/json
+Authorization: Bearer wp_live_YOUR_KEY
 
-# Crawl a site
-npx webpeel crawl https://example.com --max-pages 20
+{
+  "url": "https://example.com",
+  "format": "markdown"
+}
 
-# Screenshot
-npx webpeel screenshot https://example.com --full-page
+## CLI Commands
 
-# AI-powered answer with citations
-npx webpeel answer "What is WebPeel?" --llm openai
+webpeel <url>                    Fetch URL as markdown
+webpeel <url> --json             Fetch as JSON with metadata
+webpeel <url> --clean            AI-optimized output (no URLs)
+webpeel <url> -q "question?"     Quick answer from page content
+webpeel search "query"           Web search
+webpeel search "query" --site ebay   Site-specific search
+webpeel crawl <url>              Crawl site pages
+webpeel map <url>                Discover site URLs
+webpeel batch <file>             Batch fetch URLs
+webpeel pipe <url>               Pipe-friendly JSON (no UI)
+webpeel mcp                      Start MCP server
 
-# Research agent
-npx webpeel research "Compare React vs Vue in 2025" --llm-key $OPENAI_API_KEY
+## Key Features
 
-# Library
-import { peel } from 'webpeel';
-const result = await peel('https://example.com');
+- Domain-first extraction: Reddit, GitHub, Wikipedia, Twitter/X, HN, YouTube, ArXiv, StackOverflow, NPM — instant via API, no browser
+- Smart content extraction: BM25 scoring, budget distillation, JSON-LD parsing
+- Quick answers: Ask questions about any page (no LLM needed)
+- Anti-bot handling: Stealth mode, proxy rotation, graceful degradation
+- Format options: markdown, text, html, clean (AI-optimized)
+- MCP server: 18 tools for AI agent integration
+- Site search: Search eBay, Amazon, GitHub, and 20+ sites with structured output
 
-# MCP Server (Claude Desktop / Cursor / VS Code / Windsurf / Cline)
-npx webpeel mcp
-```
+## Formats
 
-## API Endpoints
+| Format | Flag | Use Case |
+|--------|------|----------|
+| markdown | (default) | General use, documentation |
+| text | --text | Plain text, no formatting |
+| html | --html | Raw HTML preservation |
+| clean | --clean | AI consumption (no URL noise) |
+| json | --json | Programmatic access with metadata |
 
-Base URL: `https://api.webpeel.dev`
+## MCP Integration
 
-- `GET /v1/fetch?url=URL` — Fetch a URL as markdown/text/HTML
-- `POST /v1/fetch` — Fetch with actions, extraction, advanced options
-- `GET /v1/search?q=QUERY` — Web search (DuckDuckGo free, Brave BYOK)
-- `POST /v1/crawl` — Crawl a website (async job with webhook)
-- `POST /v1/map` — Discover all URLs on a domain
-- `POST /v1/screenshot` — Screenshot a URL (PNG/JPEG, full-page)
-- `POST /v1/answer` — Search + fetch + LLM answer with citations (BYOK)
-- `GET /v1/answer/quick?url=URL&question=Q` — BM25 Q&A, no LLM key needed
-- `POST /v1/deep-fetch` — Search + batch fetch + BM25 merge + dedup. Params: query, count. No LLM key needed.
-- `GET /v1/youtube?url=YT_URL` — Extract YouTube video transcript. All URL formats. No API key.
-- `GET /v1/extract/auto?url=URL` — Auto-detect page type and extract structured JSON
-- `GET /v1/watch` — List URL watchers
-- `POST /v1/watch` — Create URL watcher with webhook notification
-- `POST /v1/agent` — Autonomous research agent (BYOK)
-- `POST /v1/batch` — Fetch multiple URLs in parallel
-- `POST /v2/scrape` — Firecrawl-compatible endpoint (drop-in replacement)
-- `GET /health` — API health check
-
-Authentication: `Authorization: Bearer YOUR_API_KEY` or anonymous (500 free fetches/week, no signup required).
-
-## MCP Tools
-
-- `webpeel_fetch` — Fetch a URL, return clean markdown. Params: url (required), render (boolean), wait (ms), format (markdown|text|html), actions (JSON array), readable (boolean)
-- `webpeel_search` — Search the web. Params: query (required), count (1-10), provider (duckduckgo|brave)
-- `webpeel_crawl` — Crawl a website. Params: url (required), maxPages (number), maxDepth (number)
-- `webpeel_map` — Discover URLs on a domain. Params: url (required), maxUrls (number)
-- `webpeel_extract` — Extract structured data. Params: url (required), schema (JSON Schema), prompt (string)
-- `webpeel_batch` — Fetch multiple URLs. Params: urls (array), concurrency (number)
-- `webpeel_screenshot` — Capture full-page or viewport screenshot. Params: url (required), fullPage (boolean), format (png|jpeg)
-- `webpeel_summarize` — Fetch and return condensed content summary. Params: url (required), focus (string)
-- `webpeel_answer` — Answer a question about any URL without BYOK. Params: url (required), question (required)
-- `webpeel_brand` — Extract brand info (name, logo, colors, social links). Params: url (required)
-- `webpeel_change_track` — Detect content changes (hash-based monitoring). Params: url (required), previousHash (string)
-- `webpeel_deep_fetch` — Search + batch fetch + BM25 merge. Params: query (required), count (1-20). Comparison mode auto-detected.
-- `webpeel_research` — Research agent. Params: prompt (required), urls (array), maxPages (number)
-- `webpeel_youtube` — Extract YouTube video transcripts. Params: url (required). Supports all YouTube URL formats (watch, youtu.be, embed, shorts). No API key needed.
-- `webpeel_auto_extract` — Heuristic structured data extraction — auto-detects page type (pricing, product, contact, article, api-docs). Params: url (required)
-- `webpeel_quick_answer` — BM25-powered Q&A, no LLM key needed. Params: url (required), question (required)
-- `webpeel_watch` — Persistent URL change monitoring with webhook notifications. Params: url (required), webhookUrl (required), schedule (cron string)
-
-## MCP Configuration
-
-Works with: Claude Desktop, Cursor, VS Code (Cline), Windsurf, Continue.dev, OpenClaw, and any MCP client.
-
-```json
+Add to your MCP config:
 {
   "mcpServers": {
     "webpeel": {
@@ -93,50 +63,10 @@ Works with: Claude Desktop, Cursor, VS Code (Cline), Windsurf, Continue.dev, Ope
     }
   }
 }
-```
-
-Hosted MCP (no local install): `https://api.webpeel.dev/mcp`
-
-## Key Features
-
-- **Smart escalation**: HTTP (~150ms) → Playwright browser (~2s) → Stealth mode (~5s) — only escalates when needed
-- **Page actions**: Click, type, scroll, wait, press, select, hover before scraping
-- **Screenshot API**: Full-page or viewport, PNG/JPEG, custom dimensions
-- **PDF & DOCX parsing**: Feed a document URL, get clean markdown
-- **Structured extraction**: Pass a JSON Schema + your LLM key (BYOK), get structured data
-- **Branding extraction**: Extract colors, fonts, logos, and brand assets
-- **Change tracking**: Monitor content changes over time with fingerprint diffing
-- **Crawl & map**: Full site crawling with depth control, async jobs, webhooks
-- **Web search**: DuckDuckGo (free, no key) or Brave Search (BYOK)
-- **Answer endpoint**: Search + fetch + LLM-generated answer with citations
-- **Research agent**: Autonomous multi-page research with streaming
-- **Firecrawl-compatible**: Drop-in replacement — change one URL, your code works
-- **Anti-bot bypass**: Cloudflare, DataDome, JavaScript walls, 403s
-- **Token-optimized**: Strips navigation, ads, scripts, cookie banners
-- **SSRF protection**: Blocks private IPs, IPv6 mapped addresses, redirect attacks
-- **Open source**: AGPL-3.0 licensed, fully self-hostable
-
-## Pricing
-
-- **Free**: 500 fetches/week, 50/hr burst — no credit card required
-- **Pro**: $9/mo — 1,250/week, 100/hr burst
-- **Max**: $29/mo — 6,250/week, 500/hr burst
-- All features on all plans (no feature-gating)
-- Extra usage: Basic $0.002, Stealth $0.01, Search $0.001 per credit
-
-## SDKs & Integrations
-
-- **CLI**: `npm install -g webpeel`
-- **Python SDK**: `pip install webpeel` (zero deps)
-- **TypeScript/Node.js**: `npm install webpeel`
-- **LangChain**: WebPeelLoader integration
-- **LlamaIndex**: WebPeelReader integration
 
 ## Links
 
-- Website: https://webpeel.dev
-- API Docs: https://webpeel.dev/docs/api-reference
+- Docs: https://webpeel.dev/docs
+- API: https://api.webpeel.dev
 - GitHub: https://github.com/webpeel/webpeel
 - npm: https://www.npmjs.com/package/webpeel
-- Status: https://webpeel.dev/status
-- Changelog: https://webpeel.dev/changelog

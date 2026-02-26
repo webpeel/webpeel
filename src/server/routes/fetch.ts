@@ -12,6 +12,7 @@ import { LRUCache } from 'lru-cache';
 import { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
 import { wantsEnvelope, successResponse } from '../utils/response.js';
+import { getSchemaTemplate } from '../../core/schema-templates.js';
 
 const VALID_LLM_PROVIDERS: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
 
@@ -64,6 +65,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         raw,
         lite,
         timeout,
+        schema,
       } = req.query;
 
       // Validate URL parameter
@@ -221,7 +223,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         // Exception: actions always require render
         render: (isSoftLimited && !hasExtraUsage && !hasActions) ? false : shouldRender,
         wait: (isSoftLimited && !hasExtraUsage) ? 0 : (wait ? parseInt(wait as string, 10) : undefined),
-        format: (format as 'markdown' | 'text' | 'html') || 'markdown',
+        format: (format as 'markdown' | 'text' | 'html' | 'clean') || 'markdown',
         stream: stream === 'true',
         includeTags: finalIncludeTags,
         excludeTags: excludeTagsArray,
@@ -278,12 +280,12 @@ export function createFetchRouter(authStore: AuthStore): Router {
       }
 
       // Validate format parameter
-      if (!['markdown', 'text', 'html'].includes(options.format || '')) {
+      if (!['markdown', 'text', 'html', 'clean'].includes(options.format || '')) {
         res.status(400).json({
           success: false,
           error: {
             type: 'invalid_request',
-            message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
+            message: 'Invalid "format" parameter: must be "markdown", "text", "html", or "clean"',
             docs: 'https://webpeel.dev/docs/api-reference#fetch',
           },
           requestId: req.requestId,
@@ -303,6 +305,26 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const startTime = Date.now();
       const result = await peel(url, options);
       const elapsed = Date.now() - startTime;
+
+      // --- BM25 Schema Template Extraction (GET, no LLM needed) ---
+      if (schema && typeof schema === 'string' && result.content) {
+        const template = getSchemaTemplate(schema);
+        if (template) {
+          const { quickAnswer } = await import('../../core/quick-answer.js');
+          const { smartExtractSchemaFields } = await import('../../core/schema-postprocess.js');
+          const extracted = smartExtractSchemaFields(
+            result.content,
+            template.fields,
+            quickAnswer,
+            {
+              pageTitle: result.title,
+              pageUrl: result.url,
+              metadata: result.metadata as Record<string, any>,
+            },
+          );
+          (result as any).extracted = extracted;
+        }
+      }
 
       // Determine fetch type from the result method
       const fetchType: 'basic' | 'stealth' | 'captcha' | 'search' = 
@@ -501,6 +523,16 @@ export function createFetchRouter(authStore: AuthStore): Router {
         raw,
         lite,
         timeout,
+        proxies,
+        chunk,
+        device,
+        viewportWidth,
+        viewportHeight,
+        waitUntil,
+        waitSelector,
+        blockResources,
+        cloaked,
+        schema: bodySchema,
       } = req.body as {
         url?: string;
         render?: boolean;
@@ -534,6 +566,16 @@ export function createFetchRouter(authStore: AuthStore): Router {
         raw?: boolean;
         lite?: boolean;
         timeout?: number;
+        proxies?: string[];
+        chunk?: boolean | { maxTokens?: number; overlap?: number; strategy?: 'section' | 'paragraph' | 'fixed' };
+        device?: 'desktop' | 'mobile' | 'tablet';
+        viewportWidth?: number;
+        viewportHeight?: number;
+        waitUntil?: 'domcontentloaded' | 'networkidle' | 'load' | 'commit';
+        waitSelector?: string;
+        blockResources?: string[];
+        cloaked?: boolean;
+        schema?: string;
       };
 
       // --- Validate URL -------------------------------------------------------
@@ -659,6 +701,19 @@ export function createFetchRouter(authStore: AuthStore): Router {
         }
       }
 
+      // Resolve schema template names (e.g. "product", "article") to field objects
+      if (resolvedExtract && typeof resolvedExtract.schema === 'string') {
+        const tmpl = getSchemaTemplate(resolvedExtract.schema);
+        if (tmpl) {
+          resolvedExtract = { ...resolvedExtract, schema: tmpl.fields };
+        } else {
+          // Try parsing as JSON string
+          try {
+            resolvedExtract = { ...resolvedExtract, schema: JSON.parse(resolvedExtract.schema) };
+          } catch { /* leave as-is */ }
+        }
+      }
+
       // Validate LLM params if extraction is requested
       if (resolvedExtract && (resolvedExtract.schema || resolvedExtract.prompt)) {
         if (!llmProvider || !VALID_LLM_PROVIDERS.includes(llmProvider as InlineLLMProvider)) {
@@ -700,13 +755,13 @@ export function createFetchRouter(authStore: AuthStore): Router {
         ? ['main', 'article', '.content', '#content']
         : includeTagsArray;
 
-      const resolvedFormat = (format as 'markdown' | 'text' | 'html') || 'markdown';
-      if (!['markdown', 'text', 'html'].includes(resolvedFormat)) {
+      const resolvedFormat = (format as 'markdown' | 'text' | 'html' | 'clean') || 'markdown';
+      if (!['markdown', 'text', 'html', 'clean'].includes(resolvedFormat)) {
         res.status(400).json({
           success: false,
           error: {
             type: 'invalid_request',
-            message: 'Invalid "format" parameter: must be "markdown", "text", or "html"',
+            message: 'Invalid "format" parameter: must be "markdown", "text", "html", or "clean"',
             docs: 'https://webpeel.dev/docs/api-reference#fetch',
           },
           requestId: req.requestId,
@@ -762,7 +817,17 @@ export function createFetchRouter(authStore: AuthStore): Router {
         raw: raw === true,
         lite: lite === true,
         timeout: typeof timeout === 'number' ? timeout : undefined,
+        proxies: Array.isArray(proxies) ? proxies : undefined,
+        device: device,
+        viewportWidth: typeof viewportWidth === 'number' ? viewportWidth : undefined,
+        viewportHeight: typeof viewportHeight === 'number' ? viewportHeight : undefined,
+        waitUntil: waitUntil,
+        waitSelector: waitSelector,
+        blockResources: Array.isArray(blockResources) ? blockResources : undefined,
       };
+
+      if (cloaked) options.cloaked = cloaked;
+      if (chunk) options.chunk = chunk === true ? true : chunk;
 
       // Auto-budget: default to 4000 tokens for API requests when no budget specified
       // Opt-out: budget=0 explicitly disables. Lite mode disables auto-budget.
@@ -793,6 +858,26 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const startTime = Date.now();
       const result = await peel(url, options);
       const elapsed = Date.now() - startTime;
+
+      // --- BM25 Schema Template Extraction (POST, no LLM needed) ---
+      if (bodySchema && typeof bodySchema === 'string' && result.content) {
+        const template = getSchemaTemplate(bodySchema);
+        if (template) {
+          const { quickAnswer } = await import('../../core/quick-answer.js');
+          const { smartExtractSchemaFields } = await import('../../core/schema-postprocess.js');
+          const extracted = smartExtractSchemaFields(
+            result.content,
+            template.fields,
+            quickAnswer,
+            {
+              pageTitle: result.title,
+              pageUrl: result.url,
+              metadata: result.metadata as Record<string, any>,
+            },
+          );
+          (result as any).extracted = extracted;
+        }
+      }
 
       // --- Inline extraction (post-fetch) -------------------------------------
       let jsonData: Record<string, any> | undefined;

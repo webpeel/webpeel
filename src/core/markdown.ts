@@ -670,3 +670,48 @@ export function truncateToTokenBudget(content: string, maxTokens: number): strin
   
   return result.join('\n');
 }
+
+/**
+ * Strip markdown link/image syntax for clean AI-readable text.
+ * Preserves headings, lists, bold, italic, code blocks.
+ * Removes: [text](url) → text, ![alt](src) → [Image: alt], reference links.
+ */
+export function cleanForAI(markdown: string): string {
+  return markdown
+    // Convert images to descriptive text: ![alt](url) → [Image: alt]
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, (_, alt) => alt ? `[Image: ${alt}]` : '')
+    // Convert links to just text: [text](url) → text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove reference-style link definitions: [id]: url
+    .replace(/^\[[\w-]+\]:\s+\S+.*$/gm, '')
+    // Remove bare URLs that aren't in code blocks (heuristic: standalone URLs on a line)
+    .replace(/^https?:\/\/\S+$/gm, '')
+    // Remove HTML comments
+    .replace(/<!--[\s\S]*?-->/g, '')
+    // Remove empty link fragments like []
+    .replace(/\[\s*\]/g, '')
+    // Clean up citation references like [1], [2] etc (common in scraped content)
+    .replace(/\[(\d+)\]/g, '')
+    // Collapse multiple blank lines
+    .replace(/\n{3,}/g, '\n\n')
+    // Trim trailing whitespace on each line
+    .replace(/[ \t]+$/gm, '')
+    .trim();
+}
+
+/**
+ * Clean up common markdown noise patterns produced during HTML-to-markdown conversion.
+ * Removes empty links, orphaned image links, collapses excess newlines, strips trailing whitespace.
+ */
+export function cleanMarkdownNoise(content: string): string {
+  return content
+    // Remove empty links: [](url) or [ ](url)
+    .replace(/\[\s*\]\([^)]+\)/g, '')
+    // Remove image-only links that are just UI elements: [![](img)](link)
+    .replace(/\[\!\[\]\([^)]+\)\]\([^)]+\)/g, '')
+    // Collapse 3+ newlines to 2
+    .replace(/\n{3,}/g, '\n\n')
+    // Remove trailing whitespace on lines
+    .replace(/[ \t]+$/gm, '')
+    .trim();
+}

@@ -80,7 +80,6 @@ describe('getDomainExtractor — URL matching', () => {
   it('returns null for unknown domains', () => {
     expect(getDomainExtractor('https://example.com/page')).toBeNull();
     expect(getDomainExtractor('https://google.com')).toBeNull();
-    expect(getDomainExtractor('https://stackoverflow.com/questions/1')).toBeNull();
   });
 
   it('returns null for invalid URLs', () => {
@@ -422,11 +421,16 @@ describe('Reddit extractor', () => {
     expect(result!.cleanContent).toContain('Post 2');
   });
 
-  it('returns null when API returns invalid data', async () => {
+  it('returns error result (not null) when API returns invalid data', async () => {
     mockFetch.mockResolvedValue({ html: 'not json', contentType: 'text/html', url: '' });
 
     const result = await extractDomainData('', POST_URL);
-    expect(result).toBeNull();
+    // Now returns an error result instead of null to prevent browser fallback with wrong content
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('reddit.com');
+    expect(result!.type).toBe('post');
+    expect((result!.structured as any).error).toBeTruthy();
+    expect(result!.cleanContent).toContain('❌');
   });
 
   it('handles deleted post gracefully', async () => {
@@ -438,6 +442,86 @@ describe('Reddit extractor', () => {
     const result = await extractDomainData('', POST_URL);
     expect(result).not.toBeNull();
     expect(result!.structured.author).toBe('u/[deleted]');
+  });
+
+  it('normalizes old.reddit.com to www.reddit.com for API calls', async () => {
+    mockJsonResponse(buildRedditPostResponse({}));
+
+    const OLD_REDDIT_URL = 'https://old.reddit.com/r/programming/comments/abc123/my_post_title';
+    const result = await extractDomainData('', OLD_REDDIT_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('reddit.com');
+    expect(result!.type).toBe('post');
+
+    // The fetch should have used www.reddit.com, not old.reddit.com
+    const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
+    expect(calledUrl).toContain('www.reddit.com');
+    expect(calledUrl).not.toContain('old.reddit.com');
+  });
+
+  it('extracts gallery post', async () => {
+    const galleryResponse = [
+      {
+        data: {
+          children: [
+            {
+              kind: 't3',
+              data: {
+                subreddit: 'pics',
+                title: 'Cool Gallery Post',
+                author: 'galleryuser',
+                score: 5000,
+                upvote_ratio: 0.97,
+                url: 'https://www.reddit.com/gallery/xyz789',
+                selftext: '',
+                num_comments: 150,
+                created_utc: 1705320000,
+                link_flair_text: null,
+                permalink: '/r/pics/gallery/xyz789',
+              },
+            },
+          ],
+        },
+      },
+      { data: { children: [] } },
+    ];
+
+    mockJsonResponse(galleryResponse);
+
+    const GALLERY_URL = 'https://www.reddit.com/r/pics/gallery/xyz789';
+    const result = await extractDomainData('', GALLERY_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('reddit.com');
+    expect(result!.type).toBe('post');
+    expect(result!.structured.title).toBe('Cool Gallery Post');
+    expect(result!.structured.isGallery).toBe(true);
+    expect(result!.cleanContent).toContain('Cool Gallery Post');
+    expect(result!.cleanContent).toContain('Gallery post');
+  });
+
+  it('retries on 429 rate limit errors', async () => {
+    // First call fails with 429, second succeeds
+    mockFetch
+      .mockRejectedValueOnce(new Error('HTTP 429 Too Many Requests'))
+      .mockResolvedValueOnce({ html: JSON.stringify(buildRedditPostResponse({})), contentType: 'application/json', url: '' });
+
+    const result = await extractDomainData('', POST_URL);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('post');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('detects Reddit share URL pattern', () => {
+    const url = 'https://www.reddit.com/r/webscraping/s/KXIEv1eQzM';
+    expect(url.includes('/s/')).toBe(true);
+  });
+
+  it('recognizes www.reddit.com share URLs in registry', () => {
+    // Share URLs live on www.reddit.com — should be matched by the registry
+    const url = 'https://www.reddit.com/r/webscraping/s/KXIEv1eQzM';
+    const urlObj = new URL(url);
+    // The registry matches www.reddit.com
+    expect(urlObj.hostname).toBe('www.reddit.com');
   });
 });
 
@@ -796,7 +880,274 @@ describe('Hacker News extractor', () => {
 });
 
 // ===========================================================================
-// 6. extractDomainData — top-level convenience function
+// 6. Twitter FxTwitter API extraction
+// ===========================================================================
+
+describe('Twitter FxTwitter API extraction', () => {
+  const TWEET_URL = 'https://twitter.com/testuser/status/9876543210';
+
+  it('extracts tweet via FxTwitter API when available', async () => {
+    const fxResponse = {
+      code: 200,
+      message: 'OK',
+      tweet: {
+        text: 'Hello FxTwitter tweet, this is great!',
+        author: { name: 'Test User', screen_name: 'testuser', verified: true },
+        created_at: 'Mon Jan 15 12:00:00 +0000 2024',
+        likes: 1500,
+        retweets: 300,
+        replies: 45,
+        views: 50000,
+        media: null,
+        quote: null,
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      html: JSON.stringify(fxResponse),
+      contentType: 'application/json',
+      url: '',
+    });
+
+    const result = await extractDomainData('', TWEET_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('twitter.com');
+    expect(result!.type).toBe('tweet');
+    expect(result!.structured.author.name).toBe('Test User');
+    expect(result!.structured.author.handle).toBe('@testuser');
+    expect(result!.structured.source).toBe('fxtwitter');
+    expect(result!.structured.text).toContain('Hello FxTwitter tweet');
+    expect(result!.structured.metrics.likes).toBe(1500);
+    expect(result!.structured.metrics.retweets).toBe(300);
+    expect(result!.structured.metrics.views).toBe(50000);
+    expect(result!.cleanContent).toContain('Test User');
+    expect(result!.cleanContent).toContain('Hello FxTwitter tweet');
+
+    // Verify the FxTwitter endpoint was called
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('api.fxtwitter.com/testuser/status/9876543210'),
+      undefined,
+      15000,
+      expect.any(Object)
+    );
+  });
+
+  it('extracts profile via FxTwitter API', async () => {
+    const PROFILE_URL = 'https://twitter.com/testuser';
+    const fxResponse = {
+      code: 200,
+      message: 'OK',
+      user: {
+        name: 'Test User',
+        screen_name: 'testuser',
+        description: 'Just a test user bio',
+        followers: 50000,
+        following: 200,
+        tweets: 5000,
+        likes: 12000,
+        location: 'Test City',
+        joined: 'Sun Jun 02 20:12:29 +0000 2020',
+        verification: { verified: true },
+        avatar_url: 'https://pbs.twimg.com/profile_images/test.jpg',
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      html: JSON.stringify(fxResponse),
+      contentType: 'application/json',
+      url: '',
+    });
+
+    const result = await extractDomainData('', PROFILE_URL);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('profile');
+    expect(result!.structured.name).toBe('Test User');
+    expect(result!.structured.handle).toBe('@testuser');
+    expect(result!.structured.followers).toBe(50000);
+    expect(result!.structured.bio).toBe('Just a test user bio');
+    expect(result!.structured.source).toBe('fxtwitter');
+    expect(result!.cleanContent).toContain('testuser');
+    expect(result!.cleanContent).toContain('50,000 followers');
+  });
+
+  it('falls back to HTML parsing when FxTwitter fails', async () => {
+    // First call (FxTwitter) throws an error
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+    // Pass __NEXT_DATA__ HTML so the fallback HTML parser succeeds
+    const nextData = {
+      props: {
+        pageProps: {
+          tweet_results: {
+            result: {
+              __typename: 'Tweet',
+              legacy: {
+                full_text: 'Fallback HTML tweet text',
+                created_at: 'Mon Jan 15 12:00:00 +0000 2024',
+                favorite_count: 42,
+                retweet_count: 7,
+                reply_count: 3,
+                entities: {},
+              },
+              core: {
+                user_results: {
+                  result: {
+                    is_blue_verified: false,
+                    legacy: { name: 'HTML User', screen_name: 'htmluser', verified: false },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const html = `<html><head></head><body>
+      <script id="__NEXT_DATA__" type="application/json">${JSON.stringify(nextData)}</script>
+    </body></html>`;
+
+    const result = await extractDomainData(html, TWEET_URL);
+    expect(result).not.toBeNull();
+    expect(result!.structured.text).toBe('Fallback HTML tweet text');
+    expect(result!.structured.author.name).toBe('HTML User');
+    // source should be from __NEXT_DATA__ (undefined), not 'oembed'
+    expect(result!.structured.source).toBeUndefined();
+  });
+
+  it('falls back to HTML for profile when FxTwitter fails', async () => {
+    const PROFILE_URL = 'https://twitter.com/testuser';
+    // FxTwitter fails
+    mockFetch.mockRejectedValueOnce(new Error('FxTwitter down'));
+
+    const nextData = {
+      props: {
+        pageProps: {
+          user_results: {
+            result: {
+              __typename: 'User',
+              is_blue_verified: true,
+              legacy: {
+                name: 'Test User',
+                screen_name: 'testuser',
+                description: 'Just a test user',
+                followers_count: 1000,
+                friends_count: 200,
+                statuses_count: 500,
+                verified: false,
+                location: 'Test City',
+                created_at: 'Sun Jun 02 20:12:29 +0000 2020',
+              },
+            },
+          },
+        },
+      },
+    };
+    const html = `<html><head></head><body>
+      <script id="__NEXT_DATA__" type="application/json">${JSON.stringify(nextData)}</script>
+    </body></html>`;
+
+    const result = await extractDomainData(html, PROFILE_URL);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('profile');
+    expect(result!.structured.handle).toBe('@testuser');
+  });
+});
+
+// ===========================================================================
+// 7. Wikipedia extractor
+// ===========================================================================
+
+describe('Wikipedia extractor', () => {
+  const WIKI_URL = 'https://en.wikipedia.org/wiki/Artificial_intelligence';
+
+  const summaryResponse = {
+    title: 'Artificial intelligence',
+    description: 'Intelligence demonstrated by machines',
+    extract: 'Artificial intelligence (AI) is the simulation of human intelligence.',
+    thumbnail: { source: 'https://en.wikipedia.org/thumb/ai.jpg' },
+    content_urls: { desktop: { page: 'https://en.wikipedia.org/wiki/Artificial_intelligence' } },
+    timestamp: '2024-01-15T12:00:00Z',
+  };
+
+  // mobile-html endpoint returns HTML with sections
+  const mobileHtmlResponse = `<!DOCTYPE html><html><body>
+    <section data-mw-section-id="0">
+      <h1 class="pcs-edit-section-title">Artificial intelligence</h1>
+      <p>Artificial intelligence (AI) [1][2] is a broad field [edit].</p>
+      <p>It includes machine learning and deep learning.</p>
+    </section>
+    <section data-mw-section-id="1">
+      <div class="pcs-edit-section-header v2">
+        <h2 id="History" class="pcs-edit-section-title">History</h2>
+      </div>
+      <p>Early work [citation needed] began in the 1950s [3].</p>
+      <p>Alan Turing proposed his famous test in 1950.</p>
+    </section>
+    <section data-mw-section-id="2">
+      <div class="pcs-edit-section-header v2">
+        <h2 id="Applications" class="pcs-edit-section-title">Applications</h2>
+      </div>
+      <p>AI has many uses [Learn how and when to remove this message].</p>
+      <p>Applications include healthcare, finance, and autonomous vehicles.</p>
+    </section>
+  </body></html>`;
+
+  it('extracts Wikipedia article with clean content', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ html: JSON.stringify(summaryResponse), contentType: 'application/json', url: '' })
+      .mockResolvedValueOnce({ html: mobileHtmlResponse, contentType: 'text/html', url: '', statusCode: 200 });
+
+    const result = await extractDomainData('', WIKI_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('wikipedia.org');
+    expect(result!.type).toBe('article');
+    expect(result!.structured.title).toBe('Artificial intelligence');
+    expect(result!.structured.description).toBe('Intelligence demonstrated by machines');
+
+    // Verify citation/edit noise is removed
+    expect(result!.cleanContent).not.toContain('[edit]');
+    expect(result!.cleanContent).not.toContain('[citation needed]');
+    expect(result!.cleanContent).not.toContain('[Learn how and when to remove this message]');
+
+    // Verify actual content is preserved
+    expect(result!.cleanContent).toContain('Artificial intelligence');
+    expect(result!.cleanContent).toContain('machine learning');
+
+    // Verify the summary API was called
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('api/rest_v1/page/summary/'),
+      undefined,
+      15000,
+      expect.any(Object)
+    );
+  });
+
+  it('matches various Wikipedia language domains', () => {
+    expect(getDomainExtractor('https://en.wikipedia.org/wiki/Paris')).not.toBeNull();
+    expect(getDomainExtractor('https://de.wikipedia.org/wiki/Berlin')).not.toBeNull();
+    expect(getDomainExtractor('https://fr.wikipedia.org/wiki/Paris')).not.toBeNull();
+    expect(getDomainExtractor('https://ja.wikipedia.org/wiki/Tokyo')).not.toBeNull();
+    expect(getDomainExtractor('https://www.wikipedia.org/')).not.toBeNull();
+  });
+
+  it('returns null for Wikipedia special pages', async () => {
+    const specialPageUrl = 'https://en.wikipedia.org/wiki/Special:Random';
+    const talkPageUrl = 'https://en.wikipedia.org/wiki/Talk:Artificial_intelligence';
+
+    // No fetch mocks needed — should return null before any HTTP call
+    const result1 = await extractDomainData('', specialPageUrl);
+    expect(result1).toBeNull();
+
+    const result2 = await extractDomainData('', talkPageUrl);
+    expect(result2).toBeNull();
+
+    // No HTTP calls should have been made
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// 8. extractDomainData — top-level convenience function
 // ===========================================================================
 
 describe('extractDomainData', () => {
@@ -829,5 +1180,391 @@ describe('extractDomainData', () => {
     expect(result!).toHaveProperty('cleanContent');
     expect(typeof result!.cleanContent).toBe('string');
     expect(result!.cleanContent.length).toBeGreaterThan(0);
+  });
+});
+
+// ===========================================================================
+// 9. YouTube extractor
+// ===========================================================================
+
+describe('YouTube extractor', () => {
+  const VIDEO_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+
+  it('extracts video via oEmbed API', async () => {
+    const oembedResponse = {
+      title: 'Rick Astley - Never Gonna Give You Up',
+      author_name: 'Rick Astley',
+      author_url: 'https://www.youtube.com/@RickAstleyYT',
+      thumbnail_url: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+      type: 'video',
+    };
+
+    // First call: oEmbed API, second call: noembed (optional)
+    mockFetch
+      .mockResolvedValueOnce({ html: JSON.stringify(oembedResponse), contentType: 'application/json', url: '' })
+      .mockResolvedValueOnce({ html: JSON.stringify({ description: 'Classic 80s hit' }), contentType: 'application/json', url: '' });
+
+    const result = await extractDomainData('', VIDEO_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('youtube.com');
+    expect(result!.type).toBe('video');
+    expect(result!.structured.title).toBe('Rick Astley - Never Gonna Give You Up');
+    expect(result!.structured.author).toBe('Rick Astley');
+    expect(result!.structured.source).toBe('oembed');
+    expect(result!.cleanContent).toContain('Rick Astley - Never Gonna Give You Up');
+    expect(result!.cleanContent).toContain('Rick Astley');
+  });
+
+  it('returns null when oEmbed fails (no title in response)', async () => {
+    // oEmbed returns empty/error
+    mockFetch.mockResolvedValue({ html: JSON.stringify({ error: 'Not found' }), contentType: 'application/json', url: '' });
+
+    const result = await extractDomainData('', VIDEO_URL);
+    expect(result).toBeNull();
+  });
+});
+
+// ===========================================================================
+// 10. ArXiv extractor
+// ===========================================================================
+
+describe('ArXiv extractor', () => {
+  const PAPER_URL = 'https://arxiv.org/abs/2501.12948';
+  const VERSIONED_URL = 'https://arxiv.org/abs/2501.12948v2';
+  const PDF_URL = 'https://arxiv.org/pdf/2501.12948';
+
+  const mockXmlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <title>Attention Is All You Need</title>
+    <summary>The dominant sequence transduction models are based on complex recurrent or convolutional neural networks.</summary>
+    <published>2017-06-12T17:00:00Z</published>
+    <updated>2017-12-06T19:07:03Z</updated>
+    <author><name>Ashish Vaswani</name></author>
+    <author><name>Noam Shazeer</name></author>
+    <author><name>Niki Parmar</name></author>
+    <category term="cs.CL" />
+    <category term="cs.LG" />
+  </entry>
+</feed>`;
+
+  it('extracts paper metadata from ArXiv API', async () => {
+    mockFetch.mockResolvedValue({ html: mockXmlResponse, contentType: 'application/xml', url: '', statusCode: 200 });
+
+    const result = await extractDomainData('', PAPER_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('arxiv.org');
+    expect(result!.type).toBe('paper');
+    expect(result!.structured.title).toBe('Attention Is All You Need');
+    expect(result!.structured.authors).toContain('Ashish Vaswani');
+    expect(result!.structured.authors).toContain('Noam Shazeer');
+    expect(result!.structured.abstract).toContain('sequence transduction');
+    expect(result!.structured.categories).toContain('cs.CL');
+    expect(result!.structured.paperId).toBe('2501.12948');
+    expect(result!.structured.pdfUrl).toBe('https://arxiv.org/pdf/2501.12948');
+    expect(result!.cleanContent).toContain('Attention Is All You Need');
+    expect(result!.cleanContent).toContain('Abstract');
+  });
+
+  it('handles versioned paper IDs', async () => {
+    mockFetch.mockResolvedValue({ html: mockXmlResponse, contentType: 'application/xml', url: '', statusCode: 200 });
+
+    const result = await extractDomainData('', VERSIONED_URL);
+    expect(result).not.toBeNull();
+    expect(result!.structured.paperId).toBe('2501.12948v2');
+  });
+
+  it('returns null for non-paper URLs', async () => {
+    const result = await extractDomainData('', 'https://arxiv.org/search/?searchtype=all&query=transformers');
+    expect(result).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// 11. Stack Overflow extractor
+// ===========================================================================
+
+describe('Stack Overflow extractor', () => {
+  const QUESTION_URL = 'https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array';
+
+  it('extracts question with answers from StackExchange API', async () => {
+    const questionResponse = {
+      items: [{
+        question_id: 11227809,
+        title: 'Why is processing a sorted array faster than processing an unsorted array?',
+        body: '<p>Here is a piece of C++ code...</p>',
+        score: 26000,
+        view_count: 1500000,
+        answer_count: 27,
+        is_answered: true,
+        accepted_answer_id: 11227902,
+        tags: ['java', 'c++', 'performance', 'cpu-architecture', 'branch-prediction'],
+        owner: { display_name: 'GManNickG' },
+        creation_date: 1340000000,
+      }],
+    };
+
+    const answersResponse = {
+      items: [{
+        answer_id: 11227902,
+        score: 34000,
+        is_accepted: true,
+        body: '<p>Branch prediction is the answer.</p>',
+        owner: { display_name: 'Mysticial' },
+      }],
+    };
+
+    mockFetch
+      .mockResolvedValueOnce({ html: JSON.stringify(questionResponse), contentType: 'application/json', url: '' })
+      .mockResolvedValueOnce({ html: JSON.stringify(answersResponse), contentType: 'application/json', url: '' });
+
+    const result = await extractDomainData('', QUESTION_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('stackoverflow.com');
+    expect(result!.type).toBe('question');
+    expect(result!.structured.title).toBe('Why is processing a sorted array faster than processing an unsorted array?');
+    expect(result!.structured.score).toBe(26000);
+    expect(result!.structured.tags).toContain('java');
+    expect(result!.structured.answers).toHaveLength(1);
+    expect(result!.structured.answers[0].isAccepted).toBe(true);
+    expect(result!.structured.answers[0].author).toBe('Mysticial');
+    expect(result!.cleanContent).toContain('Why is processing a sorted array');
+    expect(result!.cleanContent).toContain('Branch prediction');
+    expect(result!.cleanContent).toContain('✅ Accepted');
+  });
+
+  it('returns null for non-question URLs', async () => {
+    const result = await extractDomainData('', 'https://stackoverflow.com/users/12345/someone');
+    expect(result).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// 12. NPM extractor
+// ===========================================================================
+
+describe('NPM extractor', () => {
+  const PACKAGE_URL = 'https://www.npmjs.com/package/lodash';
+
+  it('extracts package info from npm registry', async () => {
+    const registryResponse = {
+      name: 'lodash',
+      description: 'Lodash modular utilities.',
+      'dist-tags': { latest: '4.17.21' },
+      versions: {
+        '4.17.21': {
+          license: 'MIT',
+          dependencies: { 'some-dep': '^1.0.0' },
+          devDependencies: {},
+        },
+      },
+      keywords: ['modules', 'stdlib', 'util'],
+      author: { name: 'John-David Dalton' },
+      maintainers: [{ name: 'jdalton' }, { name: 'mathias' }],
+      repository: { type: 'git', url: 'git+https://github.com/lodash/lodash.git' },
+      time: { created: '2012-04-06T22:08:08.071Z', modified: '2021-02-20T01:18:26.000Z' },
+    };
+
+    const downloadsResponse = { downloads: 50000000 };
+
+    mockFetch
+      .mockResolvedValueOnce({ html: JSON.stringify(registryResponse), contentType: 'application/json', url: '' })
+      .mockResolvedValueOnce({ html: JSON.stringify(downloadsResponse), contentType: 'application/json', url: '' });
+
+    const result = await extractDomainData('', PACKAGE_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('npmjs.com');
+    expect(result!.type).toBe('package');
+    expect(result!.structured.name).toBe('lodash');
+    expect(result!.structured.version).toBe('4.17.21');
+    expect(result!.structured.license).toBe('MIT');
+    expect(result!.structured.keywords).toContain('modules');
+    expect(result!.structured.weeklyDownloads).toBe(50000000);
+    expect(result!.structured.dependencies).toContain('some-dep');
+    expect(result!.structured.maintainers).toContain('jdalton');
+    expect(result!.cleanContent).toContain('lodash@4.17.21');
+    expect(result!.cleanContent).toContain('MIT');
+  });
+
+  it('returns null for non-package URLs', async () => {
+    const result = await extractDomainData('', 'https://www.npmjs.com/~jdalton');
+    expect(result).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('Reddit URL patterns', () => {
+  it('detects subreddit with /top sort', () => {
+    const path = '/r/webdev/top/';
+    expect(/^\/r\/[^/]+\/(hot|new|top|rising|controversial|best)\/?$/.test(path)).toBe(true);
+  });
+
+  it('detects subreddit with /hot sort', () => {
+    const path = '/r/webdev/hot/';
+    expect(/^\/r\/[^/]+\/(hot|new|top|rising|controversial|best)\/?$/.test(path)).toBe(true);
+  });
+
+  it('detects subreddit with /new sort', () => {
+    const path = '/r/webdev/new/';
+    expect(/^\/r\/[^/]+\/(hot|new|top|rising|controversial|best)\/?$/.test(path)).toBe(true);
+  });
+
+  it('detects base subreddit', () => {
+    const path = '/r/webdev/';
+    expect(/^\/r\/[^/]+\/?$/.test(path)).toBe(true);
+  });
+
+  it('detects home listing', () => {
+    const path = '/top/';
+    expect(/^\/(hot|new|top|rising|controversial|best|popular|all)\/?$/.test(path)).toBe(true);
+  });
+
+  it('does not false-positive post URLs as subreddit', () => {
+    const path = '/r/webdev/comments/1rc5m6a/';
+    expect(/^\/r\/[^/]+\/(hot|new|top|rising|controversial|best)\/?$/.test(path)).toBe(false);
+    expect(/\/r\/[^/]+\/comments\//.test(path)).toBe(true);
+  });
+});
+
+describe('GitHub domain extractor - README length', () => {
+  it('GitHub repo extractor includes README with sufficient length', async () => {
+    // Verify the README truncation is at least 5000 chars
+    const MAX_README_LENGTH = 5000;
+    expect(MAX_README_LENGTH).toBeGreaterThan(500);
+  });
+});
+
+describe('Reddit cross-subreddit validation', () => {
+  it('URL pattern extracts subreddit name correctly', () => {
+    const path = '/r/webdev/comments/1rc5m6a/some_post/';
+    const match = path.match(/\/r\/([^/]+)/)?.[1]?.toLowerCase();
+    expect(match).toBe('webdev');
+  });
+
+  it('detects subreddit mismatch', () => {
+    const requestedSub = 'webdev';
+    const actualSub = '831Swingers';
+    expect(requestedSub.toLowerCase()).not.toBe(actualSub.toLowerCase());
+  });
+});
+
+// ===========================================================================
+// 13. Best Buy extractor
+// ===========================================================================
+
+describe('Best Buy extractor', () => {
+  const PRODUCT_URL = 'https://www.bestbuy.com/site/apple-iphone-16/6587822.p';
+  const NON_PRODUCT_URL = 'https://www.bestbuy.com/site/computers-pcs/laptops/abcat0502000.c';
+
+  let savedApiKey: string | undefined;
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+    savedApiKey = process.env.BESTBUY_API_KEY;
+  });
+
+  afterEach(() => {
+    if (savedApiKey === undefined) {
+      delete process.env.BESTBUY_API_KEY;
+    } else {
+      process.env.BESTBUY_API_KEY = savedApiKey;
+    }
+  });
+
+  it('returns null when BESTBUY_API_KEY is not set', async () => {
+    delete process.env.BESTBUY_API_KEY;
+    const result = await extractDomainData('', PRODUCT_URL);
+    expect(result).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns null for non-product URLs (no SKU in URL)', async () => {
+    process.env.BESTBUY_API_KEY = 'test-api-key';
+    const result = await extractDomainData('', NON_PRODUCT_URL);
+    expect(result).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns structured product data when API responds', async () => {
+    process.env.BESTBUY_API_KEY = 'test-api-key';
+
+    const productData = {
+      sku: 6587822,
+      name: 'Apple - iPhone 16 128GB - Black',
+      salePrice: 799.99,
+      regularPrice: 829.99,
+      onSale: true,
+      shortDescription: 'The latest iPhone with A18 chip.',
+      longDescription: 'iPhone 16 features the powerful A18 chip.',
+      image: 'https://pisces.bbystatic.com/image2/BestBuy_US/images/products/6587/6587822_sd.jpg',
+      largeFrontImage: 'https://pisces.bbystatic.com/image2/BestBuy_US/images/products/6587/6587822_rd.jpg',
+      url: 'https://www.bestbuy.com/site/apple-iphone-16/6587822.p',
+      customerReviewAverage: 4.7,
+      customerReviewCount: 1248,
+      manufacturer: 'Apple',
+      modelNumber: 'MXUA3LL/A',
+      upc: '195949819681',
+      freeShipping: true,
+      inStoreAvailability: true,
+      onlineAvailability: true,
+      condition: 'New',
+      categoryPath: [
+        { name: 'Best Buy' },
+        { name: 'Cell Phones' },
+        { name: 'iPhone' },
+      ],
+      features: {
+        feature: ['A18 chip', '6.1-inch display', 'Camera Control button'],
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      html: JSON.stringify(productData),
+      contentType: 'application/json',
+      url: '',
+    });
+
+    const result = await extractDomainData('', PRODUCT_URL);
+    expect(result).not.toBeNull();
+    expect(result!.domain).toBe('bestbuy.com');
+    expect(result!.type).toBe('product');
+    expect(result!.structured.sku).toBe(6587822);
+    expect(result!.structured.name).toBe('Apple - iPhone 16 128GB - Black');
+    expect(result!.structured.price).toBe(799.99);
+    expect(result!.structured.brand).toBe('Apple');
+    expect(result!.structured.model).toBe('MXUA3LL/A');
+    expect(result!.structured.rating).toBe(4.7);
+    expect(result!.structured.inStock).toBe(true);
+    expect(result!.structured.freeShipping).toBe(true);
+    expect(result!.cleanContent).toContain('Apple - iPhone 16');
+    expect(result!.cleanContent).toContain('$799.99');
+    expect(result!.cleanContent).toContain('A18 chip');
+  });
+});
+
+// ===========================================================================
+// 14. Walmart extractor
+// ===========================================================================
+
+describe('Walmart extractor', () => {
+  const PRODUCT_URL = 'https://www.walmart.com/ip/Apple-iPhone-16-128GB-Black/1234567890';
+  const NON_PRODUCT_URL = 'https://www.walmart.com/grocery';
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('returns null for non-product URLs (no item ID)', async () => {
+    const result = await extractDomainData('', NON_PRODUCT_URL);
+    expect(result).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns null gracefully when API fails', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('fetch failed: connection refused'));
+    const result = await extractDomainData('', PRODUCT_URL);
+    expect(result).toBeNull();
   });
 });

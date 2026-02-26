@@ -8,6 +8,12 @@ import type { PeelOptions } from '../types.js';
 import { fetch as undiciFetch } from 'undici';
 import { createHash } from 'crypto';
 import { discoverSitemap } from './sitemap.js';
+import {
+  generateJobId,
+  loadCheckpoint,
+  saveCheckpoint,
+  deleteCheckpoint,
+} from './crawl-checkpoint.js';
 
 /** Safely compile a user-supplied regex pattern. Rejects patterns longer than 200 chars
  *  and wraps compilation in a try-catch to prevent invalid regex crashes. */
@@ -22,9 +28,21 @@ function safeRegex(pattern: string): RegExp {
   }
 }
 
+/** Maximum pages allowed per tier */
+const TIER_MAX_PAGES: Record<string, number> = {
+  free: 10,
+  starter: 25,
+  pro: 50,
+  enterprise: 100,
+  max: 100,
+  admin: 10000,
+};
+
 export interface CrawlOptions extends Omit<PeelOptions, 'format'> {
-  /** Maximum number of pages to crawl (default: 10, max: 100) */
+  /** Maximum number of pages to crawl (default: 10, max: tier-dependent) */
   maxPages?: number;
+  /** Tier for determining the max pages cap (default: 'free') */
+  tier?: string;
   /** Maximum depth to crawl (default: 2, max: 5) */
   maxDepth?: number;
   /** Only crawl URLs from these domains (default: same domain as starting URL) */
@@ -47,6 +65,8 @@ export interface CrawlOptions extends Omit<PeelOptions, 'format'> {
   onProgress?: (status: CrawlProgress) => void;
   /** Per-page callback — receives the full result as soon as a page completes */
   onPage?: (result: CrawlResult) => void;
+  /** Resume an interrupted crawl from its last checkpoint */
+  resume?: boolean;
 }
 
 export interface CrawlProgress {
@@ -187,6 +207,7 @@ export async function crawl(
 ): Promise<CrawlResult[]> {
   const {
     maxPages = 10,
+    tier,
     maxDepth = 2,
     allowedDomains,
     excludePatterns = [],
@@ -196,6 +217,7 @@ export async function crawl(
     strategy = 'bfs',
     deduplication = true,
     includePatterns = [],
+    resume = false,
     onProgress,
     onPage,
     ...peelOptions
@@ -204,7 +226,8 @@ export async function crawl(
   const crawlStartTime = Date.now();
 
   // Validate limits
-  const validatedMaxPages = Math.min(Math.max(maxPages, 1), 100);
+  const tierMaxPages = TIER_MAX_PAGES[tier || 'free'] ?? TIER_MAX_PAGES.free;
+  const validatedMaxPages = Math.min(Math.max(maxPages, 1), tierMaxPages);
   const validatedMaxDepth = Math.min(Math.max(maxDepth, 1), 5);
   const validatedRateLimit = Math.max(rateLimitMs, 100); // Min 100ms between requests
 
@@ -236,14 +259,44 @@ export async function crawl(
 
   const effectiveRateLimit = robotsRules.crawlDelay || validatedRateLimit;
 
+  // Checkpoint: generate a deterministic job ID for this crawl
+  const crawlOptionsForCheckpoint: Record<string, any> = {
+    maxPages: validatedMaxPages,
+    maxDepth: validatedMaxDepth,
+    includes: includePatterns,
+    excludes: excludePatterns,
+  };
+  const jobId = generateJobId(startUrl, crawlOptionsForCheckpoint);
+
+  // Load existing checkpoint if resume is requested
+  const checkpoint = resume ? loadCheckpoint(jobId) : null;
+  if (checkpoint) {
+    console.error(`[Crawler] Resuming crawl from checkpoint: ${checkpoint.completed.size} pages already crawled`);
+  }
+
   // State tracking
   const results: CrawlResult[] = [];
   const visited = new Set<string>();
   const contentFingerprints = new Set<string>();
   let failedCount = 0;
-  const queue: Array<{ url: string; depth: number; parent: string | null }> = [
-    { url: startUrl, depth: 0, parent: null },
-  ];
+
+  // If resuming, restore visited/results from checkpoint
+  if (checkpoint) {
+    for (const [url] of checkpoint.completed) {
+      visited.add(url);
+    }
+  }
+
+  const queue: Array<{ url: string; depth: number; parent: string | null }> = [];
+
+  // If resuming with pending URLs, restore queue; otherwise start from scratch
+  if (checkpoint && checkpoint.pending.length > 0) {
+    for (const pendingUrl of checkpoint.pending) {
+      queue.push({ url: pendingUrl, depth: 1, parent: startUrl });
+    }
+  } else {
+    queue.push({ url: startUrl, depth: 0, parent: null });
+  }
 
   // Sitemap-first: Discover URLs from sitemap before crawling
   if (sitemapFirst) {
@@ -336,6 +389,25 @@ export async function crawl(
 
       results.push(crawlResult);
 
+      // Save checkpoint every 5 pages
+      if (results.length % 5 === 0) {
+        saveCheckpoint({
+          jobId,
+          startUrl,
+          completed: new Map(
+            results
+              .filter(r => !r.error)
+              .map(r => [r.url, { status: 200, contentLength: r.markdown.length, timestamp: Date.now() }])
+          ),
+          pending: queue.map(q => q.url),
+          discovered: [],
+          options: crawlOptionsForCheckpoint,
+          startedAt: crawlStartTime,
+          lastCheckpoint: Date.now(),
+          maxPages: validatedMaxPages,
+        });
+      }
+
       // Call per-page callback with full result
       if (onPage) {
         onPage(crawlResult);
@@ -405,6 +477,9 @@ export async function crawl(
       }
     }
   }
+
+  // Crawl complete — clean up checkpoint
+  deleteCheckpoint(jobId);
 
   return results;
 }

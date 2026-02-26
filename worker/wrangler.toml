@@ -1,0 +1,6 @@
+name = "webpeel-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+WORKER_AUTH_TOKEN = ""  # Set via wrangler secret

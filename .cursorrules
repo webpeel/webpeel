@@ -1,0 +1,11 @@
+You are working on WebPeel, an open source web data platform.
+
+Key rules:
+- DO NOT modify src/core/bm25-filter.ts
+- All tests must pass: npx vitest run
+- TypeScript must compile: npx tsc --noEmit
+- Use domain-first extraction pattern for new site support
+- API errors use the standard envelope: { success, error: { type, message, hint, docs }, metadata: { requestId } }
+- Free tier rate limits must be maintained (revenue model depends on it)
+
+Architecture: See AGENTS.md for full details.

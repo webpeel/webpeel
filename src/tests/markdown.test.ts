@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { filterByTags, detectMainContent, calculateQuality, truncateToTokenBudget, estimateTokens } from '../core/markdown.js';
+import { filterByTags, detectMainContent, calculateQuality, truncateToTokenBudget, estimateTokens, cleanMarkdownNoise } from '../core/markdown.js';
 
 describe('filterByTags', () => {
   it('filters by tag name (article)', () => {
@@ -526,5 +526,67 @@ describe('truncateToTokenBudget', () => {
     const result = truncateToTokenBudget(content, 50);
     
     expect(result).toContain('[Content truncated to ~50 tokens]');
+  });
+});
+
+describe('cleanMarkdownNoise', () => {
+  it('removes empty links [](url)', () => {
+    const input = 'Some text [](https://example.com) more text';
+    const result = cleanMarkdownNoise(input);
+    expect(result).not.toContain('[](');
+    expect(result).toContain('Some text');
+    expect(result).toContain('more text');
+  });
+
+  it('removes empty links with spaces [ ](url)', () => {
+    const input = 'Text [  ](https://example.com) end';
+    const result = cleanMarkdownNoise(input);
+    expect(result).not.toContain('[  ](');
+    expect(result).toContain('Text');
+    expect(result).toContain('end');
+  });
+
+  it('removes image-only links [![](img)](link)', () => {
+    const input = 'Content [![](https://img.example.com/icon.png)](https://example.com) more';
+    const result = cleanMarkdownNoise(input);
+    expect(result).not.toContain('[![](');
+    expect(result).toContain('Content');
+    expect(result).toContain('more');
+  });
+
+  it('collapses 3+ newlines to 2', () => {
+    const input = 'Paragraph one\n\n\n\nParagraph two\n\n\n\n\nParagraph three';
+    const result = cleanMarkdownNoise(input);
+    expect(result).not.toMatch(/\n{3,}/);
+    expect(result).toContain('Paragraph one');
+    expect(result).toContain('Paragraph two');
+    expect(result).toContain('Paragraph three');
+  });
+
+  it('removes trailing whitespace on lines', () => {
+    const input = 'Line with spaces   \nAnother line\t  \nClean line';
+    const result = cleanMarkdownNoise(input);
+    const lines = result.split('\n');
+    for (const line of lines) {
+      expect(line).toBe(line.trimEnd());
+    }
+  });
+
+  it('trims leading and trailing whitespace from the whole string', () => {
+    const input = '\n\nSome content\n\n';
+    const result = cleanMarkdownNoise(input);
+    expect(result).toBe('Some content');
+  });
+
+  it('preserves normal links [text](url)', () => {
+    const input = 'Click [here](https://example.com) to continue';
+    const result = cleanMarkdownNoise(input);
+    expect(result).toContain('[here](https://example.com)');
+  });
+
+  it('preserves normal inline images ![alt](img)', () => {
+    const input = 'An image: ![logo](https://example.com/logo.png) done';
+    const result = cleanMarkdownNoise(input);
+    expect(result).toContain('![logo](https://example.com/logo.png)');
   });
 });

@@ -19,8 +19,9 @@ export class RateLimiter {
 
   /**
    * Check if request is allowed under rate limit
+   * @param cost - Number of credits this request costs (default: 1)
    */
-  checkLimit(identifier: string, limit: number): {
+  checkLimit(identifier: string, limit: number, cost: number = 1): {
     allowed: boolean;
     remaining: number;
     retryAfter?: number;
@@ -38,20 +39,24 @@ export class RateLimiter {
     // Remove timestamps outside the window
     entry.timestamps = entry.timestamps.filter(ts => ts > windowStart);
 
-    // Check if limit exceeded
-    if (entry.timestamps.length >= limit) {
+    // Check if limit would be exceeded by this request's cost
+    if (entry.timestamps.length + cost > limit) {
       const oldestTimestamp = entry.timestamps[0];
-      const retryAfter = Math.ceil((oldestTimestamp + this.windowMs - now) / 1000);
+      const retryAfter = oldestTimestamp
+        ? Math.ceil((oldestTimestamp + this.windowMs - now) / 1000)
+        : 1;
       
       return {
         allowed: false,
-        remaining: 0,
+        remaining: Math.max(0, limit - entry.timestamps.length),
         retryAfter,
       };
     }
 
-    // Add current timestamp
-    entry.timestamps.push(now);
+    // Add `cost` timestamps to represent the weight of this request
+    for (let i = 0; i < cost; i++) {
+      entry.timestamps.push(now);
+    }
 
     return {
       allowed: true,
@@ -110,7 +115,15 @@ export function createRateLimitMiddleware(limiter: RateLimiter) {
       // Use tier-based hourly burst limits (matches the 1-hour sliding window)
       const limit = TIER_BURST_LIMITS[req.auth?.tier || 'free'] || 25;
 
-      const result = limiter.checkLimit(identifier, limit);
+      // Weighted cost based on route — heavier operations consume more credits
+      let cost = 1;
+      const path = req.path;
+      if (path.includes('/crawl') || path.includes('/map')) cost = 5;
+      else if (path.includes('/batch')) cost = 2;
+      else if (path.includes('/screenshot')) cost = 2;
+      else if (req.query.render === 'true' || (req.body as any)?.render === true) cost = 3;
+
+      const result = limiter.checkLimit(identifier, limit, cost);
 
       // Calculate reset timestamp
       const now = Date.now();

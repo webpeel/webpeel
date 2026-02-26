@@ -15,7 +15,7 @@ import type { FetchResult } from './fetcher.js';
 /* ---------- public types ------------------------------------------------- */
 
 export interface StrategyResult extends FetchResult {
-  method: 'simple' | 'browser' | 'stealth' | 'cached';
+  method: 'simple' | 'browser' | 'stealth' | 'cached' | 'cloaked' | 'cycle' | 'peeltls' | 'cf-worker' | 'google-cache';
   /**
    * Set to true when the final response still appears to be a bot-challenge
    * page after all escalation attempts have been exhausted.

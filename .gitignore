@@ -64,3 +64,10 @@ site/video/webpeel-demo/.cache/
 site/video/webpeel-demo/node_modules/
 site/video/webpeel-demo/out/
 site/video/webpeel-demo/.remotion/
+
+# Proprietary bypass engine — NEVER push to public repo
+src/core/stealth-patches.ts
+src/core/cycle-fetch.ts
+src/core/cloak-fetch.ts
+src/core/search-fallback.ts
+src/core/challenge-detection.ts
