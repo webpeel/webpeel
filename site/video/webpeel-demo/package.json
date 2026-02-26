@@ -7,7 +7,9 @@
     "render": "remotion render BenchmarkShowcase out/benchmark-showcase.mp4",
     "render:og": "remotion render OGVideo out/og-video.mp4",
     "render:gif": "remotion render BenchmarkShowcase out/benchmark-showcase.gif --image-format=png --every-nth-frame=2",
-    "render:all": "npm run render && npm run render:og",
+    "render:cli": "remotion render CLIDemo out/cli-demo.mp4",
+    "render:speed": "remotion render SpeedComparison out/speed-comparison.mp4",
+    "render:all": "npm run render && npm run render:og && npm run render:cli && npm run render:speed",
     "studio": "remotion studio src/index.ts"
   },
   "dependencies": {

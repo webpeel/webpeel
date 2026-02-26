@@ -36,7 +36,7 @@ export const QUALITY_SCORE_DATA = [
 ];
 
 export const STATS = [
-  { icon: "🔧", label: "MCP Tools", value: "11" },
+  { icon: "🔧", label: "MCP Tools", value: "18" },
   { icon: "💰", label: "Per Page", value: "$0.002" },
   { icon: "✅", label: "Success Rate", value: "100%" },
   { icon: "🔓", label: "License", value: "AGPL-3.0" },
