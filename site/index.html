@@ -46,9 +46,9 @@
       --font-display: 'Instrument Serif', Georgia, serif;
       --font-body: 'Inter', -apple-system, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
-      --text-hero: clamp(48px, 5.5vw, 72px);
-      --text-h2: clamp(32px, 3.5vw, 48px);
-      --text-h3: clamp(20px, 2vw, 24px);
+      --text-hero: clamp(56px, 7vw, 96px);
+      --text-h2: clamp(36px, 4vw, 52px);
+      --text-h3: clamp(20px, 2vw, 26px);
       --space-section: clamp(100px, 12vw, 160px);
       --container: 1200px;
       --container-narrow: 800px;
@@ -103,7 +103,7 @@
     .hero-eyebrow { display: inline-flex; align-items: center; background: var(--accent-light); color: var(--accent); font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 100px; margin-bottom: 24px; letter-spacing: 0.01em; }
     .hero h1 { font-family: var(--font-display); font-size: var(--text-hero); font-weight: 400; line-height: 1.05; letter-spacing: -0.04em; margin-bottom: 24px; }
     .hero h1 .accent { color: var(--accent); }
-    .hero-sub { font-size: 18px; font-weight: 400; color: var(--text-2); line-height: 1.6; max-width: 480px; margin-bottom: 32px; }
+    .hero-sub { font-size: 19px; font-weight: 400; color: var(--text-2); line-height: 1.65; max-width: 500px; margin-bottom: 36px; }
     .hero-ctas { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
     .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 500; padding: 14px 28px; border-radius: 8px; border: none; transition: opacity var(--transition-fast); }
     .btn-primary:hover { opacity: 0.85; color: #fff; }
@@ -131,8 +131,9 @@
       .hero { padding: 100px 0 60px; }
       .hero-grid { grid-template-columns: 1fr; gap: 32px; }
       .hero-terminal { transform: none; max-height: 260px; overflow: hidden; width: 100%; max-width: 100%; }
-      .hero-ctas { flex-direction: column; align-items: stretch; }
-      .hero-ctas .btn-primary, .hero-ctas .btn-text { width: 100%; text-align: center; justify-content: center; display: flex; padding: 16px 28px; }
+      .hero-ctas { flex-direction: column; align-items: stretch; gap: 12px; }
+      .hero-ctas .btn-primary { width: 100%; justify-content: center; padding: 16px 28px; }
+      .hero-ctas .btn-text { width: 100%; text-align: center; display: block; padding: 14px 28px; border: 1px solid var(--border); border-radius: 8px; font-weight: 500; background: transparent; }
       .terminal-content { font-size: 12px; padding: 16px; overflow-x: hidden; }
       .terminal-content div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     }
@@ -145,7 +146,7 @@
     /* ── 3. HOW IT WORKS ─────────────────────────────── */
     .how-section { background: var(--bg-alt); }
     .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 12px; }
-    .section-h2 { font-family: var(--font-display); font-size: var(--text-h2); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; }
+    .section-h2 { font-family: var(--font-display); font-size: var(--text-h2); font-weight: 400; letter-spacing: -0.03em; line-height: 1.1; }
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 64px; }
     .how-step-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--accent); width: 32px; }
     .how-step h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
