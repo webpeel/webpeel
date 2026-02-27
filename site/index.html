@@ -60,6 +60,7 @@
       --transition-fast: 150ms ease;
       --transition-normal: 250ms ease;
       --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     }
     html { scroll-behavior: smooth; overflow-x: hidden; }
     body { font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 16px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
@@ -70,16 +71,32 @@
     .container-narrow { max-width: var(--container-narrow); margin: 0 auto; padding: 0 var(--gutter); }
 
     /* ── SCROLL REVEAL ──────────────────────────────── */
-    .reveal { opacity: 1; }
-    .reveal.animate { animation: fadeSlideUp 0.5s ease-out forwards; }
-    @keyframes fadeSlideUp {
-      from { opacity: 0.4; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
+    .reveal { opacity: 1; transition: opacity 600ms var(--ease-out-expo), transform 600ms var(--ease-out-expo); }
+    .reveal.pre-anim { opacity: 0.3; transform: translateY(20px); }
+    .reveal.pre-anim.animated { opacity: 1; transform: translateY(0); }
+
+    /* ── HERO ENTRANCE ──────────────────────────────── */
+    .hero-anim { opacity: 1; transition: opacity 400ms var(--ease-out-expo), transform 400ms var(--ease-out-expo), box-shadow 500ms var(--ease-out-expo); }
+    .hero-anim.pre-anim { opacity: 0.3; transform: translateY(16px); }
+    .hero-anim.pre-anim.animated { opacity: 1; transform: translateY(0); }
+    .hero-terminal.pre-anim { opacity: 0.3; transform: translateY(40px); box-shadow: none; }
+    .hero-terminal.pre-anim.animated { opacity: 1; transform: translateY(0);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.15), 0 0 100px rgba(88,101,242,0.08); }
+
+    /* ── prefers-reduced-motion ──────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, .reveal.pre-anim, .hero-anim, .hero-anim.pre-anim, .hero-terminal.pre-anim {
+        opacity: 1 !important; transform: none !important; transition: none !important;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.15), 0 0 100px rgba(88,101,242,0.08) !important;
+      }
+      .bar-fill { transition: none !important; }
+      .price-card { transition: none !important; }
+      .terminal-cursor { animation: none !important; opacity: 1 !important; }
     }
 
     /* ── 1. NAVIGATION ──────────────────────────────── */
-    .nav { position: sticky; top: 0; z-index: 100; height: 64px; background: transparent; transition: background var(--transition-normal), backdrop-filter var(--transition-normal); }
-    .nav.scrolled { background: rgba(244,240,232,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .nav { position: sticky; top: 0; z-index: 100; height: 64px; background: transparent; transition: background 200ms ease, backdrop-filter 200ms ease, -webkit-backdrop-filter 200ms ease; }
+    .nav.scrolled { background: rgba(244,240,232,0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
     .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
     .nav-logo .diamond { color: var(--accent); }
@@ -126,8 +143,8 @@
     .t-output { color: #94A3B8; }
     .t-highlight { color: #8B94F7; }
     .t-dim { color: #64748B; }
-    .terminal-cursor { display: inline-block; width: 8px; height: 18px; background: #8B94F7; vertical-align: text-bottom; animation: blink 800ms step-end infinite; }
-    @keyframes blink { 50% { opacity: 0; } }
+    .terminal-cursor { display: inline; font-weight: 400; color: #8B94F7; animation: cursorBlink 800ms step-end infinite; }
+    @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
     @media (max-width: 768px) {
       .hero { padding: 100px 0 60px; }
@@ -162,8 +179,7 @@
     .how-step-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--accent); width: 32px; }
     .how-step h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
     .how-step p { font-size: 16px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
-    .mini-code { background: var(--bg-dark); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow-x: auto; max-width: 100%; }
-    .mini-code * { white-space: pre-wrap; word-break: break-word; }
+    .mini-code { background: var(--bg-dark); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; white-space: pre-wrap; }
     @media (max-width: 768px) {
       .how-grid { grid-template-columns: 1fr; gap: 40px; }
       .mini-code { font-size: 12px; padding: 14px; }
@@ -230,9 +246,10 @@
     .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
     .bar-label { width: 90px; font-size: 14px; color: var(--text-2); flex-shrink: 0; }
     .bar-track { flex: 1; height: 28px; background: #E5E0D8; border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+    .bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 800ms var(--ease-out-expo); }
     .bar-fill.blue { background: var(--accent); }
     .bar-fill.gray { background: #D1CCC4; }
+    .bar-fill.bar-animated { /* width set by JS */ }
     .bar-value { font-size: 14px; font-weight: 600; color: var(--text); width: 48px; text-align: right; flex-shrink: 0; }
     .stat-cards { display: flex; flex-direction: column; gap: 16px; }
     .stat-card { background: var(--card-bg); border-radius: 8px; padding: 24px; box-shadow: var(--card-shadow); }
@@ -250,9 +267,10 @@
     .pricing-header { text-align: center; margin-bottom: 64px; }
     .pricing-header .sub { font-size: 16px; color: var(--text-2); margin-top: 12px; }
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; }
-    .price-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 36px; position: relative; transition: box-shadow var(--transition-normal); }
-    .price-card:hover { box-shadow: var(--card-shadow-hover); }
+    .price-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 36px; position: relative; transition: transform 200ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo); }
+    .price-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
     .price-card.featured { border: 2px solid var(--accent); transform: scale(1.02); }
+    .price-card.featured:hover { transform: scale(1.02) translateY(-4px); box-shadow: 0 4px 12px rgba(88,101,242,0.15), 0 12px 32px rgba(0,0,0,0.08); }
     .price-badge { position: absolute; top: -12px; right: 24px; display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
     .price-plan { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 8px; }
     .price-amount { font-size: 40px; font-weight: 600; color: var(--text); }
@@ -269,6 +287,7 @@
     @media (max-width: 768px) {
       .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
       .price-card.featured { order: -1; transform: none; }
+      .price-card.featured:hover { transform: translateY(-4px); }
     }
 
     /* ── 9. FAQ ───────────────────────────────────────── */
@@ -279,7 +298,7 @@
     .faq-question:hover { color: var(--accent); }
     .faq-icon { font-size: 20px; color: var(--text-3); transition: transform 0.3s ease; flex-shrink: 0; }
     .faq-item.open .faq-icon { transform: rotate(45deg); }
-    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
     .faq-answer-inner { padding: 0 0 24px; font-size: 16px; color: var(--text-2); line-height: 1.7; }
     .faq-item.open .faq-answer { max-height: 300px; }
 
@@ -318,6 +337,7 @@
     }
     @media (max-width: 768px) {
       :root { --gutter: 20px; --space-section: clamp(64px, 10vw, 100px); }
+      .feature-block[style*="margin-bottom: 120px"] { margin-bottom: 64px !important; }
     }
   </style>
 </head>
@@ -354,17 +374,17 @@
        ═══════════════════════════════════════════════════ -->
   <section class="hero">
     <div class="container">
-      <div class="hero-content reveal">
-        <div class="hero-eyebrow">Open Source · 500 free fetches/week</div>
-        <h1>Give your AI<br><span class="accent">the entire web.</span></h1>
-        <p class="hero-sub">One API call. Any page. Structured data back.</p>
-        <div class="hero-ctas">
+      <div class="hero-content">
+        <div class="hero-eyebrow hero-anim" data-hero="0">Open Source · 500 free fetches/week</div>
+        <h1><span class="hero-anim" data-hero="1" style="display:inline-block;">Give your AI</span><br><span class="accent hero-anim" data-hero="2" style="display:inline-block;">the entire web.</span></h1>
+        <p class="hero-sub hero-anim" data-hero="3">One API call. Any page. Structured data back.</p>
+        <div class="hero-ctas hero-anim" data-hero="4">
           <a href="https://app.webpeel.dev/signup" class="btn-primary">Get Started Free →</a>
           <a href="/docs/" class="btn-text">View Docs</a>
         </div>
-        <p class="hero-trust">Works with Claude, GPT, Cursor, LangChain &amp; more</p>
+        <p class="hero-trust hero-anim" data-hero="4">Works with Claude, GPT, Cursor, LangChain &amp; more</p>
       </div>
-      <div class="hero-terminal reveal">
+      <div class="hero-terminal hero-anim" data-hero="5">
         <div class="terminal-chrome">
           <div class="terminal-dot r"></div>
           <div class="terminal-dot y"></div>
@@ -385,8 +405,8 @@
        ═══════════════════════════════════════════════════ -->
   <section class="works-with">
     <div class="container">
-      <div class="works-with-label">WORKS WITH</div>
-      <div class="works-with-logos">
+      <div class="works-with-label reveal">WORKS WITH</div>
+      <div class="works-with-logos reveal">
         <span>Claude</span>
         <span>Cursor</span>
         <span>GPT</span>
@@ -484,7 +504,7 @@
               <div style="padding: 12px 20px; font-size: 13px; font-weight: 500; border-bottom: 2px solid var(--accent); color: var(--text);">HTML</div>
               <div style="padding: 12px 20px; font-size: 13px; font-weight: 500; color: var(--text-3);">Markdown</div>
             </div>
-            <div style="background: var(--bg-dark); padding: 20px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: #94A3B8; overflow-x: auto;">
+            <div style="background: var(--bg-dark); padding: 20px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: #94A3B8; overflow: hidden; word-break: break-word;">
               <div style="color: #64748B;">&lt;div class="article-wrapper"&gt;</div>
               <div style="color: #64748B;">&nbsp;&nbsp;&lt;nav&gt;...50 links...&lt;/nav&gt;</div>
               <div style="color: #64748B;">&nbsp;&nbsp;&lt;aside&gt;...ads...&lt;/aside&gt;</div>
@@ -561,17 +581,17 @@
           <div class="section-eyebrow">PERFORMANCE</div>
           <h2 class="section-h2">Fast where it counts.</h2>
           <p style="font-size: 16px; color: var(--text-2); margin: 16px 0 40px; max-width: 440px;">Speed matters for agents running thousands of fetches. WebPeel optimizes every millisecond.</p>
-          <div class="bar-group">
+          <div class="bar-group" data-bar-group>
             <div class="bar-group-title">Content completeness</div>
-            <div class="bar-row"><span class="bar-label" style="font-weight:600;color:var(--text);">WebPeel</span><div class="bar-track"><div class="bar-fill blue" style="width:98%;"></div></div><span class="bar-value">98%</span></div>
-            <div class="bar-row"><span class="bar-label">Firecrawl</span><div class="bar-track"><div class="bar-fill gray" style="width:82%;"></div></div><span class="bar-value">82%</span></div>
-            <div class="bar-row"><span class="bar-label">web_fetch</span><div class="bar-track"><div class="bar-fill gray" style="width:56%;"></div></div><span class="bar-value">56%</span></div>
+            <div class="bar-row"><span class="bar-label" style="font-weight:600;color:var(--text);">WebPeel</span><div class="bar-track"><div class="bar-fill blue" data-bar-target="98"></div></div><span class="bar-value">98%</span></div>
+            <div class="bar-row"><span class="bar-label">Firecrawl</span><div class="bar-track"><div class="bar-fill gray" data-bar-target="82"></div></div><span class="bar-value">82%</span></div>
+            <div class="bar-row"><span class="bar-label">web_fetch</span><div class="bar-track"><div class="bar-fill gray" data-bar-target="56"></div></div><span class="bar-value">56%</span></div>
           </div>
-          <div class="bar-group">
+          <div class="bar-group" data-bar-group>
             <div class="bar-group-title">Protected site success</div>
-            <div class="bar-row"><span class="bar-label" style="font-weight:600;color:var(--text);">WebPeel</span><div class="bar-track"><div class="bar-fill blue" style="width:99.7%;"></div></div><span class="bar-value">99.7%</span></div>
-            <div class="bar-row"><span class="bar-label">Firecrawl</span><div class="bar-track"><div class="bar-fill gray" style="width:65%;"></div></div><span class="bar-value">65%</span></div>
-            <div class="bar-row"><span class="bar-label">web_fetch</span><div class="bar-track"><div class="bar-fill gray" style="width:35%;"></div></div><span class="bar-value">35%</span></div>
+            <div class="bar-row"><span class="bar-label" style="font-weight:600;color:var(--text);">WebPeel</span><div class="bar-track"><div class="bar-fill blue" data-bar-target="99.7"></div></div><span class="bar-value">99.7%</span></div>
+            <div class="bar-row"><span class="bar-label">Firecrawl</span><div class="bar-track"><div class="bar-fill gray" data-bar-target="65"></div></div><span class="bar-value">65%</span></div>
+            <div class="bar-row"><span class="bar-label">web_fetch</span><div class="bar-track"><div class="bar-fill gray" data-bar-target="35"></div></div><span class="bar-value">35%</span></div>
           </div>
         </div>
         <div class="stat-cards reveal">
@@ -746,110 +766,147 @@
        SCRIPTS
        ═══════════════════════════════════════════════════ -->
   <script>
-    /* ── Nav scroll ──────────────────────────────────── */
-    const nav = document.getElementById('nav');
-    window.addEventListener('scroll', () => {
-      nav.classList.toggle('scrolled', window.scrollY > 20);
-    }, { passive: true });
-
-    /* ── Mobile hamburger ────────────────────────────── */
-    const hamburger = document.getElementById('hamburger-btn');
-    const mobileMenu = document.getElementById('mobile-menu');
-    hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
-    mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.remove('open')));
-    document.addEventListener('click', (e) => {
-      if (!mobileMenu.contains(e.target) && !hamburger.contains(e.target)) mobileMenu.classList.remove('open');
-    });
-
-    /* ── FAQ accordion ───────────────────────────────── */
-    document.querySelectorAll('.faq-question').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const item = btn.parentElement;
-        const wasOpen = item.classList.contains('open');
-        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-        if (!wasOpen) item.classList.add('open');
-      });
-    });
-
-    /* ── Copy install command ────────────────────────── */
-    document.getElementById('install-copy').addEventListener('click', function() {
-      const text = document.getElementById('install-cmd').textContent;
-      const btn = this;
-      navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = 'Copy', 2000);
-      }).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = 'Copy', 2000);
-      });
-    });
-
-    /* ── Scroll reveal ───────────────────────────────── */
-    const revealObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry, i) => {
-        if (entry.isIntersecting) {
-          // Stagger siblings
-          const parent = entry.target.parentElement;
-          const siblings = Array.from(parent.querySelectorAll(':scope > .reveal'));
-          const idx = siblings.indexOf(entry.target);
-          const delay = idx >= 0 ? idx * 0.08 : 0;
-          entry.target.style.animationDelay = delay + 's';
-          entry.target.classList.add('animate');
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-    /* ── Counter animation (stats) ───────────────────── */
-    const counterObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        const el = entry.target;
-        counterObserver.unobserve(el);
-        const target = parseFloat(el.dataset.count);
-        const suffix = el.dataset.suffix;
-        const isFloat = target % 1 !== 0;
-        const duration = 1200;
-        const start = performance.now();
-        function step(now) {
-          const t = Math.min((now - start) / duration, 1);
-          const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
-          const val = target * ease;
-          if (isFloat) {
-            el.textContent = val.toFixed(1) + suffix;
-          } else {
-            el.textContent = Math.round(val) + suffix;
-          }
-          if (t < 1) requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      });
-    }, { threshold: 0.3 });
-    document.querySelectorAll('.stat-num[data-count]').forEach(el => counterObserver.observe(el));
-
-    /* ── Terminal typing animation ────────────────────── */
     (function() {
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const container = document.getElementById('terminal-content');
-      const lines = Array.from(container.querySelectorAll('.t-line'));
-      
-      // Build command data
-      const commands = lines.map(line => ({
-        cmd: line.dataset.cmd,
-        output: line.dataset.output.split('\\n')
-      }));
 
-      // Clear the placeholder divs
-      container.innerHTML = '';
+      /* ── Nav scroll ──────────────────────────────────── */
+      const nav = document.getElementById('nav');
+      window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 20);
+      }, { passive: true });
 
+      /* ── Mobile hamburger ────────────────────────────── */
+      const hamburger = document.getElementById('hamburger-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+      mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.remove('open')));
+      document.addEventListener('click', (e) => {
+        if (!mobileMenu.contains(e.target) && !hamburger.contains(e.target)) mobileMenu.classList.remove('open');
+      });
+
+      /* ── Smooth scroll for anchor links ────────────── */
+      document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', (e) => {
+          const target = document.querySelector(a.getAttribute('href'));
+          if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+        });
+      });
+
+      /* ── FAQ accordion (one open at a time) ────────── */
+      document.querySelectorAll('.faq-question').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = btn.parentElement;
+          const wasOpen = item.classList.contains('open');
+          document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+          if (!wasOpen) item.classList.add('open');
+        });
+      });
+
+      /* ── Copy install command ──────────────────────── */
+      document.getElementById('install-copy').addEventListener('click', function() {
+        const text = document.getElementById('install-cmd').textContent;
+        const btn = this;
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 2000);
+        }).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 2000);
+        });
+      });
+
+      /* ── Skip all animations if reduced motion ────── */
       if (prefersReducedMotion) {
-        // Show everything immediately
+        // Show everything final state, no animations
+        showTerminalFinal();
+        return;
+      }
+
+      /* ── Hero entrance animation ───────────────────── */
+      const heroEls = Array.from(document.querySelectorAll('.hero-anim'));
+      heroEls.forEach(el => el.classList.add('pre-anim'));
+      heroEls.sort((a, b) => (+a.dataset.hero) - (+b.dataset.hero));
+      heroEls.forEach((el, i) => {
+        const delay = i === 0 ? 0 : (i <= 2 ? i * 100 : i * 120);
+        setTimeout(() => el.classList.add('animated'), delay);
+      });
+
+      /* ── Scroll reveal with stagger ────────────────── */
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          // Stagger among siblings
+          const parent = el.parentElement;
+          const siblings = Array.from(parent.querySelectorAll(':scope > .reveal.pre-anim'));
+          const idx = siblings.indexOf(el);
+          const delay = idx >= 0 ? idx * 80 : 0;
+          setTimeout(() => el.classList.add('animated'), delay);
+          revealObserver.unobserve(el);
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+      document.querySelectorAll('.reveal').forEach(el => {
+        el.classList.add('pre-anim');
+        revealObserver.observe(el);
+      });
+
+      /* ── Counter animation (stats) ─────────────────── */
+      const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          counterObserver.unobserve(el);
+          const target = parseFloat(el.dataset.count);
+          const suffix = el.dataset.suffix || '';
+          const isFloat = target % 1 !== 0;
+          const duration = 1200;
+          const start = performance.now();
+          function step(now) {
+            const t = Math.min((now - start) / duration, 1);
+            const ease = 1 - Math.pow(1 - t, 3);
+            const val = target * ease;
+            el.textContent = (isFloat ? val.toFixed(1) : Math.round(val)) + suffix;
+            if (t < 1) requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
+        });
+      }, { threshold: 0.3 });
+      document.querySelectorAll('.stat-num[data-count]').forEach(el => counterObserver.observe(el));
+
+      /* ── Bar chart animation ───────────────────────── */
+      const barObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          barObserver.unobserve(entry.target);
+          const bars = entry.target.querySelectorAll('.bar-fill[data-bar-target]');
+          bars.forEach((bar, i) => {
+            setTimeout(() => {
+              bar.style.width = bar.dataset.barTarget + '%';
+            }, i * 100);
+          });
+        });
+      }, { threshold: 0.15 });
+      document.querySelectorAll('[data-bar-group]').forEach(g => barObserver.observe(g));
+
+      /* ── Terminal typing animation ─────────────────── */
+      function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      function showTerminalFinal() {
+        const container = document.getElementById('terminal-content');
+        const lines = Array.from(container.querySelectorAll('.t-line'));
+        const commands = lines.map(line => ({
+          cmd: line.dataset.cmd,
+          output: line.dataset.output.split('\\n')
+        }));
+        container.innerHTML = '';
         commands.forEach((c, i) => {
           if (i > 0) container.appendChild(document.createElement('br'));
           const cmdDiv = document.createElement('div');
@@ -857,65 +914,77 @@
           container.appendChild(cmdDiv);
           c.output.forEach(line => {
             const outDiv = document.createElement('div');
-            outDiv.innerHTML = '<span class="t-output">' + escapeHtml(line) + '</span>';
+            const escaped = escapeHtml(line);
+            outDiv.innerHTML = '<span class="t-output">' + escaped.replace(/✓/g, '<span class="t-highlight">✓</span>') + '</span>';
             container.appendChild(outDiv);
           });
         });
-        return;
       }
 
-      // Animated version
-      let cursor = document.createElement('span');
-      cursor.className = 'terminal-cursor';
+      (function terminalTyping() {
+        const container = document.getElementById('terminal-content');
+        const lines = Array.from(container.querySelectorAll('.t-line'));
+        const commands = lines.map(line => ({
+          cmd: line.dataset.cmd,
+          output: line.dataset.output.split('\\n')
+        }));
+        container.innerHTML = '';
 
-      function escapeHtml(s) {
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      }
-
-      function typeCommand(cmdIdx) {
-        if (cmdIdx >= commands.length) {
-          // Done — leave cursor blinking
-          container.appendChild(cursor);
-          return;
-        }
-
-        if (cmdIdx > 0) container.appendChild(document.createElement('br'));
-
-        const c = commands[cmdIdx];
-        const cmdDiv = document.createElement('div');
-        cmdDiv.innerHTML = '<span class="t-prompt">$</span> <span class="t-cmd"></span>';
-        container.appendChild(cmdDiv);
-        const cmdSpan = cmdDiv.querySelector('.t-cmd');
-
-        let charIdx = 0;
-        function typeChar() {
-          if (charIdx < c.cmd.length) {
-            cmdSpan.textContent = c.cmd.slice(0, charIdx + 1);
-            // Move cursor after typed text
-            if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
-            cmdSpan.appendChild(cursor);
-            charIdx++;
-            setTimeout(typeChar, 30);
-          } else {
-            // Done typing command — remove cursor, show output
-            if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
-            c.output.forEach(line => {
-              const outDiv = document.createElement('div');
-              // Check for ✓ highlight
-              const escaped = escapeHtml(line);
-              const highlighted = escaped.replace(/✓/g, '<span class="t-highlight">✓</span>');
-              outDiv.innerHTML = '<span class="t-output">' + highlighted + '</span>';
-              container.appendChild(outDiv);
-            });
-            // Pause then next command
-            setTimeout(() => typeCommand(cmdIdx + 1), 800);
+        function typeCommand(cmdIdx) {
+          if (cmdIdx >= commands.length) {
+            // Done — leave blinking cursor
+            const cursorSpan = document.createElement('span');
+            cursorSpan.className = 'terminal-cursor';
+            cursorSpan.textContent = '|';
+            container.appendChild(cursorSpan);
+            return;
           }
-        }
-        typeChar();
-      }
 
-      // Start after 500ms
-      setTimeout(() => typeCommand(0), 500);
+          if (cmdIdx > 0) container.appendChild(document.createElement('br'));
+
+          const c = commands[cmdIdx];
+          const cmdDiv = document.createElement('div');
+          const promptSpan = document.createElement('span');
+          promptSpan.className = 't-prompt';
+          promptSpan.textContent = '$ ';
+          const cmdSpan = document.createElement('span');
+          cmdSpan.className = 't-cmd';
+          const cursorSpan = document.createElement('span');
+          cursorSpan.className = 'terminal-cursor';
+          cursorSpan.textContent = '|';
+
+          cmdDiv.appendChild(promptSpan);
+          cmdDiv.appendChild(cmdSpan);
+          cmdDiv.appendChild(cursorSpan);
+          container.appendChild(cmdDiv);
+
+          let charIdx = 0;
+          function typeChar() {
+            if (charIdx < c.cmd.length) {
+              cmdSpan.textContent = c.cmd.slice(0, charIdx + 1);
+              charIdx++;
+              setTimeout(typeChar, 30);
+            } else {
+              // Remove cursor from this line
+              if (cursorSpan.parentNode) cursorSpan.parentNode.removeChild(cursorSpan);
+              // Show output instantly
+              c.output.forEach(line => {
+                const outDiv = document.createElement('div');
+                const escaped = escapeHtml(line);
+                outDiv.innerHTML = '<span class="t-output">' + escaped.replace(/✓/g, '<span class="t-highlight">✓</span>') + '</span>';
+                container.appendChild(outDiv);
+              });
+              // Pause then next
+              setTimeout(() => typeCommand(cmdIdx + 1), 600);
+            }
+          }
+          typeChar();
+        }
+
+        // Start after hero animation settles
+        setTimeout(() => typeCommand(0), 800);
+      })();
+
     })();
   </script>
 </body>
