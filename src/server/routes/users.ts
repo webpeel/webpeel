@@ -196,7 +196,7 @@ export function createUserRouter(): Router {
   pool.query(`
     CREATE TABLE IF NOT EXISTS refresh_tokens (
       id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       expires_at TIMESTAMPTZ NOT NULL,
       revoked_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW()
@@ -394,11 +394,16 @@ export function createUserRouter(): Router {
         { expiresIn: '1h' }
       );
 
-      const refreshToken = await createRefreshToken(user.id, jwtSecret);
+      let refreshToken: string | null = null;
+      try {
+        refreshToken = await createRefreshToken(user.id, jwtSecret);
+      } catch (refreshErr) {
+        console.error('Refresh token creation failed (login will continue without it):', refreshErr);
+      }
 
       res.json({
         token,
-        refreshToken,
+        ...(refreshToken ? { refreshToken } : {}),
         expiresIn: 3600,
         user: {
           id: user.id,
