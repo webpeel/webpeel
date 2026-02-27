@@ -281,6 +281,16 @@
       .stat-card { flex: 1; min-width: 140px; padding: 16px; }
     }
 
+    /* ── TESTIMONIAL ──────────────────────────────────── */
+    .testimonial-section { padding: 80px 0; }
+    .testimonial-card { max-width: 640px; margin: 0 auto; text-align: center; }
+    .testimonial-quote { font-family: var(--font-display); font-size: clamp(24px, 3vw, 32px); font-weight: 400; font-style: italic; color: var(--text); line-height: 1.5; letter-spacing: -0.01em; }
+    .testimonial-author { margin-top: 28px; display: flex; align-items: center; justify-content: center; gap: 14px; }
+    .testimonial-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; }
+    .testimonial-meta { text-align: left; }
+    .testimonial-name { font-size: 15px; font-weight: 600; color: var(--text); }
+    .testimonial-role { font-size: 13px; color: var(--text-3); }
+
     /* ── 8. PRICING ──────────────────────────────────── */
     .pricing-header { text-align: center; margin-bottom: 64px; }
     .pricing-header .sub { font-size: 16px; color: var(--text-2); margin-top: 12px; }
@@ -662,6 +672,24 @@
             <div class="num">500+</div>
             <div class="label">sites tested</div>
             <div class="stat-card-sub">incl. protected pages</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════
+       TESTIMONIAL
+       ═══════════════════════════════════════════════════ -->
+  <section class="testimonial-section">
+    <div class="container">
+      <div class="testimonial-card reveal">
+        <div class="testimonial-quote">"I use WebPeel as my default web search for every AI agent I build. It just works."</div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">JL</div>
+          <div class="testimonial-meta">
+            <div class="testimonial-name">Jake Liu</div>
+            <div class="testimonial-role">Founder &amp; Developer</div>
           </div>
         </div>
       </div>
