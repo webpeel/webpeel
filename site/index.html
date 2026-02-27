@@ -100,7 +100,7 @@
     }
 
     /* ── 2. HERO — CENTERED ──────────────────────────── */
-    .hero { padding: 100px 0 80px; text-align: center; }
+    .hero { padding: 80px 0 60px; text-align: center; }
     .hero-content { max-width: 900px; margin: 0 auto; }
     .hero-eyebrow { display: inline-flex; align-items: center; background: var(--accent-light); color: var(--accent); font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 100px; margin-bottom: 28px; letter-spacing: 0.01em; }
     .hero h1 { font-family: var(--font-display); font-size: var(--text-hero); font-weight: 400; line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 28px; }
@@ -178,7 +178,7 @@
     .superpower .section-h2 { color: #fff; line-height: 1.05; }
     .superpower .accent { color: #60A5FA; }
     .superpower-body { font-size: 20px; color: rgba(255,255,255,0.75); max-width: 560px; line-height: 1.7; margin-top: 24px; }
-    .superpower-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .superpower-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
     .stats-row { display: flex; gap: 40px; flex-direction: column; }
     .stats-row .stat { text-align: left; }
     .stats-row .stat-num { font-size: clamp(56px, 7vw, 96px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
@@ -208,13 +208,15 @@
     .feature-checks li::before { content: '✓ '; color: var(--accent); font-weight: 600; }
     .feature-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden; transition: box-shadow var(--transition-normal); }
     .feature-card:hover { box-shadow: var(--card-shadow-hover); }
-    .feature-card-dark { background: var(--bg-dark); border-radius: 12px; padding: 24px; font-family: var(--font-mono); font-size: 14px; line-height: 1.7; color: #E2E8F0; overflow-x: auto; max-width: 100%; }
+    .feature-card-dark { background: var(--bg-dark); border-radius: 12px; padding: 24px; font-family: var(--font-mono); font-size: 14px; line-height: 1.7; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; }
     .integration-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .integration-item { display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-2); }
     @media (max-width: 768px) {
       .feature-block { grid-template-columns: 1fr; gap: 32px; }
       .feature-block.flipped .feature-text { order: 1; }
       .feature-block.flipped .feature-visual { order: 2; }
+      .feature-card-dark { font-size: 12px; padding: 18px; }
+      .integration-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
     /* ── 7. PERFORMANCE ──────────────────────────────── */
@@ -447,8 +449,8 @@
           </div>
           <div class="stat-divider-h"></div>
           <div class="stat">
-            <div class="stat-num" data-count="18" data-suffix="">18</div>
-            <div class="stat-label">MCP tools</div>
+            <div class="stat-num" data-count="500" data-suffix="+">500+</div>
+            <div class="stat-label">sites tested</div>
           </div>
         </div>
       </div>
