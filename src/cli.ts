@@ -433,15 +433,18 @@ program.configureHelp({
 
 // Main fetch handler — shared with the `pipe` subcommand
 async function runFetch(url: string | undefined, options: any): Promise<void> {
-    // Smart defaults: when piped (not a TTY), default to silent JSON
+    // Smart defaults: when piped (not a TTY), default to silent JSON + budget
     const isPiped = !process.stdout.isTTY;
     if (isPiped && !options.html && !options.text) {
       if (!options.json) options.json = true;
       if (!options.silent) options.silent = true;
       // Auto-enable readability for AI consumers — clean content by default
-      // Use --full-nav to opt out (keeps navigation links and full page content)
       if (!options.readable && !options.fullNav) {
         options.readable = true;
+      }
+      // Auto token budget for piped mode (AI consumers want concise content)
+      if (options.budget === undefined && !options.fullContent && !options.raw && !options.full) {
+        options.budget = 4000;
       }
     }
 
