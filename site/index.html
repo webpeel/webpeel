@@ -36,9 +36,9 @@
       --text: #1A1A1A;
       --text-2: #6B6B6B;
       --text-3: #9B9B9B;
-      --accent: #0891B2;
-      --accent-hover: #0E7490;
-      --accent-light: #CFFAFE;
+      --accent: #0E918D;
+      --accent-hover: #067370;
+      --accent-light: #CCFBF1;
       --border: #E5E0D8;
       --card-bg: #FFFFFF;
       --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
@@ -63,7 +63,7 @@
     }
     html { scroll-behavior: smooth; overflow-x: hidden; }
     body { font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 16px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-    ::selection { background: rgba(8,145,178,0.15); }
+    ::selection { background: rgba(14,145,141,0.15); }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; }
     .container { max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
@@ -104,7 +104,7 @@
     .hero-content { max-width: 900px; margin: 0 auto; }
     .hero-eyebrow { display: inline-flex; align-items: center; background: var(--accent-light); color: var(--accent); font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 100px; margin-bottom: 28px; letter-spacing: 0.01em; }
     .hero h1 { font-family: var(--font-display); font-size: var(--text-hero); font-weight: 400; line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 28px; }
-    .hero h1 .accent { color: var(--accent); }
+    .hero h1 .accent { color: #0ABAB5; }
     .hero-sub { font-size: 20px; font-weight: 400; color: #52524E; line-height: 1.6; max-width: 520px; margin: 0 auto 36px; }
     .hero-ctas { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
     .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 500; padding: 14px 32px; border-radius: 8px; border: none; transition: opacity var(--transition-fast); }
@@ -113,7 +113,7 @@
     .btn-text:hover { opacity: 0.7; }
     .hero-trust { font-size: 14px; color: var(--text-3); margin-top: 32px; }
     .hero-terminal { max-width: 860px; margin: 64px auto 0; background: var(--bg-dark); border-radius: 16px; overflow: hidden; text-align: left;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.15), 0 0 100px rgba(8,145,178,0.08); }
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.15), 0 0 100px rgba(14,145,141,0.08); }
     .terminal-chrome { height: 48px; background: #1E293B; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
     .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
     .terminal-dot.r { background: #EF4444; }
@@ -124,9 +124,9 @@
     .t-prompt { color: var(--accent); }
     .t-cmd { color: #E2E8F0; }
     .t-output { color: #94A3B8; }
-    .t-highlight { color: #22D3EE; }
+    .t-highlight { color: #5DE5E0; }
     .t-dim { color: #64748B; }
-    .terminal-cursor { display: inline-block; width: 8px; height: 18px; background: #22D3EE; vertical-align: text-bottom; animation: blink 800ms step-end infinite; }
+    .terminal-cursor { display: inline-block; width: 8px; height: 18px; background: #5DE5E0; vertical-align: text-bottom; animation: blink 800ms step-end infinite; }
     @keyframes blink { 50% { opacity: 0; } }
 
     @media (max-width: 768px) {
@@ -174,9 +174,9 @@
 
     /* ── 5. SUPERPOWER (dark) ────────────────────────── */
     .superpower { background: var(--bg-dark); color: #fff; }
-    .superpower .section-eyebrow { color: #22D3EE; }
+    .superpower .section-eyebrow { color: #5DE5E0; }
     .superpower .section-h2 { color: #fff; line-height: 1.05; }
-    .superpower .accent { color: #22D3EE; }
+    .superpower .accent { color: #5DE5E0; }
     .superpower-body { font-size: 20px; color: rgba(255,255,255,0.75); max-width: 560px; line-height: 1.7; margin-top: 24px; hyphens: none; -webkit-hyphens: none; }
     .superpower-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
     .stats-row { display: flex; gap: 40px; flex-direction: column; }
@@ -423,7 +423,7 @@
           <div class="how-step-num">03</div>
           <h3>Integrate</h3>
           <p>Clean markdown, metadata, structured data — ready for your agent in milliseconds.</p>
-          <div class="mini-code"><span style="color:#22D3EE;">import</span> { peel } <span style="color:#22D3EE;">from</span> <span style="color:#86EFAC;">'webpeel'</span><br><span style="color:#22D3EE;">const</span> page = <span style="color:#22D3EE;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
+          <div class="mini-code"><span style="color:#5DE5E0;">import</span> { peel } <span style="color:#5DE5E0;">from</span> <span style="color:#86EFAC;">'webpeel'</span><br><span style="color:#5DE5E0;">const</span> page = <span style="color:#5DE5E0;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
         </div>
       </div>
     </div>
@@ -493,7 +493,7 @@
               <div style="color: #E2E8F0;">&nbsp;&nbsp;&nbsp;&nbsp;&lt;p&gt;Clean, useful text...&lt;/p&gt;</div>
               <div style="color: #E2E8F0;">&nbsp;&nbsp;&lt;/article&gt;</div>
               <div style="color: #64748B;">&lt;/div&gt;</div>
-              <div style="margin-top: 12px; color: #22D3EE;">↓ webpeel --readable</div>
+              <div style="margin-top: 12px; color: #5DE5E0;">↓ webpeel --readable</div>
               <div style="margin-top: 8px; color: #86EFAC;"># The Actual Content</div>
               <div style="color: #86EFAC;">Clean, useful text...</div>
             </div>
