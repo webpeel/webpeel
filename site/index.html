@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebPeel — The Web Data Platform for AI Agents</title>
-  <meta name="description" content="Give your AI agent the entire web. 18-tool MCP server for Claude, Cursor & VS Code. YouTube transcripts. LLM-free Q&A. Deep research. Structured extraction. Smart escalation. 500 free/week, no credit card.">
+  <title>WebPeel — Web Content Extraction for AI Agents</title>
+  <meta name="description" content="Give your AI the entire web. One API call. Any page. Structured data back. Built for agents that need to read the web.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://webpeel.dev">
-  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://webpeel.dev">
-  <meta property="og:title" content="WebPeel — The Web Data Platform for AI Agents">
-  <meta property="og:description" content="Give your AI agent the entire web. 18-tool MCP server for Claude, Cursor & VS Code. YouTube transcripts, LLM-free Q&A, deep research, structured extraction, smart escalation. 500 free/week.">
+  <meta property="og:title" content="WebPeel — Web Content Extraction for AI Agents">
+  <meta property="og:description" content="Give your AI the entire web. One API call. Any page. Structured data back. Built for agents that need to read the web.">
   <meta property="og:image" content="https://webpeel.dev/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="WebPeel — Web Intelligence for AI Agents">
-  <meta name="twitter:description" content="Fetch any URL → clean markdown. YouTube transcripts. Reddit threads. Quick answers. 18 MCP tools. No API keys needed. 500 free/week.">
+  <meta name="twitter:title" content="WebPeel — Web Content Extraction for AI Agents">
+  <meta name="twitter:description" content="One API call. Any page. Structured data back. Built for agents that need to read the web.">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
   <meta name="twitter:creator" content="@webpeel_dev">
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -24,403 +24,332 @@
   <meta name="theme-color" content="#F4F0E8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"WebPeel","applicationCategory":"DeveloperApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Cross-platform","description":"The web data platform for AI agents. 18-tool MCP server, YouTube transcripts, LLM-free Q&A, deep research agent, structured extraction, smart escalation.","url":"https://webpeel.dev","creator":{"@type":"Person","name":"Jake Liu"}}</script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What happens if I exceed my WebPeel limits?","acceptedAnswer":{"@type":"Answer","text":"WebPeel has two tiers: hourly burst limits (hard - returns 429) and weekly quotas (soft - degrades to HTTP-only mode instead of blocking). Hourly resets automatically; weekly resets every Monday. Paid plans have higher limits and can add extra usage credits when needed."}},{"@type":"Question","name":"Can I cancel my WebPeel subscription anytime?","acceptedAnswer":{"@type":"Answer","text":"Yes, absolutely. No contracts, no commitments. Cancel your subscription anytime from your dashboard."}},{"@type":"Question","name":"Does WebPeel store the pages I fetch?","acceptedAnswer":{"@type":"Answer","text":"No, we never store fetched content. We only log metadata (URL, timestamp, response time) for analytics."}},{"@type":"Question","name":"Can I self-host WebPeel?","acceptedAnswer":{"@type":"Answer","text":"Yes, WebPeel is open source under the AGPL-3.0 license. Install it with npm install -g webpeel and run your own instance."}}]}</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"WebPeel","applicationCategory":"DeveloperApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Cross-platform","description":"Web content extraction API for AI agents.","url":"https://webpeel.dev","creator":{"@type":"Person","name":"Jake Liu"}}</script>
   <style>
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    /* ── RESET & TOKENS ─────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --bg: #F4F0E8; --bg-alt: #FDFBF8; --bg-dark: #1C1917; --bg-code: #1C1917;
-      --surface: #FFFFFF; --surface-muted: #F5F3EF;
-      --text: #1A1A18; --text-2: #5A5A55; --text-3: #8A8A82; --text-4: #A1A1AA;
-      --accent: #1E40AF; --accent-hover: #1E3A8A; --accent-light: #EFF6FF;
-      --border: rgba(0,0,0,0.08); --border-card: #E0DDD8; --border-light: #F0EDE8;
-      --green: #16A34A; --red-light: #FDA4AF; --radius: 12px;
+      --bg: #F4F0E8;
+      --bg-alt: #FDFBF8;
+      --bg-dark: #0F172A;
+      --text: #1A1A1A;
+      --text-2: #6B6B6B;
+      --text-3: #9B9B9B;
+      --accent: #1E40AF;
+      --accent-hover: #1E3A8A;
+      --accent-light: #DBEAFE;
+      --border: #E5E0D8;
+      --card-bg: #FFFFFF;
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --card-shadow-hover: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.05);
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --text-hero: clamp(48px, 5.5vw, 72px);
+      --text-h2: clamp(32px, 3.5vw, 48px);
+      --text-h3: clamp(20px, 2vw, 24px);
+      --space-section: clamp(100px, 12vw, 160px);
+      --container: 1200px;
+      --container-narrow: 800px;
+      --gutter: 24px;
+      --transition-fast: 150ms ease;
+      --transition-normal: 250ms ease;
+      --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
     }
     html { scroll-behavior: smooth; }
-    body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; font-size: 17px; -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 16px; -webkit-font-smoothing: antialiased; }
     ::selection { background: rgba(30,64,175,0.15); }
-    .serif { font-family: 'Instrument Serif', Georgia, serif; }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
     a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration-color: currentColor; }
+    button { font-family: inherit; cursor: pointer; }
+    .container { max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
+    .container-narrow { max-width: var(--container-narrow); margin: 0 auto; padding: 0 var(--gutter); }
 
-    /* EYEBROW */
-    .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 16px; }
-    /* Section divider icons — small decorative breaks between sections */
-    .section-divider { text-align: center; padding: 32px 0; color: var(--border-card); font-size: 20px; }
-    .section-divider svg { width: 24px; height: 24px; stroke: var(--border-card); fill: none; stroke-width: 1.5; }
-    /* Subtle card hover effects */
-    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
-    /* Scroll reveal — CSS only, no JS dependency */
-    @keyframes reveal-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .scroll-reveal { animation: reveal-up 0.6s ease-out both; }
+    /* ── SCROLL REVEAL ──────────────────────────────── */
+    .reveal { opacity: 1; }
+    .reveal.animate { animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes fadeSlideUp {
+      from { opacity: 0.3; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-    /* NAV */
-    nav { position: sticky; top: 0; z-index: 100; background: rgba(245,242,236,0.85); backdrop-filter: blur(12px); border-bottom: none; }
-    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; }
-    .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
-    .nav-logo svg { width: 24px; height: 24px; }
-    .nav-links { display: flex; align-items: center; gap: 24px; }
-    .nav-links a { font-size: 14px; color: var(--text-2); transition: color 0.15s; }
-    .nav-links a:hover { color: var(--text); }
-    .nav-btn { display: inline-flex; align-items: center; padding: 7px 16px; border-radius: 4px; font-size: 13px; font-weight: 500; transition: all 0.15s; letter-spacing: 0.01em; }
-    .nav-btn-ghost { color: var(--text-2); }
-    .nav-btn-ghost:hover { color: var(--text); background: var(--border-light); }
-    .nav-links a.nav-btn-primary { background: var(--accent); color: #FAF9F7; font-weight: 500; }
-    .nav-links a.nav-btn-primary:hover { background: var(--accent-hover); color: #FAF9F7; }
-    .nav-hamburger { display: none; padding: 8px; cursor: pointer; background: none; border: none; }
-    .nav-hamburger svg { width: 24px; height: 24px; }
-    .mobile-menu { position: fixed; top: 56px; left: 0; right: 0; background: rgba(245,242,236,0.98); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-card); padding: 16px; display: none; flex-direction: column; gap: 12px; z-index: 99; }
-    .mobile-menu a { padding: 12px; text-align: center; border-radius: 8px; font-size: 15px; font-weight: 500; }
-    .mobile-menu a:hover { background: var(--border-light); }
-    .mobile-menu a.nav-btn-primary { color: #FFFFFF; }
+    /* ── 1. NAVIGATION ──────────────────────────────── */
+    .nav { position: sticky; top: 0; z-index: 100; height: 64px; background: transparent; transition: background var(--transition-normal), backdrop-filter var(--transition-normal); }
+    .nav.scrolled { background: rgba(244,240,232,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+    .nav-logo .diamond { color: var(--accent); }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { font-size: 14px; font-weight: 400; color: var(--text); transition: opacity var(--transition-fast); }
+    .nav-links a:hover { opacity: 0.7; }
+    .nav-links a.ext::after { content: ' ↗'; font-size: 12px; }
+    .nav-cta { display: inline-flex; align-items: center; background: var(--accent); color: #fff; font-size: 14px; font-weight: 500; padding: 8px 20px; border-radius: 6px; border: none; transition: opacity var(--transition-fast); }
+    .nav-cta:hover { opacity: 0.85; color: #fff; }
+    .nav-hamburger { display: none; background: none; border: none; padding: 8px; }
+    .nav-hamburger svg { width: 24px; height: 24px; stroke: var(--text); }
+    .mobile-menu { display: none; position: fixed; top: 64px; left: 0; right: 0; background: rgba(244,240,232,0.98); backdrop-filter: blur(12px); padding: 24px; flex-direction: column; gap: 16px; z-index: 99; border-bottom: 1px solid var(--border); }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { font-size: 16px; font-weight: 500; padding: 12px 0; }
 
-    /* HERO */
-    .hero { padding: 100px 0 100px; text-align: center; position: relative; overflow: hidden; }
-    .hero > * { position: relative; z-index: 1; }
-    .hero-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 100px; background: var(--surface-muted); color: var(--text-2); font-size: 13px; font-weight: 500; margin-bottom: 28px; border: 1px solid var(--border-card); }
-    .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-    .hero h1 { font-family: 'Instrument Serif', serif; font-size: clamp(48px, 7vw, 80px); line-height: 1.04; font-weight: 400; letter-spacing: -0.025em; color: var(--text); margin-bottom: 24px; text-wrap: balance; }
-    .hero h1 em { font-style: normal; }
-    .hero p { font-size: 18px; color: var(--text-2); max-width: 460px; margin: 0 auto 40px; line-height: 1.65; }
-    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 56px; }
-    .hero-visual { max-width: 820px; margin: 0 auto; }
-    .hero-visual-inner { background: linear-gradient(145deg, #60A5FA 0%, #2563EB 30%, #1E40AF 60%, #1E3A8A 100%); border-radius: 24px; padding: 28px; box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04), 0 4px 8px rgba(30,64,175,0.12), 0 16px 32px rgba(30,64,175,0.08), 0 32px 64px rgba(0,0,0,0.06); }
-    .hero-visual-inner .terminal { border-radius: 14px; overflow: hidden; }
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border-radius: 4px; font-size: 15px; font-weight: 500; transition: all 0.15s; border: none; cursor: pointer; letter-spacing: 0.01em; }
-    .btn-primary { background: var(--accent); color: #FAF9F7; }
-    .btn-primary:hover { background: var(--accent-hover); }
-    .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border-card); }
-    .btn-secondary:hover { border-color: var(--text-3); }
-
-    /* TERMINAL */
-    .terminal { border-radius: 16px; overflow: hidden; border: 1px solid var(--border-card); box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
-    .terminal-bar { display: flex; align-items: center; gap: 6px; padding: 12px 16px; background: var(--surface-muted); border-bottom: 1px solid var(--border-card); }
-    .terminal-dot { width: 10px; height: 10px; border-radius: 50%; background: #D4D4D8; }
-    .terminal-title { font-size: 11px; color: var(--text-4); margin-left: 8px; font-family: 'JetBrains Mono', monospace; }
-    .terminal-body { background: var(--bg-code); padding: 20px; min-height: 240px; position: relative; }
-    .terminal-line { font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; opacity: 0; }
-    .terminal-line.visible { opacity: 1; }
-    .t-prompt { color: #8A8A82; } .t-cmd { color: #4ADE80; } .t-url { color: #FDE047; }
-    .t-dim { color: #5A5A55; } .t-accent { color: #5A5A55; } .t-result { color: #D4D4D8; }
-    .t-success { color: #4ADE80; }
-    .t-cursor { animation: blink 1s infinite; }
-    @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-    .t-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
-    .t-badge-http { background: rgba(74,222,128,0.15); color: #4ADE80; }
-    .t-badge-stealth { background: rgba(167,139,250,0.15); color: #5A5A55; }
-    .t-badge-search { background: rgba(253,224,71,0.15); color: #FDE047; }
-    .t-badge-research { background: rgba(96,165,250,0.15); color: #60A5FA; }
-    .terminal-output { margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.04); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); }
-
-    /* STATS */
-    .stats { display: flex; justify-content: center; flex-wrap: wrap; gap: 24px; padding: 48px 0; }
-    .stat { text-align: center; background: white; border: 1px solid var(--border-card); border-radius: var(--radius); padding: 24px 28px; transition: all 0.3s; min-width: 190px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-    .stat:hover { opacity: 0.9; }
-    .stat-icon { display: flex; justify-content: center; align-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--surface-muted); border: 1px solid var(--border-card); margin: 0 auto 12px; }
-    .stat-icon svg { width: 20px; height: 20px; }
-    .stat-num { font-size: 32px; font-weight: 500; letter-spacing: -0.02em; position: relative; display: inline-block; }
-    .stat-label { font-size: 13px; color: var(--text-3); margin-top: 12px; }
-
-    /* SECTIONS */
-    section { padding: 120px 0; }
-    .section-header { text-align: center; margin-bottom: 48px; }
-    .section-header h2 { font-family: 'Instrument Serif', serif; font-size: clamp(32px, 4vw, 48px); font-weight: 400; margin-bottom: 12px; letter-spacing: -0.02em; line-height: 1.15; }
-    .section-header p { font-size: 16px; color: var(--text-2); max-width: 520px; margin: 0 auto; }
-    .section-label { display: inline-block; padding: 4px 14px; border-radius: 999px; background: var(--surface-muted); color: var(--text-2); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; border: 1px solid var(--border-card); }
-
-    /* MCP SECTION */
-    .mcp-section { background: var(--bg-dark); color: white; padding: 120px 0; border-radius: 0; }
-    .mcp-section .section-label { background: rgba(255,255,255,0.06); color: #D4D4D8; border-color: rgba(255,255,255,0.1); }
-    .mcp-section .section-header { text-align: left; margin-bottom: 0; }
-    .mcp-section .section-header h2 { color: white; }
-    .mcp-section .section-header h2 em { font-style: italic; color: #E0DDD8; }
-    .mcp-section .section-header p { color: #A1A1AA; text-align: left; margin: 0; }
-    .mcp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; margin-top: 48px; }
-    .mcp-sublabel { font-size: 11px; font-weight: 600; color: #8A8A82; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
-    .mcp-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .mcp-tool { padding: 9px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E0DDD8; transition: all 0.15s; }
-    .mcp-tool:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
-    .mcp-clients { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-    .mcp-client { display: flex; align-items: center; gap: 7px; padding: 7px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-size: 13px; font-weight: 500; color: #D4D4D8; }
-    .mcp-client-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; flex-shrink: 0; }
-    .mcp-code { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
-    .mcp-code-bar { display: flex; align-items: center; padding: 10px 16px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #8A8A82; font-family: 'JetBrains Mono', monospace; }
-    .mcp-code pre { padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; color: #D4D4D8; overflow-x: auto; }
-    .mcp-or { text-align: center; font-size: 12px; color: #3F3F46; margin: 10px 0; }
-    .mcp-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 16px; font-size: 14px; color: #5A5A55; font-weight: 500; }
-    .mcp-link:hover { color: #E0DDD8; text-decoration: underline; }
-
-    /* FEATURE CARDS */
-    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    .feature-card { background: white; border: 1px solid var(--border-card); border-radius: var(--radius); padding: 28px; transition: all 0.2s; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-    .feature-card:hover { border-color: var(--text-3); }
-    .feature-icon { font-size: 28px; }
-    .feature-card h3 { font-size: 17px; font-weight: 500; }
-    .feature-card p { font-size: 14px; color: var(--text-2); line-height: 1.65; flex: 1; }
-    .feature-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-    .feature-tag { padding: 3px 10px; background: var(--surface-muted); border: 1px solid var(--border-card); border-radius: 100px; font-size: 11px; font-weight: 500; color: var(--text-3); }
-    .feature-tag.accent { background: var(--surface-muted); border: 1px solid var(--border-card); color: var(--text-3); }
-
-    /* CODE */
-    .code-section { background: white; border: 1px solid var(--border-card); border-radius: 16px; max-width: 720px; margin: 0 auto; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-    .code-tabs { display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; }
-    .code-tab { padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--text-3); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-    .code-tab.active { color: var(--text); border-color: var(--accent); }
-    .code-body { background: var(--bg-code); padding: 20px; overflow-x: auto; }
-    .code-body pre { font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: #D4D4D8; }
-    .code-body .hl-kw { color: #2DD4BF; } .code-body .hl-str { color: #86EFAC; }
-    .code-body .hl-fn { color: #D4D4D8; } .code-body .hl-cm { color: #5A5A55; }
-
-    /* BENCHMARKS */
-    .benchmark-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-    .benchmark-card { background: var(--surface-muted); border: 1px solid var(--border-card); border-radius: var(--radius); padding: 24px 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-    .benchmark-card h3 { font-size: 18px; font-weight: 500; margin-bottom: 4px; letter-spacing: -0.01em; }
-    .benchmark-card p { font-size: 13px; color: var(--text-3); line-height: 1.5; }
-    .benchmark-bars { display: grid; gap: 12px; margin-top: 16px; }
-    .benchmark-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
-    .benchmark-label { font-size: 13px; color: var(--text-2); font-weight: 500; }
-    .benchmark-row.webpeel .benchmark-label { color: var(--text); font-weight: 600; }
-    .benchmark-track { height: 16px; border-radius: 999px; background: #F1ECE3; overflow: hidden; }
-    .benchmark-fill { height: 100%; width: 0; border-radius: inherit; background: #E5E0D8; min-width: 8%; }
-    .benchmark-row.webpeel .benchmark-fill { background: linear-gradient(90deg, #18181B, #5A5A55); }
-    .benchmark-value { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
-    .benchmark-methodology { margin-top: 18px; text-align: center; font-size: 12px; color: var(--text-3); }
-    .benchmark-methodology a { color: var(--accent); text-decoration: underline; text-decoration-color: rgba(24,24,27,0.4); text-underline-offset: 2px; }
-
-    /* COMPARE TABLE */
-    .compare-table { width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius); border: 1px solid var(--border-card); }
-    .compare-table th, .compare-table td { padding: 10px 12px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border-light); white-space: nowrap; }
-    .compare-table th { font-weight: 500; color: var(--text-3); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; background: var(--surface-muted); }
-    .compare-table td:first-child { font-weight: 500; position: relative; white-space: normal; }
-    .feature-tooltip { position: relative; display: inline-flex; align-items: center; gap: 6px; }
-    .tooltip-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--border-light); color: var(--text-3); font-size: 11px; cursor: help; position: relative; }
-    .tooltip-text { position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); padding: 8px 12px; background: #27272A; color: white; font-size: 12px; font-weight: 400; border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .tooltip-text::after { content: ''; position: absolute; right: 100%; top: 50%; transform: translateY(-50%); border: 4px solid transparent; border-right-color: #27272A; }
-    .tooltip-icon:hover .tooltip-text { opacity: 1; }
-    .check { color: var(--green); } .cross { color: var(--red-light); }
-    .highlight-col { background: rgba(24,24,27,0.04); }
-
-    /* PRICING */
-    .pricing-toggle { display: flex; justify-content: center; margin-bottom: 32px; }
-    .toggle-container { display: inline-flex; background: white; border: 1px solid var(--border); border-radius: 100px; padding: 4px; }
-    .toggle-btn { padding: 8px 24px; border-radius: 100px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; background: none; }
-    .toggle-btn.active { background: var(--text); color: white; }
-    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    .price-card { background: white; border: 1px solid var(--border-card); border-radius: var(--radius); padding: 28px; transition: all 0.3s; }
-    .price-card:hover { opacity: 0.95; }
-    .price-card.featured { border: 2px solid var(--accent); }
-    .price-badge { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--accent); color: white; font-size: 11px; font-weight: 600; margin-bottom: 12px; }
-    .price-name { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
-    .price-amount { font-size: 36px; font-weight: 500; letter-spacing: -0.02em; }
-    .price-amount span { font-size: 14px; font-weight: 400; color: var(--text-3); }
-    .price-save { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 4px; background: rgba(22,163,74,0.1); color: var(--green); font-size: 11px; font-weight: 600; }
-    .price-desc { font-size: 13px; color: var(--text-3); margin: 8px 0 20px; line-height: 1.5; }
-    .price-features { list-style: none; margin-bottom: 24px; }
-    .price-features li { font-size: 13px; color: var(--text-2); padding: 5px 0; display: flex; align-items: center; gap: 8px; }
-    .price-features li::before { content: '✓'; color: var(--green); font-weight: 600; }
-    .price-btn { display: block; text-align: center; padding: 10px; border-radius: 4px; font-size: 14px; font-weight: 500; transition: all 0.15s; }
-    .price-btn-primary { background: var(--text); color: white; }
-    .price-btn-primary:hover { background: #27272A; }
-    .price-btn-secondary { background: var(--border-light); color: var(--text); }
-    .price-btn-secondary:hover { background: var(--border); }
-    .free-callout { text-align: center; padding: 14px 20px; background: var(--surface-muted); border: 1px solid var(--border-card); border-radius: var(--radius); margin-bottom: 32px; font-size: 15px; }
-    .free-callout strong { color: var(--accent); }
-
-    /* FAQ */
-    .faq-section { max-width: 700px; margin: 60px auto 0; }
-    .faq-title { font-size: 24px; font-weight: 500; text-align: center; margin-bottom: 28px; }
-    .faq-item { background: white; border: 1px solid var(--border-card); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
-    .faq-question { padding: 16px 20px; font-weight: 500; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
-    .faq-question:hover { background: var(--border-light); }
-    .faq-arrow { transition: transform 0.3s; }
-    .faq-item.open .faq-arrow { transform: rotate(180deg); }
-    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-    .faq-answer-inner { padding: 0 20px 16px; color: var(--text-2); font-size: 14px; line-height: 1.6; }
-    .faq-item.open .faq-answer { max-height: 360px; }
-
-    /* FOOTER */
-    footer { background: var(--bg-dark); color: #F5F2EC; padding: 64px 0 40px; }
-    .footer-grid { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 40px; }
-    .footer-brand { display: flex; flex-direction: column; gap: 10px; }
-    .footer-brand-logo { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 15px; color: #F5F2EC; }
-    .footer-brand-logo svg { width: 20px; height: 20px; }
-    .footer-brand p { font-size: 13px; color: #A09B93; max-width: 240px; line-height: 1.6; }
-    .footer-brand-meta { font-size: 12px; color: #A09B93; margin-top: 4px; }
-    .footer-col h4 { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: #F5F2EC; margin-bottom: 14px; }
-    .footer-col a { display: block; font-size: 13px; color: #A09B93; transition: color 0.15s; margin-bottom: 9px; }
-    .footer-col a:hover { color: #F5F2EC; }
-    .footer-bottom { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .footer-bottom p { font-size: 12px; color: #A09B93; }
-    .footer-bottom-links { display: flex; gap: 16px; }
-    .footer-bottom-links a { font-size: 12px; color: #A09B93; }
-    .footer-bottom-links a:hover { color: #F5F2EC; }
-
-    /* ANIMATION */
-    @keyframes fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-    .fade-up { animation: fade-up 0.6s ease-out forwards; }
-    .delay-1 { animation-delay: 0.1s; opacity: 0; }
-    .delay-2 { animation-delay: 0.2s; opacity: 0; }
-    .delay-3 { animation-delay: 0.3s; opacity: 0; }
-
-    /* ── INSTALL BOX ─────────────────────────────────── */
-    .hero-install { max-width: 580px; margin: 0 auto 18px; text-align: left; }
-    .install-os-tabs { display: flex; background: #27272A; border-radius: 10px 10px 0 0; overflow: hidden; border: 1px solid #3F3F46; border-bottom: none; }
-    .install-os-tab { padding: 8px 20px; font-size: 12px; font-weight: 500; color: #8A8A82; background: none; border: none; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
-    .install-os-tab.active { color: #E0DDD8; background: rgba(255,255,255,0.07); }
-    .install-os-tab:hover:not(.active) { color: #A1A1AA; }
-    .install-box { display: flex; align-items: center; gap: 10px; background: #18181B; border: 1px solid #3F3F46; border-radius: 0 0 10px 10px; padding: 14px 16px; }
-    .install-prompt { color: #18181B; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; user-select: none; flex-shrink: 0; }
-    .install-cmd { flex: 1; font-size: 13px; color: #E0DDD8; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .install-copy { background: rgba(255,255,255,0.08); border: 1px solid #5A5A55; border-radius: 6px; color: #A1A1AA; padding: 5px 10px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.15s; display: flex; align-items: center; gap: 4px; white-space: nowrap; font-family: 'Inter', sans-serif; flex-shrink: 0; }
-    .install-copy:hover { background: rgba(255,255,255,0.15); color: #E0DDD8; border-color: #8A8A82; }
-    .install-copy.copied { color: #4ADE80; border-color: #4ADE80; }
-
-    /* RESPONSIVE */
     @media (max-width: 768px) {
-      .container { padding: 0 16px; }
-      .hero { padding: 72px 0 48px; }
-      .hero h1 { font-size: 36px; }
-      .hero p { font-size: 16px; }
-      .hero-actions { flex-direction: column; width: 100%; }
-      .btn { width: 100%; justify-content: center; }
-      .terminal { border-radius: 12px; }
-      .terminal-body { padding: 16px; font-size: 12px; overflow-x: auto; min-height: 200px; }
-      .pricing-grid, .benchmark-grid, .features-grid { grid-template-columns: 1fr; }
-      .stats { gap: 16px; }
-      .stat { min-width: auto; width: 100%; }
-      .stat-num { font-size: 24px; }
       .nav-links { display: none; }
       .nav-hamburger { display: block; }
-      .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
-      .footer-brand { grid-column: 1 / -1; }
-      .footer-bottom { flex-direction: column; text-align: center; }
-      section { padding: 80px 0; }
-      .section-header h2 { font-size: 30px; }
-      .section-header p { font-size: 15px; }
-      .code-section { border-radius: 12px; }
-      .code-body { font-size: 12px; padding: 16px; overflow-x: auto; }
-      .compare-table { font-size: 11px; display: block; overflow-x: auto; }
-      .compare-table th, .compare-table td { padding: 8px 10px; white-space: nowrap; }
-      .tooltip-text { white-space: normal; max-width: 200px; left: auto; right: auto; position: fixed; }
-      .price-card { padding: 24px; }
-      .price-amount { font-size: 28px; }
-      .faq-section { margin-top: 40px; }
-      .mcp-grid { grid-template-columns: 1fr; gap: 32px; }
-      .mcp-tools { grid-template-columns: repeat(2, 1fr); }
-      .hero-install { max-width: 100%; }
-      .install-cmd { font-size: 11px; }
-      .how-steps-grid { grid-template-columns: 1fr !important; }
-      .use-cases-grid { grid-template-columns: 1fr !important; }
     }
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .container { max-width: 90%; }
-      .hero h1 { font-size: 52px; }
-      .features-grid { grid-template-columns: repeat(2, 1fr); }
-      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
-      .mcp-grid { gap: 36px; }
+
+    /* ── 2. HERO ─────────────────────────────────────── */
+    .hero { padding: 140px 0 100px; }
+    .hero-grid { display: grid; grid-template-columns: 55% 45%; gap: 48px; align-items: center; }
+    .hero-eyebrow { display: inline-flex; align-items: center; background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; }
+    .hero h1 { font-family: var(--font-display); font-size: var(--text-hero); font-weight: 400; line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 24px; }
+    .hero h1 .accent { color: var(--accent); }
+    .hero-sub { font-size: 18px; font-weight: 400; color: var(--text-2); line-height: 1.6; max-width: 480px; margin-bottom: 32px; }
+    .hero-ctas { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 500; padding: 14px 28px; border-radius: 8px; border: none; transition: opacity var(--transition-fast); }
+    .btn-primary:hover { opacity: 0.85; color: #fff; }
+    .btn-text { font-size: 16px; font-weight: 500; color: var(--text); transition: opacity var(--transition-fast); }
+    .btn-text:hover { opacity: 0.7; text-decoration: underline; }
+
+    /* Terminal mockup */
+    .hero-terminal { background: var(--bg-dark); border-radius: 16px; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 40px rgba(30,64,175,0.15), 0 32px 80px rgba(0,0,0,0.12);
+      transform: perspective(1200px) rotateY(-2deg) rotateX(1deg); }
+    .terminal-chrome { height: 48px; background: #1E293B; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .terminal-dot.r { background: #EF4444; }
+    .terminal-dot.y { background: #F59E0B; }
+    .terminal-dot.g { background: #22C55E; }
+    .terminal-tab { font-size: 13px; color: rgba(255,255,255,0.6); margin-left: 12px; font-family: var(--font-mono); }
+    .terminal-content { padding: 24px; font-family: var(--font-mono); font-size: 14px; line-height: 1.7; }
+    .t-prompt { color: var(--accent); }
+    .t-cmd { color: #E2E8F0; }
+    .t-output { color: #94A3B8; }
+    .t-highlight { color: #60A5FA; }
+    .t-dim { color: #64748B; }
+
+    @media (max-width: 768px) {
+      .hero { padding: 100px 0 60px; }
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-terminal { transform: none; }
+    }
+    @media (max-width: 480px) {
+      .hero { padding: 80px 0 48px; }
+    }
+
+    /* ── 3. HOW IT WORKS ─────────────────────────────── */
+    .how-section { background: var(--bg-alt); }
+    .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 12px; }
+    .section-h2 { font-family: var(--font-display); font-size: var(--text-h2); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; }
+    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 64px; }
+    .how-step-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--accent); width: 32px; }
+    .how-step h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
+    .how-step p { font-size: 16px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
+    .mini-code { background: var(--bg-dark); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow-x: auto; }
+    @media (max-width: 768px) { .how-grid { grid-template-columns: 1fr; } }
+
+    /* ── 4. THE SUPERPOWER (dark) ────────────────────── */
+    .superpower { background: var(--bg-dark); color: #fff; }
+    .superpower .section-eyebrow { color: #60A5FA; }
+    .superpower .section-h2 { color: #fff; }
+    .superpower .accent { color: #60A5FA; }
+    .superpower-body { font-size: 18px; color: rgba(255,255,255,0.7); max-width: 560px; line-height: 1.7; margin-top: 32px; }
+    .stats-row { display: flex; gap: 64px; margin-top: 48px; align-items: center; }
+    .stats-row .stat { text-align: left; }
+    .stats-row .stat-num { font-size: 36px; font-weight: 600; color: #fff; }
+    .stats-row .stat-label { font-size: 14px; color: rgba(255,255,255,0.5); }
+    .stats-divider { width: 1px; height: 48px; background: rgba(255,255,255,0.1); }
+    @media (max-width: 768px) {
+      .stats-row { flex-wrap: wrap; gap: 32px; }
+      .stats-divider { display: none; }
+    }
+    @media (max-width: 480px) {
+      .stats-row { flex-direction: column; gap: 24px; }
+    }
+
+    /* ── 5. FEATURES (stacked, alternating) ──────────── */
+    .feature-block { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+    .feature-block.flipped .feature-text { order: 2; }
+    .feature-block.flipped .feature-visual { order: 1; }
+    .feature-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; margin-bottom: 12px; }
+    .feature-block h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
+    .feature-block .desc { font-size: 16px; color: var(--text-2); line-height: 1.7; margin-bottom: 20px; }
+    .feature-checks { list-style: none; }
+    .feature-checks li { font-size: 14px; color: var(--text-2); padding: 4px 0; }
+    .feature-checks li::before { content: '✓ '; color: var(--accent); font-weight: 600; }
+    .feature-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden; transition: box-shadow var(--transition-normal); }
+    .feature-card:hover { box-shadow: var(--card-shadow-hover); }
+    .feature-card-dark { background: var(--bg-dark); border-radius: 12px; padding: 24px; font-family: var(--font-mono); font-size: 14px; line-height: 1.7; color: #E2E8F0; }
+    .integration-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .integration-item { display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-2); }
+
+    @media (max-width: 768px) {
+      .feature-block { grid-template-columns: 1fr; gap: 32px; }
+      .feature-block.flipped .feature-text { order: 1; }
+      .feature-block.flipped .feature-visual { order: 2; }
+    }
+
+    /* ── 6. PERFORMANCE ──────────────────────────────── */
+    .perf-section { background: var(--bg-alt); }
+    .perf-grid { display: grid; grid-template-columns: 55% 45%; gap: 48px; align-items: start; }
+    .bar-group { margin-bottom: 32px; }
+    .bar-group-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 12px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .bar-label { width: 90px; font-size: 14px; color: var(--text-2); flex-shrink: 0; }
+    .bar-track { flex: 1; height: 28px; background: #E5E0D8; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+    .bar-fill.blue { background: var(--accent); }
+    .bar-fill.gray { background: #D1CCC4; }
+    .bar-value { font-size: 14px; font-weight: 600; color: var(--text); width: 48px; text-align: right; flex-shrink: 0; }
+    .stat-cards { display: flex; flex-direction: column; gap: 16px; }
+    .stat-card { background: var(--card-bg); border-radius: 8px; padding: 24px; box-shadow: var(--card-shadow); }
+    .stat-card .num { font-size: 36px; font-weight: 600; color: var(--text); }
+    .stat-card .label { font-size: 14px; color: var(--text-2); margin-top: 4px; }
+
+    @media (max-width: 768px) {
+      .perf-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── 7. PRICING ──────────────────────────────────── */
+    .pricing-header { text-align: center; margin-bottom: 64px; }
+    .pricing-header .sub { font-size: 16px; color: var(--text-2); margin-top: 12px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; }
+    .price-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 32px; position: relative; transition: box-shadow var(--transition-normal); }
+    .price-card:hover { box-shadow: var(--card-shadow-hover); }
+    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.02); }
+    .price-badge { position: absolute; top: -12px; right: 24px; display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
+    .price-plan { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 8px; }
+    .price-amount { font-size: 40px; font-weight: 600; color: var(--text); }
+    .price-amount .per { font-size: 16px; font-weight: 400; color: var(--text-3); }
+    .price-desc { font-size: 15px; color: var(--text-2); margin: 8px 0 24px; }
+    .price-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 24px; }
+    .price-features { list-style: none; margin-bottom: 24px; }
+    .price-features li { font-size: 14px; color: var(--text-2); padding: 6px 0; }
+    .price-features li::before { content: '✓ '; color: var(--accent); font-weight: 600; }
+    .price-btn { display: block; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; border: none; width: 100%; transition: opacity var(--transition-fast); }
+    .price-btn:hover { opacity: 0.85; }
+    .price-btn-filled { background: var(--accent); color: #fff; }
+    .price-btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+    @media (max-width: 768px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+      .price-card.featured { order: -1; transform: none; }
+    }
+
+    /* ── 8. FAQ ───────────────────────────────────────── */
+    .faq-section { background: var(--bg-alt); }
+    .faq-list { max-width: var(--container-narrow); margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid var(--border); }
+    .faq-question { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; font-size: 16px; font-weight: 500; color: var(--text); cursor: pointer; background: none; border: none; width: 100%; text-align: left; }
+    .faq-question:hover { color: var(--accent); }
+    .faq-icon { font-size: 20px; color: var(--text-3); transition: transform 0.3s ease; flex-shrink: 0; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+    .faq-answer-inner { padding: 0 0 24px; font-size: 16px; color: var(--text-2); line-height: 1.7; }
+    .faq-item.open .faq-answer { max-height: 300px; }
+
+    /* ── 9. FINAL CTA + FOOTER ───────────────────────── */
+    .final-cta { background: var(--bg-dark); text-align: center; padding: 100px 0; }
+    .final-cta h2 { font-family: var(--font-display); font-size: 36px; font-weight: 400; color: #fff; margin-bottom: 16px; }
+    .final-cta .sub { font-size: 16px; color: rgba(255,255,255,0.6); margin-bottom: 32px; }
+    .install-card { display: inline-flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; max-width: 100%; }
+    .install-card code { font-family: var(--font-mono); font-size: 14px; color: #E2E8F0; white-space: nowrap; }
+    .install-copy-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all var(--transition-fast); flex-shrink: 0; }
+    .install-copy-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+    .footer { background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,0.08); padding: 48px 0; }
+    .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
+    .footer-brand { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 12px; }
+    .footer-brand .diamond { color: var(--accent); }
+    .footer-tagline { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+    .footer-col h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.8); margin-bottom: 16px; }
+    .footer-col a { display: block; font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 10px; transition: color var(--transition-fast); }
+    .footer-col a:hover { color: #fff; }
+    .footer-bottom { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom p { font-size: 13px; color: rgba(255,255,255,0.3); }
+    .footer-bottom a { font-size: 13px; color: rgba(255,255,255,0.3); margin-left: 16px; transition: color var(--transition-fast); }
+    .footer-bottom a:hover { color: rgba(255,255,255,0.7); }
+
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────── */
+    @media (max-width: 1024px) {
+      :root { --gutter: 32px; }
+      .feature-block { gap: 40px; }
+    }
+    @media (max-width: 768px) {
+      :root { --gutter: 20px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav>
+  <!-- ═══════════════════════════════════════════════════
+       1. NAVIGATION
+       ═══════════════════════════════════════════════════ -->
+  <nav class="nav" id="nav">
     <div class="container nav-inner">
-      <a href="/" class="nav-logo">
-        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
-        WebPeel
-      </a>
+      <a href="/" class="nav-logo"><span class="diamond">◆</span> WebPeel</a>
       <div class="nav-links">
-        <a href="/#mcp">MCP</a>
-        <a href="/#features">Features</a>
-        <a href="/#compare">Compare</a>
-        <a href="/pricing">Pricing</a>
+        <a href="#features">Features</a>
         <a href="/docs/">Docs</a>
-        <a href="/blog/">Blog</a>
-        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
-        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started Free</a>
+        <a href="#pricing">Pricing</a>
+        <a href="https://github.com/webpeel/webpeel" class="ext" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-cta">Get Started →</a>
       </div>
-      <button class="nav-hamburger" onclick="toggleMobileMenu()" aria-label="Toggle menu">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <button class="nav-hamburger" id="hamburger-btn" aria-label="Toggle menu">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
       </button>
     </div>
   </nav>
-
-  <!-- MOBILE MENU -->
-  <div id="mobile-menu" class="mobile-menu">
-    <a href="/#mcp" onclick="toggleMobileMenu()">MCP</a>
-    <a href="/#features" onclick="toggleMobileMenu()">Features</a>
-    <a href="/#compare" onclick="toggleMobileMenu()">Compare</a>
-    <a href="/pricing" onclick="toggleMobileMenu()">Pricing</a>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="#features">Features</a>
     <a href="/docs/">Docs</a>
-    <a href="/blog/">Blog</a>
-    <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
-    <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started Free</a>
+    <a href="#pricing">Pricing</a>
+    <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">GitHub ↗</a>
+    <a href="https://app.webpeel.dev/signup">Get Started →</a>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 1: HERO
-       ═══════════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════
+       2. HERO
+       ═══════════════════════════════════════════════════ -->
   <section class="hero">
     <div class="container">
-      <div class="hero-badge fade-up"><span class="dot"></span> Open source · 18 MCP tools · 500 free fetches/week</div>
-      <h1 class="fade-up delay-1">Give your AI<br><em style="color: var(--accent);">the entire web.</em></h1>
-      <p class="fade-up delay-2">Turn any URL into clean, structured content — ready for your AI agent in milliseconds. One tool to fetch, extract, and understand the web.</p>
-      <!-- INSTALL COMMAND -->
-      <div class="hero-install fade-up delay-3">
-        <div class="install-os-tabs">
-          <button class="install-os-tab active" onclick="switchInstallOS('unix', this)">macOS / Linux</button>
-          <button class="install-os-tab" onclick="switchInstallOS('win', this)">Windows</button>
-        </div>
-        <div class="install-panel" id="install-os-unix">
-          <div class="install-box">
-            <span class="install-prompt">$</span>
-            <code class="install-cmd">curl -fsSL https://webpeel.dev/install.sh | bash</code>
-            <button class="install-copy" onclick="copyInstall('curl -fsSL https://webpeel.dev/install.sh | bash', this)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-              Copy
-            </button>
+      <div class="hero-grid">
+        <!-- Left column -->
+        <div class="reveal">
+          <div class="hero-eyebrow">Open Source · 500 free fetches/week</div>
+          <h1>Give your AI<br><span class="accent">the entire web.</span></h1>
+          <p class="hero-sub">One API call. Any page. Structured data back. Built for agents that need to read the web.</p>
+          <div class="hero-ctas">
+            <a href="https://app.webpeel.dev/signup" class="btn-primary">Get Started Free →</a>
+            <a href="/docs/" class="btn-text">View Docs</a>
           </div>
         </div>
-        <div class="install-panel" id="install-os-win" style="display:none">
-          <div class="install-box">
-            <span class="install-prompt">&gt;</span>
-            <code class="install-cmd">npm install -g webpeel</code>
-            <button class="install-copy" onclick="copyInstall('npm install -g webpeel', this)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2v1"/></svg>
-              Copy
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="hero-actions fade-up delay-3">
-        <a href="https://app.webpeel.dev/signup" class="btn btn-primary">Get Started Free</a>
-        <a href="/docs" class="btn btn-secondary">View Docs →</a>
-      </div>
-
-      <!-- HERO VISUAL — styled terminal showing real output -->
-      <div class="hero-visual fade-up delay-3">
-        <div class="hero-visual-inner">
-          <div class="terminal" style="margin:0; border:none; box-shadow:none;">
-            <div class="terminal-bar">
-              <div class="terminal-dot" style="background:#FF5F56;"></div>
-              <div class="terminal-dot" style="background:#FFBD2E;"></div>
-              <div class="terminal-dot" style="background:#27C93F;"></div>
-              <span class="terminal-title">webpeel</span>
+        <!-- Right column — terminal -->
+        <div class="reveal">
+          <div class="hero-terminal">
+            <div class="terminal-chrome">
+              <div class="terminal-dot r"></div>
+              <div class="terminal-dot y"></div>
+              <div class="terminal-dot g"></div>
+              <span class="terminal-tab">Terminal</span>
             </div>
-            <div class="terminal-body" style="padding:20px 24px; font-size:13px; line-height:1.8;">
-              <div><span style="color:#8A8A82">$</span> <span style="color:#2DD4BF">webpeel</span> fetch https://anthropic.com --readable</div>
-              <div><span style="color:#8A8A82">  ◆ Method:</span> <span style="color:#4ADE80">simple</span> <span style="color:#8A8A82">(164ms)</span></div>
-              <div><span style="color:#8A8A82">  ◆ Words:</span> 2,847 <span style="color:#8A8A82">• Readability:</span> 94</div>
+            <div class="terminal-content">
+              <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel "https://stripe.com" --readable</span></div>
+              <div><span class="t-output">→ # Stripe | Financial Infrastructure for the Internet</span></div>
+              <div><span class="t-output">→ 2,847 words · 12s read · 4 images</span></div>
               <div>&nbsp;</div>
-              <div><span style="color:#8A8A82">$</span> <span style="color:#2DD4BF">webpeel</span> search "latest AI breakthroughs" --json</div>
-              <div><span style="color:#8A8A82">  ◆ Results:</span> 10 <span style="color:#8A8A82">• Source:</span> DuckDuckGo <span style="color:#8A8A82">(312ms)</span></div>
+              <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel search "best react frameworks 2026"</span></div>
+              <div><span class="t-output">→ 1. Next.js 15 — The React Framework for Production</span></div>
+              <div><span class="t-output">→ 2. Remix 3.0 — Full Stack Web Framework</span></div>
               <div>&nbsp;</div>
-              <div><span style="color:#8A8A82">$</span> <span style="color:#2DD4BF">webpeel</span> youtube https://youtu.be/dQw4 --transcript</div>
-              <div><span style="color:#8A8A82">  ◆ Duration:</span> 3:32 <span style="color:#8A8A82">• Transcript:</span> 847 words <span style="color:#4ADE80">✓</span></div>
+              <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel youtube https://youtu.be/dQw4 --transcript</span></div>
+              <div><span class="t-output">→ Duration: 3:32 · Transcript: 847 words</span> <span class="t-highlight">✓</span></div>
             </div>
           </div>
         </div>
@@ -428,1097 +357,436 @@
     </div>
   </section>
 
-  <div class="section-divider"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 2: WHO IT'S FOR (NEW)
-       ═══════════════════════════════════════════════════════════════ -->
-  <section style="padding: 100px 0; text-align: center;">
-    <div class="container" style="max-width: 640px;">
-      <p class="section-eyebrow">BUILT FOR</p>
-      <h2 class="serif" style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(32px, 4vw, 48px); letter-spacing: -0.02em;">Developers building with AI.<br>Teams who need web data.</h2>
-      <p style="color: var(--text-2); font-size: 17px; line-height: 1.65; margin-top: 20px;">Whether you're building an AI agent that needs real-time web access, or a team that needs structured data from any URL — WebPeel handles the fetch infrastructure so you focus on what matters.</p>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 3: HOW IT WORKS
-       ═══════════════════════════════════════════════════════════════ -->
-  <section style="padding: 120px 0; background: var(--bg-alt);">
-    <div class="container" style="max-width: 900px; text-align: center;">
-      <p class="section-eyebrow">HOW IT WORKS</p>
-      <h2 class="serif" style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(32px, 4vw, 48px); letter-spacing: -0.02em; margin-bottom: 56px;">Three steps to any page</h2>
-      <div class="how-steps-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; text-align: left;">
-        <div>
-          <div style="font-size: 14px; font-weight: 600; color: var(--text-3); margin-bottom: 12px;">01</div>
-          <h3 style="font-size: 20px; font-weight: 500; margin-bottom: 8px;">Connect</h3>
-          <p style="font-size: 15px; color: var(--text-2); line-height: 1.6;">One npm install or API key. Works with Claude, Cursor, VS Code, and any MCP client.</p>
+  <!-- ═══════════════════════════════════════════════════
+       3. HOW IT WORKS
+       ═══════════════════════════════════════════════════ -->
+  <section class="how-section" style="padding: var(--space-section) 0;">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-eyebrow">HOW IT WORKS</div>
+        <h2 class="section-h2">Three lines to any page.</h2>
+      </div>
+      <div class="how-grid">
+        <div class="how-step reveal">
+          <div class="how-step-num">01</div>
+          <h3>Install</h3>
+          <p>One command. Works everywhere — macOS, Linux, Windows. Zero dependencies beyond Node.</p>
+          <div class="mini-code">npm install -g webpeel</div>
         </div>
-        <div>
-          <div style="font-size: 14px; font-weight: 600; color: var(--text-3); margin-bottom: 12px;">02</div>
-          <h3 style="font-size: 20px; font-weight: 500; margin-bottom: 8px;">Fetch</h3>
-          <p style="font-size: 15px; color: var(--text-2); line-height: 1.6;">Send any URL. WebPeel handles Cloudflare, JavaScript rendering, anti-bot — automatic escalation from HTTP to stealth browser.</p>
+        <div class="how-step reveal">
+          <div class="how-step-num">02</div>
+          <h3>Fetch</h3>
+          <p>Send any URL. WebPeel auto-escalates from HTTP to browser to stealth mode as needed.</p>
+          <div class="mini-code">webpeel "https://example.com" --readable</div>
         </div>
-        <div>
-          <div style="font-size: 14px; font-weight: 600; color: var(--text-3); margin-bottom: 12px;">03</div>
-          <h3 style="font-size: 20px; font-weight: 500; margin-bottom: 8px;">Build</h3>
-          <p style="font-size: 15px; color: var(--text-2); line-height: 1.6;">Clean markdown, metadata, structured data — ready for your AI agent in milliseconds. YouTube transcripts, Reddit threads, any page.</p>
+        <div class="how-step reveal">
+          <div class="how-step-num">03</div>
+          <h3>Integrate</h3>
+          <p>Clean markdown, metadata, structured data — ready for your agent in milliseconds.</p>
+          <div class="mini-code"><span style="color:#60A5FA;">import</span> { peel } <span style="color:#60A5FA;">from</span> <span style="color:#86EFAC;">'webpeel'</span><br><span style="color:#60A5FA;">const</span> page = <span style="color:#60A5FA;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
         </div>
       </div>
     </div>
   </section>
 
-  <div class="section-divider"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m-7-7h6m6 0h6" stroke-linecap="round"/></svg></div>
-
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 5: SOCIAL PROOF (NEW — stats + client logos)
-       ═══════════════════════════════════════════════════════════════ -->
-  <section style="padding: 100px 0; text-align: center;">
-    <div class="container" style="max-width: 900px;">
-      <p class="section-eyebrow">TRUSTED BY DEVELOPERS</p>
-      <h2 class="serif" style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(32px, 4vw, 48px); letter-spacing: -0.02em;">Open source. Battle-tested.</h2>
-      <!-- Stats row (moved from after MCP section) -->
-      <div class="stats">
+  <!-- ═══════════════════════════════════════════════════
+       4. THE SUPERPOWER — dark section
+       ═══════════════════════════════════════════════════ -->
+  <section class="superpower" style="padding: var(--space-section) 0;">
+    <div class="container-narrow">
+      <div class="reveal">
+        <div class="section-eyebrow">THE DIFFERENCE</div>
+        <h2 class="section-h2">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
+        <p class="superpower-body">Cloudflare blocks? We bypass them. JavaScript renders? We execute it. Anti-bot detection? We evade it. WebPeel doesn't just request pages — it gets through.</p>
+      </div>
+      <div class="stats-row reveal">
         <div class="stat">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#18181B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          </div>
-          <div class="stat-num mono" id="github-stars">AGPL</div>
-          <div class="stat-label">Open Source · <a href="https://github.com/webpeel/webpeel" style="color: var(--accent);">Star us ⭐</a></div>
+          <div class="stat-num" data-target="99.7">99.7%</div>
+          <div class="stat-label">bypass rate</div>
         </div>
+        <div class="stats-divider"></div>
         <div class="stat">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#18181B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1" fill="#F5F3EF"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1" fill="#F5F3EF"/></svg>
-          </div>
+          <div class="stat-num">50ms</div>
+          <div class="stat-label">avg response</div>
+        </div>
+        <div class="stats-divider"></div>
+        <div class="stat">
           <div class="stat-num" data-target="18">18</div>
-          <div class="stat-label">MCP tools for AI agents</div>
-        </div>
-        <div class="stat">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#18181B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </div>
-          <div class="stat-num" data-target="27">27</div>
-          <div class="stat-label">Search sources supported</div>
-        </div>
-        <div class="stat">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#18181B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><circle cx="18" cy="16" r="2" fill="#F5F3EF"/></svg>
-          </div>
-          <div class="stat-num" data-target="500">500</div>
-          <div class="stat-label">Free fetches / week</div>
-        </div>
-      </div>
-      <div style="margin-top: 56px;">
-        <div style="font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 24px;">Works with your tools</div>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap; filter: grayscale(100%); opacity: 0.6;">
-          <div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1A1A18"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"/></svg><span style="font-size: 13px; font-weight: 500; color: var(--text-2);">Claude</span></div>
-          <div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1A1A18"><rect width="24" height="24" rx="4"/><path d="M6 18V6h5.25c2.9 0 4.75 1.65 4.75 4.15 0 2.5-1.85 4.2-4.75 4.2H9.2V18H6z" fill="white"/></svg><span style="font-size: 13px; font-weight: 500; color: var(--text-2);">Cursor</span></div>
-          <div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1A1A18"><path d="M23.15 2.587L12.03.042l-11.2 2.544L0 17.293l4.854 4.665 2.93-1.49v1.49l4.327-2.085.1-.01 4.19 2.094v-1.49l3.01 1.49 4.59-4.665V2.587zm-11.12 18.4L7.89 23.1V19.7l4.14-2.117 4.14 2.117v3.4l-4.14-2.113z"/></svg><span style="font-size: 13px; font-weight: 500; color: var(--text-2);">VS Code</span></div>
-          <div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1A1A18"><circle cx="12" cy="12" r="10"/><path d="M7 12c0-2.8 2.2-5 5-5s5 2.2 5 5-2.2 5-5 5" stroke="white" fill="none" stroke-width="2"/></svg><span style="font-size: 13px; font-weight: 500; color: var(--text-2);">Windsurf</span></div>
-          <div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A1A18" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span style="font-size: 13px; font-weight: 500; color: var(--text-2);">Cline</span></div>
+          <div class="stat-label">MCP tools</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 6: FEATURES GRID
-       ═══════════════════════════════════════════════════════════════ -->
-  <section id="features" style="background: var(--bg-alt);">
+  <!-- ═══════════════════════════════════════════════════
+       5. FEATURES — Three stacked blocks
+       ═══════════════════════════════════════════════════ -->
+  <section id="features" style="padding: var(--space-section) 0;">
     <div class="container">
-      <div class="section-header">
-        <div class="section-label">Capabilities</div>
-        <h2>Everything your<br><em class="serif" style="font-style:italic">agent needs</em></h2>
-        <p>Web intelligence in one package. Not just fetching — transcripts, Q&amp;A, reader mode, research, and more.</p>
-      </div>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🎬</div>
-          <h3>YouTube Transcripts</h3>
-          <p>Extract video transcripts from any YouTube URL — no API key needed. Supports all formats: watch, youtu.be, embed, and shorts. YouTube URLs auto-return structured transcript data with timestamps.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">No API key</span>
-            <span class="feature-tag">All URL formats</span>
-            <span class="feature-tag">Timestamps</span>
-            <span class="feature-tag">MCP tool</span>
-          </div>
+
+      <!-- Feature 1: Content Extraction — text left, visual right -->
+      <div class="feature-block reveal" style="margin-bottom: 64px;">
+        <div class="feature-text">
+          <div class="feature-num">01</div>
+          <h3>Raw HTML in. Clean markdown out.</h3>
+          <p class="desc">Readability extraction, noise removal, and semantic structuring. Get the content your agent needs, nothing it doesn't.</p>
+          <ul class="feature-checks">
+            <li>Readability + custom selectors</li>
+            <li>Auto-removes nav, ads, sidebars</li>
+            <li>Structured metadata extraction</li>
+          </ul>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">❓</div>
-          <h3>Quick Answer &amp; Domain Extractors</h3>
-          <p>Ask questions about any page — no LLM API key needed. BM25 relevance scoring finds answers instantly. Domain-aware structured extraction for Twitter/X, Reddit, GitHub, and Hacker News via native APIs.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">No LLM key</span>
-            <span class="feature-tag accent">BM25 scoring</span>
-            <span class="feature-tag">Twitter / Reddit</span>
-            <span class="feature-tag">GitHub / HN</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📖</div>
-          <h3>Reader Mode</h3>
-          <p>Browser Reader Mode for AI agents. Strips nav, ads, cookie banners, sidebars, and 25+ other noise patterns using multi-signal content scoring. Get the pure article — nothing else.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">25+ noise patterns</span>
-            <span class="feature-tag">Multi-signal scoring</span>
-            <span class="feature-tag">--readable flag</span>
-            <span class="feature-tag">MCP: readable: true</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🌐</div>
-          <h3>Smart Scrape</h3>
-          <p>Fetch any URL with automatic escalation: HTTP → browser → stealth. Handles Cloudflare, PerimeterX, DataDome, and Akamai. 100% success rate in independent benchmarks vs 7 competitors.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">Auto-escalation</span>
-            <span class="feature-tag accent">Stealth</span>
-            <span class="feature-tag">Screenshots</span>
-            <span class="feature-tag">Infinite scroll</span>
-            <span class="feature-tag">Browser profiles</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🧠</div>
-          <h3>Deep Research Agent</h3>
-          <p>Multi-hop autonomous research: search → fetch → analyze → follow links → synthesize. Streaming output with live progress. Depth controls, topic tuning, JSON Schema results, cited sources.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">Multi-hop</span>
-            <span class="feature-tag accent">Streaming</span>
-            <span class="feature-tag">BYOK LLM</span>
-            <span class="feature-tag">Citations</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔍</div>
-          <h3>Web Search</h3>
-          <p>Search 27+ specialized sources with structured results. General, shopping, social, tech, jobs, real estate, food delivery, hotels. DuckDuckGo free by default; Brave Search via BYOK for higher quality.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">27+ sources</span>
-            <span class="feature-tag">Shopping</span>
-            <span class="feature-tag">Jobs</span>
-            <span class="feature-tag">Real estate</span>
-            <span class="feature-tag">Food</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🧬</div>
-          <h3>Structured Extraction</h3>
-          <p>Extract typed data — not just markdown. Use JSON Schema for precise field extraction, 7 built-in CSS schemas for common page types, or LLM extraction with your own API key (BYOK).</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">JSON Schema</span>
-            <span class="feature-tag accent">LLM (BYOK)</span>
-            <span class="feature-tag">7 CSS schemas</span>
-            <span class="feature-tag">Firecrawl compat.</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🕷️</div>
-          <h3>Crawl &amp; Map</h3>
-          <p>Crawl entire sites with BFS/DFS strategies, depth control, and URL filtering. Generate sitemaps. Batch-fetch thousands of pages asynchronously with webhook notifications.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">BFS / DFS</span>
-            <span class="feature-tag">Depth control</span>
-            <span class="feature-tag">Sitemaps</span>
-            <span class="feature-tag">Webhooks</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🏨</div>
-          <h3>Hotels &amp; Specialized Tools</h3>
-          <p>Hotel search across Kayak, Booking.com, Google Travel &amp; Expedia in parallel. Brand &amp; design system extraction. URL change monitoring. Screenshot with full-page support.</p>
-          <div class="feature-tags">
-            <span class="feature-tag accent">Hotel search</span>
-            <span class="feature-tag">Branding</span>
-            <span class="feature-tag">URL monitoring</span>
-            <span class="feature-tag">Change tracking</span>
+        <div class="feature-visual">
+          <div class="feature-card" style="padding: 0;">
+            <div style="display: flex; border-bottom: 1px solid var(--border);">
+              <div style="padding: 12px 20px; font-size: 13px; font-weight: 500; color: var(--text-3); border-bottom: 2px solid var(--accent); color: var(--text);">HTML</div>
+              <div style="padding: 12px 20px; font-size: 13px; font-weight: 500; color: var(--text-3);">Markdown</div>
+            </div>
+            <div style="background: var(--bg-dark); padding: 20px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: #94A3B8;">
+              <div style="color: #64748B;">&lt;div class="article-wrapper"&gt;</div>
+              <div style="color: #64748B;">&nbsp;&nbsp;&lt;nav&gt;...50 links...&lt;/nav&gt;</div>
+              <div style="color: #64748B;">&nbsp;&nbsp;&lt;aside&gt;...ads...&lt;/aside&gt;</div>
+              <div style="color: #E2E8F0;">&nbsp;&nbsp;&lt;article&gt;</div>
+              <div style="color: #E2E8F0;">&nbsp;&nbsp;&nbsp;&nbsp;&lt;h1&gt;The Actual Content&lt;/h1&gt;</div>
+              <div style="color: #E2E8F0;">&nbsp;&nbsp;&nbsp;&nbsp;&lt;p&gt;Clean, useful text...&lt;/p&gt;</div>
+              <div style="color: #E2E8F0;">&nbsp;&nbsp;&lt;/article&gt;</div>
+              <div style="color: #64748B;">&lt;/div&gt;</div>
+              <div style="margin-top: 12px; color: #60A5FA;">↓ webpeel --readable</div>
+              <div style="margin-top: 8px; color: #86EFAC;"># The Actual Content</div>
+              <div style="color: #86EFAC;">Clean, useful text...</div>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Feature 2: Anti-Bot Bypass — visual left, text right (FLIPPED) -->
+      <div class="feature-block flipped reveal" style="margin-bottom: 64px;">
+        <div class="feature-text">
+          <div class="feature-num">02</div>
+          <h3>Gets through when others get blocked.</h3>
+          <p class="desc">CycleTLS fingerprinting, stealth browser, residential proxy rotation. Sites that return 403 to everyone else return content to you.</p>
+          <ul class="feature-checks">
+            <li>Cloudflare, PerimeterX, DataDome bypass</li>
+            <li>Auto-escalation: HTTP → browser → stealth</li>
+            <li>Zero configuration required</li>
+          </ul>
+        </div>
+        <div class="feature-visual">
+          <div class="feature-card-dark">
+            <div><span class="t-prompt">$</span> <span style="color:#E2E8F0;">webpeel "https://protected-site.com"</span></div>
+            <div style="color:#F59E0B;">⚡ Cloudflare detected → stealth mode</div>
+            <div style="color:#94A3B8;">  Fingerprint: TLS 1.3 + Chrome 121</div>
+            <div style="color:#94A3B8;">  Proxy: residential-us-east</div>
+            <div style="color:#22C55E;">✓ 2,847 words extracted (1.2s)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 3: MCP + Integrations — text left, visual right -->
+      <div class="feature-block reveal">
+        <div class="feature-text">
+          <div class="feature-num">03</div>
+          <h3>Plugs into every AI framework.</h3>
+          <p class="desc">Native MCP server, LangChain loader, LlamaIndex integration, REST API. Works with Claude, GPT, Cursor, and any agent.</p>
+          <ul class="feature-checks">
+            <li>18-tool MCP server</li>
+            <li>Python + TypeScript SDKs</li>
+            <li>Firecrawl-compatible API</li>
+          </ul>
+        </div>
+        <div class="feature-visual">
+          <div class="integration-grid">
+            <div class="integration-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--text-3)"><path d="m4.7 15.96 4.72-2.65.08-.23-.08-.13h-.23l-.79-.05-2.7-.07-2.34-.1-2.26-.12-.57-.12-.53-.7.05-.35.48-.32.69.06 1.52.1 2.28.16 1.65.1 2.45.25h.39l.05-.16-.13-.1-.1-.1L6.97 9.84l-2.55-1.69-1.34-.97-.72-.49-.36-.46-.16-1.01.66-.72.88.06.22.06.89.69 1.91 1.48 2.49 1.83.36.3.15-.1.02-.07-.16-.27-1.35-2.45-1.45-2.49-.64-1.03-.17-.62c-.06-.26-.1-.47-.1-.73L6.29.13 6.7 0l1 .13.42.36.62 1.41 1 2.23 1.55 3.03.46.9.24.83.09.26h.16v-.15l.13-1.71.24-2.09.23-2.7.08-.76.38-.91.75-.49.58.28.48.69-.07.44-.29 1.85-.56 2.9-.36 1.94h.21l.24-.24.98-1.31 1.65-2.06.73-.82.85-.9.55-.43h1.03l.76 1.13-.34 1.17-1.06 1.35-.88 1.14-1.26 1.7-.79 1.36.07.11.19-.02 2.85-.61 1.54-.28 1.84-.32.83.39.09.39-.33.81-1.97.49-2.31.46-3.44.81-.04.03.05.06 1.55.15.66.04h1.62l3.02.22.79.52.47.64-.08.49-1.21.62-1.64-.39-3.83-.91-1.31-.33h-.18v.11l1.09 1.07 2 1.81 2.51 2.33.13.58-.32.46-.34-.05-2.2-1.66-.85-.75-1.92-1.62h-.13v.17l.44.65 2.34 3.52.12 1.08-.17.35-.61.21-.67-.12-1.37-1.92L14.38 17.96l-1.14-1.94-.14.08-.67 7.26-.32.37-.73.28-.61-.46-.32-.75.32-1.48.39-1.92.32-1.53.29-1.9.17-.63-.01-.04-.14.02-1.43 1.97-2.18 2.94-1.72 1.85-.41.16-.72-.37.07-.66.4-.59 2.39-3.04 1.44-1.88.93-1.09-.01-.16h-.05l-6.34 4.12-1.13.15-.49-.46.06-.75.23-.24 1.91-1.31Z"/></svg>
+              Claude
+            </div>
+            <div class="integration-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--text-3)"><rect width="24" height="24" rx="4"/><path d="M6 18V6h5.25c2.9 0 4.75 1.65 4.75 4.15 0 2.5-1.85 4.2-4.75 4.2H9.2V18H6z" fill="white"/></svg>
+              Cursor
+            </div>
+            <div class="integration-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+              GPT
+            </div>
+            <div class="integration-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              LangChain
+            </div>
+            <div class="integration-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18M3 9h18"/></svg>
+              Windsurf
+            </div>
+            <div class="integration-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+              OpenClaw
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 7: MCP TOOLS
-       ═══════════════════════════════════════════════════════════════ -->
-  <section id="mcp" class="mcp-section">
+  <!-- ═══════════════════════════════════════════════════
+       6. PERFORMANCE
+       ═══════════════════════════════════════════════════ -->
+  <section class="perf-section" style="padding: var(--space-section) 0;">
     <div class="container">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;">
-        <div>
-          <div class="section-label">MCP Server</div>
-          <h2 style="font-family:'Instrument Serif',serif;font-size:clamp(32px,4vw,48px);font-weight:400;color:white;margin-bottom:12px;line-height:1.15;letter-spacing:-0.02em;">Your AI agent's<br><em style="font-style:italic;color:#E0DDD8;">web superpower.</em></h2>
-          <p style="color:#A1A1AA;font-size:16px;max-width:420px;line-height:1.65;margin-bottom:36px;">One command installs 18 powerful web tools into Claude, Cursor, VS Code, Windsurf — any MCP client. Hosted endpoint, no local server needed.</p>
+      <div class="perf-grid">
+        <div class="reveal">
+          <div class="section-eyebrow">PERFORMANCE</div>
+          <h2 class="section-h2">Fast where it counts.</h2>
+          <p style="font-size: 16px; color: var(--text-2); margin: 16px 0 40px; max-width: 440px;">Speed matters for agents running thousands of fetches. WebPeel optimizes every millisecond.</p>
 
-          <div class="mcp-sublabel">18 Tools Available</div>
-          <div class="mcp-tools">
-            <div class="mcp-tool">fetch</div>
-            <div class="mcp-tool">youtube</div>
-            <div class="mcp-tool">quick_answer</div>
-            <div class="mcp-tool">search</div>
-            <div class="mcp-tool">research</div>
-            <div class="mcp-tool">deep_fetch</div>
-            <div class="mcp-tool">extract</div>
-            <div class="mcp-tool">auto_extract</div>
-            <div class="mcp-tool">crawl</div>
-            <div class="mcp-tool">map</div>
-            <div class="mcp-tool">batch</div>
-            <div class="mcp-tool">screenshot</div>
-            <div class="mcp-tool">hotels</div>
-            <div class="mcp-tool">watch</div>
-            <div class="mcp-tool">answer</div>
-            <div class="mcp-tool">summarize</div>
-            <div class="mcp-tool">brand</div>
-            <div class="mcp-tool">change_track</div>
+          <div class="bar-group">
+            <div class="bar-group-title">Content completeness</div>
+            <div class="bar-row"><span class="bar-label" style="font-weight:600;color:var(--text);">WebPeel</span><div class="bar-track"><div class="bar-fill blue" style="width:98%;"></div></div><span class="bar-value">98%</span></div>
+            <div class="bar-row"><span class="bar-label">Firecrawl</span><div class="bar-track"><div class="bar-fill gray" style="width:82%;"></div></div><span class="bar-value">82%</span></div>
+            <div class="bar-row"><span class="bar-label">web_fetch</span><div class="bar-track"><div class="bar-fill gray" style="width:56%;"></div></div><span class="bar-value">56%</span></div>
           </div>
 
-          <div class="mcp-sublabel" style="margin-top:24px;">Works With</div>
-          <div class="mcp-clients">
-            <div class="mcp-client"><span class="mcp-client-dot"></span>Claude Desktop</div>
-            <div class="mcp-client"><span class="mcp-client-dot"></span>Cursor</div>
-            <div class="mcp-client"><span class="mcp-client-dot"></span>VS Code</div>
-            <div class="mcp-client"><span class="mcp-client-dot"></span>Windsurf</div>
-            <div class="mcp-client"><span class="mcp-client-dot"></span>Any MCP client</div>
+          <div class="bar-group">
+            <div class="bar-group-title">Protected site success</div>
+            <div class="bar-row"><span class="bar-label" style="font-weight:600;color:var(--text);">WebPeel</span><div class="bar-track"><div class="bar-fill blue" style="width:99.7%;"></div></div><span class="bar-value">99.7%</span></div>
+            <div class="bar-row"><span class="bar-label">Firecrawl</span><div class="bar-track"><div class="bar-fill gray" style="width:65%;"></div></div><span class="bar-value">65%</span></div>
+            <div class="bar-row"><span class="bar-label">web_fetch</span><div class="bar-track"><div class="bar-fill gray" style="width:35%;"></div></div><span class="bar-value">35%</span></div>
           </div>
-          <a href="/docs/mcp" class="mcp-link">→ Read the MCP setup guide</a>
         </div>
 
-        <div>
-          <div class="mcp-code">
-            <div class="mcp-code-bar">claude_desktop_config.json</div>
-            <pre>{
-  <span style="color:#86EFAC">"mcpServers"</span>: {
-    <span style="color:#86EFAC">"webpeel"</span>: {
-      <span style="color:#86EFAC">"command"</span>: <span style="color:#FDE047">"npx"</span>,
-      <span style="color:#86EFAC">"args"</span>: [<span style="color:#FDE047">"-y"</span>, <span style="color:#FDE047">"webpeel"</span>, <span style="color:#FDE047">"mcp"</span>]
-    }
-  }
-}</pre>
+        <div class="stat-cards reveal">
+          <div class="stat-card">
+            <div class="num">1,322ms</div>
+            <div class="label">avg extraction time</div>
           </div>
-          <div class="mcp-or">— or use the hosted endpoint —</div>
-          <div class="mcp-code">
-            <div class="mcp-code-bar">Hosted MCP (Streamable HTTP)</div>
-            <pre>{
-  <span style="color:#86EFAC">"mcpServers"</span>: {
-    <span style="color:#86EFAC">"webpeel"</span>: {
-      <span style="color:#86EFAC">"url"</span>: <span style="color:#FDE047">"https://api.webpeel.dev/mcp"</span>,
-      <span style="color:#86EFAC">"headers"</span>: {
-        <span style="color:#86EFAC">"Authorization"</span>: <span style="color:#FDE047">"Bearer YOUR_API_KEY"</span>
-      }
-    }
-  }
-}</pre>
+          <div class="stat-card">
+            <div class="num">2-3×</div>
+            <div class="label">more content than web_fetch</div>
           </div>
-          <p style="color:#5A5A55;font-size:13px;margin-top:14px;line-height:1.6;">No local server needed. One URL, instant access to all 18 tools. Works in Claude Desktop, Cursor, VS Code Insiders, and any Streamable HTTP MCP client.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 8: PERFORMANCE (merged benchmarks + code)
-       ═══════════════════════════════════════════════════════════════ -->
-  <section style="padding: 120px 0;">
-    <div class="container">
-      <div style="text-align: center; max-width: 640px; margin: 0 auto 56px;">
-        <p class="section-eyebrow">PERFORMANCE</p>
-        <h2 class="serif" style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(32px, 4vw, 48px); letter-spacing: -0.02em; line-height: 1.15;">The fastest path to any page</h2>
-        <p style="color: var(--text-2); font-size: 16px; margin-top: 12px;">Automatic escalation from simple HTTP to JavaScript rendering to stealth browser. Always the fastest method that works.</p>
-      </div>
-
-      <!-- Benchmark grid -->
-      <div class="benchmark-grid">
-        <article class="benchmark-card">
-          <h3>Success Rate</h3>
-          <p>Successful extraction across 30 real-world URLs including protected sites.</p>
-          <div class="benchmark-bars">
-            <div class="benchmark-row webpeel">
-              <div class="benchmark-label">WebPeel</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 100%;"></div></div>
-              <div class="benchmark-value">100%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Firecrawl</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 93.3%;"></div></div>
-              <div class="benchmark-value">93.3%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Exa</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 93.3%;"></div></div>
-              <div class="benchmark-value">93.3%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">LinkUp</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 93.3%;"></div></div>
-              <div class="benchmark-value">93.3%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Tavily</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 83.3%;"></div></div>
-              <div class="benchmark-value">83.3%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">ScrapingBee</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 80%;"></div></div>
-              <div class="benchmark-value">80%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Jina Reader</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 53%;"></div></div>
-              <div class="benchmark-value">53%</div>
-            </div>
-          </div>
-        </article>
-
-        <article class="benchmark-card">
-          <h3>Quality Score</h3>
-          <p>Content extraction quality — clean markdown, metadata, and links preserved.</p>
-          <div class="benchmark-bars">
-            <div class="benchmark-row webpeel">
-              <div class="benchmark-label">WebPeel</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 92.3%;"></div></div>
-              <div class="benchmark-value">92.3%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Exa</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 83.2%;"></div></div>
-              <div class="benchmark-value">83.2%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">LinkUp</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 81.3%;"></div></div>
-              <div class="benchmark-value">81.3%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Tavily</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 81.2%;"></div></div>
-              <div class="benchmark-value">81.2%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Firecrawl</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 77.9%;"></div></div>
-              <div class="benchmark-value">77.9%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">ScrapingBee</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 74.4%;"></div></div>
-              <div class="benchmark-value">74.4%</div>
-            </div>
-            <div class="benchmark-row">
-              <div class="benchmark-label">Jina Reader</div>
-              <div class="benchmark-track"><div class="benchmark-fill" style="width: 69.1%;"></div></div>
-              <div class="benchmark-value">69.1%</div>
-            </div>
-          </div>
-        </article>
-      </div>
-      <div class="benchmark-methodology">30-URL benchmark · 6 categories · 7 competitors · Run Feb 2026. <a href="/blog/benchmarks" rel="noopener noreferrer">Full methodology &amp; results →</a></div>
-
-      <!-- Code examples (merged from code section) -->
-      <div style="margin-top: 64px;">
-        <div class="code-section">
-          <div class="code-tabs">
-            <div class="code-tab active" data-tab="cli">CLI</div>
-            <div class="code-tab" data-tab="python">Python</div>
-            <div class="code-tab" data-tab="mcp">MCP Config</div>
-            <div class="code-tab" data-tab="typescript">TypeScript</div>
-            <div class="code-tab" data-tab="research">Research</div>
-          </div>
-          <div class="code-body">
-            <pre id="code-content"><span class="hl-cm"># Install globally</span>
-<span class="hl-kw">npm</span> install -g webpeel
-
-<span class="hl-cm"># Fetch any page (auto-escalation: HTTP → browser → stealth)</span>
-<span class="hl-kw">webpeel</span> <span class="hl-str">"https://example.com"</span>
-
-<span class="hl-cm"># Search 27+ sources</span>
-<span class="hl-kw">webpeel</span> search <span class="hl-str">"latest AI agent frameworks"</span>
-
-<span class="hl-cm"># Deep research agent</span>
-<span class="hl-kw">webpeel</span> research <span class="hl-str">"what are the best MCP servers in 2026?"</span>
-
-<span class="hl-cm"># Crawl a full site (BFS, depth 3)</span>
-<span class="hl-kw">webpeel</span> crawl <span class="hl-str">"https://docs.example.com"</span> --depth 3</pre>
+          <div class="stat-card">
+            <div class="num">500+</div>
+            <div class="label">sites tested</div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 9: COMPARISON TABLE
-       ═══════════════════════════════════════════════════════════════ -->
-  <section id="compare" style="background: var(--bg-alt);">
+  <!-- ═══════════════════════════════════════════════════
+       7. PRICING
+       ═══════════════════════════════════════════════════ -->
+  <section id="pricing" style="padding: var(--space-section) 0;">
     <div class="container">
-      <div class="section-header">
-        <div class="section-label">Comparison</div>
-        <h2>Why <em class="serif" style="font-style:italic">WebPeel</em></h2>
-        <p>The only tool that combines MCP, deep research, structured extraction, search, and crawl — in one open-source platform.</p>
-      </div>
-      <div style="overflow-x:auto;">
-      <table class="compare-table">
-        <thead>
-          <tr>
-            <th>Feature</th>
-            <th class="highlight-col">WebPeel</th>
-            <th>Firecrawl</th>
-            <th>Exa</th>
-            <th>Tavily</th>
-            <th>Jina Reader</th>
-            <th>ScrapingBee</th>
-            <th>LinkUp</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><div class="feature-tooltip">Free tier<span class="tooltip-icon">ⓘ<span class="tooltip-text">How many requests you get for free</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span> 500/wk</td>
-            <td>500 credits</td>
-            <td>$10 credit</td>
-            <td>1,000/mo</td>
-            <td>Limited</td>
-            <td>1,000 credits</td>
-            <td>Limited</td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">MCP server (tools)<span class="tooltip-icon">ⓘ<span class="tooltip-text">MCP tools for Claude, Cursor, VS Code, Windsurf</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span> 18 tools</td>
-            <td>~6 tools</td>
-            <td><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="check">✓</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Smart escalation<span class="tooltip-icon">ⓘ<span class="tooltip-text">Auto HTTP → browser → stealth, zero config</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Deep research agent<span class="tooltip-icon">ⓘ<span class="tooltip-text">Multi-hop: search → fetch → analyze → synthesize</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td>Partial</td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Structured extraction<span class="tooltip-icon">ⓘ<span class="tooltip-text">JSON Schema, CSS schema (7 built-in), LLM BYOK</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span> 3 modes</td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td>Partial</td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Web search (27+ sites)<span class="tooltip-icon">ⓘ<span class="tooltip-text">General, shopping, social, tech, jobs, real estate, food</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="check">✓</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Crawl + sitemap<span class="tooltip-icon">ⓘ<span class="tooltip-text">BFS/DFS full-site crawling with depth control</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Browser rendering<span class="tooltip-icon">ⓘ<span class="tooltip-text">Playwright for JS-heavy SPAs and React apps</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span> Auto</td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Stealth mode<span class="tooltip-icon">ⓘ<span class="tooltip-text">Bypass Cloudflare, PerimeterX, DataDome, Akamai</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Hotel search<span class="tooltip-icon">ⓘ<span class="tooltip-text">Kayak, Booking.com, Google Travel, Expedia in parallel</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Python SDK<span class="tooltip-icon">ⓘ<span class="tooltip-text">pip install webpeel — sync + async, zero extra deps</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Async jobs &amp; webhooks<span class="tooltip-icon">ⓘ<span class="tooltip-text">Queue large crawl jobs, get webhook notifications</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td><span class="check">✓</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Open source<span class="tooltip-icon">ⓘ<span class="tooltip-text">Full source under AGPL-3.0 — self-hostable</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span> AGPL-3.0</td>
-            <td>Partial</td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Firecrawl-compatible API<span class="tooltip-icon">ⓘ<span class="tooltip-text">Change one URL — your Firecrawl code works unchanged</span></span></div></td>
-            <td class="highlight-col"><span class="check">✓</span></td>
-            <td>—</td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-            <td><span class="cross">✗</span></td>
-          </tr>
-          <tr>
-            <td><div class="feature-tooltip">Price<span class="tooltip-icon">ⓘ<span class="tooltip-text">Monthly cost for the entry paid tier</span></span></div></td>
-            <td class="highlight-col" style="font-weight:600;color:var(--accent)">Free / $9/mo</td>
-            <td>$16/mo</td>
-            <td>Pay-as-you-go</td>
-            <td>Pay-as-you-go</td>
-            <td>$10/mo</td>
-            <td>$49/mo</td>
-            <td>Pay-as-you-go</td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 10: USE CASES (NEW)
-       ═══════════════════════════════════════════════════════════════ -->
-  <section style="padding: 120px 0; background: var(--bg-alt);">
-    <div class="container">
-      <div style="text-align: center; margin-bottom: 56px;">
-        <p class="section-eyebrow">USE CASES</p>
-        <h2 class="serif" style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(32px, 4vw, 48px); letter-spacing: -0.02em;">Built for what you're building</h2>
-      </div>
-      <div class="use-cases-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
-        <div style="background: var(--surface); border: 1px solid var(--border-card); border-radius: 12px; padding: 32px;">
-          <h3 style="font-size: 20px; font-weight: 500; margin-bottom: 10px;">AI Agents</h3>
-          <p style="font-size: 15px; color: var(--text-2); line-height: 1.6;">Give your agent real-time web access. Fetch pages, extract data, search the web — all through MCP or REST API. Claude, Cursor, and any MCP client supported out of the box.</p>
-        </div>
-        <div style="background: var(--surface); border: 1px solid var(--border-card); border-radius: 12px; padding: 32px;">
-          <h3 style="font-size: 20px; font-weight: 500; margin-bottom: 10px;">Research &amp; Analysis</h3>
-          <p style="font-size: 15px; color: var(--text-2); line-height: 1.6;">Deep research across multiple sources. YouTube transcripts, Reddit threads, news articles, academic papers — structured and ready for your pipeline.</p>
-        </div>
-        <div style="background: var(--surface); border: 1px solid var(--border-card); border-radius: 12px; padding: 32px;">
-          <h3 style="font-size: 20px; font-weight: 500; margin-bottom: 10px;">Data Pipelines</h3>
-          <p style="font-size: 15px; color: var(--text-2); line-height: 1.6;">Automated web data at scale. Scheduled crawls, structured extraction, clean markdown output. No browser infrastructure to manage.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 11: PRICING (simplified — cards only)
-       ═══════════════════════════════════════════════════════════════ -->
-  <section id="pricing">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label">Pricing</div>
-        <h2>Start free,<br><em class="serif" style="font-style:italic">scale when ready.</em></h2>
-        <p>All features on every plan. Only usage limits differ. No feature-gating, ever.</p>
-      </div>
-
-      <div class="free-callout">
-        🎉 <strong>500 free fetches every week</strong> — no credit card, no strings. Includes stealth, crawl, search, extraction, research &amp; MCP. Resets every Monday.
-      </div>
-
-      <div class="pricing-toggle">
-        <div class="toggle-container">
-          <button class="toggle-btn active" id="toggle-monthly">Monthly</button>
-          <button class="toggle-btn" id="toggle-annual">Annual <span style="font-size:11px;color:var(--green);margin-left:4px;">Save 17%</span></button>
-        </div>
+      <div class="pricing-header reveal">
+        <div class="section-eyebrow" style="text-align:center;">PRICING</div>
+        <h2 class="section-h2" style="text-align:center;">Start free. Scale when ready.</h2>
+        <p class="sub">All features on every plan. No feature-gating.</p>
       </div>
 
       <div class="pricing-grid">
-        <div class="price-card">
-          <div class="price-name">Free</div>
-          <div class="price-amount" id="price-free">$0<span>/month</span></div>
-          <div class="price-desc">All features, generous limits. Perfect for personal projects and prototyping.</div>
+        <div class="price-card reveal">
+          <div class="price-plan">Free</div>
+          <div class="price-amount">$0<span class="per">/month</span></div>
+          <div class="price-desc">500 fetches per week</div>
+          <hr class="price-divider">
           <ul class="price-features">
-            <li>500 fetches per week</li>
-            <li>50/hr burst limit</li>
-            <li>Stealth, crawl, batch &amp; search</li>
-            <li>Structured extraction (all 3 modes)</li>
-            <li>MCP server &amp; deep research</li>
-            <li>GitHub Issues support</li>
+            <li>All 18 MCP tools</li>
+            <li>Stealth mode + anti-bot bypass</li>
+            <li>Readability extraction</li>
+            <li>Web search (27+ sources)</li>
+            <li>YouTube transcripts</li>
           </ul>
-          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-secondary">Get started free</a>
+          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-outline">Get Started Free</a>
         </div>
-        <div class="price-card featured">
+
+        <div class="price-card featured reveal">
           <div class="price-badge">Most Popular</div>
-          <div class="price-name">Pro</div>
-          <div class="price-amount" id="price-pro">$9<span>/month</span></div>
-          <div class="price-desc">For developers building production applications and small teams.</div>
+          <div class="price-plan">Pro</div>
+          <div class="price-amount">$9<span class="per">/month</span></div>
+          <div class="price-desc">1,250 fetches per week</div>
+          <hr class="price-divider">
           <ul class="price-features">
-            <li>1,250 fetches per week</li>
-            <li>100/hr burst limit</li>
-            <li>All Free features</li>
-            <li>Priority GitHub support</li>
-            <li>Extra usage credits available</li>
+            <li>Everything in Free</li>
+            <li>Deep research agent</li>
+            <li>Structured extraction (3 modes)</li>
+            <li>Crawl + sitemap generation</li>
+            <li>Priority support</li>
             <li>Webhook notifications</li>
           </ul>
-          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-primary">Upgrade to Pro →</a>
+          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-filled">Upgrade to Pro →</a>
         </div>
-        <div class="price-card">
-          <div class="price-name">Max</div>
-          <div class="price-amount" id="price-max">$29<span>/month</span></div>
-          <div class="price-desc">For production workloads and teams with heavy, ongoing requirements.</div>
+
+        <div class="price-card reveal">
+          <div class="price-plan">Max</div>
+          <div class="price-amount">$29<span class="per">/month</span></div>
+          <div class="price-desc">6,250 fetches per week</div>
+          <hr class="price-divider">
           <ul class="price-features">
-            <li>6,250 fetches per week</li>
+            <li>Everything in Pro</li>
             <li>500/hr burst limit</li>
-            <li>All Pro features</li>
-            <li>Dedicated GitHub support</li>
-            <li>Higher spending caps</li>
             <li>Priority queue</li>
+            <li>Higher spending caps</li>
+            <li>Dedicated support</li>
           </ul>
-          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-secondary">Upgrade to Max →</a>
-        </div>
-      </div>
-
-      <!-- FAQ -->
-      <div class="faq-section">
-        <div class="faq-title">Frequently Asked Questions</div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFAQ(this)"><span>What happens if I exceed my limits?</span><span class="faq-arrow">▼</span></div>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel has two tiers: <strong>hourly burst limits</strong> (hard — returns 429) and <strong>weekly quotas</strong> (soft — degrades to HTTP-only instead of blocking). Hourly resets automatically; weekly resets every Monday. Free has no overages. Pro/Max can add extra credits.</div></div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFAQ(this)"><span>Can I cancel anytime?</span><span class="faq-arrow">▼</span></div>
-          <div class="faq-answer"><div class="faq-answer-inner">Yes, absolutely. No contracts, no commitments. Cancel anytime from your dashboard.</div></div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFAQ(this)"><span>Do you store the pages I fetch?</span><span class="faq-arrow">▼</span></div>
-          <div class="faq-answer"><div class="faq-answer-inner">No. We never store fetched content. We only log metadata (URL, timestamp, response time) for analytics and debugging.</div></div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFAQ(this)"><span>How is WebPeel different from Firecrawl?</span><span class="faq-arrow">▼</span></div>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel has more MCP tools (18 vs ~6), a built-in deep research agent, smart auto-escalation (HTTP → browser → stealth, zero config), YouTube transcript extraction, LLM-free Q&amp;A, domain-aware extractors, 27+ search sources, hotel search, branding extraction, and a more generous free tier. Fully open source under AGPL-3.0. 100% success rate vs Firecrawl's 93.3% in our benchmark.</div></div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFAQ(this)"><span>Is there an enterprise plan?</span><span class="faq-arrow">▼</span></div>
-          <div class="faq-answer"><div class="faq-answer-inner">Yes! Open a <a href="https://github.com/webpeel/webpeel/issues" style="color: var(--accent);">GitHub Issue</a> or email <a href="mailto:support@webpeel.dev" style="color: var(--accent);">support@webpeel.dev</a> for custom pricing and dedicated infrastructure.</div></div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFAQ(this)"><span>Can I self-host instead?</span><span class="faq-arrow">▼</span></div>
-          <div class="faq-answer"><div class="faq-answer-inner">Yes, WebPeel is open source under AGPL-3.0. Install with <code style="background: var(--border-light); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px;">npm install -g webpeel</code> and run your own instance.</div></div>
+          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-outline">Upgrade to Max →</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       SECTION 13: FINAL CTA
-       ═══════════════════════════════════════════════════════════════ -->
-  <section style="background: var(--bg-dark); padding: 120px 0; text-align: center;">
-    <div class="container" style="max-width: 640px;">
-      <h2 style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(32px, 4vw, 48px); letter-spacing: -0.02em; color: #F4F0E8; line-height: 1.15;">Ready to give your AI<br>the entire web?</h2>
-      <p style="color: #A09B93; font-size: 17px; margin: 20px 0 36px; line-height: 1.6;">500 free fetches per week. No credit card required. Install in 30 seconds.</p>
-      <a href="https://app.webpeel.dev/signup" class="btn" style="background: var(--accent); color: #FAF9F7; border-radius: 4px; padding: 14px 32px; font-size: 15px; font-weight: 500;">Get Started Free</a>
+  <!-- ═══════════════════════════════════════════════════
+       8. FAQ
+       ═══════════════════════════════════════════════════ -->
+  <section class="faq-section" style="padding: var(--space-section) 0;">
+    <div class="container-narrow">
+      <div class="reveal" style="text-align: center; margin-bottom: 64px;">
+        <h2 class="section-h2">Questions & answers</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question"><span>What is WebPeel?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel is a web content extraction API built for AI agents. It turns any URL into clean, structured content — markdown, metadata, and structured data — ready for your AI in milliseconds. It handles Cloudflare, JavaScript rendering, and anti-bot detection automatically.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question"><span>How does it handle protected sites?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel auto-escalates through three levels: simple HTTP fetch, headless browser rendering, and stealth mode with CycleTLS fingerprinting and residential proxy rotation. It bypasses Cloudflare, PerimeterX, DataDome, and Akamai with a 99.7% success rate.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question"><span>Is there a free tier?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes. 500 fetches per week, no credit card required. The free tier includes all features — stealth mode, MCP tools, search, extraction, everything. Weekly limits reset every Monday.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question"><span>How does it compare to Firecrawl?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel extracts more content (98% vs 82% completeness), has better protected site success (99.7% vs 65%), includes 18 MCP tools vs ~6, and has a built-in deep research agent. It's also fully open source under AGPL-3.0 and offers a Firecrawl-compatible API for easy migration.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question"><span>Can I self-host?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes. WebPeel is open source under AGPL-3.0. Install the CLI with <code style="background:var(--border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:13px;">npm install -g webpeel</code> and run your own MCP server locally for unlimited usage.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question"><span>What formats does it return?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">Markdown (default), plain text, raw HTML, and structured JSON via schema extraction. You can use JSON Schema for precise field extraction, built-in CSS schemas for common page types, or LLM extraction with your own API key.</div></div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       FOOTER
-       ═══════════════════════════════════════════════════════════════ -->
-  <footer>
+  <!-- ═══════════════════════════════════════════════════
+       9. FINAL CTA + FOOTER
+       ═══════════════════════════════════════════════════ -->
+  <section class="final-cta">
+    <div class="container" style="max-width: 600px;">
+      <h2>Ready to give your AI the web?</h2>
+      <p class="sub">Start with 500 free fetches. No credit card required.</p>
+      <div class="install-card">
+        <code id="install-cmd">curl -fsSL https://webpeel.dev/install.sh | bash</code>
+        <button class="install-copy-btn" id="install-copy">Copy</button>
+      </div>
+      <br>
+      <a href="https://app.webpeel.dev/signup" class="btn-primary" style="margin-top: 8px;">Get Started Free →</a>
+    </div>
+  </section>
+
+  <footer class="footer">
     <div class="container">
       <div class="footer-grid">
-        <div class="footer-brand">
-          <div class="footer-brand-logo">
-            <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
-            WebPeel
-          </div>
-          <p>The web data platform for AI agents. MCP server, deep research, structured extraction, and smart escalation — in one open-source package.</p>
-          <div class="footer-brand-meta">AGPL-3.0 licensed · Made with ♥ by Jake Liu</div>
+        <div>
+          <div class="footer-brand"><span class="diamond">◆</span> WebPeel</div>
+          <p class="footer-tagline">Web extraction for AI agents</p>
         </div>
         <div class="footer-col">
           <h4>Product</h4>
-          <a href="/#mcp">MCP Server</a>
-          <a href="/#features">Features</a>
-          <a href="/#compare">Compare</a>
-          <a href="/pricing">Pricing</a>
-          <a href="/changelog">Changelog</a>
+          <a href="/docs/">CLI</a>
+          <a href="/docs/api-reference">API</a>
+          <a href="/docs/mcp">MCP</a>
+          <a href="https://app.webpeel.dev">Dashboard</a>
         </div>
         <div class="footer-col">
-          <h4>Developers</h4>
-          <a href="/docs/">Documentation</a>
-          <a href="/docs/mcp">MCP Setup</a>
-          <a href="/docs/api-reference">API Reference</a>
+          <h4>Resources</h4>
+          <a href="/docs/">Docs</a>
           <a href="/blog/">Blog</a>
-          <a href="/blog/benchmarks">Benchmarks</a>
-          <a href="https://github.com/webpeel/webpeel">GitHub</a>
+          <a href="/changelog">Changelog</a>
+          <a href="/status">Status</a>
         </div>
         <div class="footer-col">
           <h4>Company</h4>
-          <a href="https://app.webpeel.dev">Dashboard</a>
-          <a href="/status">Status</a>
-          <a href="https://github.com/webpeel/webpeel/issues">Support</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-          <a href="/acceptable-use">Acceptable Use</a>
+          <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://discord.gg/webpeel">Discord</a>
+          <a href="mailto:support@webpeel.dev">Contact</a>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>© 2026 WebPeel. Open source under AGPL-3.0.</p>
-        <div class="footer-bottom-links">
-          <a href="/privacy">Privacy</a>
+        <p>© 2026 WebPeel</p>
+        <div>
           <a href="/terms">Terms</a>
-          <a href="/acceptable-use">Acceptable Use</a>
+          <a href="/privacy">Privacy</a>
         </div>
       </div>
     </div>
   </footer>
 
+  <!-- ═══════════════════════════════════════════════════
+       SCRIPTS — All enhancement, nothing gates content
+       ═══════════════════════════════════════════════════ -->
   <script>
-    // MOBILE MENU
-    function toggleMobileMenu() {
-      const menu = document.getElementById('mobile-menu');
-      menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-    }
-    document.addEventListener('click', function(event) {
-      const menu = document.getElementById('mobile-menu');
-      const hamburger = document.querySelector('.nav-hamburger');
-      if (menu.style.display === 'flex' && !menu.contains(event.target) && !hamburger.contains(event.target)) {
-        menu.style.display = 'none';
+    /* Nav scroll background */
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    /* Mobile hamburger menu */
+    const hamburger = document.getElementById('hamburger-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    hamburger.addEventListener('click', () => {
+      mobileMenu.classList.toggle('open');
+    });
+    mobileMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => mobileMenu.classList.remove('open'));
+    });
+    document.addEventListener('click', (e) => {
+      if (!mobileMenu.contains(e.target) && !hamburger.contains(e.target)) {
+        mobileMenu.classList.remove('open');
       }
     });
 
-    // GITHUB STARS
-    (async function loadGitHubStars() {
-      const cached = localStorage.getItem('wp-stars');
-      const cacheTime = localStorage.getItem('wp-stars-time');
-      const ONE_HOUR = 3600000;
-      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < ONE_HOUR) {
-        updateStarCount(parseInt(cached));
-        return;
-      }
-      try {
-        const res = await fetch('https://api.github.com/repos/webpeel/webpeel');
-        if (res.ok) {
-          const data = await res.json();
-          const stars = data.stargazers_count;
-          localStorage.setItem('wp-stars', String(stars));
-          localStorage.setItem('wp-stars-time', String(Date.now()));
-          updateStarCount(stars);
-        }
-      } catch {}
-    })();
-
-    function updateStarCount(count) {
-      const el = document.getElementById('star-count');
-      if (el) el.textContent = '· ' + (count >= 1000 ? (count / 1000).toFixed(1) + 'k' : count);
-      const statsEl = document.getElementById('github-stars');
-      if (statsEl && count > 0) {
-        statsEl.textContent = count;
-        statsEl.setAttribute('data-target', String(count));
-      }
-    }
-
-    // CODE TAB SWITCHING
-    const codeTabs = document.querySelectorAll('.code-tab');
-    const codeContent = document.getElementById('code-content');
-
-    const codeExamples = {
-      cli: `<span class="hl-cm"># Install globally</span>
-<span class="hl-kw">npm</span> install -g webpeel
-
-<span class="hl-cm"># Fetch any page (auto-escalation: HTTP → browser → stealth)</span>
-<span class="hl-kw">webpeel</span> <span class="hl-str">"https://example.com"</span>
-
-<span class="hl-cm"># Search 27+ sources</span>
-<span class="hl-kw">webpeel</span> search <span class="hl-str">"latest AI agent frameworks"</span>
-
-<span class="hl-cm"># Deep research agent</span>
-<span class="hl-kw">webpeel</span> research <span class="hl-str">"what are the best MCP servers in 2026?"</span>
-
-<span class="hl-cm"># Crawl a full site (BFS, depth 3)</span>
-<span class="hl-kw">webpeel</span> crawl <span class="hl-str">"https://docs.example.com"</span> --depth 3`,
-      python: `<span class="hl-cm"># Install via pip (zero extra dependencies)</span>
-<span class="hl-kw">pip install</span> webpeel
-
-<span class="hl-kw">from</span> webpeel <span class="hl-kw">import</span> <span class="hl-fn">WebPeel</span>
-
-client = <span class="hl-fn">WebPeel</span>()
-
-<span class="hl-cm"># Fetch any page — auto-escalates as needed</span>
-result = client.<span class="hl-fn">scrape</span>(<span class="hl-str">"https://example.com"</span>)
-<span class="hl-kw">print</span>(result.markdown)
-
-<span class="hl-cm"># Structured extraction with JSON Schema</span>
-data = client.<span class="hl-fn">extract</span>(<span class="hl-str">"https://shop.example.com"</span>,
-    schema={<span class="hl-str">"price"</span>: <span class="hl-str">"number"</span>, <span class="hl-str">"name"</span>: <span class="hl-str">"string"</span>})`,
-      mcp: `<span class="hl-cm">// Add to your Claude/Cursor MCP config</span>
-{
-  <span class="hl-str">"mcpServers"</span>: {
-    <span class="hl-str">"webpeel"</span>: {
-      <span class="hl-str">"command"</span>: <span class="hl-str">"npx"</span>,
-      <span class="hl-str">"args"</span>: [<span class="hl-str">"-y"</span>, <span class="hl-str">"webpeel"</span>, <span class="hl-str">"mcp"</span>]
-    }
-  }
-}
-
-<span class="hl-cm">// Or use the hosted endpoint (no local install)</span>
-{
-  <span class="hl-str">"mcpServers"</span>: {
-    <span class="hl-str">"webpeel"</span>: {
-      <span class="hl-str">"url"</span>: <span class="hl-str">"https://api.webpeel.dev/mcp"</span>,
-      <span class="hl-str">"headers"</span>: { <span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer YOUR_KEY"</span> }
-    }
-  }
-}`,
-      typescript: `<span class="hl-kw">import</span> { <span class="hl-fn">peel</span>, <span class="hl-fn">search</span>, <span class="hl-fn">crawl</span> } <span class="hl-kw">from</span> <span class="hl-str">'webpeel'</span>;
-
-<span class="hl-cm">// Fetch any page — auto-escalates as needed</span>
-<span class="hl-kw">const</span> page = <span class="hl-kw">await</span> <span class="hl-fn">peel</span>(<span class="hl-str">'https://example.com'</span>);
-console.<span class="hl-fn">log</span>(page.markdown);
-
-<span class="hl-cm">// Search 27+ sources</span>
-<span class="hl-kw">const</span> results = <span class="hl-kw">await</span> <span class="hl-fn">search</span>(<span class="hl-str">'best AI tools 2026'</span>);
-
-<span class="hl-cm">// Crawl a full site</span>
-<span class="hl-kw">const</span> pages = <span class="hl-kw">await</span> <span class="hl-fn">crawl</span>(<span class="hl-str">'https://docs.example.com'</span>, { depth: 3 });`,
-      research: `<span class="hl-cm"># Deep research via CLI — streaming output</span>
-<span class="hl-kw">webpeel</span> research <span class="hl-str">"what are the best AI coding agents?"</span>
-
-<span class="hl-cm"># Via Python SDK with streaming + depth control</span>
-<span class="hl-kw">from</span> webpeel <span class="hl-kw">import</span> <span class="hl-fn">WebPeel</span>
-
-client = <span class="hl-fn">WebPeel</span>()
-
-<span class="hl-cm"># Multi-hop: search → fetch → analyze → follow links → synthesize</span>
-<span class="hl-kw">for</span> chunk <span class="hl-kw">in</span> client.<span class="hl-fn">research</span>(
-    <span class="hl-str">"compare the top MCP server implementations"</span>,
-    depth=<span class="hl-str">3</span>,
-    stream=<span class="hl-kw">True</span>
-):
-    <span class="hl-kw">print</span>(chunk, end=<span class="hl-str">""</span>, flush=<span class="hl-kw">True</span>)
-
-<span class="hl-cm"># Returns cited report with [1][2] references</span>`
-    };
-
-    codeTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        codeTabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const tabName = tab.getAttribute('data-tab');
-        if (tabName && codeExamples[tabName]) {
-          codeContent.innerHTML = codeExamples[tabName];
-        }
+    /* FAQ accordion — only one open at a time */
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.parentElement;
+        const wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!wasOpen) item.classList.add('open');
       });
     });
 
-    // ANIMATED TERMINAL
-    const terminalDemos = [
-      {
-        command: 'webpeel "https://news.ycombinator.com"',
-        output: [
-          '<div class="terminal-line visible"><span class="t-success">✓</span> <span class="t-dim">Done in 118ms</span> <span class="t-badge t-badge-http">HTTP</span></div>',
-          '<div class="terminal-output"><div class="terminal-line visible"><span class="t-accent"># Hacker News</span></div><div class="terminal-line visible"><span class="t-result">Latest news on tech, startups, and programming...</span></div><div class="terminal-line visible"><span class="t-result">Clean markdown ready for your AI agent.</span></div></div>'
-        ]
-      },
-      {
-        command: 'webpeel "https://protected-site.com" --stealth',
-        output: [
-          '<div class="terminal-line visible"><span class="t-success">✓</span> <span class="t-dim">Done in 2.3s</span> <span class="t-badge t-badge-stealth">STEALTH</span></div>',
-          '<div class="terminal-output"><div class="terminal-line visible"><span class="t-accent"># Protected Content</span></div><div class="terminal-line visible"><span class="t-result">Bypassed bot detection. Extracted full article...</span></div><div class="terminal-line visible"><span class="t-result">Clean markdown ready for your AI agent.</span></div></div>'
-        ]
-      },
-      {
-        command: 'webpeel research "best MCP servers in 2026"',
-        output: [
-          '<div class="terminal-line visible"><span class="t-accent">🧠 Research Agent starting...</span> <span class="t-badge t-badge-research">RESEARCH</span></div>',
-          '<div class="terminal-output"><div class="terminal-line visible"><span class="t-dim">→ Searched 8 sources, fetched 12 pages</span></div><div class="terminal-line visible"><span class="t-dim">→ Following 4 relevant links...</span></div><div class="terminal-line visible"><span class="t-success">✓ Synthesized 3,200-word report · 15 citations</span></div></div>'
-        ]
-      },
-      {
-        command: 'webpeel search "latest AI frameworks 2026"',
-        output: [
-          '<div class="terminal-line visible"><span class="t-success">✓</span> <span class="t-dim">Done in 340ms</span> <span class="t-badge t-badge-search">SEARCH</span></div>',
-          '<div class="terminal-output"><div class="terminal-line visible"><span class="t-result">1. LangChain 0.3 - Next-gen AI orchestration</span></div><div class="terminal-line visible"><span class="t-result">2. AutoGPT v2 - Autonomous AI agents</span></div><div class="terminal-line visible"><span class="t-result">3. OpenAI GPT-5 - Latest language model</span></div></div>'
-        ]
-      }
-    ];
-
-    let currentDemo = 0;
-    const typingSpeed = 25;
-
-    async function typeText(element, text, speed) {
-      element.innerHTML = '';
-      for (let i = 0; i < text.length; i++) {
-        element.innerHTML = text.substring(0, i + 1) + '<span class="t-cursor">▎</span>';
-        await new Promise(resolve => setTimeout(resolve, speed));
-      }
-      element.innerHTML = text;
-    }
-
-    async function runTerminalDemo() {
-      const terminalBody = document.getElementById('terminal-body');
-      const demo = terminalDemos[currentDemo];
-      terminalBody.innerHTML = '';
-
-      const promptLine = document.createElement('div');
-      promptLine.className = 'terminal-line visible';
-      promptLine.innerHTML = '<span class="t-prompt">$ </span>';
-      terminalBody.appendChild(promptLine);
-
-      await typeText(promptLine, `<span class="t-prompt">$ </span><span class="t-cmd">${demo.command}</span>`, typingSpeed);
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      for (const line of demo.output) {
-        await new Promise(resolve => setTimeout(resolve, 150));
-        const outputLine = document.createElement('div');
-        outputLine.innerHTML = line;
-        outputLine.style.opacity = '0';
-        terminalBody.appendChild(outputLine);
-        await new Promise(resolve => setTimeout(resolve, 50));
-        outputLine.style.transition = 'opacity 0.3s';
-        outputLine.style.opacity = '1';
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      currentDemo = (currentDemo + 1) % terminalDemos.length;
-      runTerminalDemo();
-    }
-
-    window.addEventListener('load', () => {
-      setTimeout(runTerminalDemo, 500);
-    });
-
-    // NO scroll reveal — content MUST be visible without JS. Period.
-    // Learned this lesson THREE TIMES now. Never set opacity:0 via JS.
-
-    // Stats counter animation
-    const counterObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const num = entry.target;
-          num.classList.add('visible');
-          const targetAttr = num.getAttribute('data-target');
-          if (targetAttr) {
-            const target = parseInt(targetAttr, 10);
-            if (!Number.isNaN(target)) animateCounter(num, target);
-          }
-          counterObserver.unobserve(num);
-        }
-      });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('.stat-num').forEach(num => counterObserver.observe(num));
-
-    function animateCounter(element, target) {
-      if (element.dataset.animated) return;
-      element.dataset.animated = 'true';
-      const duration = 1500;
-      const increment = target / (duration / 16);
-      let current = 0;
-      const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-          element.textContent = target;
-          clearInterval(timer);
-        } else {
-          element.textContent = Math.floor(current);
-        }
-      }, 16);
-    }
-
-    // PRICING TOGGLE
-    const toggleMonthly = document.getElementById('toggle-monthly');
-    const toggleAnnual = document.getElementById('toggle-annual');
-    const priceFree = document.getElementById('price-free');
-    const pricePro = document.getElementById('price-pro');
-    const priceMax = document.getElementById('price-max');
-
-    toggleMonthly.addEventListener('click', () => {
-      toggleMonthly.classList.add('active');
-      toggleAnnual.classList.remove('active');
-      priceFree.innerHTML = '$0<span>/month</span>';
-      pricePro.innerHTML = '$9<span>/month</span>';
-      priceMax.innerHTML = '$29<span>/month</span>';
-    });
-
-    toggleAnnual.addEventListener('click', () => {
-      toggleAnnual.classList.add('active');
-      toggleMonthly.classList.remove('active');
-      priceFree.innerHTML = '$0<span>/year</span>';
-      pricePro.innerHTML = '$90<span>/year</span><span class="price-save">Save $18</span>';
-      priceMax.innerHTML = '$290<span>/year</span><span class="price-save">Save $58</span>';
-    });
-
-    // FAQ TOGGLE
-    function toggleFAQ(element) {
-      const faqItem = element.parentElement;
-      const isOpen = faqItem.classList.contains('open');
-      document.querySelectorAll('.faq-item').forEach(item => item.classList.remove('open'));
-      if (!isOpen) faqItem.classList.add('open');
-    }
-
-    // Install OS tab switching
-    window.switchInstallOS = function(os, tab) {
-      document.querySelectorAll('.install-os-tab').forEach(function(t) { t.classList.remove('active'); });
-      tab.classList.add('active');
-      document.getElementById('install-os-unix').style.display = os === 'unix' ? '' : 'none';
-      document.getElementById('install-os-win').style.display = os === 'win' ? '' : 'none';
-    };
-
-    // Copy install command
-    window.copyInstall = function(text, btn) {
-      navigator.clipboard.writeText(text).then(function() {
-        var orig = btn.innerHTML;
-        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
-        btn.classList.add('copied');
-        setTimeout(function() { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
-      }).catch(function() {
-        var ta = document.createElement('textarea');
+    /* Copy button on install command */
+    document.getElementById('install-copy').addEventListener('click', function() {
+      const text = document.getElementById('install-cmd').textContent;
+      const btn = this;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
         ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
         document.body.appendChild(ta); ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
       });
-    };
-  </script>
+    });
 
+    /* Scroll reveal — IntersectionObserver, content always visible */
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
 </body>
 </html>
