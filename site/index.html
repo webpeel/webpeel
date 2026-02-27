@@ -105,7 +105,7 @@
     .hero-eyebrow { display: inline-flex; align-items: center; background: var(--accent-light); color: var(--accent); font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 100px; margin-bottom: 28px; letter-spacing: 0.01em; }
     .hero h1 { font-family: var(--font-display); font-size: var(--text-hero); font-weight: 400; line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 28px; }
     .hero h1 .accent { color: var(--accent); }
-    .hero-sub { font-size: 20px; font-weight: 400; color: var(--text-2); line-height: 1.6; max-width: 520px; margin: 0 auto 36px; }
+    .hero-sub { font-size: 20px; font-weight: 400; color: #52524E; line-height: 1.6; max-width: 520px; margin: 0 auto 36px; }
     .hero-ctas { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
     .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 500; padding: 14px 32px; border-radius: 8px; border: none; transition: opacity var(--transition-fast); }
     .btn-primary:hover { opacity: 0.85; color: #fff; }
@@ -148,7 +148,7 @@
     .works-with { padding: 0 0 var(--space-section) 0; text-align: center; }
     .works-with-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 24px; }
     .works-with-logos { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
-    .works-with-logos span { font-size: 15px; font-weight: 500; color: var(--text-3); opacity: 0.6; }
+    .works-with-logos span { font-size: 14px; font-weight: 600; color: var(--text-2); opacity: 0.5; letter-spacing: 0.02em; }
     @media (max-width: 768px) {
       .works-with-logos { gap: 24px; }
     }
@@ -177,19 +177,22 @@
     .superpower .section-eyebrow { color: #60A5FA; }
     .superpower .section-h2 { color: #fff; line-height: 1.05; }
     .superpower .accent { color: #60A5FA; }
-    .superpower-body { font-size: 20px; color: rgba(255,255,255,0.7); max-width: 560px; line-height: 1.7; margin-top: 32px; }
-    .stats-row { display: flex; gap: 48px; margin-top: 64px; align-items: center; justify-content: center; flex-wrap: wrap; }
-    .stats-row .stat { text-align: center; }
-    .stats-row .stat-num { font-size: clamp(64px, 8vw, 108px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
-    .stats-row .stat-label { font-size: 16px; color: rgba(255,255,255,0.6); margin-top: 10px; font-weight: 500; }
-    .stats-divider { width: 1px; height: 56px; background: rgba(255,255,255,0.15); }
+    .superpower-body { font-size: 20px; color: rgba(255,255,255,0.75); max-width: 560px; line-height: 1.7; margin-top: 24px; }
+    .superpower-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .stats-row { display: flex; gap: 40px; flex-direction: column; }
+    .stats-row .stat { text-align: left; }
+    .stats-row .stat-num { font-size: clamp(56px, 7vw, 96px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
+    .stats-row .stat-label { font-size: 15px; color: rgba(255,255,255,0.5); margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+    .stat-divider-h { width: 100%; height: 1px; background: rgba(255,255,255,0.1); }
     @media (max-width: 768px) {
-      .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-      .stats-divider { display: none; }
-      .stats-row .stat-num { font-size: clamp(56px, 16vw, 80px); }
+      .superpower-inner { grid-template-columns: 1fr; gap: 48px; }
+      .stats-row { flex-direction: row; flex-wrap: wrap; gap: 32px; }
+      .stats-row .stat { flex: 1; min-width: 100px; }
+      .stat-divider-h { display: none; }
+      .stats-row .stat-num { font-size: clamp(48px, 14vw, 72px); }
     }
     @media (max-width: 480px) {
-      .stats-row { grid-template-columns: 1fr; gap: 32px; }
+      .stats-row .stat-num { font-size: clamp(40px, 12vw, 64px); }
     }
 
     /* ── 6. FEATURES (stacked, alternating) ──────────── */
@@ -424,27 +427,29 @@
   <!-- ═══════════════════════════════════════════════════
        5. THE SUPERPOWER — dark section
        ═══════════════════════════════════════════════════ -->
-  <section class="superpower" style="padding: clamp(140px, 16vw, 220px) 0;">
+  <section class="superpower" style="padding: clamp(120px, 14vw, 180px) 0;">
     <div class="container">
-      <div class="reveal">
-        <div class="section-eyebrow">THE DIFFERENCE</div>
-        <h2 class="section-h2">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
-        <p class="superpower-body">Cloudflare blocks? We bypass them. JavaScript renders? We execute it. Anti-bot detection? We evade it. WebPeel doesn't just request pages — it gets through.</p>
-      </div>
-      <div class="stats-row reveal">
-        <div class="stat">
-          <div class="stat-num" data-count="99.7" data-suffix="%">99.7%</div>
-          <div class="stat-label">bypass rate</div>
+      <div class="superpower-inner">
+        <div class="reveal">
+          <div class="section-eyebrow">THE DIFFERENCE</div>
+          <h2 class="section-h2">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
+          <p class="superpower-body">Cloudflare blocks? We bypass them. JavaScript renders? We execute it. Anti-bot detection? We evade it. WebPeel doesn't just request pages — it gets through.</p>
         </div>
-        <div class="stats-divider"></div>
-        <div class="stat">
-          <div class="stat-num" data-count="50" data-suffix="ms">50ms</div>
-          <div class="stat-label">avg response</div>
-        </div>
-        <div class="stats-divider"></div>
-        <div class="stat">
-          <div class="stat-num" data-count="18" data-suffix="">18</div>
-          <div class="stat-label">MCP tools</div>
+        <div class="stats-row reveal">
+          <div class="stat">
+            <div class="stat-num" data-count="99.7" data-suffix="%">99.7%</div>
+            <div class="stat-label">bypass rate</div>
+          </div>
+          <div class="stat-divider-h"></div>
+          <div class="stat">
+            <div class="stat-num" data-count="50" data-suffix="ms">50ms</div>
+            <div class="stat-label">avg response</div>
+          </div>
+          <div class="stat-divider-h"></div>
+          <div class="stat">
+            <div class="stat-num" data-count="18" data-suffix="">18</div>
+            <div class="stat-label">MCP tools</div>
+          </div>
         </div>
       </div>
     </div>
