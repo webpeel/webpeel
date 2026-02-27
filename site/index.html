@@ -126,8 +126,8 @@
     .hero-ctas { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
     .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 500; padding: 14px 32px; border-radius: 8px; border: none; transition: opacity var(--transition-fast); }
     .btn-primary:hover { opacity: 0.85; color: #fff; }
-    .btn-text { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; color: var(--text); padding: 14px 28px; border-radius: 8px; border: 1.5px solid rgba(0,0,0,0.14); background: transparent; transition: background var(--transition-fast), border-color var(--transition-fast); }
-    .btn-text:hover { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.22); color: var(--text); }
+    .btn-text { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; color: var(--text); padding: 14px 28px; border-radius: 8px; border: 1.5px solid rgba(0,0,0,0.22); background: rgba(255,255,255,0.5); transition: background var(--transition-fast), border-color var(--transition-fast); }
+    .btn-text:hover { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.35); color: var(--text); }
     .hero-trust { font-size: 14px; color: var(--text-3); margin-top: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
     .hero-trust-dot { color: var(--border); }
     .hero-terminal { max-width: 860px; margin: 64px auto 0; background: var(--bg-dark); border-radius: 16px; overflow: hidden; text-align: left; position: relative;
@@ -151,7 +151,7 @@
       .hero { padding: 100px 0 60px; }
       .hero-ctas { flex-direction: column; align-items: stretch; gap: 12px; }
       .hero-ctas .btn-primary { width: 100%; justify-content: center; padding: 16px 28px; }
-      .hero-ctas .btn-text { width: 100%; text-align: center; display: block; padding: 14px 28px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.03); }
+      .hero-ctas .btn-text { width: 100%; text-align: center; display: block; padding: 14px 28px; border: 1.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: rgba(255,255,255,0.6); }
       .hero-terminal { max-height: 280px; overflow: hidden; position: relative; }
       .hero-terminal::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 72px; background: linear-gradient(to bottom, transparent, #0F172A); border-radius: 0 0 16px 16px; pointer-events: none; }
       .terminal-content { font-size: 12px; padding: 16px; }
@@ -164,11 +164,11 @@
     }
 
     /* ── SOCIAL PROOF STRIP ────────────────────────────── */
-    .social-proof-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 28px 0; background: var(--bg); }
+    .social-proof-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 32px 0; background: rgba(255,255,255,0.4); }
     .social-proof-inner { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; }
-    .social-proof-stat { display: flex; flex-direction: column; align-items: center; padding: 8px 32px; text-align: center; }
-    .social-proof-stat strong { font-size: 15px; font-weight: 600; color: var(--text); }
-    .social-proof-stat span { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+    .social-proof-stat { display: flex; flex-direction: column; align-items: center; padding: 8px 36px; text-align: center; }
+    .social-proof-stat strong { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .social-proof-stat span { font-size: 13px; color: var(--text-2); margin-top: 3px; }
     .social-proof-divider { width: 1px; height: 36px; background: var(--border); flex-shrink: 0; }
     @media (max-width: 768px) {
       .social-proof-inner { gap: 0; }
@@ -210,7 +210,7 @@
     .superpower .section-h2 { color: #fff; line-height: 1.05; }
     .superpower .accent { color: #8B94F7; }
     .superpower-body { font-size: 20px; color: rgba(255,255,255,0.75); max-width: 560px; line-height: 1.7; margin-top: 24px; hyphens: none; -webkit-hyphens: none; }
-    .superpower-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+    .superpower-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
     .stats-row { display: flex; gap: 40px; flex-direction: column; }
     .stats-row .stat { text-align: left; }
     .stats-row .stat-num { font-size: clamp(56px, 7vw, 96px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
@@ -287,8 +287,8 @@
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; }
     .price-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 36px; position: relative; transition: transform 200ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo); }
     .price-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
-    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.02); }
-    .price-card.featured:hover { transform: scale(1.02) translateY(-4px); box-shadow: 0 4px 12px rgba(88,101,242,0.15), 0 12px 32px rgba(0,0,0,0.08); }
+    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.04); background: #FAFAFE; box-shadow: 0 4px 16px rgba(88,101,242,0.12), 0 12px 40px rgba(0,0,0,0.06); }
+    .price-card.featured:hover { transform: scale(1.04) translateY(-4px); box-shadow: 0 8px 24px rgba(88,101,242,0.18), 0 16px 48px rgba(0,0,0,0.1); }
     .price-badge { position: absolute; top: -12px; right: 24px; display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
     .price-plan { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 8px; }
     .price-amount { font-size: 40px; font-weight: 600; color: var(--text); }
@@ -510,25 +510,26 @@
         <div class="reveal">
           <div class="section-eyebrow">THE DIFFERENCE</div>
           <h2 class="section-h2">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
-          <p class="superpower-body">Cloudflare blocks? We bypass them. JavaScript renders? We execute it. Anti&#8209;bot detection? We evade it. WebPeel doesn't just request pages — it gets through.</p>
+          <p class="superpower-body">JavaScript&#8209;heavy SPAs, bot&#8209;protected pages, dynamic content — handled automatically. WebPeel escalates from simple HTTP to full browser rendering as needed, so your agent always gets the content.</p>
         </div>
         <div class="stats-row reveal">
           <div class="stat">
             <div class="stat-num" data-count="99.7" data-suffix="%">99.7%</div>
-            <div class="stat-label">bypass rate</div>
+            <div class="stat-label">success rate*</div>
           </div>
           <div class="stat-divider-h"></div>
           <div class="stat">
             <div class="stat-num" data-count="50" data-suffix="ms">50ms</div>
-            <div class="stat-label">avg response</div>
+            <div class="stat-label">API response</div>
           </div>
           <div class="stat-divider-h"></div>
           <div class="stat">
             <div class="stat-num" data-count="500" data-suffix="+">500+</div>
-            <div class="stat-label">sites tested</div>
+            <div class="stat-label">domains tested</div>
           </div>
         </div>
       </div>
+      <p style="font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 32px; text-align: center;">*Measured across internal benchmark suite including Cloudflare, PerimeterX, and DataDome protected sites</p>
     </div>
   </section>
 
@@ -577,20 +578,20 @@
       <div class="feature-block flipped reveal" style="margin-bottom: 120px;">
         <div class="feature-text">
           <div class="feature-num">02</div>
-          <h3>Gets through when others get blocked.</h3>
-          <p class="desc">CycleTLS fingerprinting, stealth browser, residential proxy rotation. Sites that return 403 to everyone else return content to you.</p>
+          <h3>Handles what others can't.</h3>
+          <p class="desc">Smart escalation from simple HTTP to full browser rendering. JavaScript-heavy pages, dynamic content, and protected sites — your agent gets the content every time.</p>
           <ul class="feature-checks">
-            <li>Cloudflare, PerimeterX, DataDome bypass</li>
+            <li>Handles JS rendering, SPAs, dynamic content</li>
             <li>Auto-escalation: HTTP → browser → stealth</li>
-            <li>Zero configuration required</li>
+            <li>99.7% success rate, zero configuration</li>
           </ul>
         </div>
         <div class="feature-visual">
           <div class="feature-card-dark">
-            <div><span class="t-prompt">$</span> <span style="color:#E2E8F0;">webpeel "https://protected-site.com"</span></div>
-            <div style="color:#F59E0B;">⚡ Cloudflare detected → stealth mode</div>
+            <div><span class="t-prompt">$</span> <span style="color:#E2E8F0;">webpeel "https://example.com/dynamic-page"</span></div>
+            <div style="color:#F59E0B;">⚡ JS rendering required → browser mode</div>
             <div style="color:#94A3B8;">  Fingerprint: TLS 1.3 + Chrome 121</div>
-            <div style="color:#94A3B8;">  Proxy: residential-us-east</div>
+            <div style="color:#94A3B8;">  Mode: headless Chrome 121</div>
             <div style="color:#22C55E;">✓ 2,847 words extracted (1.2s)</div>
           </div>
         </div>
@@ -742,7 +743,7 @@
         </div>
         <div class="faq-item">
           <button class="faq-question"><span>How does it handle protected sites?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel auto-escalates through three levels: simple HTTP fetch, headless browser rendering, and stealth mode with CycleTLS fingerprinting and residential proxy rotation. It bypasses Cloudflare, PerimeterX, DataDome, and Akamai with a 99.7% success rate.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel auto-escalates through three levels: simple HTTP fetch, headless browser rendering, and advanced stealth mode. It handles JavaScript-heavy pages, dynamic content, and protected sites with a 99.7% content retrieval success rate across 500+ tested domains.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question"><span>Is there a free tier?</span><span class="faq-icon">+</span></button>
