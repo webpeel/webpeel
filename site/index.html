@@ -287,8 +287,8 @@
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; }
     .price-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 36px; position: relative; transition: transform 200ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo); }
     .price-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
-    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.04); background: #FAFAFE; box-shadow: 0 4px 16px rgba(88,101,242,0.12), 0 12px 40px rgba(0,0,0,0.06); }
-    .price-card.featured:hover { transform: scale(1.04) translateY(-4px); box-shadow: 0 8px 24px rgba(88,101,242,0.18), 0 16px 48px rgba(0,0,0,0.1); }
+    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.04); background: #F0F1FE; box-shadow: 0 4px 16px rgba(88,101,242,0.15), 0 12px 40px rgba(0,0,0,0.08); }
+    .price-card.featured:hover { transform: scale(1.04) translateY(-4px); box-shadow: 0 8px 24px rgba(88,101,242,0.22), 0 16px 48px rgba(0,0,0,0.1); }
     .price-badge { position: absolute; top: -12px; right: 24px; display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
     .price-plan { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 8px; }
     .price-amount { font-size: 40px; font-weight: 600; color: var(--text); }
@@ -402,11 +402,11 @@
           <a href="/docs/" class="btn-text">View Docs</a>
         </div>
         <div class="hero-trust hero-anim" data-hero="4">
-          <span>Free forever</span>
+          <a href="https://app.webpeel.dev/signup" style="color:inherit;">Free forever</a>
           <span class="hero-trust-dot">·</span>
-          <span>No credit card</span>
+          <a href="https://app.webpeel.dev/signup" style="color:inherit;">No credit card</a>
           <span class="hero-trust-dot">·</span>
-          <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener" style="color:inherit; text-decoration: underline; text-underline-offset: 3px;">Open source ↗</a>
+          <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener" style="color:inherit;">Open source</a>
         </div>
       </div>
       <div class="hero-terminal hero-anim" data-hero="5">
@@ -488,8 +488,8 @@
         <div class="how-step reveal">
           <div class="how-step-num">02</div>
           <h3>Fetch</h3>
-          <p>Send any URL. WebPeel auto-escalates from HTTP to browser to stealth mode as needed.</p>
-          <div class="mini-code"><span style="color:#64748B;"># Auto-detects: HTTP → browser → stealth</span><br>webpeel "https://example.com" --readable</div>
+          <p>Send any URL. WebPeel auto-detects what's needed — simple HTTP, browser rendering, or advanced mode.</p>
+          <div class="mini-code"><span style="color:#64748B;"># Auto-detects: simple → browser → advanced</span><br>webpeel "https://example.com" --readable</div>
         </div>
         <div class="how-step reveal">
           <div class="how-step-num">03</div>
@@ -508,9 +508,9 @@
     <div class="container">
       <div class="superpower-inner">
         <div class="reveal">
-          <div class="section-eyebrow">THE DIFFERENCE</div>
+          <div class="section-eyebrow">WHY WEBPEEL</div>
           <h2 class="section-h2">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
-          <p class="superpower-body">JavaScript&#8209;heavy SPAs, bot&#8209;protected pages, dynamic content — handled automatically. WebPeel escalates from simple HTTP to full browser rendering as needed, so your agent always gets the content.</p>
+          <p class="superpower-body">JavaScript&#8209;heavy SPAs, dynamic content, authenticated pages — handled automatically. WebPeel escalates from simple HTTP to full browser rendering as needed, so your agent always gets through.</p>
         </div>
         <div class="stats-row reveal">
           <div class="stat">
@@ -529,7 +529,7 @@
           </div>
         </div>
       </div>
-      <p style="font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 32px; text-align: center;">*Measured across internal benchmark suite including Cloudflare, PerimeterX, and DataDome protected sites</p>
+      <p style="font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 32px; text-align: center;">*Measured across 500+ domains including JS-heavy SPAs, dynamic pages, and authenticated content</p>
     </div>
   </section>
 
@@ -651,7 +651,7 @@
           <div class="stat-card">
             <div class="num">646<span style="font-size:22px;font-weight:400">ms</span></div>
             <div class="label">avg page extraction</div>
-            <div class="stat-card-sub">incl. anti-bot bypass</div>
+            <div class="stat-card-sub">incl. JS-heavy pages</div>
           </div>
           <div class="stat-card">
             <div class="num">2-3×</div>
@@ -682,11 +682,11 @@
         <div class="price-card reveal">
           <div class="price-plan">Free</div>
           <div class="price-amount">$0<span class="per">/month</span></div>
-          <div class="price-desc">500 fetches per week</div>
+          <div class="price-desc">500 fetches/week · ~2,000/month</div>
           <hr class="price-divider">
           <ul class="price-features">
             <li>All 18 MCP tools</li>
-            <li>Stealth mode + anti-bot bypass</li>
+            <li>Full browser rendering + JS support</li>
             <li>Readability extraction</li>
             <li>Web search (27+ sources)</li>
             <li>YouTube transcripts</li>
@@ -697,7 +697,7 @@
           <div class="price-badge">Most Popular</div>
           <div class="price-plan">Pro</div>
           <div class="price-amount">$9<span class="per">/month</span></div>
-          <div class="price-desc">1,250 fetches per week</div>
+          <div class="price-desc">1,250 fetches/week · ~5,000/month</div>
           <hr class="price-divider">
           <ul class="price-features">
             <li>Everything in Free</li>
@@ -712,7 +712,7 @@
         <div class="price-card reveal">
           <div class="price-plan">Max</div>
           <div class="price-amount">$29<span class="per">/month</span></div>
-          <div class="price-desc">6,250 fetches per week</div>
+          <div class="price-desc">6,250 fetches/week · ~25,000/month</div>
           <hr class="price-divider">
           <ul class="price-features">
             <li>Everything in Pro</li>
@@ -721,7 +721,7 @@
             <li>Higher spending caps</li>
             <li>Dedicated support</li>
           </ul>
-          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-outline">Upgrade to Max →</a>
+          <a href="https://app.webpeel.dev/signup" class="price-btn" style="background: var(--text); color: #fff;">Upgrade to Max →</a>
         </div>
       </div>
     </div>
@@ -739,7 +739,7 @@
       <div class="faq-list">
         <div class="faq-item">
           <button class="faq-question"><span>What is WebPeel?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel is a web content extraction API built for AI agents. It turns any URL into clean, structured content — markdown, metadata, and structured data — ready for your AI in milliseconds. It handles Cloudflare, JavaScript rendering, and anti-bot detection automatically.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel is a web content extraction API built for AI agents. It turns any URL into clean, structured content — markdown, metadata, and structured data — ready for your AI in milliseconds. It handles JavaScript rendering, dynamic content, and protected pages automatically.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question"><span>How does it handle protected sites?</span><span class="faq-icon">+</span></button>
@@ -747,7 +747,7 @@
         </div>
         <div class="faq-item">
           <button class="faq-question"><span>Is there a free tier?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">Yes. 500 fetches per week, no credit card required. The free tier includes all features — stealth mode, MCP tools, search, extraction, everything. Weekly limits reset every Monday.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes. 500 fetches per week, no credit card required. The free tier includes all features — browser rendering, MCP tools, search, extraction, everything. Weekly limits reset every Monday.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question"><span>How does it compare to Firecrawl?</span><span class="faq-icon">+</span></button>
@@ -756,6 +756,10 @@
         <div class="faq-item">
           <button class="faq-question"><span>Can I self-host?</span><span class="faq-icon">+</span></button>
           <div class="faq-answer"><div class="faq-answer-inner">Yes. WebPeel is open source under AGPL-3.0. Install the CLI with <code style="background:var(--border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:13px;">npm install -g webpeel</code> and run your own MCP server locally for unlimited usage.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question"><span>Is WebPeel compliant with robots.txt and ToS?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel is a tool — responsible use is on the operator. By default, the CLI respects robots.txt. We recommend only fetching pages you have permission to access, using reasonable rate limits, and complying with each site's terms of service. WebPeel is designed for legitimate research, data pipelines, and AI agents — not scraping at scale or circumventing paywalls.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question"><span>What formats does it return?</span><span class="faq-icon">+</span></button>
