@@ -33,13 +33,13 @@
       --bg: #F4F0E8; --bg-alt: #FDFBF8; --bg-dark: #1C1917; --bg-code: #1C1917;
       --surface: #FFFFFF; --surface-muted: #F5F3EF;
       --text: #1A1A18; --text-2: #5A5A55; --text-3: #8A8A82; --text-4: #A1A1AA;
-      --accent: #D4623A; --accent-hover: #C05530; --accent-light: #F5F3EF;
+      --accent: #0D9488; --accent-hover: #0F766E; --accent-light: #F0FDFA;
       --border: rgba(0,0,0,0.08); --border-card: #E0DDD8; --border-light: #F0EDE8;
       --green: #16A34A; --red-light: #FDA4AF; --radius: 12px;
     }
     html { scroll-behavior: smooth; }
     body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; font-size: 17px; -webkit-font-smoothing: antialiased; }
-    ::selection { background: rgba(212,98,58,0.15); }
+    ::selection { background: rgba(13,148,136,0.15); }
     .serif { font-family: 'Instrument Serif', Georgia, serif; }
     .mono { font-family: 'JetBrains Mono', monospace; }
     .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
@@ -47,6 +47,15 @@
 
     /* EYEBROW */
     .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 16px; }
+    /* Section divider icons — small decorative breaks between sections */
+    .section-divider { text-align: center; padding: 32px 0; color: var(--border-card); font-size: 20px; }
+    .section-divider svg { width: 24px; height: 24px; stroke: var(--border-card); fill: none; stroke-width: 1.5; }
+    /* Subtle card hover effects */
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    /* Scroll reveal — CSS only, no JS dependency */
+    @keyframes reveal-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .scroll-reveal { animation: reveal-up 0.6s ease-out both; }
 
     /* NAV */
     nav { position: sticky; top: 0; z-index: 100; background: rgba(245,242,236,0.85); backdrop-filter: blur(12px); border-bottom: none; }
@@ -78,7 +87,7 @@
     .hero p { font-size: 18px; color: var(--text-2); max-width: 460px; margin: 0 auto 40px; line-height: 1.65; }
     .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 56px; }
     .hero-visual { max-width: 820px; margin: 0 auto; }
-    .hero-visual-inner { background: linear-gradient(145deg, #E8B89A 0%, #D4623A 40%, #C05530 100%); border-radius: 24px; padding: 28px; box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.06), 0 16px 32px rgba(0,0,0,0.08), 0 32px 64px rgba(0,0,0,0.06); }
+    .hero-visual-inner { background: linear-gradient(145deg, #5EEAD4 0%, #14B8A6 30%, #0D9488 60%, #0F766E 100%); border-radius: 24px; padding: 28px; box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04), 0 4px 8px rgba(13,148,136,0.12), 0 16px 32px rgba(13,148,136,0.08), 0 32px 64px rgba(0,0,0,0.06); }
     .hero-visual-inner .terminal { border-radius: 14px; overflow: hidden; }
     .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border-radius: 4px; font-size: 15px; font-weight: 500; transition: all 0.15s; border: none; cursor: pointer; letter-spacing: 0.01em; }
     .btn-primary { background: var(--accent); color: #FAF9F7; }
@@ -162,7 +171,7 @@
     .code-tab.active { color: var(--text); border-color: var(--accent); }
     .code-body { background: var(--bg-code); padding: 20px; overflow-x: auto; }
     .code-body pre { font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: #D4D4D8; }
-    .code-body .hl-kw { color: #D4623A; } .code-body .hl-str { color: #86EFAC; }
+    .code-body .hl-kw { color: #2DD4BF; } .code-body .hl-str { color: #86EFAC; }
     .code-body .hl-fn { color: #D4D4D8; } .code-body .hl-cm { color: #5A5A55; }
 
     /* BENCHMARKS */
@@ -403,14 +412,14 @@
               <span class="terminal-title">webpeel</span>
             </div>
             <div class="terminal-body" style="padding:20px 24px; font-size:13px; line-height:1.8;">
-              <div><span style="color:#8A8A82">$</span> <span style="color:#D4623A">webpeel</span> fetch https://anthropic.com --readable</div>
+              <div><span style="color:#8A8A82">$</span> <span style="color:#2DD4BF">webpeel</span> fetch https://anthropic.com --readable</div>
               <div><span style="color:#8A8A82">  ◆ Method:</span> <span style="color:#4ADE80">simple</span> <span style="color:#8A8A82">(164ms)</span></div>
               <div><span style="color:#8A8A82">  ◆ Words:</span> 2,847 <span style="color:#8A8A82">• Readability:</span> 94</div>
               <div>&nbsp;</div>
-              <div><span style="color:#8A8A82">$</span> <span style="color:#D4623A">webpeel</span> search "latest AI breakthroughs" --json</div>
+              <div><span style="color:#8A8A82">$</span> <span style="color:#2DD4BF">webpeel</span> search "latest AI breakthroughs" --json</div>
               <div><span style="color:#8A8A82">  ◆ Results:</span> 10 <span style="color:#8A8A82">• Source:</span> DuckDuckGo <span style="color:#8A8A82">(312ms)</span></div>
               <div>&nbsp;</div>
-              <div><span style="color:#8A8A82">$</span> <span style="color:#D4623A">webpeel</span> youtube https://youtu.be/dQw4 --transcript</div>
+              <div><span style="color:#8A8A82">$</span> <span style="color:#2DD4BF">webpeel</span> youtube https://youtu.be/dQw4 --transcript</div>
               <div><span style="color:#8A8A82">  ◆ Duration:</span> 3:32 <span style="color:#8A8A82">• Transcript:</span> 847 words <span style="color:#4ADE80">✓</span></div>
             </div>
           </div>
@@ -418,6 +427,8 @@
       </div>
     </div>
   </section>
+
+  <div class="section-divider"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 
   <!-- ═══════════════════════════════════════════════════════════════
        SECTION 2: WHO IT'S FOR (NEW)
@@ -456,6 +467,8 @@
       </div>
     </div>
   </section>
+
+  <div class="section-divider"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m-7-7h6m6 0h6" stroke-linecap="round"/></svg></div>
 
   <!-- ═══════════════════════════════════════════════════════════════
        SECTION 5: SOCIAL PROOF (NEW — stats + client logos)
@@ -1412,6 +1425,20 @@ client = <span class="hl-fn">WebPeel</span>()
 
     window.addEventListener('load', () => {
       setTimeout(runTerminalDemo, 500);
+    });
+
+    // Scroll reveal — sections fade up as they enter viewport
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animation = 'reveal-up 0.5s ease-out both';
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('section > .container, .section-divider').forEach(el => {
+      el.style.opacity = '0';
+      revealObserver.observe(el);
     });
 
     // Stats counter animation

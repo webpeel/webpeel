@@ -15,9 +15,9 @@
   --text-2: #5A5A55;
   --text-3: #8A8A82;
   --text-4: #A1A1AA;
-  --accent: #D4623A;
-  --accent-hover: #C05530;
-  --accent-light: #F5F3EF;
+  --accent: #0D9488;
+  --accent-hover: #0F766E;
+  --accent-light: #F0FDFA;
   --border: rgba(0,0,0,0.08);
   --border-card: #E0DDD8;
   --border-light: #F0EDE8;
@@ -39,7 +39,7 @@ html {
 }
 
 ::selection {
-  background: rgba(212,98,58,0.15);
+  background: rgba(13,148,136,0.15);
 }
 
 body {
