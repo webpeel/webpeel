@@ -239,8 +239,8 @@
     .feature-block h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
     .feature-block .desc { font-size: 16px; color: var(--text-2); line-height: 1.7; margin-bottom: 20px; }
     .feature-checks { list-style: none; }
-    .feature-checks li { font-size: 14px; color: var(--text-2); padding: 4px 0; }
-    .feature-checks li::before { content: '✓ '; color: var(--accent); font-weight: 600; }
+    .feature-checks li { font-size: 14px; color: var(--text-2); padding: 4px 0; display: flex; align-items: center; }
+    .feature-checks li::before { content: ''; display: inline-block; width: 18px; height: 18px; margin-right: 8px; vertical-align: -3px; background: var(--accent); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; flex-shrink: 0; }
     .feature-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden; transition: box-shadow var(--transition-normal); }
     .feature-card:hover { box-shadow: var(--card-shadow-hover); }
     .feature-card-dark { background: var(--bg-dark); border-radius: 12px; padding: 24px; font-family: var(--font-mono); font-size: 14px; line-height: 1.7; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; }
@@ -282,7 +282,7 @@
     }
 
     /* ── TESTIMONIAL ──────────────────────────────────── */
-    .testimonial-section { padding: 80px 0; }
+    .testimonial-section { padding: 48px 0 0 0; }
     .testimonial-card { max-width: 640px; margin: 0 auto; text-align: center; }
     .testimonial-quote { font-family: var(--font-display); font-size: clamp(24px, 3vw, 32px); font-weight: 400; font-style: italic; color: var(--text); line-height: 1.5; letter-spacing: -0.01em; }
     .testimonial-author { margin-top: 28px; display: flex; align-items: center; justify-content: center; gap: 14px; }
@@ -306,8 +306,8 @@
     .price-desc { font-size: 15px; color: var(--text-2); margin: 8px 0 24px; }
     .price-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 24px; }
     .price-features { list-style: none; margin-bottom: 24px; }
-    .price-features li { font-size: 14px; color: var(--text-2); padding: 6px 0; }
-    .price-features li::before { content: '✓ '; color: var(--accent); font-weight: 600; }
+    .price-features li { font-size: 14px; color: var(--text-2); padding: 6px 0; display: flex; align-items: center; }
+    .price-features li::before { content: ''; display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: -2px; background: var(--accent); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; flex-shrink: 0; }
     .price-btn { display: block; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; border: none; width: 100%; transition: opacity var(--transition-fast); }
     .price-btn:hover { opacity: 0.85; }
     .price-btn-filled { background: var(--accent); color: #fff; }
@@ -684,12 +684,12 @@
   <section class="testimonial-section">
     <div class="container">
       <div class="testimonial-card reveal">
-        <div class="testimonial-quote">"I use WebPeel as my default web search for every AI agent I build. It just works."</div>
+        <div class="testimonial-quote">"I replaced web_fetch with WebPeel as my default — it handles Cloudflare pages, returns structured data, and just works on every URL I throw at it."</div>
         <div class="testimonial-author">
           <div class="testimonial-avatar">JL</div>
           <div class="testimonial-meta">
             <div class="testimonial-name">Jake Liu</div>
-            <div class="testimonial-role">Founder &amp; Developer</div>
+            <div class="testimonial-role">AI Engineer, building with Claude &amp; GPT daily</div>
           </div>
         </div>
       </div>
