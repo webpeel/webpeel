@@ -78,7 +78,7 @@
     .nav { position: sticky; top: 0; z-index: 100; height: 64px; background: transparent; transition: background var(--transition-normal), backdrop-filter var(--transition-normal); }
     .nav.scrolled { background: rgba(244,240,232,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
     .nav-logo .diamond { color: var(--accent); }
     .nav-links { display: flex; align-items: center; gap: 32px; }
     .nav-links a { font-size: 14px; font-weight: 400; color: var(--text); transition: opacity var(--transition-fast); }
@@ -100,7 +100,7 @@
     /* ── 2. HERO ─────────────────────────────────────── */
     .hero { padding: 140px 0 100px; }
     .hero-grid { display: grid; grid-template-columns: 55% 45%; gap: 48px; align-items: center; }
-    .hero-eyebrow { display: inline-flex; align-items: center; background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; }
+    .hero-eyebrow { display: inline-flex; align-items: center; background: var(--accent-light); color: var(--accent); font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 100px; margin-bottom: 24px; letter-spacing: 0.01em; }
     .hero h1 { font-family: var(--font-display); font-size: var(--text-hero); font-weight: 400; line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 24px; }
     .hero h1 .accent { color: var(--accent); }
     .hero-sub { font-size: 18px; font-weight: 400; color: var(--text-2); line-height: 1.6; max-width: 480px; margin-bottom: 32px; }
@@ -112,7 +112,7 @@
 
     /* Terminal mockup */
     .hero-terminal { background: var(--bg-dark); border-radius: 16px; overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 40px rgba(30,64,175,0.15), 0 32px 80px rgba(0,0,0,0.12);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 40px rgba(30,64,175,0.2), 0 32px 80px rgba(0,0,0,0.15), 0 0 120px rgba(30,64,175,0.08);
       transform: perspective(1200px) rotateY(-2deg) rotateX(1deg); }
     .terminal-chrome { height: 48px; background: #1E293B; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
     .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
@@ -148,15 +148,15 @@
     @media (max-width: 768px) { .how-grid { grid-template-columns: 1fr; } }
 
     /* ── 4. THE SUPERPOWER (dark) ────────────────────── */
-    .superpower { background: var(--bg-dark); color: #fff; }
+    .superpower { background: var(--bg-dark); color: #fff; padding: clamp(120px, 14vw, 200px) 0 !important; }
     .superpower .section-eyebrow { color: #60A5FA; }
     .superpower .section-h2 { color: #fff; }
     .superpower .accent { color: #60A5FA; }
     .superpower-body { font-size: 18px; color: rgba(255,255,255,0.7); max-width: 560px; line-height: 1.7; margin-top: 32px; }
     .stats-row { display: flex; gap: 64px; margin-top: 48px; align-items: center; }
     .stats-row .stat { text-align: left; }
-    .stats-row .stat-num { font-size: 36px; font-weight: 600; color: #fff; }
-    .stats-row .stat-label { font-size: 14px; color: rgba(255,255,255,0.5); }
+    .stats-row .stat-num { font-size: clamp(48px, 6vw, 72px); font-weight: 600; color: #fff; letter-spacing: -0.02em; }
+    .stats-row .stat-label { font-size: 15px; color: rgba(255,255,255,0.5); margin-top: 4px; }
     .stats-divider { width: 1px; height: 48px; background: rgba(255,255,255,0.1); }
     @media (max-width: 768px) {
       .stats-row { flex-wrap: wrap; gap: 32px; }
@@ -202,7 +202,7 @@
     .bar-value { font-size: 14px; font-weight: 600; color: var(--text); width: 48px; text-align: right; flex-shrink: 0; }
     .stat-cards { display: flex; flex-direction: column; gap: 16px; }
     .stat-card { background: var(--card-bg); border-radius: 8px; padding: 24px; box-shadow: var(--card-shadow); }
-    .stat-card .num { font-size: 36px; font-weight: 600; color: var(--text); }
+    .stat-card .num { font-size: clamp(32px, 4vw, 48px); font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
     .stat-card .label { font-size: 14px; color: var(--text-2); margin-top: 4px; }
 
     @media (max-width: 768px) {
@@ -329,6 +329,7 @@
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Get Started Free →</a>
             <a href="/docs/" class="btn-text">View Docs</a>
           </div>
+          <p style="font-size: 14px; color: var(--text-3); margin-top: 40px;">Works with Claude, GPT, Cursor, LangChain, and any MCP-compatible agent.</p>
         </div>
         <!-- Right column — terminal -->
         <div class="reveal">
@@ -425,7 +426,7 @@
     <div class="container">
 
       <!-- Feature 1: Content Extraction — text left, visual right -->
-      <div class="feature-block reveal" style="margin-bottom: 64px;">
+      <div class="feature-block reveal" style="margin-bottom: 96px;">
         <div class="feature-text">
           <div class="feature-num">01</div>
           <h3>Raw HTML in. Clean markdown out.</h3>
@@ -460,7 +461,7 @@
       </div>
 
       <!-- Feature 2: Anti-Bot Bypass — visual left, text right (FLIPPED) -->
-      <div class="feature-block flipped reveal" style="margin-bottom: 64px;">
+      <div class="feature-block flipped reveal" style="margin-bottom: 96px;">
         <div class="feature-text">
           <div class="feature-num">02</div>
           <h3>Gets through when others get blocked.</h3>
