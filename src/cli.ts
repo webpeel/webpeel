@@ -217,6 +217,7 @@ program
   .option('--images', 'Output image URLs from the page')
   .option('--meta', 'Output only the page metadata (title, description, author, etc.)')
   .option('--raw', 'Return full page without smart content extraction')
+  .option('--full', 'Alias for --raw — full page content, no budget')
   .option('--lite', 'Lite mode — minimal processing, maximum speed (skip pruning, budget, metadata)')
   .option('--action <actions...>', 'Page actions before scraping (e.g., "click:.btn" "wait:2000" "scroll:bottom")')
   .option('--extract <json>', 'Extract structured data using CSS selectors (JSON object of field:selector pairs)')
@@ -379,26 +380,31 @@ function buildCondensedHelp(): string {
     `  ${bold('Usage:')}  webpeel [url] [options]`,
     `          webpeel <command> [options]`,
     '',
-    `  ${bold('Quick Start:')}`,
-    `    webpeel "https://example.com"              Fetch any URL`,
-    `    webpeel search "AI news"                   Web search`,
-    `    webpeel mcp                                Start MCP server`,
+    `  ${bold('Examples:')}`,
+    `    webpeel https://example.com            ${dim('Clean content (reader mode)')}`,
+    `    webpeel read https://example.com       ${dim('Explicit reader mode')}`,
+    `    webpeel screenshot https://example.com ${dim('Screenshot any page')}`,
+    `    webpeel ask https://news.com "summary" ${dim('Ask about any page')}`,
+    `    webpeel search "webpeel vs jina"       ${dim('Web search')}`,
+    `    echo "url" | webpeel                   ${dim('Pipe mode (auto JSON)')}`,
     '',
     `  ${bold('Commands:')}`,
     `    fetch (default)       Fetch a URL as clean markdown`,
+    `    read <url>            Reader mode (article content only)`,
+    `    screenshot <url>      Take a screenshot`,
+    `    ask <url> <question>  Ask about any page`,
     `    search <query>        Search the web (DuckDuckGo + sources)`,
     `    crawl <url>           Crawl a website`,
-    `    research <query>      Multi-hop research agent`,
     `    mcp                   Start MCP server for AI tools`,
-    `    login / logout        Authenticate with your API key`,
     `    ${dim('... (use --help-all for all 25+ commands)')}`,
     '',
     `  ${bold('Common Options:')}`,
     `    -r, --render          Browser rendering (JS-heavy sites)`,
     `    --stealth             Stealth mode (anti-bot bypass)`,
-    `    --readable            Reader mode (article content only)`,
+    `    --raw                 Full page (disable auto reader mode)`,
+    `    --full                Full page, no budget limit`,
     `    --json                JSON output with metadata`,
-    `    --budget <n>          Smart token budget`,
+    `    --budget: 4000)`,
     `    -q, --question <q>    Ask about the content`,
     `    -s, --silent          No spinner output`,
     '',
@@ -436,6 +442,25 @@ async function runFetch(url: string | undefined, options: any): Promise<void> {
       // Use --full-nav to opt out (keeps navigation links and full page content)
       if (!options.readable && !options.fullNav) {
         options.readable = true;
+      }
+    }
+
+    // --full alias: sets raw + fullContent
+    if (options.full) {
+      options.raw = true;
+      options.fullContent = true;
+    }
+
+    // Smart defaults for terminal (interactive) mode
+    const isTerminal = process.stdout.isTTY && !isPiped;
+    if (isTerminal && !options.raw && !options.html && !options.text) {
+      // Auto-readable: clean content by default (like browser Reader Mode)
+      if (!options.readable && !options.fullNav && !options.selector) {
+        options.readable = true;
+      }
+      // Default token budget: don't flood the terminal with 20K tokens
+      if (options.budget === undefined && !options.fullContent && !options.raw) {
+        options.budget = 4000;
       }
     }
 
@@ -1306,6 +1331,36 @@ async function runFetch(url: string | undefined, options: any): Promise<void> {
 program
   .action(async (url: string | undefined, options) => {
     await runFetch(url, options);
+  });
+
+// Read subcommand (explicit readable mode)
+program
+  .command('read <url>')
+  .description('Read a page in clean reader mode (like browser Reader View)')
+  .option('--json', 'Output as JSON')
+  .option('-s, --silent', 'Silent mode')
+  .option('--budget <n>', 'Token budget (default: 4000)', parseInt)
+  .option('--focus <query>', 'Focus on content relevant to this query')
+  .action(async (url: string, opts: any) => {
+    await runFetch(url, {
+      ...opts,
+      readable: true,
+      budget: 4000,
+    });
+  });
+
+// Ask subcommand (question mode)
+program
+  .command('ask <url> <question>')
+  .description('Ask a question about any page')
+  .option('--json', 'Output as JSON')
+  .option('-s, --silent', 'Silent mode')
+  .action(async (url: string, question: string, opts: any) => {
+    await runFetch(url, {
+      ...opts,
+      question,
+      readable: true,
+    });
   });
 
 // Search command
@@ -3263,6 +3318,7 @@ program
 // Screenshot command
 program
   .command('screenshot <url>')
+  .alias('snap')
   .description('Take a screenshot of a URL and save as PNG/JPEG')
   .option('--full-page', 'Capture full page (not just viewport)')
   .option('--width <px>', 'Viewport width in pixels (default: 1280)', parseInt)
@@ -3980,7 +4036,7 @@ program
   .option('--llm-key <key>', 'LLM API key for synthesis (or env OPENAI_API_KEY)')
   .option('--llm-model <model>', 'LLM model for synthesis (default: gpt-4o-mini)')
   .option('--llm-base-url <url>', 'LLM API base URL (default: https://api.openai.com/v1)')
-  .option('--timeout <ms>', 'Max research time in ms (default: 60000)', '60000')
+  .option('--timeout <ms>', 'Max research time in ms (default: 40000)', '60000')
   .option('--json', 'Output result as JSON')
   .option('-s, --silent', 'Suppress progress output')
   .action(async (query: string, options) => {
@@ -4275,6 +4331,21 @@ async function outputResult(result: PeelResult, options: any, extra: OutputExtra
 
     await writeStdout(JSON.stringify(output, null, 2) + '\n');
   } else {
+    // Smart terminal header (interactive mode only)
+    const isTerminalOutput = process.stdout.isTTY && !options.silent;
+    if (isTerminalOutput) {
+      const meta = result.metadata || {};
+      const parts: string[] = [];
+      if ((meta as any).title || result.title) parts.push(`\x1b[1m${(meta as any).title || result.title}\x1b[0m`);
+      if ((meta as any).author) parts.push(`By ${(meta as any).author}`);
+      if ((meta as any).wordCount) parts.push(`${(meta as any).wordCount} words`);
+      const totalMs = result.timing?.total ?? result.elapsed;
+      if (totalMs) parts.push(`${totalMs}ms`);
+      if (parts.length > 0) {
+        await writeStdout(`\n  ${parts.join(' · ')}\n`);
+        await writeStdout('  ' + '─'.repeat(60) + '\n\n');
+      }
+    }
     // Stream content immediately to stdout — consumer gets it without waiting
     await writeStdout(result.content + '\n');
     // Append timing summary to stderr so it doesn't pollute piped content
