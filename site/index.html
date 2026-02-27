@@ -46,7 +46,7 @@
       --font-display: 'Instrument Serif', Georgia, serif;
       --font-body: 'Inter', -apple-system, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
-      --text-hero: clamp(56px, 7vw, 96px);
+      --text-hero: clamp(56px, 8vw, 112px);
       --text-h2: clamp(36px, 4vw, 52px);
       --text-h3: clamp(20px, 2vw, 26px);
       --space-section: clamp(100px, 12vw, 160px);
@@ -148,11 +148,16 @@
     .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 12px; }
     .section-h2 { font-family: var(--font-display); font-size: var(--text-h2); font-weight: 400; letter-spacing: -0.03em; line-height: 1.1; }
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 64px; }
+    .how-grid > * { min-width: 0; }
     .how-step-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--accent); width: 32px; }
     .how-step h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
     .how-step p { font-size: 16px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
-    .mini-code { background: var(--bg-dark); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow-x: auto; max-width: 100%; word-break: break-all; }
-    @media (max-width: 768px) { .how-grid { grid-template-columns: 1fr; } }
+    .mini-code { background: var(--bg-dark); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow-x: auto; max-width: 100%; }
+    .mini-code * { white-space: pre-wrap; word-break: break-word; }
+    @media (max-width: 768px) { 
+      .how-grid { grid-template-columns: 1fr; gap: 32px; }
+      .mini-code { font-size: 12px; padding: 14px; }
+    }
 
     /* ── 4. THE SUPERPOWER (dark) ────────────────────── */
     .superpower { background: var(--bg-dark); color: #fff; padding: clamp(120px, 14vw, 200px) 0 !important; }
@@ -177,6 +182,7 @@
 
     /* ── 5. FEATURES (stacked, alternating) ──────────── */
     .feature-block { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+    .feature-block > * { min-width: 0; }
     .feature-block.flipped .feature-text { order: 2; }
     .feature-block.flipped .feature-visual { order: 1; }
     .feature-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; margin-bottom: 12px; }
