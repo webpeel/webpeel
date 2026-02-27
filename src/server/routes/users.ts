@@ -866,6 +866,56 @@ export function createUserRouter(): Router {
   });
 
   /**
+   * GET /v1/usage/history
+   * Get daily usage history for the past N days (default 7)
+   */
+  router.get('/v1/usage/history', jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = (req as any).user as JwtPayload;
+      const days = Math.min(Math.max(parseInt(req.query.days as string) || 7, 1), 90);
+
+      // Get daily usage from usage_logs table
+      const result = await pool.query(
+        `SELECT
+          DATE(created_at) as date,
+          COUNT(*) FILTER (WHERE mode = 'basic' OR mode IS NULL) as fetches,
+          COUNT(*) FILTER (WHERE mode = 'stealth') as stealth,
+          COUNT(*) FILTER (WHERE mode = 'search') as search
+        FROM usage_logs
+        WHERE user_id = $1
+          AND created_at >= NOW() - INTERVAL '1 day' * $2
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC`,
+        [userId, days]
+      );
+
+      // Fill in missing days with zeros
+      const history: Array<{ date: string; fetches: number; stealth: number; search: number }> = [];
+      const now = new Date();
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setUTCDate(d.getUTCDate() - i);
+        const dateStr = d.toISOString().substring(0, 10);
+        const row = result.rows.find((r: any) => r.date?.toISOString?.().substring(0, 10) === dateStr || r.date === dateStr);
+        history.push({
+          date: dateStr,
+          fetches: parseInt(row?.fetches || '0', 10),
+          stealth: parseInt(row?.stealth || '0', 10),
+          search: parseInt(row?.search || '0', 10),
+        });
+      }
+
+      res.json({ history });
+    } catch (error) {
+      console.error('Get usage history error:', error);
+      res.status(500).json({
+        error: 'history_failed',
+        message: 'Failed to get usage history',
+      });
+    }
+  });
+
+  /**
    * POST /v1/extra-usage/toggle
    * Enable/disable extra usage
    */
