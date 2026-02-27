@@ -15,9 +15,9 @@
   --text-2: #5A5A55;
   --text-3: #8A8A82;
   --text-4: #A1A1AA;
-  --accent: #0E918D;
-  --accent-hover: #067370;
-  --accent-light: #F0FDFA;
+  --accent: #5865F2;
+  --accent-hover: #4752C4;
+  --accent-light: #F0F1FE;
   --border: rgba(0,0,0,0.08);
   --border-card: #E0DDD8;
   --border-light: #F0EDE8;
@@ -39,7 +39,7 @@ html {
 }
 
 ::selection {
-  background: rgba(14,145,141,0.15);
+  background: rgba(88,101,242,0.15);
 }
 
 body {
@@ -591,7 +591,7 @@ pre:hover .copy-btn {
 }
 
 .api-method-post {
-  background: #CCFBF1;
+  background: #E8EAFD;
   color: #2563EB;
 }
 
@@ -720,7 +720,7 @@ pre:hover .copy-btn {
 }
 
 .method-badge.post {
-  background: #CCFBF1;
+  background: #E8EAFD;
   color: #2563EB;
 }
 
