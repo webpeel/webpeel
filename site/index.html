@@ -456,7 +456,7 @@
           <span class="hero-anim" data-hero="1" style="display:inline-block;">Give your AI</span><br>
           <span class="accent hero-anim" data-hero="2" style="display:inline-block;">the entire web.</span>
         </h1>
-        <p class="hero-sub hero-anim" data-hero="3">One API call. Any page. Structured&nbsp;data&nbsp;back.</p>
+        <p class="hero-sub hero-anim" data-hero="3">One API call. Any page — including JS&#8209;rendered, Cloudflare&#8209;protected, and&nbsp;dynamic&nbsp;content.</p>
         <div class="hero-ctas hero-anim" data-hero="4">
           <a href="https://app.webpeel.dev/signup" class="btn-primary">Get Started Free →</a>
           <a href="/docs/" class="btn-ghost">View Docs</a>
@@ -478,9 +478,22 @@
           <span class="terminal-tab">Terminal</span>
         </div>
         <div class="terminal-content" id="terminal-content">
-          <div class="t-line" data-cmd='webpeel "https://stripe.com" --readable' data-output='→ # Stripe | Financial Infrastructure for the Internet\n→ 2,847 words · 12s read · 4 images'></div>
-          <div class="t-line" data-cmd='webpeel search "best react frameworks 2026"' data-output='→ 1. Next.js 15 — The React Framework for Production\n→ 2. Remix 3.0 — Full Stack Web Framework'></div>
-          <div class="t-line" data-cmd='webpeel youtube https://youtu.be/dQw4 --transcript' data-output='→ Duration: 3:32 · Transcript: 847 words ✓'></div>
+          <!-- Static content visible immediately, replaced by typing animation after 800ms -->
+          <div id="terminal-static">
+            <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel "https://stripe.com" --readable</span></div>
+            <div><span class="t-output">→ # Stripe | Financial Infrastructure for the Internet</span></div>
+            <div><span class="t-output">→ 2,847 words · 12s read · 4 images</span></div>
+            <br>
+            <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel search "best react frameworks 2026"</span></div>
+            <div><span class="t-output">→ 1. Next.js 15 — The React Framework for Production</span></div>
+            <div><span class="t-output">→ 2. Remix 3.0 — Full Stack Web Framework</span></div>
+            <br>
+            <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel youtube https://youtu.be/dQw4 --transcript</span></div>
+            <div><span class="t-output">→ Duration: 3:32 · Transcript: 847 words </span><span class="t-highlight">✓</span></div>
+          </div>
+          <div class="t-line" style="display:none" data-cmd='webpeel "https://stripe.com" --readable' data-output='→ # Stripe | Financial Infrastructure for the Internet\n→ 2,847 words · 12s read · 4 images'></div>
+          <div class="t-line" style="display:none" data-cmd='webpeel search "best react frameworks 2026"' data-output='→ 1. Next.js 15 — The React Framework for Production\n→ 2. Remix 3.0 — Full Stack Web Framework'></div>
+          <div class="t-line" style="display:none" data-cmd='webpeel youtube https://youtu.be/dQw4 --transcript' data-output='→ Duration: 3:32 · Transcript: 847 words ✓'></div>
         </div>
       </div>
 
@@ -879,7 +892,7 @@ webpeel "https://example.com" --readable</div>
         extractBtn.addEventListener('click', runExtract);
 
         // Auto-trigger demo on page load so visitors see real content immediately
-        setTimeout(runExtract, 1500);
+        setTimeout(runExtract, 600);
       }
     })();
   </script>
