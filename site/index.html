@@ -21,47 +21,74 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="sitemap" href="/sitemap.xml">
-  <meta name="theme-color" content="#F4F0E8">
+  <meta name="theme-color" content="#09090B">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"WebPeel","applicationCategory":"DeveloperApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Cross-platform","description":"Web content extraction API for AI agents.","url":"https://webpeel.dev","creator":{"@type":"Person","name":"Jake Liu"}}</script>
   <style>
     /* ── RESET & TOKENS ─────────────────────────────── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --bg: #F4F0E8;
-      --bg-alt: #FDFBF8;
-      --bg-dark: #0F172A;
-      --text: #1A1A1A;
-      --text-2: #555555;
-      --text-3: #888888;
+      /* Backgrounds */
+      --bg: #FAFAFA;
+      --bg-card: #FFFFFF;
+      --bg-elevated: #F5F5F5;
+      --bg-dark: #09090B;
+      --bg-dark-card: rgba(255,255,255,0.04);
+      --bg-dark-elevated: rgba(255,255,255,0.06);
+
+      /* Accent */
       --accent: #5865F2;
       --accent-hover: #4752C4;
-      --accent-light: #E8EAFD;
-      --border: #E5E0D8;
-      --card-bg: #FFFFFF;
-      --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08);
-      --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.1), 0 16px 48px rgba(0,0,0,0.1);
+      --accent-glow: rgba(88,101,242,0.15);
+      --accent-subtle: rgba(88,101,242,0.08);
+      --accent-light: #818CF8;
+
+      /* Text */
+      --text: #09090B;
+      --text-2: #71717A;
+      --text-3: #A1A1AA;
+      --text-on-dark: #FAFAFA;
+      --text-on-dark-2: rgba(255,255,255,0.6);
+      --text-on-dark-3: rgba(255,255,255,0.4);
+
+      /* Borders */
+      --border: rgba(0,0,0,0.07);
+      --border-card: rgba(0,0,0,0.09);
+      --border-dark: rgba(255,255,255,0.08);
+      --border-dark-subtle: rgba(255,255,255,0.04);
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+      --shadow-xl: 0 16px 48px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.04);
+      --shadow-glow: 0 0 80px rgba(88,101,242,0.12);
+      --shadow-terminal: 0 0 0 1px rgba(255,255,255,0.06), 0 40px 80px -20px rgba(0,0,0,0.6), 0 0 160px rgba(88,101,242,0.08);
+
+      /* Typography */
       --font-display: 'Instrument Serif', Georgia, serif;
-      --font-body: 'Inter', -apple-system, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
-      --text-hero: clamp(64px, 9vw, 128px);
-      --text-h2: clamp(36px, 4.5vw, 56px);
-      --text-h3: clamp(20px, 2.2vw, 28px);
-      --text-body-lg: 19px;
-      --text-body: 16px;
-      --text-small: 14px;
-      --text-label: 12px;
-      --space-section: clamp(80px, 10vw, 120px);
-      --container: 1200px;
-      --container-narrow: 800px;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+      /* Sizes */
+      --text-hero: clamp(56px, 8vw, 96px);
+      --text-h2: clamp(36px, 5vw, 56px);
+      --text-h3: clamp(18px, 2vw, 24px);
+      --text-stat: clamp(40px, 5vw, 64px);
+
+      /* Layout */
+      --container: 1120px;
+      --container-narrow: 720px;
       --gutter: 24px;
-      --transition-fast: 150ms ease;
-      --transition-normal: 250ms ease;
-      --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
-      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --space-section: clamp(80px, 10vw, 120px);
+
+      /* Easing */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
+
     html { scroll-behavior: smooth; overflow-x: hidden; }
     body { font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 16px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
     ::selection { background: rgba(88,101,242,0.15); }
@@ -70,294 +97,439 @@
     .container { max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
     .container-narrow { max-width: var(--container-narrow); margin: 0 auto; padding: 0 var(--gutter); }
 
-    /* ── SCROLL REVEAL ──────────────────────────────── */
-    .reveal { opacity: 1; transition: opacity 600ms var(--ease-out-expo), transform 600ms var(--ease-out-expo); }
-    .reveal.pre-anim { opacity: 0.3; transform: translateY(20px); }
-    .reveal.pre-anim.animated { opacity: 1; transform: translateY(0); }
+    /* ── SCROLL REVEAL ─────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
 
-    /* ── HERO ENTRANCE ──────────────────────────────── */
-    .hero-anim { opacity: 1; transition: opacity 400ms var(--ease-out-expo), transform 400ms var(--ease-out-expo), box-shadow 500ms var(--ease-out-expo); }
-    .hero-anim.pre-anim { opacity: 0.3; transform: translateY(16px); }
-    .hero-anim.pre-anim.animated { opacity: 1; transform: translateY(0); }
-    .hero-terminal.pre-anim { opacity: 0.3; transform: translateY(40px); box-shadow: none; }
-    .hero-terminal.pre-anim.animated { opacity: 1; transform: translateY(0);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 64px -16px rgba(0,0,0,0.5), 0 0 120px rgba(88,101,242,0.12); }
-
-    /* ── prefers-reduced-motion ──────────────────────── */
     @media (prefers-reduced-motion: reduce) {
-      .reveal, .reveal.pre-anim, .hero-anim, .hero-anim.pre-anim, .hero-terminal.pre-anim {
-        opacity: 1 !important; transform: none !important; transition: none !important;
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 64px -16px rgba(0,0,0,0.5), 0 0 120px rgba(88,101,242,0.12) !important;
-      }
+      .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .hero-el { opacity: 1 !important; transform: none !important; transition: none !important; }
       .bar-fill { transition: none !important; }
-      .price-card { transition: none !important; }
       .terminal-cursor { animation: none !important; opacity: 1 !important; }
     }
 
-    /* ── 1. NAVIGATION ──────────────────────────────── */
+    /* ── HERO ENTRANCE ──────────────────────────────── */
+    .hero-el {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
+    }
+    .hero-el.visible { opacity: 1; transform: translateY(0); }
+    .hero-terminal-el {
+      opacity: 0;
+      transform: translateY(40px);
+      box-shadow: none;
+      transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out), box-shadow 800ms var(--ease-out);
+    }
+    .hero-terminal-el.visible {
+      opacity: 1;
+      transform: translateY(0);
+      box-shadow: var(--shadow-terminal);
+    }
+
+    /* ── NAVIGATION ─────────────────────────────────── */
     .nav {
       position: sticky; top: 0; z-index: 100; height: 64px;
       background: transparent;
-      transition: background 200ms ease, backdrop-filter 200ms ease, -webkit-backdrop-filter 200ms ease;
+      transition: background 250ms ease, border-color 250ms ease;
     }
-    /* Dark hero state — white links */
-    .nav.nav-dark .nav-logo { color: rgba(255,255,255,0.9); }
-    .nav.nav-dark .nav-logo .diamond { color: #8B94F7; }
-    .nav.nav-dark .nav-links a { color: rgba(255,255,255,0.8); }
-    .nav.nav-dark .nav-links a.nav-cta { background: var(--accent); color: #fff !important; }
-    .nav.nav-dark .nav-hamburger svg { stroke: rgba(255,255,255,0.8); }
-    /* Scrolled state — cream blur, dark text */
-    .nav.scrolled { background: rgba(244,240,232,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .nav.scrolled {
+      background: rgba(250,250,250,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); transition: color 200ms ease; }
-    .nav-logo .diamond { color: var(--accent); }
-    .nav-links { display: flex; align-items: center; gap: 32px; }
-    .nav-links a { font-size: 14px; font-weight: 400; color: var(--text); transition: opacity var(--transition-fast), color 200ms ease; }
-    .nav-links a:hover { opacity: 0.7; }
-    .nav-links a.ext::after { content: ' ↗'; font-size: 12px; }
-    .nav-cta { display: inline-flex; align-items: center; background: var(--accent); color: #fff !important; font-size: 14px; font-weight: 500; padding: 8px 20px; border-radius: 6px; border: none; transition: opacity var(--transition-fast) !important; }
-    .nav-cta:hover { opacity: 0.85; }
-    .nav-hamburger { display: none; background: none; border: none; padding: 8px; }
-    .nav-hamburger svg { width: 24px; height: 24px; stroke: var(--text); transition: stroke 200ms ease; }
-    .mobile-menu { display: none; position: fixed; top: 64px; left: 0; right: 0; background: rgba(244,240,232,0.98); backdrop-filter: blur(12px); padding: 24px; flex-direction: column; gap: 16px; z-index: 99; border-bottom: 1px solid var(--border); }
-    .mobile-menu.open { display: flex; }
-    .mobile-menu a { font-size: 16px; font-weight: 500; padding: 12px 0; color: var(--text); }
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .nav-hamburger { display: block; }
+    .nav-logo {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: #fff;
+      transition: color 250ms ease;
     }
+    .nav.scrolled .nav-logo { color: var(--text); }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a {
+      font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.75);
+      transition: color 200ms ease, opacity 150ms ease;
+    }
+    .nav.scrolled .nav-links a { color: var(--text-2); }
+    .nav-links a:hover { color: #fff; opacity: 1; }
+    .nav.scrolled .nav-links a:hover { color: var(--text); }
+    .nav-links a.ext::after { content: ' ↗'; font-size: 11px; }
+    .nav-cta {
+      display: inline-flex; align-items: center;
+      background: var(--accent); color: #fff !important;
+      font-size: 14px; font-weight: 500; padding: 8px 20px;
+      border-radius: 6px; border: none;
+      transition: opacity 150ms ease, transform 150ms ease;
+    }
+    .nav-cta:hover { opacity: 0.88; transform: translateY(-1px); color: #fff !important; }
+    .nav.scrolled .nav-cta { color: #fff !important; }
+    .nav-hamburger { display: none; background: none; border: none; padding: 8px; }
+    .nav-hamburger svg { width: 22px; height: 22px; stroke: rgba(255,255,255,0.8); transition: stroke 250ms ease; }
+    .nav.scrolled .nav-hamburger svg { stroke: var(--text); }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0;
+      background: rgba(250,250,250,0.97); backdrop-filter: blur(16px);
+      padding: 20px var(--gutter); flex-direction: column; gap: 4px;
+      z-index: 99; border-bottom: 1px solid var(--border);
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { font-size: 15px; font-weight: 500; padding: 12px 0; color: var(--text-2); border-bottom: 1px solid var(--border); }
+    .mobile-menu a:last-child { border-bottom: none; }
+    @media (max-width: 768px) { .nav-links { display: none; } .nav-hamburger { display: block; } }
 
-    /* ── 2. HERO (DARK) ─────────────────────────────── */
+    /* ── HERO ───────────────────────────────────────── */
     .hero {
       background: var(--bg-dark);
-      background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(88,101,242,0.15), transparent);
-      padding: 80px 0 0;
+      background-image:
+        radial-gradient(ellipse 60% 40% at 50% -10%, rgba(88,101,242,0.12), transparent),
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: auto, 64px 64px, 64px 64px;
+      padding: 100px 0 0;
       text-align: center;
       position: relative;
     }
-    .hero-content { max-width: 900px; margin: 0 auto; padding-bottom: 64px; }
+    .hero-content { max-width: 820px; margin: 0 auto; padding-bottom: 64px; }
     .hero-eyebrow {
       display: inline-flex; align-items: center;
-      border: 1px solid rgba(88,101,242,0.3);
+      border: 1px solid rgba(88,101,242,0.25);
       background: rgba(88,101,242,0.08);
-      color: #8B94F7;
-      font-size: 14px; font-weight: 500; padding: 8px 18px; border-radius: 100px;
-      margin-bottom: 28px; letter-spacing: 0.01em;
+      color: var(--accent-light);
+      font-size: 13px; font-weight: 500; padding: 6px 16px; border-radius: 100px;
+      margin-bottom: 32px; letter-spacing: 0.01em;
     }
     .hero h1 {
-      font-family: var(--font-display); font-size: var(--text-hero);
-      font-weight: 400; line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 28px;
-      color: #fff;
+      font-family: var(--font-display);
+      font-size: var(--text-hero);
+      font-weight: 400; line-height: 1.0; letter-spacing: -0.04em;
+      margin-bottom: 24px; color: var(--text-on-dark);
     }
     .hero h1 .accent { color: #A5B4FC; }
-    .hero-sub { font-size: 20px; font-weight: 400; color: rgba(255,255,255,0.6); line-height: 1.6; max-width: 520px; margin: 0 auto 36px; }
-    .hero-ctas { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
-    .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px; border: none; transition: all 150ms ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12); }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(88,101,242,0.4), inset 0 1px 0 rgba(255,255,255,0.12); color: #fff; }
-    .btn-ghost { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.85); padding: 13px 28px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.25); background: transparent; transition: background var(--transition-fast), border-color var(--transition-fast); }
-    .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.45); color: #fff; }
-    /* Cream CTA variant for non-hero */
-    .btn-text { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; color: var(--text); padding: 14px 28px; border-radius: 8px; border: 1.5px solid rgba(0,0,0,0.4); background: rgba(255,255,255,0.6); transition: background var(--transition-fast), border-color var(--transition-fast); }
-    .btn-text:hover { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.55); color: var(--text); }
-    .hero-trust { font-size: 13px; color: rgba(255,255,255,0.35); margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-    .hero-trust a { color: rgba(255,255,255,0.35); }
-    .hero-trust-dot { color: rgba(255,255,255,0.2); }
+    .hero-sub {
+      font-size: 18px; font-weight: 400;
+      color: var(--text-on-dark-2);
+      line-height: 1.65; max-width: 540px; margin: 0 auto 36px;
+    }
+    .hero-ctas { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent); color: #fff;
+      font-size: 15px; font-weight: 600; padding: 14px 32px;
+      border-radius: 8px; border: none;
+      position: relative; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-primary::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(88,101,242,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+      color: #fff;
+    }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 15px; font-weight: 500;
+      color: rgba(255,255,255,0.8); padding: 13px 28px;
+      border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.18);
+      background: transparent;
+      transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.32); transform: translateY(-1px); color: #fff; }
+    .btn-light {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 15px; font-weight: 500; color: var(--text-2);
+      padding: 13px 28px; border-radius: 8px;
+      border: 1.5px solid rgba(0,0,0,0.12); background: #fff;
+      transition: border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-light:hover { border-color: rgba(0,0,0,0.2); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .hero-trust {
+      font-size: 13px; color: var(--text-on-dark-3);
+      margin-top: 20px; display: flex; align-items: center; justify-content: center;
+      gap: 8px; flex-wrap: wrap;
+    }
+    .hero-trust a { color: var(--text-on-dark-3); transition: color 150ms ease; }
+    .hero-trust a:hover { color: rgba(255,255,255,0.6); }
+    .hero-trust-dot { color: rgba(255,255,255,0.15); }
 
     /* Terminal */
     .hero-terminal {
-      max-width: 860px; margin: 64px auto 0; background: #0B1120; border-radius: 16px;
-      overflow: hidden; text-align: left; position: relative;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 32px 64px -16px rgba(0,0,0,0.6), 0 0 160px rgba(88,101,242,0.18);
+      max-width: 880px; margin: 64px auto 0;
+      background: #0C0C0E; border-radius: 16px; overflow: hidden;
+      text-align: left; position: relative;
       border: 1px solid rgba(255,255,255,0.06);
     }
-    .terminal-chrome { height: 48px; background: #1E293B; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
+    .terminal-chrome {
+      height: 48px; background: #1A1A1F;
+      display: flex; align-items: center; padding: 0 16px; gap: 8px;
+    }
     .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
-    .terminal-dot.r { background: #EF4444; }
-    .terminal-dot.y { background: #F59E0B; }
-    .terminal-dot.g { background: #22C55E; }
-    .terminal-tab { font-size: 13px; color: rgba(255,255,255,0.6); margin-left: 12px; font-family: var(--font-mono); }
-    .terminal-content { padding: 24px; font-family: var(--font-mono); font-size: 14px; line-height: 1.7; overflow-x: auto; min-height: 220px; }
+    .terminal-dot.r { background: #FF5F57; }
+    .terminal-dot.y { background: #FEBC2E; }
+    .terminal-dot.g { background: #28C840; }
+    .terminal-tab {
+      font-size: 12px; color: rgba(255,255,255,0.45);
+      margin-left: 12px; font-family: var(--font-mono);
+    }
+    .terminal-body {
+      padding: 24px; font-family: var(--font-mono);
+      font-size: 13.5px; line-height: 1.75; min-height: 340px;
+      overflow-x: auto;
+    }
+    .terminal-cursor { display: inline; color: var(--accent-light); animation: cursorBlink 800ms step-end infinite; }
+    @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
     .t-prompt { color: var(--accent); }
     .t-cmd { color: #E2E8F0; }
-    .t-output { color: #94A3B8; }
-    .t-highlight { color: #8B94F7; }
-    .t-dim { color: #64748B; }
-    .terminal-cursor { display: inline; font-weight: 400; color: #8B94F7; animation: cursorBlink 800ms step-end infinite; }
-    @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .t-key { color: #818CF8; }
+    .t-str { color: #86EFAC; }
+    .t-num { color: #FCD34D; }
+    .t-dim { color: #52525B; }
+    .t-comment { color: #3F3F46; }
+    .t-fade-in { opacity: 0; transition: opacity 500ms ease; }
+    .t-fade-in.show { opacity: 1; }
 
-    /* Hero social proof strip (inside hero, dark) */
-    .hero-stats-strip { padding: 24px 0 40px; }
-    .hero-stats-inner { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; font-size: 13px; color: rgba(255,255,255,0.4); }
-    .hero-stats-inner .hstat { padding: 0 8px; }
-    .hero-stats-inner .hdot { color: rgba(255,255,255,0.2); }
-
-    /* Hero → cream gradient transition */
-    .hero-fade { height: 80px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg)); margin-top: 0; }
+    /* Hero stats strip */
+    .hero-stats {
+      padding: 32px 0 48px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; flex-wrap: wrap;
+      font-size: 13.5px; color: var(--text-on-dark-3); font-weight: 500;
+    }
+    .hero-stats .stat-n { color: rgba(255,255,255,0.75); font-weight: 600; }
+    .hero-stats .dot { color: rgba(255,255,255,0.15); padding: 0 2px; }
 
     @media (max-width: 768px) {
-      .hero { padding: 100px 0 0; }
-      .hero-content { padding-bottom: 40px; }
-      .hero-ctas { flex-direction: column; align-items: stretch; gap: 12px; }
-      .hero-ctas .btn-primary, .hero-ctas .btn-ghost { width: 100%; justify-content: center; padding: 16px 28px; }
-      .hero-terminal { max-height: 280px; overflow: hidden; position: relative; }
-      .hero-terminal::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 72px; background: linear-gradient(to bottom, transparent, #0B1120); border-radius: 0 0 16px 16px; pointer-events: none; }
-      .terminal-content { font-size: 12px; padding: 16px; }
-      .terminal-content .t-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    }
-    @media (max-width: 480px) {
       .hero { padding: 80px 0 0; }
-      .hero-terminal { max-height: 220px; }
-      .terminal-content { font-size: 11px; padding: 12px; }
+      .hero-content { padding-bottom: 40px; }
+      .hero-ctas { flex-direction: column; align-items: stretch; gap: 10px; }
+      .hero-ctas .btn-primary, .hero-ctas .btn-ghost { width: 100%; justify-content: center; }
+      .hero-terminal { max-height: 270px; overflow: hidden; position: relative; }
+      .hero-terminal::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, transparent, #0C0C0E); border-radius: 0 0 16px 16px; pointer-events: none; }
+      .terminal-body { font-size: 12px; padding: 16px; }
     }
+    @media (max-width: 480px) { .hero-terminal { max-height: 210px; } .terminal-body { font-size: 11px; padding: 12px; } }
 
     /* ── SHARED SECTION STYLES ──────────────────────── */
-    .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 12px; }
-    .section-h2 { font-family: var(--font-display); font-size: var(--text-h2); font-weight: 400; letter-spacing: -0.03em; line-height: 1.1; }
+    .section-eyebrow {
+      font-size: 12px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--accent); margin-bottom: 14px;
+    }
+    .section-h2 {
+      font-family: var(--font-display); font-size: var(--text-h2);
+      font-weight: 400; letter-spacing: -0.03em; line-height: 1.1;
+      color: var(--text);
+    }
+    .section-h2-dark { color: var(--text-on-dark); }
+    .section-h2 .accent { color: #A5B4FC; }
 
-    /* ── 3. DEMO SECTION (cream) ────────────────────── */
-    .demo-section { padding: 80px 0; background: var(--bg-alt); border-bottom: 1px solid var(--border); }
+    /* ── DEMO SECTION ───────────────────────────────── */
+    .demo-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid var(--border); }
     .demo-inner { max-width: 760px; margin: 0 auto; text-align: center; }
-    .demo-subtitle { font-size: 17px; color: var(--text-2); margin: 0 auto 32px; max-width: 500px; }
-    .demo-url-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
-    .demo-pill { padding: 8px 18px; border: 1.5px solid var(--border); border-radius: 100px; font-size: 14px; font-weight: 500; background: var(--card-bg); color: var(--text-2); cursor: pointer; transition: all 150ms ease; }
-    .demo-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .demo-subtitle { font-size: 16px; color: var(--text-2); margin: 0 auto 32px; max-width: 480px; line-height: 1.6; }
+    .demo-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+    .demo-pill {
+      padding: 7px 18px; border: 1.5px solid var(--border-card);
+      border-radius: 100px; font-size: 13.5px; font-weight: 500;
+      background: var(--bg-card); color: var(--text-2); cursor: pointer;
+      transition: all 150ms ease;
+    }
+    .demo-pill:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
     .demo-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .demo-widget { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--card-shadow); margin-bottom: 16px; }
-    .demo-input-row { display: flex; gap: 12px; align-items: center; }
-    .demo-url-display { flex: 1; font-family: var(--font-mono); font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-    .demo-extract-btn { flex-shrink: 0; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 150ms ease; display: flex; align-items: center; gap: 6px; }
-    .demo-extract-btn:hover { opacity: 0.85; }
-    .demo-extract-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .demo-btn-spinner { display: inline-block; animation: spin 0.8s linear infinite; font-style: normal; }
+    .demo-widget {
+      background: var(--bg-card); border: 1px solid var(--border-card);
+      border-radius: 12px; padding: 14px; box-shadow: var(--shadow-sm); margin-bottom: 14px;
+    }
+    .demo-input-row { display: flex; gap: 10px; align-items: center; }
+    .demo-url-display {
+      flex: 1; font-family: var(--font-mono); font-size: 13px; color: var(--text);
+      background: var(--bg); border: 1px solid var(--border-card);
+      border-radius: 7px; padding: 9px 13px; text-align: left;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+    .demo-extract-btn {
+      flex-shrink: 0; background: var(--accent); color: #fff; border: none;
+      border-radius: 7px; padding: 9px 20px; font-size: 13.5px; font-weight: 600;
+      cursor: pointer; transition: opacity 150ms ease, transform 150ms ease;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .demo-extract-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .demo-extract-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .demo-spinner { display: inline-block; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .demo-result { text-align: left; }
-    .demo-result-header { margin-bottom: 8px; }
-    .demo-meta-chips { display: flex; gap: 8px; flex-wrap: wrap; }
-    .demo-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; }
-    .demo-chip.url { background: rgba(88,101,242,0.1); color: var(--accent); }
+    .demo-meta-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .demo-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 6px; font-size: 12.5px; font-weight: 500; }
+    .demo-chip.url { background: var(--accent-subtle); color: var(--accent); }
     .demo-chip.words { background: rgba(0,0,0,0.05); color: var(--text-2); }
-    .demo-chip.time { background: rgba(34,197,94,0.1); color: #16a34a; }
+    .demo-chip.time { background: rgba(34,197,94,0.08); color: #16A34A; }
     .demo-content-box {
-      background: var(--bg-dark); border-radius: 12px; padding: 24px;
-      font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: #94A3B8;
-      min-height: 280px; overflow: hidden; position: relative; max-height: 400px; overflow-y: auto;
+      background: #0C0C0E; border-radius: 12px; padding: 20px;
+      font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7;
+      color: #94A3B8; min-height: 260px; max-height: 380px; overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.04);
     }
-    .demo-content-box::-webkit-scrollbar { width: 6px; }
+    .demo-content-box::-webkit-scrollbar { width: 5px; }
     .demo-content-box::-webkit-scrollbar-track { background: transparent; }
-    .demo-content-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-    .demo-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 240px; gap: 16px; }
-    .demo-placeholder-icon { font-size: 40px; color: rgba(255,255,255,0.12); }
-    .demo-placeholder-text { font-size: 15px; color: rgba(255,255,255,0.35); font-family: var(--font-body); font-weight: 500; }
-    .demo-placeholder-hint { font-size: 12px; color: rgba(255,255,255,0.2); font-family: var(--font-mono); margin-top: -4px; }
-    .demo-md-h1 { color: #E2E8F0; font-weight: 700; font-size: 15px; }
-    .demo-md-h2 { color: #CBD5E1; font-weight: 600; margin-top: 4px; }
-    .demo-md-bold { color: #E2E8F0; font-weight: 600; }
-    .demo-md-link { color: #8B94F7; }
-    .demo-md-quote { color: #64748B; border-left: 2px solid #334155; padding-left: 8px; display: block; margin: 2px 0; }
+    .demo-content-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+    .demo-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 220px; gap: 12px; }
+    .demo-placeholder-text { font-size: 14px; color: rgba(255,255,255,0.3); font-family: var(--font-body); }
+    .demo-json-sep { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 14px 0; }
     @media (max-width: 768px) {
       .demo-input-row { flex-direction: column; align-items: stretch; }
       .demo-extract-btn { justify-content: center; }
-      .demo-content-box { font-size: 12px; padding: 16px; min-height: 200px; max-height: 280px; }
+      .demo-content-box { font-size: 11.5px; padding: 14px; min-height: 180px; max-height: 260px; }
     }
 
-    /* ── 4. HOW IT WORKS (cream) ────────────────────── */
-    .how-section { padding: 100px 0; background: var(--bg); }
-    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 64px; margin-top: 64px; }
-    .how-grid > * { min-width: 0; }
-    .how-step-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 3px solid var(--accent); width: 32px; }
-    .how-step h3 { font-size: var(--text-h3); font-weight: 600; color: var(--text); margin-bottom: 12px; letter-spacing: -0.02em; }
-    .how-step p { font-size: 16px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
-    .mini-code { background: var(--bg-dark); border-radius: 10px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; white-space: pre-wrap; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-    @media (max-width: 768px) {
-      .how-section { padding: 64px 0; }
-      .how-grid { grid-template-columns: 1fr; gap: 40px; margin-top: 48px; }
-      .mini-code { font-size: 12px; padding: 14px; }
+    /* ── HOW IT WORKS ───────────────────────────────── */
+    .how-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid var(--border); }
+    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px; margin-top: 64px; }
+    .how-step-num {
+      font-size: 13px; font-family: var(--font-mono); color: var(--accent);
+      font-weight: 600; padding-bottom: 12px; margin-bottom: 20px;
+      border-bottom: 2px solid var(--accent); width: 32px;
     }
-    @media (max-width: 480px) {
-      .how-grid { gap: 32px; }
+    .how-step h3 {
+      font-size: var(--text-h3); font-weight: 600; letter-spacing: -0.02em;
+      color: var(--text); margin-bottom: 10px; line-height: 1.3;
     }
+    .how-step p { font-size: 15px; color: var(--text-2); line-height: 1.65; margin-bottom: 18px; }
+    .mini-code {
+      background: #0C0C0E; border-radius: 10px; padding: 15px;
+      font-family: var(--font-mono); font-size: 12.5px; color: #E2E8F0;
+      word-break: break-word; white-space: pre-wrap;
+      border: 1px solid rgba(255,255,255,0.05); box-shadow: var(--shadow-sm);
+      line-height: 1.65;
+    }
+    @media (max-width: 768px) { .how-section { padding: 64px 0; } .how-grid { grid-template-columns: 1fr; gap: 40px; margin-top: 48px; } .mini-code { font-size: 12px; } }
+    @media (max-width: 480px) { .how-grid { gap: 32px; } }
 
-    /* ── 5. WHY WEBPEEL (dark) ──────────────────────── */
+    /* ── WHY WEBPEEL (DARK) ─────────────────────────── */
     .why-section {
       background: var(--bg-dark);
-      background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-      background-size: 40px 40px;
-      padding: 120px 0 0;
-      position: relative;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 64px 64px;
+      padding: var(--space-section) 0;
     }
-    .why-section .section-eyebrow { color: #8B94F7; }
-    .why-section .section-h2 { color: #fff; line-height: 1.05; }
-    .why-section .section-h2 .accent { color: #A5B4FC; }
-    .why-inner { display: grid; grid-template-columns: 60fr 40fr; gap: 80px; align-items: start; }
-    .why-body { font-size: 18px; color: rgba(255,255,255,0.65); max-width: 520px; line-height: 1.7; margin-top: 24px; hyphens: none; -webkit-hyphens: none; }
-    .why-checks { list-style: none; margin-top: 28px; display: flex; flex-direction: column; gap: 12px; }
-    .why-checks li { font-size: 14px; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 10px; }
-    .why-check-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; color: #8B94F7; font-style: normal; }
+    .why-section .section-eyebrow { color: var(--accent-light); }
+    .why-inner { display: grid; grid-template-columns: 55fr 45fr; gap: 80px; align-items: start; }
+    .why-body { font-size: 17px; color: rgba(255,255,255,0.55); max-width: 480px; line-height: 1.7; margin-top: 20px; }
+    .why-checks { list-style: none; margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+    .why-checks li { font-size: 14px; color: rgba(255,255,255,0.65); display: flex; align-items: center; gap: 10px; }
+    .why-check-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex-shrink: 0; color: var(--accent-light); font-style: normal; font-size: 14px; }
 
-    /* Bar chart (dark variant) */
-    .bar-group { margin-bottom: 32px; }
-    .bar-group-title { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); margin-bottom: 12px; }
-    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .bar-label { width: 90px; font-size: 14px; color: rgba(255,255,255,0.5); flex-shrink: 0; }
-    .bar-label.highlight { color: rgba(255,255,255,0.9); font-weight: 600; }
-    .bar-track { flex: 1; height: 28px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 800ms var(--ease-out-expo); }
-    .bar-fill.blue { background: var(--accent); }
-    .bar-fill.gray { background: rgba(255,255,255,0.15); }
-    .bar-value { font-size: 14px; font-weight: 600; color: #fff; width: 52px; text-align: right; flex-shrink: 0; }
+    /* Before/After */
+    .before-after { margin-top: 28px; }
+    .ba-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.3); margin-bottom: 6px; }
+    .ba-code { font-family: var(--font-mono); border-radius: 8px; padding: 12px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+    .ba-before { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: rgba(255,255,255,0.35); }
+    .ba-after { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.18); color: rgba(34,197,94,0.75); }
+    .ba-arrow { text-align: center; color: var(--accent-light); font-family: var(--font-mono); font-size: 13px; padding: 8px 0; }
 
-    /* Stat cards (dark variant) */
-    .stat-cards-dark { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px; }
-    .stat-card-dark { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: border-color 200ms ease; }
-    .stat-card-dark:hover { border-color: rgba(88,101,242,0.3); }
-    .stat-card-dark .num { font-size: clamp(32px, 4vw, 48px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
-    .stat-card-dark .label { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 6px; }
+    /* Bars */
+    .bar-group { margin-bottom: 28px; }
+    .bar-group-title { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .bar-label { width: 80px; font-size: 13px; color: rgba(255,255,255,0.45); flex-shrink: 0; }
+    .bar-label.hl { color: rgba(255,255,255,0.9); font-weight: 600; }
+    .bar-track { flex: 1; height: 26px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 900ms var(--ease-out); }
+    .bar-fill.accent { background: var(--accent); }
+    .bar-fill.muted { background: rgba(255,255,255,0.12); }
+    .bar-val { font-size: 13px; font-weight: 600; color: #fff; width: 48px; text-align: right; flex-shrink: 0; }
 
-    /* Integration chips (dark) */
+    /* Stat cards */
+    .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+    .stat-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; padding: 22px 18px;
+      transition: border-color 200ms ease;
+    }
+    .stat-card:hover { border-color: rgba(88,101,242,0.2); }
+    .stat-card .stat-n { font-size: var(--text-stat); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
+    .stat-card .stat-l { font-size: 11.5px; color: rgba(255,255,255,0.4); margin-top: 6px; }
+
+    /* Integration chips */
     .why-integrations { padding: 48px 0 0; }
-    .why-integrations-inner { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .ww-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.35); margin-right: 4px; }
-    .ww-chip-dark { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); }
-
-    /* Why → cream gradient */
-    .why-fade { height: 80px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg)); }
+    .why-integrations-inner { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .int-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.3); margin-right: 4px; }
+    .int-chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 100px; font-size: 12.5px; font-weight: 500; color: rgba(255,255,255,0.55);
+    }
 
     @media (max-width: 768px) {
-      .why-section { padding: 64px 0 0; }
+      .why-section { padding: 64px 0; }
       .why-inner { grid-template-columns: 1fr; gap: 48px; }
-      .stat-cards-dark { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-      .stat-card-dark { padding: 14px; }
-      .stat-card-dark .num { font-size: clamp(20px, 6vw, 28px); }
-      .bar-label { width: 70px; font-size: 12px; }
-      .bar-value { font-size: 12px; width: 44px; }
+      .stat-cards { gap: 8px; }
+      .stat-card { padding: 16px 14px; }
+      .stat-card .stat-n { font-size: clamp(28px, 8vw, 40px); }
+      .bar-label { width: 68px; font-size: 12px; }
+      .bar-val { font-size: 12px; width: 42px; }
     }
-    @media (max-width: 480px) {
-      .stat-cards-dark { grid-template-columns: 1fr; }
-      .why-integrations-inner { gap: 8px; }
-    }
+    @media (max-width: 480px) { .stat-cards { grid-template-columns: 1fr; } }
 
-    /* ── 6. PRICING (cream) ─────────────────────────── */
-    .pricing-section { padding: var(--space-section) 0; background: var(--bg); }
+    /* ── PRICING ────────────────────────────────────── */
+    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid var(--border); }
     .pricing-header { text-align: center; margin-bottom: 64px; }
-    .pricing-header .sub { font-size: 16px; color: var(--text-2); margin-top: 12px; }
-    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; }
-    .price-card { background: var(--card-bg); border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; padding: 36px; position: relative; box-shadow: var(--card-shadow); transition: transform 200ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo); }
-    .price-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
-    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.04); background: #F0F1FE; box-shadow: 0 0 0 1px rgba(88,101,242,0.1), 0 8px 24px rgba(88,101,242,0.2), 0 16px 48px rgba(0,0,0,0.1); }
-    .price-card.featured:hover { transform: scale(1.04) translateY(-4px); box-shadow: 0 0 0 1px rgba(88,101,242,0.15), 0 12px 32px rgba(88,101,242,0.3), 0 24px 64px rgba(0,0,0,0.12); }
-    .price-badge { position: absolute; top: -12px; right: 24px; display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
-    .price-plan { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 8px; }
-    .price-amount { font-size: 40px; font-weight: 600; color: var(--text); }
-    .price-amount .per { font-size: 16px; font-weight: 400; color: var(--text-3); }
-    .price-desc { font-size: 15px; color: var(--text-2); margin: 8px 0 24px; }
+    .pricing-sub { font-size: 16px; color: var(--text-2); margin-top: 12px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; align-items: start; }
+    .price-card {
+      background: var(--bg-card); border: 1px solid var(--border-card);
+      border-radius: 16px; padding: 36px; position: relative;
+      box-shadow: var(--shadow-md);
+      transition: transform 250ms var(--ease-out), box-shadow 250ms var(--ease-out);
+    }
+    .price-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-xl); }
+    .price-card.featured {
+      border: 2px solid var(--accent);
+      transform: scale(1.03);
+      background: #FAFAFF;
+      box-shadow: 0 0 0 1px rgba(88,101,242,0.1), 0 8px 32px rgba(88,101,242,0.15), 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .price-card.featured:hover {
+      transform: scale(1.03) translateY(-4px);
+      box-shadow: 0 0 0 1px rgba(88,101,242,0.15), 0 12px 40px rgba(88,101,242,0.25), 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .price-badge {
+      position: absolute; top: -12px; right: 24px;
+      background: var(--accent); color: #fff; font-size: 12px; font-weight: 600;
+      padding: 4px 14px; border-radius: 100px; letter-spacing: 0.01em;
+    }
+    .price-plan { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-2); margin-bottom: 8px; }
+    .price-amount { font-size: 46px; font-weight: 700; color: var(--text); letter-spacing: -0.04em; line-height: 1; }
+    .price-amount .per { font-size: 16px; font-weight: 400; color: var(--text-3); letter-spacing: 0; }
+    .price-desc { font-size: 14px; color: var(--text-2); margin: 10px 0 24px; }
     .price-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 24px; }
-    .price-features { list-style: none; margin-bottom: 24px; }
-    .price-features li { font-size: 14px; color: var(--text-2); padding: 6px 0; display: flex; align-items: center; }
-    .price-features li::before { content: ''; display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: -2px; background: var(--accent); flex-shrink: 0; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; }
-    .price-btn { display: block; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; border: none; width: 100%; transition: opacity var(--transition-fast); cursor: pointer; }
-    .price-btn:hover { opacity: 0.85; }
+    .price-features { list-style: none; margin-bottom: 28px; }
+    .price-features li {
+      font-size: 14px; color: var(--text-2); padding: 5px 0;
+      display: flex; align-items: center; gap: 9px;
+    }
+    .price-features li::before {
+      content: ''; display: inline-block; width: 15px; height: 15px; flex-shrink: 0;
+      background: var(--accent);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+    .price-btn {
+      display: block; text-align: center; padding: 12px;
+      border-radius: 8px; font-size: 14px; font-weight: 500; border: none;
+      width: 100%; transition: opacity 150ms ease, transform 150ms ease; cursor: pointer;
+    }
+    .price-btn:hover { opacity: 0.85; transform: translateY(-1px); }
     .price-btn-filled { background: var(--accent); color: #fff; }
-    .price-btn-outline { background: transparent; border: 1.5px solid rgba(0,0,0,0.32); color: var(--text); }
+    .price-btn-outline { background: transparent; border: 1.5px solid rgba(0,0,0,0.13); color: var(--text); }
     @media (max-width: 768px) {
       .pricing-grid { grid-template-columns: 1fr; max-width: 400px; gap: 16px; }
       .price-card { padding: 28px 24px; }
@@ -365,60 +537,65 @@
       .price-card.featured:hover { transform: translateY(-4px); }
     }
 
-    /* ── 7. FAQ (cream) ─────────────────────────────── */
-    .faq-section { padding: var(--space-section) 0; background: var(--bg); }
-    .faq-list { max-width: var(--container-narrow); margin: 0 auto; }
+    /* ── FAQ ────────────────────────────────────────── */
+    .faq-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid var(--border); }
+    .faq-list { max-width: var(--container-narrow); margin: 40px auto 0; }
     .faq-item { border-bottom: 1px solid var(--border); }
-    .faq-question { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; font-size: 16px; font-weight: 500; color: var(--text); cursor: pointer; background: none; border: none; width: 100%; text-align: left; }
-    .faq-question:hover { color: var(--accent); }
-    .faq-icon { font-size: 20px; color: var(--text-3); transition: transform 0.3s ease; flex-shrink: 0; }
-    .faq-item.open .faq-icon { transform: rotate(45deg); }
-    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    .faq-answer-inner { padding: 0 0 24px; font-size: 16px; color: var(--text-2); line-height: 1.7; }
-    .faq-item.open .faq-answer { max-height: 300px; }
-
-    /* ── 8. FINAL CTA + FOOTER ──────────────────────── */
-    .final-cta { background: var(--bg-dark); text-align: center; padding: 100px 0; }
-    .final-cta h2 { font-family: var(--font-display); font-size: 36px; font-weight: 400; color: #fff; margin-bottom: 16px; }
-    .final-cta .sub { font-size: 16px; color: rgba(255,255,255,0.6); margin-bottom: 32px; }
-    .install-card { display: inline-flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; max-width: 100%; overflow-x: auto; }
-    .install-card code { font-family: var(--font-mono); font-size: 14px; color: #E2E8F0; white-space: nowrap; }
-    .install-copy-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all var(--transition-fast); flex-shrink: 0; }
-    .install-copy-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
-    @media (max-width: 480px) {
-      .install-card { flex-direction: column; gap: 8px; }
-      .install-card code { font-size: 12px; word-break: break-all; white-space: normal; }
+    .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 22px 0; font-size: 16px; font-weight: 500; color: var(--text);
+      cursor: pointer; background: none; border: none; width: 100%; text-align: left;
+      gap: 16px;
     }
+    .faq-q:hover { color: var(--accent); }
+    .faq-icon { font-size: 20px; color: var(--text-3); transition: transform 300ms var(--ease-out); flex-shrink: 0; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 400ms var(--ease-out); }
+    .faq-answer-inner { padding: 0 0 22px; font-size: 15.5px; color: var(--text-2); line-height: 1.7; }
+    .faq-item.open .faq-answer { max-height: 320px; }
 
-    .footer { background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,0.08); padding: 48px 0; }
+    /* ── FINAL CTA ──────────────────────────────────── */
+    .final-cta { background: var(--bg-dark); text-align: center; padding: 100px 0; }
+    .final-cta h2 { font-family: var(--font-display); font-size: clamp(32px, 4vw, 48px); font-weight: 400; color: var(--text-on-dark); margin-bottom: 14px; letter-spacing: -0.03em; }
+    .final-cta .sub { font-size: 16px; color: var(--text-on-dark-2); margin-bottom: 36px; }
+    .install-card {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; max-width: 100%; overflow-x: auto;
+    }
+    .install-card code { font-family: var(--font-mono); font-size: 13.5px; color: #E2E8F0; white-space: nowrap; }
+    .install-copy-btn {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.65); border-radius: 6px; padding: 5px 12px;
+      font-size: 12px; font-weight: 500; cursor: pointer; flex-shrink: 0;
+      transition: all 150ms ease;
+    }
+    .install-copy-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    @media (max-width: 480px) { .install-card { flex-direction: column; gap: 8px; } .install-card code { font-size: 12px; word-break: break-all; white-space: normal; } }
+
+    /* ── FOOTER ─────────────────────────────────────── */
+    .footer { background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,0.06); padding: 48px 0; }
     .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
-    .footer-brand { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-    .footer-brand .diamond { color: var(--accent); }
-    .footer-tagline { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; }
-    .footer-col h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.8); margin-bottom: 16px; }
-    .footer-col a { display: block; font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 10px; transition: color var(--transition-fast); }
-    .footer-col a:hover { color: #fff; }
-    .footer-bottom { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .footer-bottom p { font-size: 13px; color: rgba(255,255,255,0.3); }
-    .footer-bottom a { font-size: 13px; color: rgba(255,255,255,0.3); margin-left: 16px; transition: color var(--transition-fast); }
-    .footer-bottom a:hover { color: rgba(255,255,255,0.7); }
+    .footer-brand { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .footer-tagline { font-size: 13.5px; color: rgba(255,255,255,0.4); line-height: 1.6; }
+    .footer-col h4 { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.7); margin-bottom: 16px; }
+    .footer-col a { display: block; font-size: 13.5px; color: rgba(255,255,255,0.45); margin-bottom: 10px; transition: color 150ms ease; }
+    .footer-col a:hover { color: rgba(255,255,255,0.8); }
+    .footer-bottom { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom p { font-size: 13px; color: rgba(255,255,255,0.28); }
+    .footer-bottom a { font-size: 13px; color: rgba(255,255,255,0.28); margin-left: 16px; transition: color 150ms ease; }
+    .footer-bottom a:hover { color: rgba(255,255,255,0.6); }
     @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
 
     /* ── RESPONSIVE GLOBALS ─────────────────────────── */
-    @media (max-width: 1024px) {
-      :root { --gutter: 32px; }
-    }
-    @media (max-width: 768px) {
-      :root { --gutter: 20px; --space-section: clamp(60px, 10vw, 80px); }
-    }
+    @media (max-width: 1024px) { :root { --gutter: 28px; } }
+    @media (max-width: 768px) { :root { --gutter: 20px; --space-section: clamp(60px, 10vw, 80px); } }
   </style>
 </head>
 <body>
 
-  <!-- ═══════════════════════════════════════════════════
-       NAVIGATION
-       ═══════════════════════════════════════════════════ -->
+  <!-- NAV -->
   <nav class="nav nav-dark" id="nav">
     <div class="container nav-inner">
       <a href="/" class="nav-logo">
@@ -442,26 +619,24 @@
     <a href="/docs/">Docs</a>
     <a href="/pricing">Pricing</a>
     <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">GitHub ↗</a>
-    <a href="https://app.webpeel.dev/signup">Get Started →</a>
+    <a href="https://app.webpeel.dev/signup">Get Started Free →</a>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════
-       SECTION 1: HERO (DARK)
-       ═══════════════════════════════════════════════════ -->
+  <!-- HERO -->
   <section class="hero" id="hero-section">
     <div class="container">
       <div class="hero-content">
-        <div class="hero-eyebrow hero-anim" data-hero="0">Open Source · 500 free fetches/week</div>
+        <div class="hero-eyebrow hero-el" data-delay="0">Open Source · 500 free fetches/week</div>
         <h1>
-          <span class="hero-anim" data-hero="1" style="display:inline-block;">Give your AI</span><br>
-          <span class="accent hero-anim" data-hero="2" style="display:inline-block;">the entire web.</span>
+          <span class="hero-el" style="display:block;" data-delay="120">Give your AI</span>
+          <span class="accent hero-el" style="display:block;" data-delay="200">the entire web.</span>
         </h1>
-        <p class="hero-sub hero-anim" data-hero="3">One API call. Any page — including JS&#8209;rendered, Cloudflare&#8209;protected, and&nbsp;dynamic&nbsp;content.</p>
-        <div class="hero-ctas hero-anim" data-hero="4">
+        <p class="hero-sub hero-el" data-delay="320">One API call. Any page — including JS&#8209;rendered, Cloudflare&#8209;protected, and&nbsp;dynamic&nbsp;content.</p>
+        <div class="hero-ctas hero-el" data-delay="420">
           <a href="https://app.webpeel.dev/signup" class="btn-primary">Get Started Free →</a>
           <a href="/docs/" class="btn-ghost">View Docs</a>
         </div>
-        <div class="hero-trust hero-anim" data-hero="4">
+        <div class="hero-trust hero-el" data-delay="420">
           <a href="https://app.webpeel.dev/signup">Free forever</a>
           <span class="hero-trust-dot">·</span>
           <a href="https://app.webpeel.dev/signup">No credit card</a>
@@ -470,61 +645,59 @@
         </div>
       </div>
 
-      <div class="hero-terminal hero-anim" data-hero="5">
+      <div class="hero-terminal hero-terminal-el" id="hero-terminal">
         <div class="terminal-chrome">
           <div class="terminal-dot r"></div>
           <div class="terminal-dot y"></div>
           <div class="terminal-dot g"></div>
           <span class="terminal-tab">Terminal</span>
         </div>
-        <div class="terminal-content" id="terminal-content">
-          <!-- Static content visible immediately, replaced by typing animation after 800ms -->
+        <div class="terminal-body" id="terminal-body">
           <div id="terminal-static">
-            <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel "https://stripe.com" --readable</span></div>
-            <div><span class="t-output">→ # Stripe | Financial Infrastructure for the Internet</span></div>
-            <div><span class="t-output">→ 2,847 words · 12s read · 4 images</span></div>
+            <div><span class="t-prompt">$</span> <span class="t-cmd">curl "https://api.webpeel.dev/v1/fetch?url=https://stripe.com" \</span></div>
+            <div style="padding-left:16px"><span class="t-cmd">&nbsp;&nbsp;&nbsp;&nbsp;-H "Authorization: Bearer wp_live_..." | jq .</span></div>
             <br>
-            <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel search "best react frameworks 2026"</span></div>
-            <div><span class="t-output">→ 1. Next.js 15 — The React Framework for Production</span></div>
-            <div><span class="t-output">→ 2. Remix 3.0 — Full Stack Web Framework</span></div>
-            <br>
-            <div><span class="t-prompt">$</span> <span class="t-cmd">webpeel youtube https://youtu.be/dQw4 --transcript</span></div>
-            <div><span class="t-output">→ Duration: 3:32 · Transcript: 847 words </span><span class="t-highlight">✓</span></div>
+            <div>
+              <div><span class="t-dim">{</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"url"</span><span class="t-dim">:</span> <span class="t-str">"https://stripe.com"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"auto"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"content"</span><span class="t-dim">:</span> <span class="t-str">"# Stripe | Financial Infrastructure\n\nStripe is a technology..."</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"metadata"</span><span class="t-dim">:</span> <span class="t-dim">{</span></div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">"description"</span><span class="t-dim">:</span> <span class="t-str">"Online payment processing for internet businesses..."</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">"author"</span><span class="t-dim">:</span> <span class="t-str">"Stripe"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">"wordCount"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">"readingTime"</span><span class="t-dim">:</span> <span class="t-str">"12 min read"</span></div>
+              <div>&nbsp;&nbsp;<span class="t-dim">}</span></div>
+              <div><span class="t-dim">}</span></div>
+            </div>
           </div>
-          <div class="t-line" style="display:none" data-cmd='webpeel "https://stripe.com" --readable' data-output='→ # Stripe | Financial Infrastructure for the Internet\n→ 2,847 words · 12s read · 4 images'></div>
-          <div class="t-line" style="display:none" data-cmd='webpeel search "best react frameworks 2026"' data-output='→ 1. Next.js 15 — The React Framework for Production\n→ 2. Remix 3.0 — Full Stack Web Framework'></div>
-          <div class="t-line" style="display:none" data-cmd='webpeel youtube https://youtu.be/dQw4 --transcript' data-output='→ Duration: 3:32 · Transcript: 847 words ✓'></div>
+          <div style="display:none" id="terminal-dynamic"></div>
         </div>
       </div>
 
-      <!-- Social proof strip inside hero -->
-      <div class="hero-stats-strip hero-anim" data-hero="6">
-        <div class="hero-stats-inner">
-          <span class="hstat">Open Source</span>
-          <span class="hdot">·</span>
-          <span class="hstat">18 MCP Tools</span>
-          <span class="hdot">·</span>
-          <span class="hstat">97.6% Success</span>
-          <span class="hdot">·</span>
-          <span class="hstat">500+ sites tested</span>
-        </div>
+      <div class="hero-stats hero-el" data-delay="600">
+        <span><span class="stat-n">2,000+</span> weekly npm downloads</span>
+        <span class="dot">·</span>
+        <span><span class="stat-n">18</span> MCP tools</span>
+        <span class="dot">·</span>
+        <span><span class="stat-n">97.6%</span> success rate</span>
+        <span class="dot">·</span>
+        <span><span class="stat-n">31</span> domain extractors</span>
       </div>
     </div>
   </section>
 
-  <!-- Hero → cream gradient transition -->
-  <div class="hero-fade"></div>
-
-  <!-- ═══════════════════════════════════════════════════
-       SECTION 2: INTERACTIVE DEMO
-       ═══════════════════════════════════════════════════ -->
+  <!-- DEMO -->
   <section class="demo-section" id="demo">
     <div class="container">
       <div class="demo-inner reveal">
         <div class="section-eyebrow" style="text-align:center;">TRY IT NOW</div>
         <h2 class="section-h2" style="text-align:center;margin-bottom:12px;">See WebPeel in action</h2>
         <p class="demo-subtitle">Click a URL and watch WebPeel extract clean, structured content.</p>
-        <div class="demo-url-pills">
+        <div class="demo-pills">
           <button class="demo-pill active" data-demo="hn">Hacker News</button>
           <button class="demo-pill" data-demo="wiki">Wikipedia</button>
           <button class="demo-pill" data-demo="yt">YouTube</button>
@@ -535,43 +708,28 @@
             <div class="demo-url-display" id="demo-url-display">https://news.ycombinator.com</div>
             <button class="demo-extract-btn" id="demo-extract-btn">
               <span class="demo-btn-text">Extract ↗</span>
-              <span class="demo-btn-spinner" style="display:none;">⟳</span>
+              <span class="demo-spinner" style="display:none;">⟳</span>
             </button>
           </div>
         </div>
         <div class="demo-result" id="demo-result">
-          <div class="demo-result-header" id="demo-result-header">
-            <div class="demo-meta-chips" id="demo-meta-chips">
-              <span class="demo-chip url">https://news.ycombinator.com</span>
-              <span class="demo-chip words">📝 737 words</span>
-              <span class="demo-chip time">⚡ 396ms</span>
-            </div>
+          <div id="demo-result-header" style="display:none;">
+            <div class="demo-meta-chips" id="demo-meta-chips"></div>
           </div>
           <div class="demo-content-box" id="demo-content-box">
-            <pre style="white-space:pre-wrap;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:#94A3B8;margin:0;"># Hacker News
-
-1. Show HN: I built an open-source alternative to Notion
-2. Why SQLite is taking over the embedded database market
-3. The unreasonable effectiveness of simple HTML
-4. Ask HN: What are you working on this weekend?
-5. Launch HN: WebPeel – AI-ready web content extraction
-6. How we reduced our AWS bill by 90%
-7. The death of the traditional resume
-8. Rust is eating the world, one rewrite at a time
-9. Why I left Google after 12 years
-10. Show HN: A terminal UI for managing Docker containers...</pre>
+            <div class="demo-placeholder">
+              <div class="demo-placeholder-text">Click "Extract" to see clean markdown output</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════
-       SECTION 3: HOW IT WORKS
-       ═══════════════════════════════════════════════════ -->
+  <!-- HOW IT WORKS -->
   <section class="how-section" id="features">
     <div class="container">
-      <div class="reveal" style="text-align:center;margin-bottom:16px;">
+      <div class="reveal" style="text-align:center;">
         <div class="section-eyebrow">HOW IT WORKS</div>
         <h2 class="section-h2">Three lines to any page.</h2>
       </div>
@@ -580,37 +738,35 @@
           <div class="how-step-num">01</div>
           <h3>Install</h3>
           <p>One command. Works everywhere — macOS, Linux, Windows. Zero dependencies beyond Node.</p>
-          <div class="mini-code"><span style="color:#64748B;"># Install globally</span>
+          <div class="mini-code"><span style="color:#3F3F46;"># Install globally</span>
 npm install -g webpeel</div>
         </div>
         <div class="how-step reveal">
           <div class="how-step-num">02</div>
           <h3>Fetch</h3>
           <p>Send any URL. WebPeel auto-detects what's needed — simple HTTP, browser rendering, or advanced mode.</p>
-          <div class="mini-code"><span style="color:#64748B;"># Auto-detects: simple → browser → advanced</span>
+          <div class="mini-code"><span style="color:#3F3F46;"># Auto-detects: simple → browser → advanced</span>
 webpeel "https://example.com" --readable</div>
         </div>
         <div class="how-step reveal">
           <div class="how-step-num">03</div>
           <h3>Integrate</h3>
           <p>Clean markdown, metadata, structured data — ready for your agent in milliseconds.</p>
-          <div class="mini-code"><span style="color:#8B94F7;">import</span> { peel } <span style="color:#8B94F7;">from</span> <span style="color:#86EFAC;">'webpeel'</span>
-<span style="color:#8B94F7;">const</span> page = <span style="color:#8B94F7;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
+          <div class="mini-code"><span style="color:#818CF8;">import</span> { peel } <span style="color:#818CF8;">from</span> <span style="color:#86EFAC;">'webpeel'</span>
+<span style="color:#818CF8;">const</span> page = <span style="color:#818CF8;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════
-       SECTION 4: WHY WEBPEEL (DARK)
-       ═══════════════════════════════════════════════════ -->
+  <!-- WHY WEBPEEL (DARK) -->
   <section class="why-section">
     <div class="container">
       <div class="why-inner">
-        <!-- Left: text -->
+        <!-- Left -->
         <div class="reveal">
           <div class="section-eyebrow">WHY WEBPEEL</div>
-          <h2 class="section-h2">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
+          <h2 class="section-h2 section-h2-dark">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
           <p class="why-body">JavaScript&#8209;heavy SPAs, dynamic content, authenticated pages — handled automatically. WebPeel escalates from simple HTTP to full browser rendering as needed, so your agent always gets through.</p>
           <ul class="why-checks">
             <li><i class="why-check-icon">✓</i> Handles JS rendering, SPAs, Cloudflare</li>
@@ -618,90 +774,91 @@ webpeel "https://example.com" --readable</div>
             <li><i class="why-check-icon">✓</i> 18 MCP tools for Claude, Cursor, GPT</li>
             <li><i class="why-check-icon">✓</i> Firecrawl-compatible API</li>
           </ul>
+          <div class="before-after">
+            <div class="ba-label">Before (raw HTML)</div>
+            <div class="ba-code ba-before">&lt;div class="wrapper"&gt;
+  &lt;nav&gt;...50 links...&lt;/nav&gt;
+  &lt;aside&gt;...ads, popups...&lt;/aside&gt;
+  &lt;script&gt;...tracking...&lt;/script&gt;
+  &lt;article&gt;The actual content&lt;/article&gt;
+&lt;/div&gt;</div>
+            <div class="ba-arrow">↓ webpeel --readable</div>
+            <div class="ba-label">After (WebPeel output)</div>
+            <div class="ba-code ba-after"># The Actual Content
+
+Clean, structured markdown.
+No nav. No ads. No scripts.
+Ready for your AI agent.</div>
+          </div>
         </div>
 
-        <!-- Right: bars + stats -->
+        <!-- Right -->
         <div class="reveal">
           <div class="bar-group" data-bar-group>
             <div class="bar-group-title">Content completeness</div>
             <div class="bar-row">
-              <span class="bar-label highlight">WebPeel</span>
-              <div class="bar-track"><div class="bar-fill blue" data-bar-target="98"></div></div>
-              <span class="bar-value">98%</span>
+              <span class="bar-label hl">WebPeel</span>
+              <div class="bar-track"><div class="bar-fill accent" data-target="98"></div></div>
+              <span class="bar-val">98%</span>
             </div>
             <div class="bar-row">
               <span class="bar-label">Firecrawl</span>
-              <div class="bar-track"><div class="bar-fill gray" data-bar-target="82"></div></div>
-              <span class="bar-value">82%</span>
+              <div class="bar-track"><div class="bar-fill muted" data-target="82"></div></div>
+              <span class="bar-val">82%</span>
             </div>
             <div class="bar-row">
               <span class="bar-label">web_fetch</span>
-              <div class="bar-track"><div class="bar-fill gray" data-bar-target="56"></div></div>
-              <span class="bar-value">56%</span>
+              <div class="bar-track"><div class="bar-fill muted" data-target="56"></div></div>
+              <span class="bar-val">56%</span>
             </div>
           </div>
           <div class="bar-group" data-bar-group>
             <div class="bar-group-title">Protected site success</div>
             <div class="bar-row">
-              <span class="bar-label highlight">WebPeel</span>
-              <div class="bar-track"><div class="bar-fill blue" data-bar-target="97.6"></div></div>
-              <span class="bar-value">97.6%</span>
+              <span class="bar-label hl">WebPeel</span>
+              <div class="bar-track"><div class="bar-fill accent" data-target="97.6"></div></div>
+              <span class="bar-val">97.6%</span>
             </div>
             <div class="bar-row">
               <span class="bar-label">Firecrawl</span>
-              <div class="bar-track"><div class="bar-fill gray" data-bar-target="65"></div></div>
-              <span class="bar-value">65%</span>
+              <div class="bar-track"><div class="bar-fill muted" data-target="65"></div></div>
+              <span class="bar-val">65%</span>
             </div>
             <div class="bar-row">
               <span class="bar-label">web_fetch</span>
-              <div class="bar-track"><div class="bar-fill gray" data-bar-target="35"></div></div>
-              <span class="bar-value">35%</span>
+              <div class="bar-track"><div class="bar-fill muted" data-target="35"></div></div>
+              <span class="bar-val">35%</span>
             </div>
           </div>
-          <div class="stat-cards-dark">
-            <div class="stat-card-dark">
-              <div class="num">646ms</div>
-              <div class="label">avg extraction</div>
-            </div>
-            <div class="stat-card-dark">
-              <div class="num">2-3×</div>
-              <div class="label">more content</div>
-            </div>
-            <div class="stat-card-dark">
-              <div class="num">500+</div>
-              <div class="label">sites tested</div>
-            </div>
+          <div class="stat-cards">
+            <div class="stat-card"><div class="stat-n">646ms</div><div class="stat-l">avg extraction</div></div>
+            <div class="stat-card"><div class="stat-n">2-3×</div><div class="stat-l">more content</div></div>
+            <div class="stat-card"><div class="stat-n">2k+</div><div class="stat-l">weekly downloads</div></div>
           </div>
         </div>
       </div>
 
-      <!-- Integration chips -->
       <div class="why-integrations reveal">
         <div class="why-integrations-inner">
-          <span class="ww-label">WORKS WITH</span>
-          <span class="ww-chip-dark"><span style="color:#D4721A;font-size:9px;">●</span> Claude</span>
-          <span class="ww-chip-dark"><span style="color:#E2E8F0;font-size:9px;">●</span> Cursor</span>
-          <span class="ww-chip-dark"><span style="color:#10A37F;font-size:9px;">●</span> GPT-4o</span>
-          <span class="ww-chip-dark"><span style="color:#6EA8FE;font-size:9px;">●</span> LangChain</span>
-          <span class="ww-chip-dark"><span style="color:#0EA5E9;font-size:9px;">●</span> Windsurf</span>
-          <span class="ww-chip-dark"><span style="color:#8B94F7;font-size:9px;">●</span> OpenClaw</span>
+          <span class="int-label">WORKS WITH</span>
+          <span class="int-chip"><span style="color:#D4721A;font-size:9px;">●</span> Claude</span>
+          <span class="int-chip"><span style="color:#E2E8F0;font-size:9px;">●</span> Cursor</span>
+          <span class="int-chip"><span style="color:#10A37F;font-size:9px;">●</span> GPT-4o</span>
+          <span class="int-chip"><span style="color:#6EA8FE;font-size:9px;">●</span> LangChain</span>
+          <span class="int-chip"><span style="color:#0EA5E9;font-size:9px;">●</span> Windsurf</span>
+          <span class="int-chip"><span style="color:#818CF8;font-size:9px;">●</span> OpenClaw</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Why → cream gradient transition -->
-  <div class="why-fade"></div>
-
-  <!-- ═══════════════════════════════════════════════════
-       SECTION 5: PRICING
-       ═══════════════════════════════════════════════════ -->
+  <!-- PRICING -->
   <section class="pricing-section" id="pricing">
     <div class="container">
       <div class="pricing-header reveal">
         <div class="section-eyebrow" style="text-align:center;">PRICING</div>
         <h2 class="section-h2" style="text-align:center;">Start free. Scale when ready.</h2>
-        <p class="sub">Full MCP tools, extraction &amp; search on every plan. Upgrade for higher limits and advanced features.</p>
+        <p class="pricing-sub">Full MCP tools, extraction &amp; search on every plan. Upgrade for higher limits and advanced features.</p>
       </div>
       <div class="pricing-grid">
         <div class="price-card reveal">
@@ -746,59 +903,55 @@ webpeel "https://example.com" --readable</div>
             <li>Higher spending caps</li>
             <li>Dedicated support</li>
           </ul>
-          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-outline" style="border-color: rgba(0,0,0,0.25); color: var(--text);">Upgrade to Max →</a>
+          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-outline">Upgrade to Max →</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════
-       SECTION 6: FAQ
-       ═══════════════════════════════════════════════════ -->
+  <!-- FAQ -->
   <section class="faq-section">
     <div class="container-narrow">
-      <div class="reveal" style="text-align: center; margin-bottom: 64px;">
-        <div class="section-eyebrow" style="margin-bottom: 16px;">FAQ</div>
+      <div class="reveal" style="text-align:center;">
+        <div class="section-eyebrow" style="margin-bottom:16px;">FAQ</div>
         <h2 class="section-h2">Questions &amp; answers</h2>
       </div>
       <div class="faq-list">
         <div class="faq-item">
-          <button class="faq-question"><span>What is WebPeel?</span><span class="faq-icon">+</span></button>
+          <button class="faq-q"><span>What is WebPeel?</span><span class="faq-icon">+</span></button>
           <div class="faq-answer"><div class="faq-answer-inner">WebPeel is a web content extraction API built for AI agents. It turns any URL into clean, structured content — markdown, metadata, and structured data — ready for your AI in milliseconds. It handles JavaScript rendering, dynamic content, and protected pages automatically.</div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question"><span>How does it handle JavaScript-heavy or dynamic pages?</span><span class="faq-icon">+</span></button>
+          <button class="faq-q"><span>How does it handle JavaScript-heavy or dynamic pages?</span><span class="faq-icon">+</span></button>
           <div class="faq-answer"><div class="faq-answer-inner">WebPeel auto-escalates through three levels: simple HTTP fetch, headless browser rendering, and advanced stealth mode. It handles JavaScript-heavy pages, dynamic content, and protected sites with a 97.6% content retrieval success rate across 40+ tested domains.</div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question"><span>Is there a free tier?</span><span class="faq-icon">+</span></button>
+          <button class="faq-q"><span>Is there a free tier?</span><span class="faq-icon">+</span></button>
           <div class="faq-answer"><div class="faq-answer-inner">Yes. 500 fetches per week, no credit card required. The free tier includes all features — browser rendering, MCP tools, search, extraction, everything. Weekly limits reset every Monday.</div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question"><span>How does it compare to Firecrawl?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel extracts more content (98% vs 82% completeness), has better protected site success (97.6% vs 65%), includes 18 MCP tools vs ~6, and has a built-in deep research agent. It's also fully open source (WebPeel SDK license) and offers a Firecrawl-compatible API for easy migration.</div></div>
+          <button class="faq-q"><span>How does it compare to Firecrawl?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel extracts more content (98% vs 82% completeness), has better protected site success (97.6% vs 65%), includes 18 MCP tools vs ~6, and has a built-in deep research agent. It's also fully open source and offers a Firecrawl-compatible API for easy migration.</div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question"><span>Can I self-host?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">Yes. WebPeel is open source (WebPeel SDK license). Install the CLI with <code style="background:var(--border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:13px;">npm install -g webpeel</code> and run your own MCP server locally for unlimited usage.</div></div>
+          <button class="faq-q"><span>Can I self-host?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes. WebPeel is open source. Install the CLI with <code style="background:rgba(0,0,0,0.06);padding:2px 7px;border-radius:4px;font-family:var(--font-mono);font-size:13px;">npm install -g webpeel</code> and run your own MCP server locally for unlimited usage.</div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question"><span>Is WebPeel compliant with robots.txt and ToS?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel is a tool — responsible use is on the operator. By default, the CLI respects robots.txt. We recommend only fetching pages you have permission to access, using reasonable rate limits, and complying with each site's terms of service. WebPeel is designed for legitimate research, data pipelines, and AI agents — not scraping at scale or circumventing paywalls.</div></div>
+          <button class="faq-q"><span>Is WebPeel compliant with robots.txt and ToS?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel is a tool — responsible use is on the operator. By default, the CLI respects robots.txt. We recommend only fetching pages you have permission to access, using reasonable rate limits, and complying with each site's terms of service.</div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question"><span>What formats does it return?</span><span class="faq-icon">+</span></button>
+          <button class="faq-q"><span>What formats does it return?</span><span class="faq-icon">+</span></button>
           <div class="faq-answer"><div class="faq-answer-inner">Markdown (default), plain text, raw HTML, and structured JSON via schema extraction. You can use JSON Schema for precise field extraction, built-in CSS schemas for common page types, or LLM extraction with your own API key.</div></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════
-       FINAL CTA + FOOTER
-       ═══════════════════════════════════════════════════ -->
+  <!-- FINAL CTA -->
   <section class="final-cta">
-    <div class="container" style="max-width: 600px;">
+    <div class="container" style="max-width:600px;">
       <h2>Ready to give your AI the web?</h2>
       <p class="sub">Start with 500 free fetches. No credit card required.</p>
       <div class="install-card">
@@ -806,10 +959,11 @@ webpeel "https://example.com" --readable</div>
         <button class="install-copy-btn" id="install-copy">Copy</button>
       </div>
       <br>
-      <a href="https://app.webpeel.dev/signup" class="btn-primary" style="margin-top: 8px;">Get Started Free →</a>
+      <a href="https://app.webpeel.dev/signup" class="btn-primary" style="margin-top:12px;">Get Started Free →</a>
     </div>
   </section>
 
+  <!-- FOOTER -->
   <footer class="footer">
     <div class="container">
       <div class="footer-grid">
@@ -851,278 +1005,263 @@ webpeel "https://example.com" --readable</div>
     </div>
   </footer>
 
-  <!-- ═══════════════════════════════════════════════════
-       SCRIPTS
-       ═══════════════════════════════════════════════════ -->
   <script>
-    /* ── Interactive Demo ─────────────────────────────── */
-    (function() {
-      const demoData = {
-        hn: { url: 'https://news.ycombinator.com', title: 'Hacker News', words: 737, time: 396, content: "# Hacker News\n\n1. Show HN: I built an open-source alternative to Notion\n2. Why SQLite is taking over the embedded database market\n3. The unreasonable effectiveness of simple HTML\n4. Ask HN: What are you working on this weekend?\n5. Launch HN: WebPeel – AI-ready web content extraction\n6. How we reduced our AWS bill by 90%\n7. The death of the traditional resume\n8. Rust is eating the world, one rewrite at a time\n9. Why I left Google after 12 years\n10. Show HN: A terminal UI for managing Docker containers..." },
-        wiki: { url: 'https://en.wikipedia.org/wiki/Web_scraping', title: 'Web scraping - Wikipedia', words: 3994, time: 172, content: "# Web scraping\n\n**Web scraping**, **web harvesting**, or **web data extraction** is data scraping used for extracting data from websites. Web scraping software may directly access the World Wide Web using the Hypertext Transfer Protocol or a web browser.\n\nWhile web scraping can be done manually by a software user, the term typically refers to automated processes implemented using a bot or web crawler. It is a form of copying in which specific data is gathered and copied from the web...\n\n## Techniques\n\nWeb scraping is the process of automatically mining data or collecting information from the World Wide Web. It is a field with active developments sharing a common goal with the semantic web vision..." },
-        yt: { url: 'https://www.youtube.com/watch?v=aircAruvnKk', title: 'But what is a neural network? | Deep learning chapter 1', words: 3200, time: 3428, content: "# But what is a neural network? | Deep learning chapter 1\n\n**Channel:** 3Blue1Brown | **Duration:** 18:40\n\n## Transcript\n\nThis is a 3. It's sloppily written and rendered at an extremely low resolution of 28x28 pixels, but your brain has no trouble recognizing it as a 3. And I want you to take a moment to appreciate how crazy it is that brains can do this so effortlessly.\n\nI mean, this, this and this are also recognizable as 3s, even though the specific values of each pixel is very different from one image to the next..." },
-        example: { url: 'https://example.com', title: 'Example Domain', words: 23, time: 42, content: "# Example Domain\n\nThis domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.\n\n[More information...](https://www.iana.org/domains/example)" }
-      };
-      let currentDemo = 'hn';
-      const pills = document.querySelectorAll('.demo-pill');
-      const urlDisplay = document.getElementById('demo-url-display');
-      const extractBtn = document.getElementById('demo-extract-btn');
-      const resultHeader = document.getElementById('demo-result-header');
-      const metaChips = document.getElementById('demo-meta-chips');
-      const contentBox = document.getElementById('demo-content-box');
+  /* ── DEMO ─────────────────────────────────────────── */
+  (function() {
+    const demoData = {
+      hn: { url: 'https://news.ycombinator.com', title: 'Hacker News', words: 737, time: 396, content: "# Hacker News\n\n1. Show HN: I built an open-source alternative to Notion\n2. Why SQLite is taking over the embedded database market\n3. The unreasonable effectiveness of simple HTML\n4. Ask HN: What are you working on this weekend?\n5. Launch HN: WebPeel – AI-ready web content extraction\n6. How we reduced our AWS bill by 90%\n7. The death of the traditional resume\n8. Rust is eating the world, one rewrite at a time\n9. Why I left Google after 12 years\n10. Show HN: A terminal UI for managing Docker containers..." },
+      wiki: { url: 'https://en.wikipedia.org/wiki/Web_scraping', title: 'Web scraping - Wikipedia', words: 3994, time: 172, content: "# Web scraping\n\n**Web scraping**, **web harvesting**, or **web data extraction** is data scraping used for extracting data from websites. Web scraping software may directly access the World Wide Web using the Hypertext Transfer Protocol or a web browser.\n\nWhile web scraping can be done manually by a software user, the term typically refers to automated processes implemented using a bot or web crawler. It is a form of copying in which specific data is gathered and copied from the web...\n\n## Techniques\n\nWeb scraping is the process of automatically mining data or collecting information from the World Wide Web. It is a field with active developments sharing a common goal with the semantic web vision..." },
+      yt: { url: 'https://www.youtube.com/watch?v=aircAruvnKk', title: 'But what is a neural network? | Deep learning chapter 1', words: 3200, time: 3428, content: "# But what is a neural network? | Deep learning chapter 1\n\n**Channel:** 3Blue1Brown | **Duration:** 18:40\n\n## Transcript\n\nThis is a 3. It's sloppily written and rendered at an extremely low resolution of 28x28 pixels, but your brain has no trouble recognizing it as a 3. And I want you to take a moment to appreciate how crazy it is that brains can do this so effortlessly.\n\nI mean, this, this and this are also recognizable as 3s, even though the specific values of each pixel is very different from one image to the next..." },
+      example: { url: 'https://example.com', title: 'Example Domain', words: 23, time: 42, content: "# Example Domain\n\nThis domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.\n\n[More information...](https://www.iana.org/domains/example)" }
+    };
+    let current = 'hn';
+    const pills = document.querySelectorAll('.demo-pill');
+    const urlDisplay = document.getElementById('demo-url-display');
+    const extractBtn = document.getElementById('demo-extract-btn');
+    const resultHeader = document.getElementById('demo-result-header');
+    const metaChips = document.getElementById('demo-meta-chips');
+    const contentBox = document.getElementById('demo-content-box');
 
-      if (pills.length && extractBtn) {
-        pills.forEach(p => p.addEventListener('click', function() {
-          pills.forEach(x => x.classList.remove('active'));
-          this.classList.add('active');
-          currentDemo = this.dataset.demo;
-          if (urlDisplay) urlDisplay.textContent = demoData[currentDemo].url;
-          contentBox.innerHTML = '<div class="demo-placeholder"><div class="demo-placeholder-icon"><svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="rgba(88,101,242,0.2)"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="rgba(255,255,255,0.15)"/><path d="M8 16h10" stroke="rgba(88,101,242,0.5)" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="rgba(255,255,255,0.15)" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="demo-placeholder-text">Click "Extract" to see clean markdown output</div><div class="demo-placeholder-hint">\u2191 Pick a URL above, then hit Extract</div></div>';
-          resultHeader.style.display = 'none';
-        }));
+    if (!extractBtn) return;
 
-        function runExtract() {
-          const data = demoData[currentDemo];
-          const btnText = extractBtn.querySelector('.demo-btn-text');
-          const spinner = extractBtn.querySelector('.demo-btn-spinner');
-          btnText.style.display = 'none';
-          spinner.style.display = 'inline-block';
-          const fakeDelay = Math.min(data.time, 800);
-          setTimeout(() => {
-            btnText.style.display = '';
-            spinner.style.display = 'none';
-            metaChips.innerHTML = '<span class="demo-chip url">' + data.url + '</span><span class="demo-chip words">📝 ' + data.words.toLocaleString() + ' words</span><span class="demo-chip time">⚡ ' + data.time + 'ms</span>';
-            resultHeader.style.display = '';
-            const lines = data.content.split('\n');
-            contentBox.innerHTML = '<pre style="white-space:pre-wrap;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:#94A3B8;margin:0;">' + lines.map(l => l.replace(/</g,'&lt;')).join('\n') + '</pre>';
-          }, fakeDelay);
-        }
+    pills.forEach(p => p.addEventListener('click', function() {
+      pills.forEach(x => x.classList.remove('active'));
+      this.classList.add('active');
+      current = this.dataset.demo;
+      urlDisplay.textContent = demoData[current].url;
+      contentBox.innerHTML = '<div class="demo-placeholder"><div class="demo-placeholder-text">Click "Extract" to see output</div></div>';
+      resultHeader.style.display = 'none';
+    }));
 
-        extractBtn.addEventListener('click', runExtract);
+    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-        // Auto-trigger demo on page load so visitors see real content immediately
-        setTimeout(runExtract, 600);
-      }
-    })();
+    function runExtract() {
+      const data = demoData[current];
+      const btnText = extractBtn.querySelector('.demo-btn-text');
+      const spinner = extractBtn.querySelector('.demo-spinner');
+      btnText.style.display = 'none'; spinner.style.display = 'inline-block';
+      extractBtn.disabled = true;
+      const delay = Math.min(data.time, 700);
+      setTimeout(() => {
+        btnText.style.display = ''; spinner.style.display = 'none';
+        extractBtn.disabled = false;
+        metaChips.innerHTML =
+          '<span class="demo-chip url">' + esc(data.url) + '</span>' +
+          '<span class="demo-chip words">📝 ' + data.words.toLocaleString() + ' words</span>' +
+          '<span class="demo-chip time">⚡ ' + data.time + 'ms</span>';
+        resultHeader.style.display = '';
+        const snippet = esc(data.content.slice(0, 90).replace(/\n/g,' ')) + '...';
+        const jsonHtml =
+          '<div style="color:#3F3F46;font-size:12px;margin-bottom:6px;">// Response from api.webpeel.dev</div>' +
+          '<div><span style="color:#52525B;">{</span></div>' +
+          '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"title"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"' + esc(data.title) + '"</span><span style="color:#52525B;">,</span></div>' +
+          '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"words"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">' + data.words + '</span><span style="color:#52525B;">,</span></div>' +
+          '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"elapsed"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">' + data.time + '</span><span style="color:#52525B;">,</span></div>' +
+          '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"content"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"' + snippet + '"</span></div>' +
+          '<div><span style="color:#52525B;">}</span></div>';
+        const mdLines = data.content.split('\n').map(l => l.replace(/</g,'&lt;')).join('\n');
+        const mdHtml = '<pre style="white-space:pre-wrap;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#94A3B8;margin:0;">' + mdLines + '</pre>';
+        contentBox.innerHTML =
+          '<div style="font-family:var(--font-mono);font-size:13px;line-height:1.7;">' + jsonHtml + '</div>' +
+          '<hr class="demo-json-sep">' +
+          '<div style="font-size:11px;color:#52525B;margin-bottom:6px;font-family:var(--font-body);">// Extracted content (markdown)</div>' +
+          mdHtml;
+      }, delay);
+    }
+
+    extractBtn.addEventListener('click', runExtract);
+    setTimeout(runExtract, 600);
+  })();
   </script>
+
   <script>
-    (function() {
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* ── INTERACTIONS ─────────────────────────────────── */
+  (function() {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      /* ── Nav: dark/scrolled toggle ───────────────────── */
-      const nav = document.getElementById('nav');
-      const heroSection = document.getElementById('hero-section');
-      const heroFade = document.querySelector('.hero-fade');
+    /* ── Nav scroll toggle ─────────────────────────── */
+    const nav = document.getElementById('nav');
+    const heroSection = document.getElementById('hero-section');
+    const heroObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { nav.classList.remove('scrolled'); }
+        else { nav.classList.add('scrolled'); }
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -80px 0px' });
+    if (heroSection) heroObs.observe(heroSection);
 
-      // Use IntersectionObserver to detect when hero leaves viewport
-      const heroObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            // Still in hero — white links
-            nav.classList.add('nav-dark');
-            nav.classList.remove('scrolled');
-          } else {
-            // Past hero — dark links, cream blur
-            nav.classList.remove('nav-dark');
-            nav.classList.add('scrolled');
-          }
-        });
-      }, { threshold: 0, rootMargin: '0px 0px -80px 0px' });
-
-      if (heroSection) heroObserver.observe(heroSection);
-
-      // Also watch hero-fade for smoother transition
-      if (heroFade) heroObserver.observe(heroFade);
-
-      /* ── Mobile hamburger ────────────────────────────── */
-      const hamburger = document.getElementById('hamburger-btn');
-      const mobileMenu = document.getElementById('mobile-menu');
+    /* ── Mobile hamburger ──────────────────────────── */
+    const hamburger = document.getElementById('hamburger-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (hamburger && mobileMenu) {
       hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
       mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.remove('open')));
-      document.addEventListener('click', (e) => {
+      document.addEventListener('click', e => {
         if (!mobileMenu.contains(e.target) && !hamburger.contains(e.target)) mobileMenu.classList.remove('open');
       });
+    }
 
-      /* ── Smooth scroll for anchor links ────────────── */
-      document.querySelectorAll('a[href^="#"]').forEach(a => {
-        a.addEventListener('click', (e) => {
-          const target = document.querySelector(a.getAttribute('href'));
-          if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
-        });
+    /* ── Smooth scroll ─────────────────────────────── */
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const t = document.querySelector(a.getAttribute('href'));
+        if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
       });
+    });
 
-      /* ── FAQ accordion (one open at a time) ────────── */
-      document.querySelectorAll('.faq-question').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const item = btn.parentElement;
-          const wasOpen = item.classList.contains('open');
-          document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-          if (!wasOpen) item.classList.add('open');
-        });
+    /* ── FAQ accordion ─────────────────────────────── */
+    document.querySelectorAll('.faq-q').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.parentElement;
+        const wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!wasOpen) item.classList.add('open');
       });
+    });
 
-      /* ── Copy install command ──────────────────────── */
-      document.getElementById('install-copy').addEventListener('click', function() {
+    /* ── Copy install cmd ──────────────────────────── */
+    const installCopy = document.getElementById('install-copy');
+    if (installCopy) {
+      installCopy.addEventListener('click', function() {
         const text = document.getElementById('install-cmd').textContent;
-        const btn = this;
         navigator.clipboard.writeText(text).then(() => {
-          btn.textContent = 'Copied!';
-          setTimeout(() => btn.textContent = 'Copy', 2000);
+          this.textContent = 'Copied!';
+          setTimeout(() => this.textContent = 'Copy', 2000);
         }).catch(() => {
           const ta = document.createElement('textarea');
-          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-          document.body.appendChild(ta); ta.select();
-          document.execCommand('copy');
+          ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+          document.body.appendChild(ta); ta.select(); document.execCommand('copy');
           document.body.removeChild(ta);
-          btn.textContent = 'Copied!';
-          setTimeout(() => btn.textContent = 'Copy', 2000);
+          this.textContent = 'Copied!';
+          setTimeout(() => this.textContent = 'Copy', 2000);
         });
       });
+    }
 
-      /* ── Skip all animations if reduced motion ────── */
-      if (prefersReducedMotion) {
-        showTerminalFinal();
-        return;
+    if (prefersReduced) return;
+
+    /* ── Hero entrance animation ───────────────────── */
+    const heroEls = document.querySelectorAll('.hero-el');
+    const termEl = document.querySelector('.hero-terminal-el');
+    heroEls.forEach(el => {
+      const delay = parseInt(el.dataset.delay) || 0;
+      setTimeout(() => el.classList.add('visible'), delay);
+    });
+    if (termEl) setTimeout(() => termEl.classList.add('visible'), 600);
+
+    /* ── Scroll reveal ─────────────────────────────── */
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const siblings = Array.from((el.parentElement || el).querySelectorAll(':scope > .reveal:not(.visible)'));
+        const idx = siblings.indexOf(el);
+        setTimeout(() => el.classList.add('visible'), idx >= 0 ? idx * 100 : 0);
+        revealObs.unobserve(el);
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+    /* ── Bar chart animation ───────────────────────── */
+    const barObs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        barObs.unobserve(entry.target);
+        entry.target.querySelectorAll('.bar-fill[data-target]').forEach((bar, i) => {
+          setTimeout(() => { bar.style.width = bar.dataset.target + '%'; }, i * 120);
+        });
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('[data-bar-group]').forEach(g => barObs.observe(g));
+
+    /* ── Terminal typing animation ─────────────────── */
+    (function() {
+      const body = document.getElementById('terminal-body');
+      const staticEl = document.getElementById('terminal-static');
+      const dynEl = document.getElementById('terminal-dynamic');
+      if (!body || !dynEl) return;
+
+      const cmdLine1 = 'curl "https://api.webpeel.dev/v1/fetch?url=https://stripe.com" \\';
+      const cmdLine2 = '    -H "Authorization: Bearer wp_live_..." | jq .';
+
+      function buildJson() {
+        return [
+          '<div><span class="t-dim">{</span></div>',
+          '<div>&nbsp;&nbsp;<span class="t-key">"url"</span><span class="t-dim">:</span> <span class="t-str">"https://stripe.com"</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"auto"</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;<span class="t-key">"content"</span><span class="t-dim">:</span> <span class="t-str">"# Stripe | Financial Infrastructure\\n\\nStripe is a technology..."</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;<span class="t-key">"metadata"</span><span class="t-dim">:</span> <span class="t-dim">{</span></div>',
+          '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">"description"</span><span class="t-dim">:</span> <span class="t-str">"Online payment processing..."</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">"author"</span><span class="t-dim">:</span> <span class="t-str">"Stripe"</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">"wordCount"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>',
+          '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">"readingTime"</span><span class="t-dim">:</span> <span class="t-str">"12 min read"</span></div>',
+          '<div>&nbsp;&nbsp;<span class="t-dim">}</span></div>',
+          '<div><span class="t-dim">}</span></div>'
+        ].join('');
       }
 
-      /* ── Hero entrance animation ───────────────────── */
-      const heroEls = Array.from(document.querySelectorAll('.hero-anim'));
-      heroEls.forEach(el => el.classList.add('pre-anim'));
-      heroEls.sort((a, b) => (+a.dataset.hero) - (+b.dataset.hero));
-      heroEls.forEach((el, i) => {
-        const delay = i === 0 ? 0 : (i <= 2 ? i * 100 : i * 120);
-        setTimeout(() => el.classList.add('animated'), delay);
-      });
+      function startTyping() {
+        staticEl.style.display = 'none';
+        dynEl.style.display = '';
+        dynEl.innerHTML = '';
 
-      /* ── Scroll reveal with stagger ────────────────── */
-      const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
-          const el = entry.target;
-          const parent = el.parentElement;
-          const siblings = Array.from(parent.querySelectorAll(':scope > .reveal.pre-anim'));
-          const idx = siblings.indexOf(el);
-          const delay = idx >= 0 ? idx * 80 : 0;
-          setTimeout(() => el.classList.add('animated'), delay);
-          revealObserver.unobserve(el);
-        });
-      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+        // Build DOM
+        const promptDiv = document.createElement('div');
+        const promptSpan = document.createElement('span');
+        promptSpan.className = 't-prompt'; promptSpan.textContent = '$ ';
+        const cmd1Span = document.createElement('span');
+        cmd1Span.className = 't-cmd';
+        const cursor = document.createElement('span');
+        cursor.className = 'terminal-cursor'; cursor.textContent = '|';
+        promptDiv.appendChild(promptSpan); promptDiv.appendChild(cmd1Span); promptDiv.appendChild(cursor);
+        dynEl.appendChild(promptDiv);
 
-      document.querySelectorAll('.reveal').forEach(el => {
-        el.classList.add('pre-anim');
-        revealObserver.observe(el);
-      });
+        const line2Div = document.createElement('div');
+        line2Div.style.display = 'none';
+        line2Div.innerHTML = '<span class="t-cmd">&nbsp;&nbsp;&nbsp;&nbsp;' + cmdLine2 + '</span>';
+        dynEl.appendChild(line2Div);
 
-      /* ── Bar chart animation ───────────────────────── */
-      const barObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
-          barObserver.unobserve(entry.target);
-          const bars = entry.target.querySelectorAll('.bar-fill[data-bar-target]');
-          bars.forEach((bar, i) => {
+        const brEl = document.createElement('br');
+        brEl.style.display = 'none';
+        dynEl.appendChild(brEl);
+
+        const jsonDiv = document.createElement('div');
+        jsonDiv.style.opacity = '0';
+        jsonDiv.style.transition = 'opacity 500ms ease';
+        jsonDiv.innerHTML = buildJson();
+        dynEl.appendChild(jsonDiv);
+
+        const cursorFinal = document.createElement('span');
+        cursorFinal.className = 'terminal-cursor'; cursorFinal.textContent = '|';
+        cursorFinal.style.display = 'none';
+        dynEl.appendChild(cursorFinal);
+
+        // Type
+        let i = 0;
+        function tick() {
+          if (i < cmdLine1.length) {
+            cmd1Span.textContent = cmdLine1.slice(0, ++i);
+            setTimeout(tick, 28);
+          } else {
+            cursor.remove();
+            line2Div.style.display = '';
             setTimeout(() => {
-              bar.style.width = bar.dataset.barTarget + '%';
-            }, i * 100);
-          });
-        });
-      }, { threshold: 0.15 });
-      document.querySelectorAll('[data-bar-group]').forEach(g => barObserver.observe(g));
-
-      /* ── Terminal typing animation ─────────────────── */
-      function escapeHtml(s) {
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      }
-
-      function showTerminalFinal() {
-        const container = document.getElementById('terminal-content');
-        if (!container) return;
-        const lines = Array.from(container.querySelectorAll('.t-line'));
-        const commands = lines.map(line => ({
-          cmd: line.dataset.cmd,
-          output: line.dataset.output.split('\\n')
-        }));
-        container.innerHTML = '';
-        commands.forEach((c, i) => {
-          if (i > 0) container.appendChild(document.createElement('br'));
-          const cmdDiv = document.createElement('div');
-          cmdDiv.innerHTML = '<span class="t-prompt">$</span> <span class="t-cmd">' + escapeHtml(c.cmd) + '</span>';
-          container.appendChild(cmdDiv);
-          c.output.forEach(line => {
-            const outDiv = document.createElement('div');
-            const escaped = escapeHtml(line);
-            outDiv.innerHTML = '<span class="t-output">' + escaped.replace(/✓/g, '<span class="t-highlight">✓</span>') + '</span>';
-            container.appendChild(outDiv);
-          });
-        });
-        // Final cursor
-        const cursorSpan = document.createElement('span');
-        cursorSpan.className = 'terminal-cursor';
-        cursorSpan.textContent = '|';
-        container.appendChild(cursorSpan);
-      }
-
-      (function terminalTyping() {
-        const container = document.getElementById('terminal-content');
-        if (!container) return;
-        const lines = Array.from(container.querySelectorAll('.t-line'));
-        const commands = lines.map(line => ({
-          cmd: line.dataset.cmd,
-          output: line.dataset.output.split('\\n')
-        }));
-        container.innerHTML = '';
-
-        function typeCommand(cmdIdx) {
-          if (cmdIdx >= commands.length) {
-            const cursorSpan = document.createElement('span');
-            cursorSpan.className = 'terminal-cursor';
-            cursorSpan.textContent = '|';
-            container.appendChild(cursorSpan);
-            return;
+              brEl.style.display = '';
+              jsonDiv.style.opacity = '1';
+              setTimeout(() => { cursorFinal.style.display = ''; }, 520);
+            }, 480);
           }
-
-          if (cmdIdx > 0) container.appendChild(document.createElement('br'));
-
-          const c = commands[cmdIdx];
-          const cmdDiv = document.createElement('div');
-          const promptSpan = document.createElement('span');
-          promptSpan.className = 't-prompt';
-          promptSpan.textContent = '$ ';
-          const cmdSpan = document.createElement('span');
-          cmdSpan.className = 't-cmd';
-          const cursorSpan = document.createElement('span');
-          cursorSpan.className = 'terminal-cursor';
-          cursorSpan.textContent = '|';
-
-          cmdDiv.appendChild(promptSpan);
-          cmdDiv.appendChild(cmdSpan);
-          cmdDiv.appendChild(cursorSpan);
-          container.appendChild(cmdDiv);
-
-          let charIdx = 0;
-          function typeChar() {
-            if (charIdx < c.cmd.length) {
-              cmdSpan.textContent = c.cmd.slice(0, charIdx + 1);
-              charIdx++;
-              setTimeout(typeChar, 30);
-            } else {
-              if (cursorSpan.parentNode) cursorSpan.parentNode.removeChild(cursorSpan);
-              c.output.forEach(line => {
-                const outDiv = document.createElement('div');
-                const escaped = escapeHtml(line);
-                outDiv.innerHTML = '<span class="t-output">' + escaped.replace(/✓/g, '<span class="t-highlight">✓</span>') + '</span>';
-                container.appendChild(outDiv);
-              });
-              setTimeout(() => typeCommand(cmdIdx + 1), 600);
-            }
-          }
-          typeChar();
         }
+        setTimeout(tick, 800);
+      }
 
-        // Start after hero animation settles
-        setTimeout(() => typeCommand(0), 800);
-      })();
-
+      startTyping();
     })();
+
+  })();
   </script>
 </body>
 </html>
