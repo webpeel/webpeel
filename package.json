@@ -1,6 +1,6 @@
 {
   "name": "webpeel",
-  "version": "0.17.4",
+  "version": "0.17.5",
   "description": "Fast web fetcher for AI agents - stealth mode, crawl mode, page actions, structured extraction, PDF parsing, smart escalation from simple HTTP to headless browser",
   "author": "Jake Liu",
   "license": "AGPL-3.0-only",
@@ -59,7 +59,7 @@
     "dist/server"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp src/server/openapi.yaml dist/server/openapi.yaml",
     "bundle": "node scripts/bundle-cli.js",
     "dev": "tsc --watch",
     "test": "vitest run",

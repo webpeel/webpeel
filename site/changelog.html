@@ -133,8 +133,38 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.17.3</div>
+              <div class="release-version mono">v0.17.5</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul>
+            <li><strong>OpenAPI spec:</strong> Fixed <code>/openapi.yaml</code> and <code>/openapi.json</code> (301 redirect) — now correctly served from Docker deployments.</li>
+            <li><strong>Rate limit headers:</strong> API responses now include <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, and <code>X-RateLimit-Reset</code>.</li>
+            <li><strong>Status links:</strong> Replaced dead <code>status.webpeel.dev</code> subdomain with <code>webpeel.dev/status</code>.</li>
+            <li><strong>Build fix:</strong> <code>npm run build</code> now copies <code>openapi.yaml</code> to <code>dist/server/</code> so it's included in the npm package.</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.4</div>
+            </div>
+            <div class="release-meta">February 27, 2026</div>
+          </div>
+          <ul>
+            <li><strong>CI build fixed:</strong> Resolved TypeScript <code>Cannot find module</code> errors for stealth/search/cloak imports — CI now passes.</li>
+            <li><strong>Changelog:</strong> Added missing v0.17.2 and v0.17.3 release notes.</li>
+            <li><strong>Navigation:</strong> Added Pricing link to site navigation.</li>
+            <li><strong>Stealth label:</strong> Updated pricing table label from "Anti-bot bypass" to "Handles JavaScript-heavy sites".</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.3</div>
             </div>
             <div class="release-meta">February 27, 2026</div>
           </div>
