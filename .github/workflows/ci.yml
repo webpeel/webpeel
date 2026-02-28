@@ -32,6 +32,24 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium
       
+      - name: Create private module stubs (gitignored source)
+        run: |
+          # These files contain proprietary code and are gitignored.
+          # Create type-compatible stubs so tsc can compile in CI.
+          cat > src/core/stealth-patches.ts << 'EOF'
+          import type { Page } from 'playwright';
+          export async function applyStealthPatches(_page: Page): Promise<void> {}
+          export async function applyAcceptLanguageHeader(_page: Page): Promise<void> {}
+          EOF
+          cat > src/core/search-fallback.ts << 'EOF'
+          export interface SearchFallbackResult { url: string; title: string; snippet: string; }
+          export async function searchFallback(_query: string, _options?: any): Promise<SearchFallbackResult[]> { return []; }
+          EOF
+          cat > src/core/cloak-fetch.ts << 'EOF'
+          export async function cloakFetch(_url: string, _options?: any): Promise<any> { return { content: '', metadata: {} }; }
+          export function isCloakBrowserAvailable(): boolean { return false; }
+          EOF
+
       - name: Build
         run: npm run build
       
@@ -58,6 +76,22 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Create private module stubs
+        run: |
+          cat > src/core/stealth-patches.ts << 'EOF'
+          import type { Page } from 'playwright';
+          export async function applyStealthPatches(_page: Page): Promise<void> {}
+          export async function applyAcceptLanguageHeader(_page: Page): Promise<void> {}
+          EOF
+          cat > src/core/search-fallback.ts << 'EOF'
+          export interface SearchFallbackResult { url: string; title: string; snippet: string; }
+          export async function searchFallback(_query: string, _options?: any): Promise<SearchFallbackResult[]> { return []; }
+          EOF
+          cat > src/core/cloak-fetch.ts << 'EOF'
+          export async function cloakFetch(_url: string, _options?: any): Promise<any> { return { content: '', metadata: {} }; }
+          export function isCloakBrowserAvailable(): boolean { return false; }
+          EOF
 
       - name: Build
         run: npm run build
