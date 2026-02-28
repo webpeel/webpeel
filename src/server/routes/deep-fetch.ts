@@ -14,7 +14,8 @@ export function createDeepFetchRouter(): Router {
 
   router.post('/v1/deep-fetch', async (req: Request, res: Response) => {
     // AUTH: require authentication (global middleware sets req.auth)
-    if (!req.auth?.keyInfo) {
+    const dfAuthId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+    if (!dfAuthId) {
       res.status(401).json({ error: 'authentication_required', message: 'API key required. Get one at https://app.webpeel.dev/keys' });
       return;    }
     try {
