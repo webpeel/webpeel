@@ -77,9 +77,21 @@ export default function ApiKeysPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyExpiry, setNewKeyExpiry] = useState<string>('never');
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [newKeyKeyCopied, setNewKeyKeyCopied] = useState(false);
+
+  // Compute preview date for selected expiry option
+  const expiryPreviewDate = (() => {
+    if (newKeyExpiry === 'never') return null;
+    const now = new Date();
+    const map: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 };
+    const days = map[newKeyExpiry];
+    if (!days) return null;
+    const d = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  })();
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -112,11 +124,12 @@ export default function ApiKeysPage() {
     try {
       const result = await apiClient<{ key: string; id: string }>('/v1/keys', {
         method: 'POST',
-        body: JSON.stringify({ name: newKeyName }),
+        body: JSON.stringify({ name: newKeyName, expiresIn: newKeyExpiry }),
         token,
       });
       setNewKey(result.key);
       setNewKeyName('');
+      setNewKeyExpiry('never');
       mutate();
       toast.success('API key created successfully');
     } catch (error: any) {
@@ -153,11 +166,44 @@ export default function ApiKeysPage() {
     setCreateOpen(false);
     setNewKey(null);
     setNewKeyName('');
+    setNewKeyExpiry('never');
     setNewKeyKeyCopied(false);
   };
 
   const keys = data?.keys || [];
-  const activeKeys = keys.filter((k) => k.isActive);
+  const activeKeys = keys.filter((k) => k.isActive && !k.isExpired);
+
+  // Keys expiring within 7 days (for warning banner)
+  const expiringKeys = keys.filter((k) => {
+    if (!k.isActive || !k.expiresAt || k.isExpired) return false;
+    const daysLeft = (new Date(k.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000);
+    return daysLeft <= 7;
+  });
+
+  // Expiry badge renderer
+  function ExpiryBadge({ apiKey }: { apiKey: typeof keys[0] }) {
+    if (!apiKey.expiresAt) {
+      return <span className="text-sm text-zinc-400 italic">Never</span>;
+    }
+    if (apiKey.isExpired) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 line-through">
+          Expired
+        </span>
+      );
+    }
+    const daysLeft = (new Date(apiKey.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000);
+    const colorClass = daysLeft > 30
+      ? 'bg-green-100 text-green-700'
+      : daysLeft > 7
+      ? 'bg-yellow-100 text-yellow-700'
+      : 'bg-red-100 text-red-700';
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClass}`}>
+        {apiKey.expiresIn}
+      </span>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
@@ -264,6 +310,26 @@ export default function ApiKeysPage() {
                     autoFocus
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="key-expiry">Expiration</Label>
+                  <select
+                    id="key-expiry"
+                    value={newKeyExpiry}
+                    onChange={(e) => setNewKeyExpiry(e.target.value)}
+                    className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5865F2] focus:border-transparent"
+                  >
+                    <option value="never">Never</option>
+                    <option value="7d">7 days</option>
+                    <option value="30d">30 days</option>
+                    <option value="90d">90 days</option>
+                    <option value="1y">1 year</option>
+                  </select>
+                  {expiryPreviewDate && (
+                    <p className="text-xs text-zinc-500">
+                      Key will expire on <strong>{expiryPreviewDate}</strong>
+                    </p>
+                  )}
+                </div>
                 <p className="text-xs text-zinc-500">
                   Use descriptive names to identify where each key is used.
                 </p>
@@ -296,6 +362,20 @@ export default function ApiKeysPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Expiring-soon warning banner */}
+      {expiringKeys.length > 0 && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-lg border border-yellow-300 bg-yellow-50">
+          <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            {expiringKeys.map((k) => (
+              <p key={k.id} className="text-sm text-yellow-800">
+                <strong>{k.name}</strong> {k.expiresIn}. Rotate it to avoid service disruption.
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Security Warning */}
       <Card className="border-amber-200 bg-amber-50">
@@ -332,15 +412,15 @@ export default function ApiKeysPage() {
                 {keys.map((key) => (
                   <div
                     key={key.id}
-                    className={`border rounded-lg p-4 space-y-3 ${key.isActive ? 'border-l-4 border-l-zinc-900' : 'opacity-60'}`}
+                    className={`border rounded-lg p-4 space-y-3 ${key.isActive && !key.isExpired ? 'border-l-4 border-l-zinc-900' : 'opacity-60'}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{key.name}</p>
                         <code className="text-xs text-muted-foreground">{key.prefix}...</code>
                       </div>
-                      <Badge variant={key.isActive ? 'default' : 'secondary'} className="text-xs">
-                        {key.isActive ? 'active' : 'revoked'}
+                      <Badge variant={key.isActive ? 'default' : 'secondary'} className={`text-xs ${key.isExpired ? 'bg-red-100 text-red-700 border-0' : ''}`}>
+                        {key.isExpired ? 'expired' : key.isActive ? 'active' : 'revoked'}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
@@ -351,6 +431,10 @@ export default function ApiKeysPage() {
                       <div>
                         <span className="block text-zinc-400">Last Used</span>
                         {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : 'Never'}
+                      </div>
+                      <div className="col-span-2">
+                        <span className="block text-zinc-400 mb-1">Expires</span>
+                        <ExpiryBadge apiKey={key} />
                       </div>
                     </div>
                     {key.isActive && <CurlExample keyPrefix={key.prefix} />}
@@ -396,13 +480,14 @@ export default function ApiKeysPage() {
                       <TableHead>Key Prefix</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Last Used</TableHead>
+                      <TableHead>Expires</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {keys.map((key) => (
-                      <TableRow key={key.id} className={!key.isActive ? 'opacity-50' : ''}>
+                      <TableRow key={key.id} className={!key.isActive || key.isExpired ? 'opacity-60' : ''}>
                         <TableCell>
                           <div>
                             <p className="font-medium text-sm">{key.name}</p>
@@ -421,11 +506,14 @@ export default function ApiKeysPage() {
                           )}
                         </TableCell>
                         <TableCell>
+                          <ExpiryBadge apiKey={key} />
+                        </TableCell>
+                        <TableCell>
                           <Badge
                             variant={key.isActive ? 'default' : 'secondary'}
-                            className={key.isActive ? 'bg-emerald-100 text-emerald-700 border-0' : ''}
+                            className={key.isActive && !key.isExpired ? 'bg-emerald-100 text-emerald-700 border-0' : ''}
                           >
-                            {key.isActive ? 'active' : 'revoked'}
+                            {key.isExpired ? 'expired' : key.isActive ? 'active' : 'revoked'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">

@@ -88,6 +88,23 @@ export function createAuthMiddleware(authStore: AuthStore) {
       if (apiKey) {
         keyInfo = await authStore.validateKey(apiKey);
         if (!keyInfo) {
+          // Check if key exists but is expired (before falling through to JWT)
+          if (authStore instanceof PostgresAuthStore) {
+            const expired = await authStore.isKeyExpired(apiKey);
+            if (expired) {
+              res.status(401).json({
+                success: false,
+                error: {
+                  type: 'key_expired',
+                  message: 'This API key has expired.',
+                  hint: 'Generate a new key at https://app.webpeel.dev/keys',
+                  docs: 'https://webpeel.dev/docs/errors#unauthorized',
+                },
+                metadata: { requestId: req.requestId },
+              });
+              return;
+            }
+          }
           // API key not found — try JWT session token as fallback.
           // Dashboard uses JWT tokens (from /v1/auth/login or /v1/auth/oauth),
           // while CLI/SDK users use API keys. Support both seamlessly.

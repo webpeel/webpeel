@@ -586,13 +586,36 @@ export function createUserRouter(): Router {
   });
 
   /**
+   * Parse expiresIn parameter to a Date or null (null = never expires)
+   */
+  function parseExpiresIn(expiresIn: string | undefined): Date | null {
+    if (!expiresIn || expiresIn === 'never') return null;
+    const now = new Date();
+    switch (expiresIn) {
+      case '7d':  return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      case '30d': return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      case '90d': return new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+      case '1y':  return new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+      default: {
+        // Try ISO date string
+        const parsed = new Date(expiresIn);
+        if (!isNaN(parsed.getTime()) && parsed > now) return parsed;
+        return null;
+      }
+    }
+  }
+
+  /**
    * POST /v1/keys
    * Create a new API key
    */
   router.post('/v1/keys', jwtAuth, async (req: Request, res: Response) => {
     try {
       const { userId } = (req as any).user as JwtPayload;
-      const { name } = req.body;
+      const { name, expiresIn } = req.body;
+
+      // Parse optional expiration
+      const expiresAt = parseExpiresIn(expiresIn as string | undefined);
 
       // Generate API key
       const apiKey = PostgresAuthStore.generateApiKey();
@@ -601,10 +624,10 @@ export function createUserRouter(): Router {
 
       // Store API key
       const result = await pool.query(
-        `INSERT INTO api_keys (user_id, key_hash, key_prefix, name)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, key_prefix, name, created_at`,
-        [userId, keyHash, keyPrefix, name || 'Unnamed Key']
+        `INSERT INTO api_keys (user_id, key_hash, key_prefix, name, expires_at)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, key_prefix, name, created_at, expires_at`,
+        [userId, keyHash, keyPrefix, name || 'Unnamed Key', expiresAt]
       );
 
       const key = result.rows[0];
@@ -615,6 +638,7 @@ export function createUserRouter(): Router {
         prefix: key.key_prefix,
         name: key.name,
         createdAt: key.created_at,
+        expiresAt: key.expires_at,
       });
     } catch (error) {
       console.error('Create key error:', error);
@@ -626,6 +650,23 @@ export function createUserRouter(): Router {
   });
 
   /**
+   * Format expiry as human-readable string
+   */
+  function formatExpiresIn(expiresAt: Date | null): string | null {
+    if (!expiresAt) return null;
+    const now = new Date();
+    const diffMs = expiresAt.getTime() - now.getTime();
+    const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
+    if (diffDays < 0) {
+      const absDays = Math.abs(diffDays);
+      return absDays === 1 ? 'expired 1 day ago' : `expired ${absDays} days ago`;
+    }
+    if (diffDays === 0) return 'expires today';
+    if (diffDays === 1) return 'in 1 day';
+    return `in ${diffDays} days`;
+  }
+
+  /**
    * GET /v1/keys
    * List user's API keys (prefix only, never full key)
    */
@@ -634,22 +675,30 @@ export function createUserRouter(): Router {
       const { userId } = (req as any).user as JwtPayload;
 
       const result = await pool.query(
-        `SELECT id, key_prefix, name, is_active, created_at, last_used_at
+        `SELECT id, key_prefix, name, is_active, created_at, last_used_at, expires_at
         FROM api_keys
         WHERE user_id = $1
         ORDER BY created_at DESC`,
         [userId]
       );
 
+      const now = new Date();
       res.json({
-        keys: result.rows.map(key => ({
-          id: key.id,
-          prefix: key.key_prefix,
-          name: key.name,
-          isActive: key.is_active,
-          createdAt: key.created_at,
-          lastUsedAt: key.last_used_at,
-        })),
+        keys: result.rows.map(key => {
+          const expiresAt: Date | null = key.expires_at ? new Date(key.expires_at) : null;
+          const isExpired = expiresAt !== null && expiresAt <= now;
+          return {
+            id: key.id,
+            prefix: key.key_prefix,
+            name: key.name,
+            isActive: key.is_active,
+            createdAt: key.created_at,
+            lastUsedAt: key.last_used_at,
+            expiresAt: key.expires_at,
+            isExpired,
+            expiresIn: formatExpiresIn(expiresAt),
+          };
+        }),
       });
     } catch (error) {
       console.error('List keys error:', error);
