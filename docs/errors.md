@@ -123,7 +123,7 @@ Check your key at [app.webpeel.dev/settings/api-keys](https://app.webpeel.dev/se
 ```json
 { "error": "internal_error", "message": "An unexpected error occurred. Please try again." }
 ```
-**Fix:** Retry with exponential backoff. If the error persists, check [status.webpeel.dev](https://status.webpeel.dev) or contact [support@webpeel.dev](mailto:support@webpeel.dev).
+**Fix:** Retry with exponential backoff. If the error persists, check [WebPeel Status](https://webpeel.dev/status) or contact [support@webpeel.dev](mailto:support@webpeel.dev).
 
 ---
 
@@ -176,4 +176,4 @@ def fetch_with_retry(url: str, max_retries: int = 3):
 - 📖 [Documentation](https://webpeel.dev/docs)
 - 💬 [Discord](https://discord.gg/webpeel)
 - 📧 [support@webpeel.dev](mailto:support@webpeel.dev)
-- 🔍 [Status page](https://status.webpeel.dev)
+- 🔍 [Status page](https://webpeel.dev/status)

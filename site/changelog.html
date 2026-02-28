@@ -133,8 +133,37 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.17.1</div>
+              <div class="release-version mono">v0.17.3</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">February 27, 2026</div>
+          </div>
+          <ul>
+            <li><strong>Auth fix:</strong> Fixed email/password login (was returning 500 due to password hash comparison error).</li>
+            <li><strong>OAuth fix:</strong> Fixed OAuth dashboard connection flow.</li>
+            <li><strong>Usage history:</strong> Added <code>/v1/usage/history</code> endpoint for dashboard charts.</li>
+            <li><strong>SWR retries:</strong> Limited SWR retries to prevent thundering herd on API errors.</li>
+            <li><strong>Refresh token:</strong> Graceful refresh token fallback when tokens expire.</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.2</div>
+            </div>
+            <div class="release-meta">February 27, 2026</div>
+          </div>
+          <ul>
+            <li><strong>Version bump:</strong> Version bump for Docker deployment.</li>
+            <li><strong>CLI bundle:</strong> CLI bundle updated with latest fixes.</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.1</div>
             </div>
             <div class="release-meta">February 26, 2026</div>
           </div>

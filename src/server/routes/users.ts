@@ -883,9 +883,9 @@ export function createUserRouter(): Router {
       const result = await pool.query(
         `SELECT
           DATE(created_at) as date,
-          COUNT(*) FILTER (WHERE mode = 'basic' OR mode IS NULL) as fetches,
-          COUNT(*) FILTER (WHERE mode = 'stealth') as stealth,
-          COUNT(*) FILTER (WHERE mode = 'search') as search
+          COUNT(*) FILTER (WHERE method = 'basic' OR method IS NULL) as fetches,
+          COUNT(*) FILTER (WHERE method = 'stealth') as stealth,
+          COUNT(*) FILTER (WHERE method = 'search') as search
         FROM usage_logs
         WHERE user_id = $1
           AND created_at >= NOW() - INTERVAL '1 day' * $2

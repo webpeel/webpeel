@@ -225,6 +225,16 @@ export function createApp(config: ServerConfig = {}): Express {
     res.send(getOpenApiYaml());
   });
 
+  // Redirect /openapi.json to YAML spec (no extra dependency needed)
+  app.get('/openapi.json', (_req: Request, res: Response) => {
+    res.redirect(301, '/openapi.yaml');
+  });
+
+  // Developer-friendly redirect
+  app.get('/docs/api', (_req: Request, res: Response) => {
+    res.redirect('/openapi.yaml');
+  });
+
   // Apply auth middleware globally
   app.use(createAuthMiddleware(authStore));
 

@@ -10,7 +10,7 @@
   <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/dm/webpeel.svg?style=flat-square" alt="Monthly downloads"></a>
   <a href="https://github.com/webpeel/webpeel/stargazers"><img src="https://img.shields.io/github/stars/webpeel/webpeel.svg?style=flat-square" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-WebPeel%20SDK-blue.svg?style=flat-square" alt="License"></a>
-  <a href="https://status.webpeel.dev"><img src="https://img.shields.io/badge/status-operational-brightgreen.svg?style=flat-square" alt="Status"></a>
+  <a href="https://webpeel.dev/status"><img src="https://img.shields.io/badge/status-operational-brightgreen.svg?style=flat-square" alt="Status"></a>
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
   <a href="https://app.webpeel.dev">Dashboard</a> ·
   <a href="https://webpeel.dev/docs/api">API Reference</a> ·
   <a href="https://discord.gg/webpeel">Discord</a> ·
-  <a href="https://status.webpeel.dev">Status</a>
+  <a href="https://webpeel.dev/status">Status</a>
 </p>
 
 ---
@@ -357,7 +357,7 @@ All endpoints require `Authorization: Bearer wp_YOUR_KEY`.
 - 🚀 [Dashboard](https://app.webpeel.dev) — Manage your API keys and usage
 - 🔌 [API Reference](https://webpeel.dev/docs/api) — Full endpoint documentation
 - 💬 [Discord](https://discord.gg/webpeel) — Community and support
-- 📊 [Status](https://status.webpeel.dev) — Uptime and incidents
+- 📊 [Status](https://webpeel.dev/status) — Uptime and incidents
 - 💰 [Pricing](https://webpeel.dev/pricing) — Plans and limits
 - 📈 [Benchmarks](https://webpeel.dev/benchmarks) — How we compare
 

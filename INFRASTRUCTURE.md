@@ -64,7 +64,7 @@ jake-fork  https://github.com/JakeLiuMe/webpeel.git    (resolves to same repo)
 | `webpeel.dev` | `76.76.21.21` | A (Vercel) |
 | `app.webpeel.dev` | `cname.vercel-dns.com` | CNAME (Vercel) |
 | `api.webpeel.dev` | Render | CNAME |
-| `status.webpeel.dev` | ❌ Connection refused | Needs fix or removal |
+| `webpeel.dev/status` | ✅ webpeel.dev/status | Subdomain removed, page on main site |
 
 ## npm
 
