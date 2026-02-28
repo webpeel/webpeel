@@ -12,6 +12,7 @@
  */
 
 import { simpleFetch } from './fetcher.js';
+import { getYouTubeTranscript } from './youtube.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -352,11 +353,32 @@ async function twitterExtractor(html: string, url: string): Promise<DomainExtrac
           created: u.joined || undefined,
           avatarUrl: u.avatar_url || null,
           bannerUrl: u.banner_url || null,
-          website: u.website || null,
+          website: (typeof u.website === 'object' ? u.website?.url : u.website) || null,
           source: 'fxtwitter',
         };
 
-        const cleanContent = `## 🐦 @${(structured.handle || '').replace('@', '')} on X/Twitter\n\n**${structured.name}**${structured.verified ? ' ✓' : ''}\n${structured.bio || ''}\n\n📍 ${structured.location || 'N/A'}  |  👥 ${structured.followers?.toLocaleString() || 0} followers  |  Following: ${structured.following?.toLocaleString() || 0}  |  Tweets: ${structured.tweets?.toLocaleString() || 0}`;
+        // Try to fetch recent tweets from Twitter's public syndication endpoint
+        let recentTweets = '';
+        try {
+          const syndicationUrl = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${u.screen_name}`;
+          const syndicationResult = await simpleFetch(syndicationUrl, 'Mozilla/5.0 (compatible; WebPeel/1.0)', 8000);
+          if (syndicationResult?.html) {
+            // Extract tweet texts from the syndication HTML
+            const tweetMatches = [...syndicationResult.html.matchAll(/"full_text":"((?:[^"\\]|\\.)*)"/g)];
+            const tweets = tweetMatches
+              .slice(0, 5)
+              .map(m => m[1].replace(/\\n/g, ' ').replace(/\\"/g, '"').trim())
+              .filter(t => t.length > 10 && !t.startsWith('RT @'));
+            if (tweets.length > 0) {
+              recentTweets = '\n\n### Recent Tweets\n\n' + tweets.map(t => `> ${t}`).join('\n\n');
+            }
+          }
+        } catch { /* syndication optional */ }
+
+        const websiteLine = structured.website ? `\n🌐 ${structured.website}` : '';
+        const joinedLine = structured.created ? `\n📅 Joined: ${structured.created}` : '';
+        const likesLine = structured.likes ? `  |  ❤️ Likes: ${structured.likes?.toLocaleString() || 0}` : '';
+        const cleanContent = `## 🐦 @${(structured.handle || '').replace('@', '')} on X/Twitter\n\n**${structured.name}**${structured.verified ? ' ✓' : ''}\n\n${structured.bio || ''}\n\n📍 ${structured.location || 'N/A'}${websiteLine}${joinedLine}\n\n👥 **Followers:** ${structured.followers?.toLocaleString() || 0}  |  **Following:** ${structured.following?.toLocaleString() || 0}  |  **Tweets:** ${structured.tweets?.toLocaleString() || 0}${likesLine}${recentTweets}`;
 
         return { domain, type: 'profile', structured, cleanContent };
       }
@@ -1213,35 +1235,93 @@ async function wikipediaExtractor(_html: string, url: string): Promise<DomainExt
 // ---------------------------------------------------------------------------
 
 async function youtubeExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
-  // Try YouTube oEmbed API first (no auth, works without browser)
-  try {
-    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-    const oembedData = await fetchJson(oembedUrl);
-    if (oembedData && oembedData.title) {
-      // Also try noembed for richer data
-      let noembedData: any = null;
-      try {
-        noembedData = await fetchJson(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
-      } catch { /* optional */ }
-
-      const structured: Record<string, any> = {
-        title: oembedData.title,
-        author: oembedData.author_name || '',
-        authorUrl: oembedData.author_url || '',
-        thumbnailUrl: oembedData.thumbnail_url || '',
-        type: oembedData.type || 'video',
-        source: 'oembed',
-      };
-
-      const cleanContent = `## 🎬 ${structured.title}\n\n**Channel:** [${structured.author}](${structured.authorUrl})\n\n${noembedData?.description || 'YouTube video'}`;
-
-      return { domain: 'youtube.com', type: 'video', structured, cleanContent };
-    }
-  } catch (e) {
-    if (process.env.DEBUG) console.debug('[webpeel]', 'YouTube oEmbed failed:', e instanceof Error ? e.message : e);
+  // Helper: wrap a promise with a timeout
+  function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)),
+    ]);
   }
 
-  // Fallback: return null (no HTML parsing implemented)
+  // Run transcript fetch and oEmbed fetch in parallel
+  // Browser-rendered fetch takes ~10s — use 15s timeout so browser has time to render
+  const transcriptPromise = withTimeout(getYouTubeTranscript(url), 15000);
+  const oembedPromise = fetchJson(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+  const noembedPromise = fetchJson(`https://noembed.com/embed?url=${encodeURIComponent(url)}`).catch(() => null);
+
+  const [transcriptResult, oembedResult, noembedResult] = await Promise.allSettled([
+    transcriptPromise,
+    oembedPromise,
+    noembedPromise,
+  ]);
+
+  const transcript = transcriptResult.status === 'fulfilled' ? transcriptResult.value : null;
+  const oembedData = oembedResult.status === 'fulfilled' ? oembedResult.value : null;
+  const noembedData = noembedResult.status === 'fulfilled' ? noembedResult.value : null;
+
+  if (process.env.DEBUG) {
+    if (transcriptResult.status === 'rejected') {
+      console.debug('[webpeel]', 'YouTube transcript failed:', transcriptResult.reason instanceof Error ? transcriptResult.reason.message : transcriptResult.reason);
+    }
+    if (oembedResult.status === 'rejected') {
+      console.debug('[webpeel]', 'YouTube oEmbed failed:', oembedResult.reason instanceof Error ? oembedResult.reason.message : oembedResult.reason);
+    }
+  }
+
+  // If transcript succeeded, build rich content
+  if (transcript) {
+    const title = transcript.title || oembedData?.title || '';
+    const channel = transcript.channel || oembedData?.author_name || '';
+    const channelUrl = oembedData?.author_url || `https://www.youtube.com/@${channel}`;
+    const description = (noembedData as any)?.description || (oembedData as any)?.description || '';
+    const thumbnailUrl = (oembedData as any)?.thumbnail_url || '';
+
+    const structured: Record<string, any> = {
+      title,
+      channel,
+      channelUrl,
+      duration: transcript.duration,
+      language: transcript.language,
+      availableLanguages: transcript.availableLanguages,
+      transcriptSegments: transcript.segments.length,
+      description,
+      thumbnailUrl,
+      source: 'transcript',
+    };
+
+    const availLangs = transcript.availableLanguages.length;
+    const langLine = `${transcript.language}${availLangs > 1 ? ` (${availLangs} available)` : ''}`;
+    const hasTranscript = transcript.segments.length > 0;
+    let cleanContent: string;
+    if (hasTranscript) {
+      const descSection = description ? `\n\n**Description:** ${description}` : '';
+      cleanContent = `## 🎬 ${title}\n\n**Channel:** [${channel}](${channelUrl})\n**Duration:** ${transcript.duration}\n**Language:** ${langLine}${descSection}\n\n### Transcript\n\n${transcript.fullText}`;
+    } else {
+      // No transcript — use description as content
+      cleanContent = `## 🎬 ${title}\n\n**Channel:** [${channel}](${channelUrl})\n**Duration:** ${transcript.duration}\n\n### Description\n\n${transcript.fullText}`;
+    }
+
+    return { domain: 'youtube.com', type: 'video', structured, cleanContent };
+  }
+
+  // Fall back to oEmbed if transcript failed
+  if (oembedData && (oembedData as any).title) {
+    const structured: Record<string, any> = {
+      title: (oembedData as any).title,
+      channel: (oembedData as any).author_name || '',
+      channelUrl: (oembedData as any).author_url || '',
+      thumbnailUrl: (oembedData as any).thumbnail_url || '',
+      description: (noembedData as any)?.description || '',
+      type: (oembedData as any).type || 'video',
+      source: 'oembed',
+    };
+
+    const descSection = structured.description ? `\n\n${structured.description}` : '\n\nYouTube video';
+    const cleanContent = `## 🎬 ${structured.title}\n\n**Channel:** [${structured.channel}](${structured.channelUrl})${descSection}`;
+
+    return { domain: 'youtube.com', type: 'video', structured, cleanContent };
+  }
+
   return null;
 }
 

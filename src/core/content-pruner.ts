@@ -447,3 +447,68 @@ export function pruneContent(html: string, options: PruneOptions = {}): PruneRes
     reductionPercent,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Markdown post-processing — remove UI noise leaked into markdown output
+// ---------------------------------------------------------------------------
+
+/** UI button labels that should be removed when they appear as standalone lines */
+const UI_BUTTON_LABELS = /^(load more|headlines only|show more|read more|show less|collapse|expand|view more|view less|see more|see less|more stories|more articles|sign up|subscribe|log in|sign in|follow us|get started|click here|learn more)$/i;
+
+/** An image with no alt text (empty brackets): `![](url)` */
+const EMPTY_IMAGE_RE = /^\!\[\]\([^)]+\)$/;
+
+/**
+ * Post-process markdown output to remove UI elements that leak through
+ * from content scrapers (buttons, empty images, consecutive hr separators).
+ *
+ * @param markdown - Raw markdown string
+ * @returns Cleaned markdown string
+ */
+export function pruneMarkdown(markdown: string): string {
+  if (!markdown) return markdown;
+
+  const lines = markdown.split('\n');
+  const result: string[] = [];
+  let consecutiveHrCount = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Remove lines that are just UI button labels (standalone, not in a heading/list)
+    if (UI_BUTTON_LABELS.test(trimmed)) {
+      continue;
+    }
+
+    // Remove empty images (no alt text): ![](url)
+    // But keep images with alt text: ![alt text](url)
+    if (EMPTY_IMAGE_RE.test(trimmed)) {
+      continue;
+    }
+
+    // Remove list items whose only content is an empty image
+    if (/^[-*+]\s+\!\[\]\([^)]+\)$/.test(trimmed)) {
+      continue;
+    }
+
+    // Handle consecutive HR separators ("* * *", "---", "___")
+    // Keep the first one, remove subsequent consecutive ones
+    const isHr = /^(\*\s*\*\s*\*|\-\s*\-\s*\-|_\s*_\s*_)$/.test(trimmed);
+    if (isHr) {
+      consecutiveHrCount++;
+      if (consecutiveHrCount > 1) {
+        continue; // skip duplicate hr
+      }
+    } else {
+      // Reset counter on any non-HR, non-blank line
+      if (trimmed !== '') {
+        consecutiveHrCount = 0;
+      }
+    }
+
+    result.push(line);
+  }
+
+  return result.join('\n');
+}

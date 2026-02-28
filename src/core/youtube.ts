@@ -6,7 +6,8 @@
  * track URLs, fetch the timedtext XML, and return structured transcript data.
  */
 
-import { simpleFetch, browserFetch } from './fetcher.js';
+import { simpleFetch } from './fetcher.js';
+import { getBrowser, getRandomUserAgent, applyStealthScripts } from './browser-pool.js';
 
 // ---------------------------------------------------------------------------
 // Public interfaces
@@ -186,64 +187,185 @@ export async function getYouTubeTranscript(
   }
 
   const preferredLang = options.language ?? 'en';
-
-  // Fetch the video page — try simple first, fall back to browser if challenged
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  let html: string;
+
+  // --- Path 1: Try simpleFetch (fast, no browser overhead) ---
   try {
-    const fetchResult = await simpleFetch(videoUrl, undefined, 30000);
-    html = fetchResult.html;
-    // Check if we got a challenge/consent page instead of actual video page
+    const fetchResult = await simpleFetch(videoUrl, undefined, 15000);
+    const html = fetchResult.html;
     if (!html.includes('ytInitialPlayerResponse') && !html.includes('ytInitialData')) {
       throw new Error('YouTube served non-video page (likely challenge/consent)');
     }
+
+    const playerResponse = extractPlayerResponse(html);
+    if (!playerResponse) throw new Error('Could not parse player response');
+
+    const videoDetails = playerResponse.videoDetails ?? {};
+    const title = videoDetails.title ?? '';
+    const channel = videoDetails.author ?? '';
+    const lengthSeconds = parseInt(videoDetails.lengthSeconds ?? '0', 10);
+    const captionTracks: CaptionTrack[] = extractCaptionTracks(playerResponse);
+    if (captionTracks.length === 0) throw new Error('No captions available');
+
+    const availableLanguages = captionTracks.map(t => t.languageCode);
+    const selectedTrack = selectBestTrack(captionTracks, preferredLang);
+    const captionXml = await fetchCaptionXml(selectedTrack.baseUrl);
+    const segments = parseCaptionXml(captionXml);
+    const fullText = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
+
+    return {
+      videoId,
+      title,
+      channel,
+      duration: formatDuration(lengthSeconds),
+      language: selectedTrack.languageCode,
+      segments,
+      fullText,
+      availableLanguages,
+    };
   } catch {
-    // Simple fetch failed or got challenged — use browser rendering
-    const browserResult = await browserFetch(videoUrl, { timeoutMs: 30000 });
-    html = browserResult.html;
+    // simpleFetch path failed — fall through to browser intercept approach
   }
 
-  // Extract player response
-  const playerResponse = extractPlayerResponse(html);
-  if (!playerResponse) {
-    throw new Error(`Could not parse YouTube page data for video ${videoId}`);
+  // --- Path 2: Browser intercept approach ---
+  // YouTube's caption URLs are session-specific (they return empty when fetched
+  // from a different HTTP client). We intercept the timedtext network request
+  // that the YouTube player makes automatically when loading the page.
+  return getTranscriptViaBrowserIntercept(videoId, videoUrl, preferredLang);
+}
+
+/**
+ * Use a real browser with network route interception to capture the
+ * YouTube caption JSON that the player fetches automatically on page load.
+ * This preserves the session context needed for timedtext API requests.
+ */
+async function getTranscriptViaBrowserIntercept(
+  videoId: string,
+  videoUrl: string,
+  preferredLang: string,
+): Promise<YouTubeTranscript> {
+  const browser = await getBrowser();
+  const ua = getRandomUserAgent();
+  const context = await browser.newContext({ userAgent: ua });
+  const page = await context.newPage();
+  await applyStealthScripts(page);
+
+  let capturedJson: Record<string, any> | null = null;
+  let capturedLang = preferredLang;
+
+  // Intercept YouTube's timedtext API requests (the player fetches these automatically)
+  await page.route('**/api/timedtext**', async (route) => {
+    try {
+      const response = await route.fetch();
+      const text = await response.text();
+      if (text && text.length > 100 && (text.includes('events') || text.includes('segs'))) {
+        try {
+          capturedJson = JSON.parse(text);
+          // Try to extract language from URL
+          const urlObj = new URL(route.request().url());
+          capturedLang = urlObj.searchParams.get('lang') || preferredLang;
+        } catch { /* keep trying */ }
+      }
+      await route.fulfill({ response });
+    } catch {
+      await route.continue();
+    }
+  });
+
+  try {
+    await page.goto(videoUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+
+    // Wait for timedtext request to be intercepted (player auto-fetches captions)
+    const startWait = Date.now();
+    while (!capturedJson && Date.now() - startWait < 8000) {
+      await page.waitForTimeout(200);
+    }
+
+    // Also grab page HTML for video metadata
+    const html = await page.content();
+    const playerResponse = extractPlayerResponse(html);
+    const videoDetails = playerResponse?.videoDetails ?? {};
+    const title = videoDetails.title ?? '';
+    const channel = videoDetails.author ?? '';
+    const lengthSeconds = parseInt(videoDetails.lengthSeconds ?? '0', 10);
+    const captionTracks: CaptionTrack[] = playerResponse ? extractCaptionTracks(playerResponse) : [];
+    const availableLanguages = captionTracks.map(t => t.languageCode);
+
+    // If no captions were intercepted, fall back to video description from player response
+    if (!capturedJson) {
+      const description = (playerResponse?.videoDetails?.shortDescription ?? '').trim();
+      if (description.length > 50) {
+        // Return description as transcript content (better than nothing)
+        return {
+          videoId,
+          title,
+          channel,
+          duration: formatDuration(lengthSeconds),
+          language: 'en',
+          segments: [],
+          fullText: description,
+          availableLanguages,
+        };
+      }
+      throw new Error(`No captions available for video ${videoId} — captions may be disabled`);
+    }
+
+    // Parse the JSON3 format (YouTube's native caption format)
+    const segments = parseJson3Events(capturedJson);
+    if (segments.length === 0) {
+      // Fallback to description if JSON3 parsing yields nothing
+      const description = (playerResponse?.videoDetails?.shortDescription ?? '').trim();
+      if (description.length > 50) {
+        return {
+          videoId,
+          title,
+          channel,
+          duration: formatDuration(lengthSeconds),
+          language: 'en',
+          segments: [],
+          fullText: description,
+          availableLanguages,
+        };
+      }
+      throw new Error(`Captured caption response had no segments for video ${videoId}`);
+    }
+
+    const fullText = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
+
+    return {
+      videoId,
+      title,
+      channel,
+      duration: formatDuration(lengthSeconds),
+      language: capturedLang,
+      segments,
+      fullText,
+      availableLanguages,
+    };
+  } finally {
+    await page.close().catch(() => { /* best effort */ });
+    await context.close().catch(() => { /* best effort */ });
+    // Note: browser itself is pooled — don't close it
   }
+}
 
-  // Extract video info
-  const videoDetails = playerResponse.videoDetails ?? {};
-  const title = videoDetails.title ?? '';
-  const channel = videoDetails.author ?? '';
-  const lengthSeconds = parseInt(videoDetails.lengthSeconds ?? '0', 10);
-
-  // Extract caption tracks
-  const captionTracks: CaptionTrack[] = extractCaptionTracks(playerResponse);
-  if (captionTracks.length === 0) {
-    throw new Error(`No captions available for video ${videoId}`);
-  }
-
-  const availableLanguages = captionTracks.map(t => t.languageCode);
-
-  // Select best track: prefer manual over auto-generated, prefer requested language
-  const selectedTrack = selectBestTrack(captionTracks, preferredLang);
-
-  // Fetch the caption XML
-  const captionXml = await fetchCaptionXml(selectedTrack.baseUrl);
-
-  // Parse segments
-  const segments = parseCaptionXml(captionXml);
-
-  const fullText = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
-
-  return {
-    videoId,
-    title,
-    channel,
-    duration: formatDuration(lengthSeconds),
-    language: selectedTrack.languageCode,
-    segments,
-    fullText,
-    availableLanguages,
-  };
+/**
+ * Parse YouTube's JSON3 caption format (from intercepted timedtext requests).
+ * Format: { events: [{ tStartMs, dDurationMs, segs: [{ utf8: "text" } or { u: "text" }] }] }
+ */
+function parseJson3Events(data: Record<string, any>): TranscriptSegment[] {
+  const events: any[] = data.events || [];
+  return events
+    .filter(e => e.segs && e.segs.some((s: any) => s.utf8 || s.u))
+    .map(e => ({
+      // YouTube uses 'utf8' key in modern responses, 'u' in some older ones
+      text: decodeHtmlEntities(
+        e.segs.map((s: any) => (s.utf8 ?? s.u ?? '')).join('').replace(/\n/g, ' ').trim()
+      ),
+      start: (e.tStartMs || 0) / 1000,
+      duration: (e.dDurationMs || 0) / 1000,
+    }))
+    .filter(s => s.text.length > 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -400,15 +522,10 @@ function selectBestTrack(tracks: CaptionTrack[], preferredLang: string): Caption
 
 /**
  * Fetch the caption XML from YouTube's timedtext API.
+ * Used only in the simpleFetch path (no bot detection).
  */
 async function fetchCaptionXml(baseUrl: string): Promise<string> {
-  // Ensure we request plain text (not ASS format)
-  const url = new URL(baseUrl);
-  url.searchParams.set('fmt', 'srv3');  // srv3 is a clean XML format
-  // Some older tracks need fmt=xml
-  url.searchParams.delete('fmt');
-
-  const result = await simpleFetch(url.toString(), undefined, 15000);
+  const result = await simpleFetch(baseUrl, undefined, 15000);
   return result.html;
 }
 

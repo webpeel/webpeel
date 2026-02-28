@@ -333,14 +333,15 @@ export function createFetchRouter(authStore: AuthStore): Router {
 
       // Log request to database (PostgreSQL only)
       const pgStore = authStore as any;
-      if (req.auth?.keyInfo?.accountId && typeof pgStore.pool !== 'undefined') {
-        // Log to usage_logs table (user_id = accountId from keyInfo)
+      // Log usage for BOTH API key auth AND JWT session auth
+      const logUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+      if (logUserId && typeof pgStore.pool !== 'undefined') {
         pgStore.pool.query(
           `INSERT INTO usage_logs 
             (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
-            req.auth.keyInfo.accountId,
+            logUserId,
             'fetch',
             url,
             fetchType,
