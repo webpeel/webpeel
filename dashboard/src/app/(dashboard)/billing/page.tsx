@@ -69,9 +69,30 @@ const plans = {
     iconColor: 'text-amber-600',
     iconBg: 'bg-amber-100',
   },
+  admin: {
+    name: 'Admin',
+    priceMonthly: 0,
+    priceAnnual: 0,
+    monthlyLink: '',
+    annualLink: '',
+    features: [
+      '6,250 fetches per week',
+      '500/hr burst limit',
+      'All Max features',
+      'Dedicated support',
+      'Higher spending caps',
+      'Advanced analytics',
+      'Webhook notifications',
+      'Internal admin account',
+    ],
+    popular: false,
+    icon: Crown,
+    iconColor: 'text-[#5865F2]',
+    iconBg: 'bg-indigo-100',
+  },
 };
 
-type PlanTier = 'free' | 'pro' | 'max';
+type PlanTier = 'free' | 'pro' | 'max' | 'admin';
 
 function getCheckoutLink(baseLink: string, email?: string, userId?: string): string {
   if (!baseLink) return '#';
@@ -84,7 +105,8 @@ function getCheckoutLink(baseLink: string, email?: string, userId?: string): str
 export default function BillingPage() {
   const { data: session } = useSession();
   const token = (session as any)?.apiToken;
-  const currentTier: PlanTier = (session as any)?.tier || 'free';
+  const rawTier = (session as any)?.tier || 'free';
+  const currentTier: PlanTier = (plans[rawTier as PlanTier]) ? rawTier as PlanTier : 'free';
   const userEmail = (session as any)?.user?.email;
   const userId = (session as any)?.user?.id;
   const [isAnnual, setIsAnnual] = useState(false);
@@ -212,7 +234,7 @@ export default function BillingPage() {
       )}
 
       {/* Upgrade Plans */}
-      {currentTier !== 'max' && (
+      {currentTier !== 'max' && currentTier !== 'admin' && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -252,7 +274,7 @@ export default function BillingPage() {
 
           {/* Plan Cards */}
           <div className="grid gap-6 md:grid-cols-3">
-            {(Object.keys(plans) as PlanTier[]).map((tier) => {
+            {(Object.keys(plans) as PlanTier[]).filter((t) => t !== 'admin').map((tier) => {
               const plan = plans[tier];
               const Icon = plan.icon;
               const isCurrent = currentTier === tier;

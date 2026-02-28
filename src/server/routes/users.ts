@@ -586,6 +586,37 @@ export function createUserRouter(): Router {
   });
 
   /**
+   * PATCH /v1/me
+   * Update current user's profile (name)
+   */
+  router.patch('/v1/me', jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = (req as any).user as JwtPayload;
+      const { name } = req.body;
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        res.status(400).json({ error: 'name_required', message: 'Name is required' });
+        return;
+      }
+      if (name.length > 100) {
+        res.status(400).json({ error: 'invalid_name', message: 'Name must be 100 characters or less' });
+        return;
+      }
+      const result = await pool.query(
+        'UPDATE users SET name = $1, updated_at = now() WHERE id = $2 RETURNING id, email, name, tier',
+        [name.trim(), userId]
+      );
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        return;
+      }
+      res.json({ user: result.rows[0] });
+    } catch (error) {
+      console.error('Update me error:', error);
+      res.status(500).json({ error: 'update_failed', message: 'Failed to update profile' });
+    }
+  });
+
+  /**
    * Parse expiresIn parameter to a Date or null (null = never expires)
    */
   function parseExpiresIn(expiresIn: string | undefined): Date | null {
@@ -706,6 +737,52 @@ export function createUserRouter(): Router {
         error: 'list_keys_failed',
         message: 'Failed to list API keys',
       });
+    }
+  });
+
+  /**
+   * PATCH /v1/keys/:id
+   * Update an API key (currently: name only)
+   */
+  router.patch('/v1/keys/:id', jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = (req as any).user as JwtPayload;
+      const { id } = req.params;
+      const { name } = req.body;
+
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        res.status(400).json({ error: 'invalid_name', message: 'Key name is required' });
+        return;
+      }
+
+      if (name.length > 64) {
+        res.status(400).json({ error: 'invalid_name', message: 'Key name must be 64 characters or less' });
+        return;
+      }
+
+      const result = await pool.query(
+        `UPDATE api_keys SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING id, name, key_prefix, created_at, last_used_at, is_active, expires_at`,
+        [name.trim(), id, userId]
+      );
+
+      if (result.rowCount === 0) {
+        res.status(404).json({ error: 'not_found', message: 'API key not found' });
+        return;
+      }
+
+      const key = result.rows[0];
+      res.json({
+        id: key.id,
+        name: key.name,
+        prefix: key.key_prefix,
+        createdAt: key.created_at,
+        lastUsedAt: key.last_used_at,
+        isActive: key.is_active,
+        expiresAt: key.expires_at,
+      });
+    } catch (error) {
+      console.error('Update key error:', error);
+      res.status(500).json({ error: 'update_failed', message: 'Failed to update API key' });
     }
   });
 
