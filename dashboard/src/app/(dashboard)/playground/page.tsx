@@ -228,7 +228,13 @@ export default function PlaygroundPage() {
         throw new Error(errData.message || `Request failed with status ${response.status}`);
       }
 
-      const data: SearchResult = await response.json();
+      const raw = await response.json();
+      // API returns { success, data: { web: [...] } } — normalize to { results, query }
+      const data: SearchResult = {
+        results: raw.data?.web || raw.results || [],
+        query: raw.query || q,
+        total: raw.data?.web?.length || raw.results?.length || 0,
+      };
       setSearchResult(data);
       toast.success(`Found ${data.results?.length ?? 0} results`);
     } catch (err: any) {
