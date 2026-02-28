@@ -34,8 +34,8 @@
       --bg-alt: #FDFBF8;
       --bg-dark: #0F172A;
       --text: #1A1A1A;
-      --text-2: #6B6B6B;
-      --text-3: #9B9B9B;
+      --text-2: #555555;
+      --text-3: #888888;
       --accent: #5865F2;
       --accent-hover: #4752C4;
       --accent-light: #E8EAFD;
@@ -191,7 +191,7 @@
     .hero-stats-inner .hdot { color: rgba(255,255,255,0.2); }
 
     /* Hero → cream gradient transition */
-    .hero-fade { height: 120px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg)); margin-top: 0; }
+    .hero-fade { height: 80px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg)); margin-top: 0; }
 
     @media (max-width: 768px) {
       .hero { padding: 100px 0 0; }
@@ -210,7 +210,7 @@
     }
 
     /* ── SHARED SECTION STYLES ──────────────────────── */
-    .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 12px; }
+    .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 12px; }
     .section-h2 { font-family: var(--font-display); font-size: var(--text-h2); font-weight: 400; letter-spacing: -0.03em; line-height: 1.1; }
 
     /* ── 3. DEMO SECTION (cream) ────────────────────── */
@@ -244,9 +244,10 @@
     .demo-content-box::-webkit-scrollbar { width: 6px; }
     .demo-content-box::-webkit-scrollbar-track { background: transparent; }
     .demo-content-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-    .demo-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 240px; gap: 12px; }
-    .demo-placeholder-icon { font-size: 32px; color: rgba(255,255,255,0.15); }
-    .demo-placeholder-text { font-size: 14px; color: rgba(255,255,255,0.3); font-family: var(--font-body); }
+    .demo-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 240px; gap: 16px; }
+    .demo-placeholder-icon { font-size: 40px; color: rgba(255,255,255,0.12); }
+    .demo-placeholder-text { font-size: 15px; color: rgba(255,255,255,0.35); font-family: var(--font-body); font-weight: 500; }
+    .demo-placeholder-hint { font-size: 12px; color: rgba(255,255,255,0.2); font-family: var(--font-mono); margin-top: -4px; }
     .demo-md-h1 { color: #E2E8F0; font-weight: 700; font-size: 15px; }
     .demo-md-h2 { color: #CBD5E1; font-weight: 600; margin-top: 4px; }
     .demo-md-bold { color: #E2E8F0; font-weight: 600; }
@@ -317,7 +318,7 @@
     .ww-chip-dark { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); }
 
     /* Why → cream gradient */
-    .why-fade { height: 120px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg)); }
+    .why-fade { height: 80px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg)); }
 
     @media (max-width: 768px) {
       .why-section { padding: 64px 0 0; }
@@ -529,8 +530,11 @@
           </div>
           <div class="demo-content-box" id="demo-content-box">
             <div class="demo-placeholder">
-              <div class="demo-placeholder-icon">◈</div>
-              <div class="demo-placeholder-text">Click "Extract" to see the result</div>
+              <div class="demo-placeholder-icon">
+                <svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="rgba(88,101,242,0.2)"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="rgba(255,255,255,0.15)"/><path d="M8 16h10" stroke="rgba(88,101,242,0.5)" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="rgba(255,255,255,0.15)" stroke-width="2.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="demo-placeholder-text">Click "Extract" to see clean markdown output</div>
+              <div class="demo-placeholder-hint">↑ Pick a URL above, then hit Extract</div>
             </div>
           </div>
         </div>
@@ -849,7 +853,7 @@ webpeel "https://example.com" --readable</div>
           this.classList.add('active');
           currentDemo = this.dataset.demo;
           if (urlDisplay) urlDisplay.textContent = demoData[currentDemo].url;
-          contentBox.innerHTML = '<div class="demo-placeholder"><div class="demo-placeholder-icon">◈</div><div class="demo-placeholder-text">Click "Extract" to see the result</div></div>';
+          contentBox.innerHTML = '<div class="demo-placeholder"><div class="demo-placeholder-icon"><svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="rgba(88,101,242,0.2)"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="rgba(255,255,255,0.15)"/><path d="M8 16h10" stroke="rgba(88,101,242,0.5)" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="rgba(255,255,255,0.15)" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="demo-placeholder-text">Click "Extract" to see clean markdown output</div><div class="demo-placeholder-hint">\u2191 Pick a URL above, then hit Extract</div></div>';
           resultHeader.style.display = 'none';
         }));
 
