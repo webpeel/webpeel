@@ -18,7 +18,8 @@ export function createAnswerRouter(): Router {
 
   router.post('/v1/answer', async (req: Request, res: Response) => {
     // AUTH: require authentication (global middleware sets req.auth)
-    if (!req.auth?.keyInfo) {
+    const ansAuthId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+    if (!ansAuthId) {
       res.status(401).json({ error: 'authentication_required', message: 'API key required. Get one at https://app.webpeel.dev/keys' });
       return;    }
     try {
