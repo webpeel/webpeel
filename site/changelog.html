@@ -130,11 +130,72 @@
       <p class="lead">Release notes and product updates for WebPeel.</p>
 
       <div class="releases">
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.9</div>
+              <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Auth required for all endpoints</strong> — /v1/fetch, /v1/screenshot, /v1/crawl now require an API key or session. Free tier still gets 500/week but must register.</li>
+            <li><strong>Usage tracking fixed</strong> — All authenticated requests now appear in dashboard stats. Previously JWT session requests were silently untracked.</li>
+            <li><strong>Playground expanded</strong> — Search and Screenshot modes added alongside Fetch.</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.8</div>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>YouTube transcripts</strong> — Full caption extraction wired in. Was returning 18 words (just title), now returns 270–500+ words of actual transcript content.</li>
+            <li><strong>Dashboard stats live</strong> — Usage logs now capture both JWT and API key requests. Activity and stats pages show real data.</li>
+            <li><strong>Markdown cleanup</strong> — Strips "Load More", bare image URLs, and nav elements from extracted content.</li>
+            <li><strong>Favicon</strong> — Replaced Vercel triangle with WebPeel blurple logo.</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.7</div>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>API key expiration</strong> — Anthropic-style: Never, 7d, 30d, 90d, 1y options. Expired keys return 401 with <code>key_expired</code> error code.</li>
+            <li><strong>Dashboard UX overhaul</strong> — 15 improvements: billing crash fix, dismissable banners, inline key rename, key prefix copy, zero-state formatting, playground auto-fill, toggle labels.</li>
+            <li><strong>PATCH /v1/keys/:id</strong> — Rename API keys without recreating them.</li>
+            <li><strong>JWT extended to 7 days</strong> — Dashboard sessions no longer break after 1 hour.</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.6</div>
+            </div>
+            <div class="release-meta">February 27, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Login 500 fix</strong> — Credentials login was crashing on refresh token UUID/TEXT mismatch.</li>
+            <li><strong>Usage history endpoint</strong> — <code>GET /v1/usage/history?days=7</code> returns daily usage for the past week.</li>
+            <li><strong>Rate limit headers</strong> — All API responses include <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>.</li>
+            <li><strong>OpenAPI /openapi.json</strong> — 301 redirect to /openapi.yaml for compatibility.</li>
+            <li><strong>status.webpeel.dev removed</strong> — All links updated to webpeel.dev/status.</li>
+          </ul>
+        </div>
+
         <div class="release">
           <div class="release-header">
             <div class="release-title">
               <div class="release-version mono">v0.17.5</div>
-              <span class="badge">Latest</span>
             </div>
             <div class="release-meta">February 28, 2026</div>
           </div>
