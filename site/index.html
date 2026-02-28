@@ -53,7 +53,7 @@
       --text-body: 16px;
       --text-small: 14px;
       --text-label: 12px;
-      --space-section: clamp(120px, 14vw, 200px);
+      --space-section: clamp(80px, 10vw, 120px);
       --container: 1200px;
       --container-narrow: 800px;
       --gutter: 24px;
@@ -81,13 +81,13 @@
     .hero-anim.pre-anim.animated { opacity: 1; transform: translateY(0); }
     .hero-terminal.pre-anim { opacity: 0.3; transform: translateY(40px); box-shadow: none; }
     .hero-terminal.pre-anim.animated { opacity: 1; transform: translateY(0);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.15), 0 0 100px rgba(88,101,242,0.08); }
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 64px -16px rgba(0,0,0,0.5), 0 0 120px rgba(88,101,242,0.12); }
 
     /* ── prefers-reduced-motion ──────────────────────── */
     @media (prefers-reduced-motion: reduce) {
       .reveal, .reveal.pre-anim, .hero-anim, .hero-anim.pre-anim, .hero-terminal.pre-anim {
         opacity: 1 !important; transform: none !important; transition: none !important;
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.15), 0 0 100px rgba(88,101,242,0.08) !important;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 64px -16px rgba(0,0,0,0.5), 0 0 120px rgba(88,101,242,0.12) !important;
       }
       .bar-fill { transition: none !important; }
       .price-card { transition: none !important; }
@@ -95,43 +95,80 @@
     }
 
     /* ── 1. NAVIGATION ──────────────────────────────── */
-    .nav { position: sticky; top: 0; z-index: 100; height: 64px; background: transparent; transition: background 200ms ease, backdrop-filter 200ms ease, -webkit-backdrop-filter 200ms ease; }
-    .nav.scrolled { background: rgba(244,240,232,0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .nav {
+      position: sticky; top: 0; z-index: 100; height: 64px;
+      background: transparent;
+      transition: background 200ms ease, backdrop-filter 200ms ease, -webkit-backdrop-filter 200ms ease;
+    }
+    /* Dark hero state — white links */
+    .nav.nav-dark .nav-logo { color: rgba(255,255,255,0.9); }
+    .nav.nav-dark .nav-logo .diamond { color: #8B94F7; }
+    .nav.nav-dark .nav-links a { color: rgba(255,255,255,0.8); }
+    .nav.nav-dark .nav-links a.nav-cta { background: var(--accent); color: #fff !important; }
+    .nav.nav-dark .nav-hamburger svg { stroke: rgba(255,255,255,0.8); }
+    /* Scrolled state — cream blur, dark text */
+    .nav.scrolled { background: rgba(244,240,232,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); transition: color 200ms ease; }
     .nav-logo .diamond { color: var(--accent); }
     .nav-links { display: flex; align-items: center; gap: 32px; }
-    .nav-links a { font-size: 14px; font-weight: 400; color: var(--text); transition: opacity var(--transition-fast); }
+    .nav-links a { font-size: 14px; font-weight: 400; color: var(--text); transition: opacity var(--transition-fast), color 200ms ease; }
     .nav-links a:hover { opacity: 0.7; }
     .nav-links a.ext::after { content: ' ↗'; font-size: 12px; }
-    .nav-cta { display: inline-flex; align-items: center; background: var(--accent); color: #fff !important; font-size: 14px; font-weight: 500; padding: 8px 20px; border-radius: 6px; border: none; transition: opacity var(--transition-fast); }
+    .nav-cta { display: inline-flex; align-items: center; background: var(--accent); color: #fff !important; font-size: 14px; font-weight: 500; padding: 8px 20px; border-radius: 6px; border: none; transition: opacity var(--transition-fast) !important; }
     .nav-cta:hover { opacity: 0.85; }
     .nav-hamburger { display: none; background: none; border: none; padding: 8px; }
-    .nav-hamburger svg { width: 24px; height: 24px; stroke: var(--text); }
+    .nav-hamburger svg { width: 24px; height: 24px; stroke: var(--text); transition: stroke 200ms ease; }
     .mobile-menu { display: none; position: fixed; top: 64px; left: 0; right: 0; background: rgba(244,240,232,0.98); backdrop-filter: blur(12px); padding: 24px; flex-direction: column; gap: 16px; z-index: 99; border-bottom: 1px solid var(--border); }
     .mobile-menu.open { display: flex; }
-    .mobile-menu a { font-size: 16px; font-weight: 500; padding: 12px 0; }
+    .mobile-menu a { font-size: 16px; font-weight: 500; padding: 12px 0; color: var(--text); }
     @media (max-width: 768px) {
       .nav-links { display: none; }
       .nav-hamburger { display: block; }
     }
 
-    /* ── 2. HERO — CENTERED ──────────────────────────── */
-    .hero { padding: 80px 0 60px; text-align: center; }
-    .hero-content { max-width: 900px; margin: 0 auto; }
-    .hero-eyebrow { display: inline-flex; align-items: center; background: var(--accent-light); color: var(--accent); font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 100px; margin-bottom: 28px; letter-spacing: 0.01em; }
-    .hero h1 { font-family: var(--font-display); font-size: var(--text-hero); font-weight: 400; line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 28px; }
-    .hero h1 .accent { color: #5865F2; }
-    .hero-sub { font-size: 20px; font-weight: 400; color: #52524E; line-height: 1.6; max-width: 520px; margin: 0 auto 36px; }
+    /* ── 2. HERO (DARK) ─────────────────────────────── */
+    .hero {
+      background: var(--bg-dark);
+      background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(88,101,242,0.15), transparent);
+      padding: 80px 0 0;
+      text-align: center;
+      position: relative;
+    }
+    .hero-content { max-width: 900px; margin: 0 auto; padding-bottom: 64px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center;
+      border: 1px solid rgba(88,101,242,0.3);
+      background: rgba(88,101,242,0.08);
+      color: #8B94F7;
+      font-size: 14px; font-weight: 500; padding: 8px 18px; border-radius: 100px;
+      margin-bottom: 28px; letter-spacing: 0.01em;
+    }
+    .hero h1 {
+      font-family: var(--font-display); font-size: var(--text-hero);
+      font-weight: 400; line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 28px;
+      color: #fff;
+    }
+    .hero h1 .accent { color: #A5B4FC; }
+    .hero-sub { font-size: 20px; font-weight: 400; color: rgba(255,255,255,0.6); line-height: 1.6; max-width: 520px; margin: 0 auto 36px; }
     .hero-ctas { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
     .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 500; padding: 14px 32px; border-radius: 8px; border: none; transition: opacity var(--transition-fast); }
     .btn-primary:hover { opacity: 0.85; color: #fff; }
+    .btn-ghost { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.85); padding: 13px 28px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.25); background: transparent; transition: background var(--transition-fast), border-color var(--transition-fast); }
+    .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.45); color: #fff; }
+    /* Cream CTA variant for non-hero */
     .btn-text { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; color: var(--text); padding: 14px 28px; border-radius: 8px; border: 1.5px solid rgba(0,0,0,0.4); background: rgba(255,255,255,0.6); transition: background var(--transition-fast), border-color var(--transition-fast); }
     .btn-text:hover { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.55); color: var(--text); }
-    .hero-trust { font-size: 14px; color: var(--text-3); margin-top: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-    .hero-trust-dot { color: var(--border); }
-    .hero-terminal { max-width: 860px; margin: 64px auto 0; background: var(--bg-dark); border-radius: 16px; overflow: hidden; text-align: left; position: relative;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 25px 50px -12px rgba(0,0,0,0.15), 0 0 100px rgba(88,101,242,0.08); }
+    .hero-trust { font-size: 13px; color: rgba(255,255,255,0.35); margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .hero-trust a { color: rgba(255,255,255,0.35); }
+    .hero-trust-dot { color: rgba(255,255,255,0.2); }
+
+    /* Terminal */
+    .hero-terminal {
+      max-width: 860px; margin: 64px auto 0; background: #0B1120; border-radius: 16px;
+      overflow: hidden; text-align: left; position: relative;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 64px -16px rgba(0,0,0,0.5), 0 0 120px rgba(88,101,242,0.12);
+    }
     .terminal-chrome { height: 48px; background: #1E293B; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
     .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
     .terminal-dot.r { background: #EF4444; }
@@ -147,220 +184,37 @@
     .terminal-cursor { display: inline; font-weight: 400; color: #8B94F7; animation: cursorBlink 800ms step-end infinite; }
     @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
+    /* Hero social proof strip (inside hero, dark) */
+    .hero-stats-strip { padding: 24px 0 40px; }
+    .hero-stats-inner { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; font-size: 13px; color: rgba(255,255,255,0.4); }
+    .hero-stats-inner .hstat { padding: 0 8px; }
+    .hero-stats-inner .hdot { color: rgba(255,255,255,0.2); }
+
+    /* Hero → cream gradient transition */
+    .hero-fade { height: 120px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg)); margin-top: 0; }
+
     @media (max-width: 768px) {
-      .hero { padding: 100px 0 60px; }
+      .hero { padding: 100px 0 0; }
+      .hero-content { padding-bottom: 40px; }
       .hero-ctas { flex-direction: column; align-items: stretch; gap: 12px; }
-      .hero-ctas .btn-primary { width: 100%; justify-content: center; padding: 16px 28px; }
-      .hero-ctas .btn-text { width: 100%; text-align: center; display: block; padding: 14px 28px; border: 1.5px solid rgba(0,0,0,0.4); border-radius: 8px; background: rgba(255,255,255,0.7); }
+      .hero-ctas .btn-primary, .hero-ctas .btn-ghost { width: 100%; justify-content: center; padding: 16px 28px; }
       .hero-terminal { max-height: 280px; overflow: hidden; position: relative; }
-      .hero-terminal::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 72px; background: linear-gradient(to bottom, transparent, #0F172A); border-radius: 0 0 16px 16px; pointer-events: none; }
+      .hero-terminal::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 72px; background: linear-gradient(to bottom, transparent, #0B1120); border-radius: 0 0 16px 16px; pointer-events: none; }
       .terminal-content { font-size: 12px; padding: 16px; }
       .terminal-content .t-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     }
     @media (max-width: 480px) {
-      .hero { padding: 80px 0 48px; }
+      .hero { padding: 80px 0 0; }
       .hero-terminal { max-height: 220px; }
       .terminal-content { font-size: 11px; padding: 12px; }
     }
 
-    /* ── SOCIAL PROOF STRIP ────────────────────────────── */
-    .social-proof-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 32px 0; background: rgba(255,255,255,0.4); }
-    .social-proof-inner { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; }
-    .social-proof-stat { display: flex; flex-direction: column; align-items: center; padding: 8px 36px; text-align: center; }
-    .social-proof-stat strong { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
-    .social-proof-stat span { font-size: 13px; color: var(--text-2); margin-top: 3px; }
-    .social-proof-divider { width: 1px; height: 36px; background: var(--border); flex-shrink: 0; }
-    @media (max-width: 768px) {
-      .social-proof-inner { gap: 0; }
-      .social-proof-stat { padding: 10px 16px; }
-      .social-proof-divider { display: none; }
-    }
-
-    /* ── 3. WORKS WITH ───────────────────────────────── */
-    .works-with { padding: 40px 0 0 0; text-align: center; }
-    .works-with-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 24px; }
-    .works-with-logos { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .ww-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 100px; font-size: 13px; font-weight: 500; color: var(--text-2); box-shadow: 0 1px 2px rgba(0,0,0,0.04); letter-spacing: 0.01em; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
-    .ww-chip:hover { border-color: rgba(0,0,0,0.2); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
-    @media (max-width: 768px) {
-      .works-with-logos { gap: 24px; }
-    }
-
-    /* ── 4. HOW IT WORKS ─────────────────────────────── */
-    .how-section { background: var(--bg); }
+    /* ── SHARED SECTION STYLES ──────────────────────── */
     .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 12px; }
     .section-h2 { font-family: var(--font-display); font-size: var(--text-h2); font-weight: 400; letter-spacing: -0.03em; line-height: 1.1; }
-    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 64px; margin-top: 64px; }
-    .how-grid > * { min-width: 0; }
-    .how-step-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--accent); width: 32px; }
-    .how-step h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
-    .how-step p { font-size: 16px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
-    .mini-code { background: var(--bg-dark); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; white-space: pre-wrap; }
-    @media (max-width: 768px) {
-      .how-grid { grid-template-columns: 1fr; gap: 40px; }
-      .mini-code { font-size: 12px; padding: 14px; }
-    }
-    @media (max-width: 480px) {
-      .how-grid { gap: 32px; }
-    }
 
-    /* ── 5. SUPERPOWER (dark) ────────────────────────── */
-    .superpower { background: var(--bg-dark); color: #fff; }
-    .superpower .section-eyebrow { color: #8B94F7; }
-    .superpower .section-h2 { color: #fff; line-height: 1.05; }
-    .superpower .accent { color: #8B94F7; }
-    .superpower-body { font-size: 20px; color: rgba(255,255,255,0.75); max-width: 560px; line-height: 1.7; margin-top: 24px; hyphens: none; -webkit-hyphens: none; }
-    .superpower-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-    .stats-row { display: flex; gap: 40px; flex-direction: column; }
-    .stats-row .stat { text-align: left; }
-    .stats-row .stat-num { font-size: clamp(56px, 7vw, 96px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
-    .stats-row .stat-label { font-size: 15px; color: rgba(255,255,255,0.5); margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
-    .stat-divider-h { width: 100%; height: 1px; background: rgba(255,255,255,0.1); }
-    @media (max-width: 768px) {
-      .superpower-inner { grid-template-columns: 1fr; gap: 40px; }
-      .superpower { padding: clamp(48px, 8vw, 80px) 0 !important; }
-      .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center; }
-      .stats-row .stat { text-align: center; }
-      .stat-divider-h { display: none; }
-      .stats-row .stat-num { font-size: clamp(28px, 8vw, 48px); }
-      .stats-row .stat-label { font-size: 11px; white-space: nowrap; }
-    }
-    @media (max-width: 480px) {
-      .stats-row .stat-num { font-size: clamp(24px, 7vw, 40px); }
-      .stats-row .stat-label { font-size: 10px; }
-    }
-
-    /* ── 6. FEATURES (stacked, alternating) ──────────── */
-    .feature-block { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
-    .feature-block > * { min-width: 0; }
-    .feature-block.flipped .feature-text { order: 2; }
-    .feature-block.flipped .feature-visual { order: 1; }
-    .feature-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; margin-bottom: 12px; }
-    .feature-block h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
-    .feature-block .desc { font-size: 16px; color: var(--text-2); line-height: 1.7; margin-bottom: 20px; }
-    .feature-checks { list-style: none; }
-    .feature-checks li { font-size: 14px; color: var(--text-2); padding: 4px 0; display: flex; align-items: center; }
-    .feature-checks li::before { content: ''; display: inline-block; width: 18px; height: 18px; margin-right: 8px; vertical-align: -3px; background: var(--accent); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; flex-shrink: 0; }
-    .feature-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden; transition: box-shadow var(--transition-normal); }
-    .feature-card:hover { box-shadow: var(--card-shadow-hover); }
-    .feature-card-dark { background: var(--bg-dark); border-radius: 12px; padding: 24px; font-family: var(--font-mono); font-size: 14px; line-height: 1.7; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; }
-    .integration-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .integration-item { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--text-2); background: var(--card-bg); box-shadow: var(--card-shadow); transition: box-shadow var(--transition-fast), border-color var(--transition-fast); }
-    .integration-item:hover { box-shadow: var(--card-shadow-hover); border-color: rgba(0,0,0,0.12); }
-    @media (max-width: 768px) {
-      .feature-block { grid-template-columns: 1fr; gap: 32px; }
-      .feature-block.flipped .feature-text { order: 1; }
-      .feature-block.flipped .feature-visual { order: 2; }
-      .feature-card-dark { font-size: 12px; padding: 18px; }
-      .integration-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    /* ── 7. PERFORMANCE ──────────────────────────────── */
-    .perf-section { background: var(--bg); }
-    .perf-grid { display: grid; grid-template-columns: 55% 45%; gap: 48px; align-items: start; }
-    .bar-group { margin-bottom: 32px; }
-    .bar-group-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 12px; }
-    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .bar-label { width: 90px; font-size: 14px; color: var(--text-2); flex-shrink: 0; }
-    .bar-track { flex: 1; height: 28px; background: #E5E0D8; border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 800ms var(--ease-out-expo); }
-    .bar-fill.blue { background: var(--accent); }
-    .bar-fill.gray { background: #D1CCC4; }
-    .bar-fill.bar-animated { /* width set by JS */ }
-    .bar-value { font-size: 14px; font-weight: 600; color: var(--text); width: 48px; text-align: right; flex-shrink: 0; }
-    .stat-cards { display: flex; flex-direction: column; gap: 16px; }
-    .stat-card { background: var(--card-bg); border-radius: 8px; padding: 24px; box-shadow: var(--card-shadow); }
-    .stat-card .num { font-size: clamp(36px, 5vw, 56px); font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
-    .stat-card .label { font-size: 14px; color: var(--text-2); margin-top: 4px; }
-    .stat-card-sub { font-size: 12px; color: var(--text-3); margin-top: 4px; }
-    @media (max-width: 768px) {
-      .perf-grid { grid-template-columns: 1fr; gap: 40px; }
-      .bar-label { width: 70px; font-size: 12px; }
-      .bar-value { font-size: 12px; width: 40px; }
-      .stat-cards { flex-direction: row; flex-wrap: wrap; gap: 12px; }
-      .stat-card { flex: 1; min-width: 140px; padding: 16px; }
-    }
-
-    /* ── TESTIMONIAL ──────────────────────────────────── */
-    .testimonial-section { padding: 48px 0 0 0; }
-    .testimonial-card { max-width: 640px; margin: 0 auto; text-align: center; }
-    .testimonial-quote { font-family: var(--font-display); font-size: clamp(24px, 3vw, 32px); font-weight: 400; font-style: italic; color: var(--text); line-height: 1.5; letter-spacing: -0.01em; }
-    .testimonial-author { margin-top: 28px; display: flex; align-items: center; justify-content: center; gap: 14px; }
-    .testimonial-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; }
-    .testimonial-meta { text-align: left; }
-    .testimonial-name { font-size: 15px; font-weight: 600; color: var(--text); }
-    .testimonial-role { font-size: 13px; color: var(--text-3); }
-
-    /* ── 8. PRICING ──────────────────────────────────── */
-    .pricing-header { text-align: center; margin-bottom: 64px; }
-    .pricing-header .sub { font-size: 16px; color: var(--text-2); margin-top: 12px; }
-    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; }
-    .price-card { background: var(--card-bg); border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; padding: 36px; position: relative; box-shadow: var(--card-shadow); transition: transform 200ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo); }
-    .price-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
-    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.04); background: #F0F1FE; box-shadow: 0 4px 16px rgba(88,101,242,0.15), 0 12px 40px rgba(0,0,0,0.08); }
-    .price-card.featured:hover { transform: scale(1.04) translateY(-4px); box-shadow: 0 8px 24px rgba(88,101,242,0.22), 0 16px 48px rgba(0,0,0,0.1); }
-    .price-badge { position: absolute; top: -12px; right: 24px; display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
-    .price-plan { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 8px; }
-    .price-amount { font-size: 40px; font-weight: 600; color: var(--text); }
-    .price-amount .per { font-size: 16px; font-weight: 400; color: var(--text-3); }
-    .price-desc { font-size: 15px; color: var(--text-2); margin: 8px 0 24px; }
-    .price-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 24px; }
-    .price-features { list-style: none; margin-bottom: 24px; }
-    .price-features li { font-size: 14px; color: var(--text-2); padding: 6px 0; display: flex; align-items: center; }
-    .price-features li::before { content: ''; display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: -2px; background: var(--accent); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; flex-shrink: 0; }
-    .price-btn { display: block; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; border: none; width: 100%; transition: opacity var(--transition-fast); }
-    .price-btn:hover { opacity: 0.85; }
-    .price-btn-filled { background: var(--accent); color: #fff; }
-    .price-btn-outline { background: transparent; border: 1.5px solid rgba(0,0,0,0.32); color: var(--text); }
-    @media (max-width: 768px) {
-      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; gap: 16px; }
-      .price-card { padding: 28px 24px; }
-      .price-card.featured { order: -1; transform: none; }
-      .price-card.featured:hover { transform: translateY(-4px); }
-    }
-
-    /* ── 9. FAQ ───────────────────────────────────────── */
-    .faq-section { background: var(--bg); }
-    .faq-list { max-width: var(--container-narrow); margin: 0 auto; }
-    .faq-item { border-bottom: 1px solid var(--border); }
-    .faq-question { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; font-size: 16px; font-weight: 500; color: var(--text); cursor: pointer; background: none; border: none; width: 100%; text-align: left; }
-    .faq-question:hover { color: var(--accent); }
-    .faq-icon { font-size: 20px; color: var(--text-3); transition: transform 0.3s ease; flex-shrink: 0; }
-    .faq-item.open .faq-icon { transform: rotate(45deg); }
-    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    .faq-answer-inner { padding: 0 0 24px; font-size: 16px; color: var(--text-2); line-height: 1.7; }
-    .faq-item.open .faq-answer { max-height: 300px; }
-
-    /* ── 10. FINAL CTA + FOOTER ──────────────────────── */
-    .final-cta { background: var(--bg-dark); text-align: center; padding: 100px 0; }
-    .final-cta h2 { font-family: var(--font-display); font-size: 36px; font-weight: 400; color: #fff; margin-bottom: 16px; }
-    .final-cta .sub { font-size: 16px; color: rgba(255,255,255,0.6); margin-bottom: 32px; }
-    .install-card { display: inline-flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; max-width: 100%; overflow-x: auto; }
-    .install-card code { font-family: var(--font-mono); font-size: 14px; color: #E2E8F0; white-space: nowrap; }
-    .install-copy-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all var(--transition-fast); flex-shrink: 0; }
-    .install-copy-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
-    @media (max-width: 480px) {
-      .install-card { flex-direction: column; gap: 8px; }
-      .install-card code { font-size: 12px; word-break: break-all; white-space: normal; }
-    }
-
-    .footer { background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,0.08); padding: 48px 0; }
-    .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
-    .footer-brand { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 12px; }
-    .footer-brand .diamond { color: var(--accent); }
-    .footer-tagline { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; }
-    .footer-col h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.8); margin-bottom: 16px; }
-    .footer-col a { display: block; font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 10px; transition: color var(--transition-fast); }
-    .footer-col a:hover { color: #fff; }
-    .footer-bottom { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .footer-bottom p { font-size: 13px; color: rgba(255,255,255,0.3); }
-    .footer-bottom a { font-size: 13px; color: rgba(255,255,255,0.3); margin-left: 16px; transition: color var(--transition-fast); }
-    .footer-bottom a:hover { color: rgba(255,255,255,0.7); }
-    @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
-
-    /* ── 3.5 DEMO SECTION ───────────────────────────────── */
-    .demo-section { padding: clamp(60px, 8vw, 100px) 0; background: var(--bg-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    /* ── 3. DEMO SECTION (cream) ────────────────────── */
+    .demo-section { padding: 80px 0; background: var(--bg); }
     .demo-inner { max-width: 760px; margin: 0 auto; text-align: center; }
     .demo-subtitle { font-size: 17px; color: var(--text-2); margin: 0 auto 32px; max-width: 500px; }
     .demo-url-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
@@ -382,46 +236,192 @@
     .demo-chip.url { background: rgba(88,101,242,0.1); color: var(--accent); }
     .demo-chip.words { background: rgba(0,0,0,0.05); color: var(--text-2); }
     .demo-chip.time { background: rgba(34,197,94,0.1); color: #16a34a; }
-    .demo-content-box { background: var(--bg-dark); border-radius: 12px; padding: 24px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: #94A3B8; min-height: 200px; overflow: hidden; position: relative; max-height: 360px; overflow-y: auto; }
+    .demo-content-box {
+      background: var(--bg-dark); border-radius: 12px; padding: 24px;
+      font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: #94A3B8;
+      min-height: 280px; overflow: hidden; position: relative; max-height: 400px; overflow-y: auto;
+    }
     .demo-content-box::-webkit-scrollbar { width: 6px; }
     .demo-content-box::-webkit-scrollbar-track { background: transparent; }
     .demo-content-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-    .demo-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 160px; gap: 12px; }
+    .demo-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 240px; gap: 12px; }
     .demo-placeholder-icon { font-size: 32px; color: rgba(255,255,255,0.15); }
     .demo-placeholder-text { font-size: 14px; color: rgba(255,255,255,0.3); font-family: var(--font-body); }
-    .demo-typed-text { white-space: pre-wrap; word-break: break-word; }
-    .demo-typed-cursor { display: inline; color: var(--accent); animation: cursorBlink 800ms step-end infinite; }
     .demo-md-h1 { color: #E2E8F0; font-weight: 700; font-size: 15px; }
     .demo-md-h2 { color: #CBD5E1; font-weight: 600; margin-top: 4px; }
     .demo-md-bold { color: #E2E8F0; font-weight: 600; }
     .demo-md-link { color: #8B94F7; }
     .demo-md-quote { color: #64748B; border-left: 2px solid #334155; padding-left: 8px; display: block; margin: 2px 0; }
-    .demo-md-emoji { color: inherit; }
     @media (max-width: 768px) {
       .demo-input-row { flex-direction: column; align-items: stretch; }
       .demo-extract-btn { justify-content: center; }
-      .demo-content-box { font-size: 12px; padding: 16px; max-height: 280px; }
+      .demo-content-box { font-size: 12px; padding: 16px; min-height: 200px; max-height: 280px; }
     }
 
-    /* ── RESPONSIVE ──────────────────────────────────── */
+    /* ── 4. HOW IT WORKS (cream) ────────────────────── */
+    .how-section { padding: 100px 0; background: var(--bg); }
+    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 64px; margin-top: 64px; }
+    .how-grid > * { min-width: 0; }
+    .how-step-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 3px solid var(--accent); width: 32px; }
+    .how-step h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
+    .how-step p { font-size: 16px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
+    .mini-code { background: var(--bg-dark); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; white-space: pre-wrap; }
+    @media (max-width: 768px) {
+      .how-section { padding: 64px 0; }
+      .how-grid { grid-template-columns: 1fr; gap: 40px; margin-top: 48px; }
+      .mini-code { font-size: 12px; padding: 14px; }
+    }
+    @media (max-width: 480px) {
+      .how-grid { gap: 32px; }
+    }
+
+    /* ── 5. WHY WEBPEEL (dark) ──────────────────────── */
+    .why-section {
+      background: var(--bg-dark);
+      background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      padding: 120px 0 0;
+      position: relative;
+    }
+    .why-section .section-eyebrow { color: #8B94F7; }
+    .why-section .section-h2 { color: #fff; line-height: 1.05; }
+    .why-section .section-h2 .accent { color: #A5B4FC; }
+    .why-inner { display: grid; grid-template-columns: 60fr 40fr; gap: 80px; align-items: start; }
+    .why-body { font-size: 18px; color: rgba(255,255,255,0.65); max-width: 520px; line-height: 1.7; margin-top: 24px; hyphens: none; -webkit-hyphens: none; }
+    .why-checks { list-style: none; margin-top: 28px; display: flex; flex-direction: column; gap: 12px; }
+    .why-checks li { font-size: 14px; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 10px; }
+    .why-check-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; color: #8B94F7; font-style: normal; }
+
+    /* Bar chart (dark variant) */
+    .bar-group { margin-bottom: 32px; }
+    .bar-group-title { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); margin-bottom: 12px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .bar-label { width: 90px; font-size: 14px; color: rgba(255,255,255,0.5); flex-shrink: 0; }
+    .bar-label.highlight { color: rgba(255,255,255,0.9); font-weight: 600; }
+    .bar-track { flex: 1; height: 28px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 800ms var(--ease-out-expo); }
+    .bar-fill.blue { background: var(--accent); }
+    .bar-fill.gray { background: rgba(255,255,255,0.15); }
+    .bar-value { font-size: 14px; font-weight: 600; color: #fff; width: 52px; text-align: right; flex-shrink: 0; }
+
+    /* Stat cards (dark variant) */
+    .stat-cards-dark { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px; }
+    .stat-card-dark { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; }
+    .stat-card-dark .num { font-size: clamp(24px, 3vw, 32px); font-weight: 600; color: #fff; letter-spacing: -0.02em; line-height: 1.1; }
+    .stat-card-dark .label { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 6px; }
+
+    /* Integration chips (dark) */
+    .why-integrations { padding: 48px 0 0; }
+    .why-integrations-inner { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .ww-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.35); margin-right: 4px; }
+    .ww-chip-dark { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); }
+
+    /* Why → cream gradient */
+    .why-fade { height: 120px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg)); }
+
+    @media (max-width: 768px) {
+      .why-section { padding: 64px 0 0; }
+      .why-inner { grid-template-columns: 1fr; gap: 48px; }
+      .stat-cards-dark { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stat-card-dark { padding: 14px; }
+      .stat-card-dark .num { font-size: clamp(20px, 6vw, 28px); }
+      .bar-label { width: 70px; font-size: 12px; }
+      .bar-value { font-size: 12px; width: 44px; }
+    }
+    @media (max-width: 480px) {
+      .stat-cards-dark { grid-template-columns: 1fr; }
+      .why-integrations-inner { gap: 8px; }
+    }
+
+    /* ── 6. PRICING (cream) ─────────────────────────── */
+    .pricing-section { padding: var(--space-section) 0; background: var(--bg); }
+    .pricing-header { text-align: center; margin-bottom: 64px; }
+    .pricing-header .sub { font-size: 16px; color: var(--text-2); margin-top: 12px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; }
+    .price-card { background: var(--card-bg); border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; padding: 36px; position: relative; box-shadow: var(--card-shadow); transition: transform 200ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo); }
+    .price-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
+    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.04); background: #F0F1FE; box-shadow: 0 4px 16px rgba(88,101,242,0.15), 0 12px 40px rgba(0,0,0,0.08); }
+    .price-card.featured:hover { transform: scale(1.04) translateY(-4px); box-shadow: 0 8px 24px rgba(88,101,242,0.22), 0 16px 48px rgba(0,0,0,0.1); }
+    .price-badge { position: absolute; top: -12px; right: 24px; display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
+    .price-plan { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 8px; }
+    .price-amount { font-size: 40px; font-weight: 600; color: var(--text); }
+    .price-amount .per { font-size: 16px; font-weight: 400; color: var(--text-3); }
+    .price-desc { font-size: 15px; color: var(--text-2); margin: 8px 0 24px; }
+    .price-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 24px; }
+    .price-features { list-style: none; margin-bottom: 24px; }
+    .price-features li { font-size: 14px; color: var(--text-2); padding: 6px 0; display: flex; align-items: center; }
+    .price-features li::before { content: ''; display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: -2px; background: var(--accent); flex-shrink: 0; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat; }
+    .price-btn { display: block; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; border: none; width: 100%; transition: opacity var(--transition-fast); cursor: pointer; }
+    .price-btn:hover { opacity: 0.85; }
+    .price-btn-filled { background: var(--accent); color: #fff; }
+    .price-btn-outline { background: transparent; border: 1.5px solid rgba(0,0,0,0.32); color: var(--text); }
+    @media (max-width: 768px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; gap: 16px; }
+      .price-card { padding: 28px 24px; }
+      .price-card.featured { order: -1; transform: none; }
+      .price-card.featured:hover { transform: translateY(-4px); }
+    }
+
+    /* ── 7. FAQ (cream) ─────────────────────────────── */
+    .faq-section { padding: var(--space-section) 0; background: var(--bg); }
+    .faq-list { max-width: var(--container-narrow); margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid var(--border); }
+    .faq-question { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; font-size: 16px; font-weight: 500; color: var(--text); cursor: pointer; background: none; border: none; width: 100%; text-align: left; }
+    .faq-question:hover { color: var(--accent); }
+    .faq-icon { font-size: 20px; color: var(--text-3); transition: transform 0.3s ease; flex-shrink: 0; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .faq-answer-inner { padding: 0 0 24px; font-size: 16px; color: var(--text-2); line-height: 1.7; }
+    .faq-item.open .faq-answer { max-height: 300px; }
+
+    /* ── 8. FINAL CTA + FOOTER ──────────────────────── */
+    .final-cta { background: var(--bg-dark); text-align: center; padding: 100px 0; }
+    .final-cta h2 { font-family: var(--font-display); font-size: 36px; font-weight: 400; color: #fff; margin-bottom: 16px; }
+    .final-cta .sub { font-size: 16px; color: rgba(255,255,255,0.6); margin-bottom: 32px; }
+    .install-card { display: inline-flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; max-width: 100%; overflow-x: auto; }
+    .install-card code { font-family: var(--font-mono); font-size: 14px; color: #E2E8F0; white-space: nowrap; }
+    .install-copy-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all var(--transition-fast); flex-shrink: 0; }
+    .install-copy-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+    @media (max-width: 480px) {
+      .install-card { flex-direction: column; gap: 8px; }
+      .install-card code { font-size: 12px; word-break: break-all; white-space: normal; }
+    }
+
+    .footer { background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,0.08); padding: 48px 0; }
+    .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
+    .footer-brand { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .footer-brand .diamond { color: var(--accent); }
+    .footer-tagline { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+    .footer-col h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.8); margin-bottom: 16px; }
+    .footer-col a { display: block; font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 10px; transition: color var(--transition-fast); }
+    .footer-col a:hover { color: #fff; }
+    .footer-bottom { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom p { font-size: 13px; color: rgba(255,255,255,0.3); }
+    .footer-bottom a { font-size: 13px; color: rgba(255,255,255,0.3); margin-left: 16px; transition: color var(--transition-fast); }
+    .footer-bottom a:hover { color: rgba(255,255,255,0.7); }
+    @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+
+    /* ── RESPONSIVE GLOBALS ─────────────────────────── */
     @media (max-width: 1024px) {
       :root { --gutter: 32px; }
-      .feature-block { gap: 40px; }
     }
     @media (max-width: 768px) {
-      :root { --gutter: 20px; --space-section: clamp(64px, 10vw, 100px); }
-      .feature-block[style*="margin-bottom: 120px"] { margin-bottom: 64px !important; }
+      :root { --gutter: 20px; --space-section: clamp(60px, 10vw, 80px); }
     }
   </style>
 </head>
 <body>
 
   <!-- ═══════════════════════════════════════════════════
-       1. NAVIGATION
+       NAVIGATION
        ═══════════════════════════════════════════════════ -->
-  <nav class="nav" id="nav">
+  <nav class="nav nav-dark" id="nav">
     <div class="container nav-inner">
-      <a href="/" class="nav-logo"><svg width="24" height="24" viewBox="0 0 32 32" style="flex-shrink:0"><rect width="32" height="32" fill="#5865F2" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity="0.95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#C7D2FE"/><path d="M8 16h10" stroke="#5865F2" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#52525B" stroke-width="2.5" stroke-linecap="round"/></svg> WebPeel</a>
+      <a href="/" class="nav-logo">
+        <svg width="24" height="24" viewBox="0 0 32 32" style="flex-shrink:0"><rect width="32" height="32" fill="#5865F2" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity="0.95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#C7D2FE"/><path d="M8 16h10" stroke="#5865F2" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#52525B" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="/docs/">Docs</a>
@@ -443,26 +443,30 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       2. HERO — CENTERED
+       SECTION 1: HERO (DARK)
        ═══════════════════════════════════════════════════ -->
-  <section class="hero">
+  <section class="hero" id="hero-section">
     <div class="container">
       <div class="hero-content">
         <div class="hero-eyebrow hero-anim" data-hero="0">Open Source · 500 free fetches/week</div>
-        <h1><span class="hero-anim" data-hero="1" style="display:inline-block;">Give your AI</span><br><span class="accent hero-anim" data-hero="2" style="display:inline-block;">the entire web.</span></h1>
+        <h1>
+          <span class="hero-anim" data-hero="1" style="display:inline-block;">Give your AI</span><br>
+          <span class="accent hero-anim" data-hero="2" style="display:inline-block;">the entire web.</span>
+        </h1>
         <p class="hero-sub hero-anim" data-hero="3">One API call. Any page. Structured&nbsp;data&nbsp;back.</p>
         <div class="hero-ctas hero-anim" data-hero="4">
           <a href="https://app.webpeel.dev/signup" class="btn-primary">Get Started Free →</a>
-          <a href="/docs/" class="btn-text">View Docs</a>
+          <a href="/docs/" class="btn-ghost">View Docs</a>
         </div>
         <div class="hero-trust hero-anim" data-hero="4">
-          <a href="https://app.webpeel.dev/signup" style="color:inherit;">Free forever</a>
+          <a href="https://app.webpeel.dev/signup">Free forever</a>
           <span class="hero-trust-dot">·</span>
-          <a href="https://app.webpeel.dev/signup" style="color:inherit;">No credit card</a>
+          <a href="https://app.webpeel.dev/signup">No credit card</a>
           <span class="hero-trust-dot">·</span>
-          <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener" style="color:inherit;">Open source</a>
+          <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">Open source</a>
         </div>
       </div>
+
       <div class="hero-terminal hero-anim" data-hero="5">
         <div class="terminal-chrome">
           <div class="terminal-dot r"></div>
@@ -476,62 +480,34 @@
           <div class="t-line" data-cmd='webpeel youtube https://youtu.be/dQw4 --transcript' data-output='→ Duration: 3:32 · Transcript: 847 words ✓'></div>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- Social proof strip -->
-  <section class="social-proof-strip">
-    <div class="container">
-      <div class="social-proof-inner reveal">
-        <div class="social-proof-stat">
-          <strong>Open Source</strong>
-          <span>Open source</span>
-        </div>
-        <div class="social-proof-divider"></div>
-        <div class="social-proof-stat">
-          <strong>18 MCP Tools</strong>
-          <span>for Claude &amp; Cursor</span>
-        </div>
-        <div class="social-proof-divider"></div>
-        <div class="social-proof-stat">
-          <strong>97.6% Success</strong>
-          <span>content retrieval rate</span>
-        </div>
-        <div class="social-proof-divider"></div>
-        <div class="social-proof-stat">
-          <strong>500+ free</strong>
-          <span>fetches per week</span>
+      <!-- Social proof strip inside hero -->
+      <div class="hero-stats-strip hero-anim" data-hero="6">
+        <div class="hero-stats-inner">
+          <span class="hstat">Open Source</span>
+          <span class="hdot">·</span>
+          <span class="hstat">18 MCP Tools</span>
+          <span class="hdot">·</span>
+          <span class="hstat">97.6% Success</span>
+          <span class="hdot">·</span>
+          <span class="hstat">500+ sites tested</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════
-       3. WORKS WITH
-       ═══════════════════════════════════════════════════ -->
-  <section class="works-with">
-    <div class="container">
-      <div class="works-with-label reveal">WORKS WITH</div>
-      <div class="works-with-logos reveal">
-        <span class="ww-chip"><span style="color:#D4721A;font-size:10px;">●</span> Claude</span>
-        <span class="ww-chip"><span style="color:#1A1A1A;font-size:10px;">●</span> Cursor</span>
-        <span class="ww-chip"><span style="color:#10A37F;font-size:10px;">●</span> GPT-4o</span>
-        <span class="ww-chip"><span style="color:#1C4FAD;font-size:10px;">●</span> LangChain</span>
-        <span class="ww-chip"><span style="color:#0EA5E9;font-size:10px;">●</span> Windsurf</span>
-        <span class="ww-chip"><span style="color:#5865F2;font-size:10px;">●</span> OpenClaw</span>
-      </div>
-    </div>
-  </section>
+  <!-- Hero → cream gradient transition -->
+  <div class="hero-fade"></div>
 
   <!-- ═══════════════════════════════════════════════════
-       3.5. LIVE DEMO WIDGET
+       SECTION 2: INTERACTIVE DEMO
        ═══════════════════════════════════════════════════ -->
   <section class="demo-section" id="demo">
     <div class="container">
       <div class="demo-inner reveal">
         <div class="section-eyebrow" style="text-align:center;">TRY IT NOW</div>
         <h2 class="section-h2" style="text-align:center;margin-bottom:12px;">See WebPeel in action</h2>
-        <p class="demo-subtitle">Click a URL below and watch WebPeel extract clean, structured content in milliseconds.</p>
+        <p class="demo-subtitle">Click a URL and watch WebPeel extract clean, structured content.</p>
         <div class="demo-url-pills">
           <button class="demo-pill active" data-demo="hn">Hacker News</button>
           <button class="demo-pill" data-demo="wiki">Wikipedia</button>
@@ -563,9 +539,9 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════════
-       4. HOW IT WORKS
+       SECTION 3: HOW IT WORKS
        ═══════════════════════════════════════════════════ -->
-  <section class="how-section" style="padding: var(--space-section) 0;">
+  <section class="how-section" id="features">
     <div class="container">
       <div class="reveal">
         <div class="section-eyebrow">HOW IT WORKS</div>
@@ -576,213 +552,123 @@
           <div class="how-step-num">01</div>
           <h3>Install</h3>
           <p>One command. Works everywhere — macOS, Linux, Windows. Zero dependencies beyond Node.</p>
-          <div class="mini-code"><span style="color:#64748B;"># Install globally</span><br>npm install -g webpeel</div>
+          <div class="mini-code"><span style="color:#64748B;"># Install globally</span>
+npm install -g webpeel</div>
         </div>
         <div class="how-step reveal">
           <div class="how-step-num">02</div>
           <h3>Fetch</h3>
           <p>Send any URL. WebPeel auto-detects what's needed — simple HTTP, browser rendering, or advanced mode.</p>
-          <div class="mini-code"><span style="color:#64748B;"># Auto-detects: simple → browser → advanced</span><br>webpeel "https://example.com" --readable</div>
+          <div class="mini-code"><span style="color:#64748B;"># Auto-detects: simple → browser → advanced</span>
+webpeel "https://example.com" --readable</div>
         </div>
         <div class="how-step reveal">
           <div class="how-step-num">03</div>
           <h3>Integrate</h3>
           <p>Clean markdown, metadata, structured data — ready for your agent in milliseconds.</p>
-          <div class="mini-code"><span style="color:#8B94F7;">import</span> { peel } <span style="color:#8B94F7;">from</span> <span style="color:#86EFAC;">'webpeel'</span><br><span style="color:#8B94F7;">const</span> page = <span style="color:#8B94F7;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
+          <div class="mini-code"><span style="color:#8B94F7;">import</span> { peel } <span style="color:#8B94F7;">from</span> <span style="color:#86EFAC;">'webpeel'</span>
+<span style="color:#8B94F7;">const</span> page = <span style="color:#8B94F7;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- ═══════════════════════════════════════════════════
-       5. THE SUPERPOWER — dark section
+       SECTION 4: WHY WEBPEEL (DARK)
        ═══════════════════════════════════════════════════ -->
-  <section class="superpower" style="padding: clamp(80px, 10vw, 140px) 0;">
+  <section class="why-section">
     <div class="container">
-      <div class="superpower-inner">
+      <div class="why-inner">
+        <!-- Left: text -->
         <div class="reveal">
           <div class="section-eyebrow">WHY WEBPEEL</div>
           <h2 class="section-h2">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
-          <p class="superpower-body">JavaScript&#8209;heavy SPAs, dynamic content, authenticated pages — handled automatically. WebPeel escalates from simple HTTP to full browser rendering as needed, so your agent always gets through.</p>
-        </div>
-        <div class="stats-row reveal">
-          <div class="stat">
-            <div class="stat-num" data-count="97.6" data-suffix="%">97.6%</div>
-            <div class="stat-label">success rate*</div>
-          </div>
-          <div class="stat-divider-h"></div>
-          <div class="stat">
-            <div class="stat-num" data-count="200" data-suffix="ms">200ms</div>
-            <div class="stat-label">avg fetch time</div>
-          </div>
-          <div class="stat-divider-h"></div>
-          <div class="stat">
-            <div class="stat-num" data-count="40" data-suffix="+">40+</div>
-            <div class="stat-label">domains tested</div>
-          </div>
-        </div>
-      </div>
-      <p style="font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 32px; text-align: center;">*Measured across 40+ diverse domains including JS-heavy SPAs, dynamic pages, and authenticated content</p>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════
-       6. FEATURES — Three stacked blocks
-       ═══════════════════════════════════════════════════ -->
-  <section id="features" style="padding: var(--space-section) 0;">
-    <div class="container">
-
-      <!-- Feature 1 -->
-      <div class="feature-block reveal" style="margin-bottom: 120px;">
-        <div class="feature-text">
-          <div class="feature-num">01</div>
-          <h3>Raw HTML in. Clean markdown out.</h3>
-          <p class="desc">Readability extraction, noise removal, and semantic structuring. Get the content your agent needs, nothing it doesn't.</p>
-          <ul class="feature-checks">
-            <li>Readability + custom selectors</li>
-            <li>Auto-removes nav, ads, sidebars</li>
-            <li>Structured metadata extraction</li>
+          <p class="why-body">JavaScript&#8209;heavy SPAs, dynamic content, authenticated pages — handled automatically. WebPeel escalates from simple HTTP to full browser rendering as needed, so your agent always gets through.</p>
+          <ul class="why-checks">
+            <li><i class="why-check-icon">✓</i> Handles JS rendering, SPAs, Cloudflare</li>
+            <li><i class="why-check-icon">✓</i> 31 domain extractors for structured data</li>
+            <li><i class="why-check-icon">✓</i> 18 MCP tools for Claude, Cursor, GPT</li>
+            <li><i class="why-check-icon">✓</i> Firecrawl-compatible API</li>
           </ul>
         </div>
-        <div class="feature-visual">
-          <div class="feature-card" style="padding: 0;">
-            <div style="display: flex; border-bottom: 1px solid var(--border);">
-              <div style="padding: 12px 20px; font-size: 13px; font-weight: 500; border-bottom: 2px solid var(--accent); color: var(--text);">HTML</div>
-              <div style="padding: 12px 20px; font-size: 13px; font-weight: 500; color: var(--text-3);">Markdown</div>
-            </div>
-            <div style="background: var(--bg-dark); padding: 20px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: #94A3B8; overflow: hidden; word-break: break-word;">
-              <div style="color: #64748B;">&lt;div class="article-wrapper"&gt;</div>
-              <div style="color: #64748B;">&nbsp;&nbsp;&lt;nav&gt;...50 links...&lt;/nav&gt;</div>
-              <div style="color: #64748B;">&nbsp;&nbsp;&lt;aside&gt;...ads...&lt;/aside&gt;</div>
-              <div style="color: #E2E8F0;">&nbsp;&nbsp;&lt;article&gt;</div>
-              <div style="color: #E2E8F0;">&nbsp;&nbsp;&nbsp;&nbsp;&lt;h1&gt;The Actual Content&lt;/h1&gt;</div>
-              <div style="color: #E2E8F0;">&nbsp;&nbsp;&nbsp;&nbsp;&lt;p&gt;Clean, useful text...&lt;/p&gt;</div>
-              <div style="color: #E2E8F0;">&nbsp;&nbsp;&lt;/article&gt;</div>
-              <div style="color: #64748B;">&lt;/div&gt;</div>
-              <div style="margin-top: 12px; color: #8B94F7;">↓ webpeel --readable</div>
-              <div style="margin-top: 8px; color: #86EFAC;"># The Actual Content</div>
-              <div style="color: #86EFAC;">Clean, useful text...</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Feature 2: flipped -->
-      <div class="feature-block flipped reveal" style="margin-bottom: 120px;">
-        <div class="feature-text">
-          <div class="feature-num">02</div>
-          <h3>Handles what others can't.</h3>
-          <p class="desc">Smart escalation from simple HTTP to full browser rendering. JavaScript-heavy pages, dynamic content, and protected sites — your agent gets the content every time.</p>
-          <ul class="feature-checks">
-            <li>Handles JS rendering, SPAs, dynamic content</li>
-            <li>Auto-escalation: HTTP → browser → stealth</li>
-            <li>97.6% success rate, zero configuration</li>
-          </ul>
-        </div>
-        <div class="feature-visual">
-          <div class="feature-card-dark">
-            <div><span class="t-prompt">$</span> <span style="color:#E2E8F0;">webpeel "https://example.com/dynamic-page"</span></div>
-            <div style="color:#F59E0B;">⚡ JS rendering required → browser mode</div>
-            <div style="color:#94A3B8;">  Fingerprint: TLS 1.3 + Chrome 121</div>
-            <div style="color:#94A3B8;">  Mode: headless Chrome 121</div>
-            <div style="color:#22C55E;">✓ 2,847 words extracted (1.2s)</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Feature 3 -->
-      <div class="feature-block reveal">
-        <div class="feature-text">
-          <div class="feature-num">03</div>
-          <h3>Plugs into every AI framework.</h3>
-          <p class="desc">Native MCP server, LangChain loader, LlamaIndex integration, REST API. Works with Claude, GPT, Cursor, and any agent.</p>
-          <ul class="feature-checks">
-            <li>18-tool MCP server</li>
-            <li>Python + TypeScript SDKs</li>
-            <li>Firecrawl-compatible API</li>
-          </ul>
-        </div>
-        <div class="feature-visual">
-          <div class="integration-grid">
-            <div class="integration-item"><span style="color:#D97706">◆</span> Claude</div>
-            <div class="integration-item"><span style="color:#5865F2">◆</span> Cursor</div>
-            <div class="integration-item"><span style="color:#10A37F">◆</span> GPT-4o</div>
-            <div class="integration-item"><span style="color:#1C4FAD">◆</span> LangChain</div>
-            <div class="integration-item"><span style="color:#0EA5E9">◆</span> Windsurf</div>
-            <div class="integration-item"><span style="color:#5865F2">◆</span> OpenClaw</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════
-       7. PERFORMANCE
-       ═══════════════════════════════════════════════════ -->
-  <section class="perf-section" style="padding: var(--space-section) 0;">
-    <div class="container">
-      <div class="perf-grid">
+        <!-- Right: bars + stats -->
         <div class="reveal">
-          <div class="section-eyebrow">PERFORMANCE</div>
-          <h2 class="section-h2">Fast where it counts.</h2>
-          <p style="font-size: 16px; color: var(--text-2); margin: 16px 0 40px; max-width: 440px;">WebPeel beats web_fetch on content completeness and gets through when others get blocked. On complex pages, we extract 2-3× more actionable content.</p>
           <div class="bar-group" data-bar-group>
             <div class="bar-group-title">Content completeness</div>
-            <div class="bar-row"><span class="bar-label" style="font-weight:600;color:var(--text);">WebPeel</span><div class="bar-track"><div class="bar-fill blue" data-bar-target="98"></div></div><span class="bar-value">98%</span></div>
-            <div class="bar-row"><span class="bar-label">Firecrawl</span><div class="bar-track"><div class="bar-fill gray" data-bar-target="82"></div></div><span class="bar-value">82%</span></div>
-            <div class="bar-row"><span class="bar-label">web_fetch</span><div class="bar-track"><div class="bar-fill gray" data-bar-target="56"></div></div><span class="bar-value">56%</span></div>
+            <div class="bar-row">
+              <span class="bar-label highlight">WebPeel</span>
+              <div class="bar-track"><div class="bar-fill blue" data-bar-target="98"></div></div>
+              <span class="bar-value">98%</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">Firecrawl</span>
+              <div class="bar-track"><div class="bar-fill gray" data-bar-target="82"></div></div>
+              <span class="bar-value">82%</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">web_fetch</span>
+              <div class="bar-track"><div class="bar-fill gray" data-bar-target="56"></div></div>
+              <span class="bar-value">56%</span>
+            </div>
           </div>
           <div class="bar-group" data-bar-group>
             <div class="bar-group-title">Protected site success</div>
-            <div class="bar-row"><span class="bar-label" style="font-weight:600;color:var(--text);">WebPeel</span><div class="bar-track"><div class="bar-fill blue" data-bar-target="97.6"></div></div><span class="bar-value">97.6%</span></div>
-            <div class="bar-row"><span class="bar-label">Firecrawl</span><div class="bar-track"><div class="bar-fill gray" data-bar-target="65"></div></div><span class="bar-value">65%</span></div>
-            <div class="bar-row"><span class="bar-label">web_fetch</span><div class="bar-track"><div class="bar-fill gray" data-bar-target="35"></div></div><span class="bar-value">35%</span></div>
+            <div class="bar-row">
+              <span class="bar-label highlight">WebPeel</span>
+              <div class="bar-track"><div class="bar-fill blue" data-bar-target="97.6"></div></div>
+              <span class="bar-value">97.6%</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">Firecrawl</span>
+              <div class="bar-track"><div class="bar-fill gray" data-bar-target="65"></div></div>
+              <span class="bar-value">65%</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">web_fetch</span>
+              <div class="bar-track"><div class="bar-fill gray" data-bar-target="35"></div></div>
+              <span class="bar-value">35%</span>
+            </div>
+          </div>
+          <div class="stat-cards-dark">
+            <div class="stat-card-dark">
+              <div class="num">646ms</div>
+              <div class="label">avg extraction</div>
+            </div>
+            <div class="stat-card-dark">
+              <div class="num">2-3×</div>
+              <div class="label">more content</div>
+            </div>
+            <div class="stat-card-dark">
+              <div class="num">500+</div>
+              <div class="label">sites tested</div>
+            </div>
           </div>
         </div>
-        <div class="stat-cards reveal">
-          <div class="stat-card">
-            <div class="num">646<span style="font-size:22px;font-weight:400">ms</span></div>
-            <div class="label">avg page extraction</div>
-            <div class="stat-card-sub">incl. JS-heavy pages</div>
-          </div>
-          <div class="stat-card">
-            <div class="num">2-3×</div>
-            <div class="label">more content vs web_fetch</div>
-            <div class="stat-card-sub">on same URLs</div>
-          </div>
-          <div class="stat-card">
-            <div class="num">500+</div>
-            <div class="label">sites tested</div>
-            <div class="stat-card-sub">incl. protected pages</div>
-          </div>
+      </div>
+
+      <!-- Integration chips -->
+      <div class="why-integrations reveal">
+        <div class="why-integrations-inner">
+          <span class="ww-label">WORKS WITH</span>
+          <span class="ww-chip-dark"><span style="color:#D4721A;font-size:9px;">●</span> Claude</span>
+          <span class="ww-chip-dark"><span style="color:#E2E8F0;font-size:9px;">●</span> Cursor</span>
+          <span class="ww-chip-dark"><span style="color:#10A37F;font-size:9px;">●</span> GPT-4o</span>
+          <span class="ww-chip-dark"><span style="color:#6EA8FE;font-size:9px;">●</span> LangChain</span>
+          <span class="ww-chip-dark"><span style="color:#0EA5E9;font-size:9px;">●</span> Windsurf</span>
+          <span class="ww-chip-dark"><span style="color:#8B94F7;font-size:9px;">●</span> OpenClaw</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════
-       TESTIMONIAL
-       ═══════════════════════════════════════════════════ -->
-  <section class="testimonial-section">
-    <div class="container">
-      <div class="testimonial-card reveal">
-        <div class="testimonial-quote">"I replaced web_fetch with WebPeel as my default — it handles Cloudflare pages, returns structured data, and just works on every URL I throw at it."</div>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">JL</div>
-          <div class="testimonial-meta">
-            <div class="testimonial-name">Jake Liu</div>
-            <div class="testimonial-role">AI Engineer, building with Claude &amp; GPT daily</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- Why → cream gradient transition -->
+  <div class="why-fade"></div>
 
   <!-- ═══════════════════════════════════════════════════
-       8. PRICING
+       SECTION 5: PRICING
        ═══════════════════════════════════════════════════ -->
-  <section id="pricing" style="padding: var(--space-section) 0;">
+  <section class="pricing-section" id="pricing">
     <div class="container">
       <div class="pricing-header reveal">
         <div class="section-eyebrow" style="text-align:center;">PRICING</div>
@@ -839,9 +725,9 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════════
-       9. FAQ
+       SECTION 6: FAQ
        ═══════════════════════════════════════════════════ -->
-  <section class="faq-section" style="padding: var(--space-section) 0;">
+  <section class="faq-section">
     <div class="container-narrow">
       <div class="reveal" style="text-align: center; margin-bottom: 64px;">
         <div class="section-eyebrow" style="margin-bottom: 16px;">FAQ</div>
@@ -881,7 +767,7 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════════
-       10. FINAL CTA + FOOTER
+       FINAL CTA + FOOTER
        ═══════════════════════════════════════════════════ -->
   <section class="final-cta">
     <div class="container" style="max-width: 600px;">
@@ -900,7 +786,10 @@
     <div class="container">
       <div class="footer-grid">
         <div>
-          <div class="footer-brand"><svg width="20" height="20" viewBox="0 0 32 32" style="flex-shrink:0;vertical-align:-4px"><rect width="32" height="32" fill="#5865F2" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity="0.95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#C7D2FE"/><path d="M8 16h10" stroke="#5865F2" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#52525B" stroke-width="2.5" stroke-linecap="round"/></svg> WebPeel</div>
+          <div class="footer-brand">
+            <svg width="20" height="20" viewBox="0 0 32 32" style="flex-shrink:0"><rect width="32" height="32" fill="#5865F2" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity="0.95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#C7D2FE"/><path d="M8 16h10" stroke="#5865F2" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#52525B" stroke-width="2.5" stroke-linecap="round"/></svg>
+            WebPeel
+          </div>
           <p class="footer-tagline">Web extraction for AI agents</p>
         </div>
         <div class="footer-col">
@@ -977,21 +866,40 @@
             metaChips.innerHTML = '<span class="demo-chip url">' + data.url + '</span><span class="demo-chip words">📝 ' + data.words.toLocaleString() + ' words</span><span class="demo-chip time">⚡ ' + data.time + 'ms</span>';
             resultHeader.style.display = '';
             const lines = data.content.split('\n');
-            contentBox.innerHTML = '<pre style="white-space:pre-wrap;font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--text);margin:0;max-height:300px;overflow-y:auto;">' + lines.map(l => l.replace(/</g,'&lt;')).join('\n') + '</pre>';
+            contentBox.innerHTML = '<pre style="white-space:pre-wrap;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:#94A3B8;margin:0;">' + lines.map(l => l.replace(/</g,'&lt;')).join('\n') + '</pre>';
           }, fakeDelay);
         });
       }
     })();
-    </script>
-    <script>
+  </script>
+  <script>
     (function() {
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      /* ── Nav scroll ──────────────────────────────────── */
+      /* ── Nav: dark/scrolled toggle ───────────────────── */
       const nav = document.getElementById('nav');
-      window.addEventListener('scroll', () => {
-        nav.classList.toggle('scrolled', window.scrollY > 20);
-      }, { passive: true });
+      const heroSection = document.getElementById('hero-section');
+      const heroFade = document.querySelector('.hero-fade');
+
+      // Use IntersectionObserver to detect when hero leaves viewport
+      const heroObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            // Still in hero — white links
+            nav.classList.add('nav-dark');
+            nav.classList.remove('scrolled');
+          } else {
+            // Past hero — dark links, cream blur
+            nav.classList.remove('nav-dark');
+            nav.classList.add('scrolled');
+          }
+        });
+      }, { threshold: 0, rootMargin: '0px 0px -80px 0px' });
+
+      if (heroSection) heroObserver.observe(heroSection);
+
+      // Also watch hero-fade for smoother transition
+      if (heroFade) heroObserver.observe(heroFade);
 
       /* ── Mobile hamburger ────────────────────────────── */
       const hamburger = document.getElementById('hamburger-btn');
@@ -1040,7 +948,6 @@
 
       /* ── Skip all animations if reduced motion ────── */
       if (prefersReducedMotion) {
-        // Show everything final state, no animations
         showTerminalFinal();
         return;
       }
@@ -1059,7 +966,6 @@
         entries.forEach(entry => {
           if (!entry.isIntersecting) return;
           const el = entry.target;
-          // Stagger among siblings
           const parent = el.parentElement;
           const siblings = Array.from(parent.querySelectorAll(':scope > .reveal.pre-anim'));
           const idx = siblings.indexOf(el);
@@ -1073,29 +979,6 @@
         el.classList.add('pre-anim');
         revealObserver.observe(el);
       });
-
-      /* ── Counter animation (stats) ─────────────────── */
-      const counterObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
-          const el = entry.target;
-          counterObserver.unobserve(el);
-          const target = parseFloat(el.dataset.count);
-          const suffix = el.dataset.suffix || '';
-          const isFloat = target % 1 !== 0;
-          const duration = 1200;
-          const start = performance.now();
-          function step(now) {
-            const t = Math.min((now - start) / duration, 1);
-            const ease = 1 - Math.pow(1 - t, 3);
-            const val = target * ease;
-            el.textContent = (isFloat ? val.toFixed(1) : Math.round(val)) + suffix;
-            if (t < 1) requestAnimationFrame(step);
-          }
-          requestAnimationFrame(step);
-        });
-      }, { threshold: 0.3 });
-      document.querySelectorAll('.stat-num[data-count]').forEach(el => counterObserver.observe(el));
 
       /* ── Bar chart animation ───────────────────────── */
       const barObserver = new IntersectionObserver((entries) => {
@@ -1119,6 +1002,7 @@
 
       function showTerminalFinal() {
         const container = document.getElementById('terminal-content');
+        if (!container) return;
         const lines = Array.from(container.querySelectorAll('.t-line'));
         const commands = lines.map(line => ({
           cmd: line.dataset.cmd,
@@ -1137,10 +1021,16 @@
             container.appendChild(outDiv);
           });
         });
+        // Final cursor
+        const cursorSpan = document.createElement('span');
+        cursorSpan.className = 'terminal-cursor';
+        cursorSpan.textContent = '|';
+        container.appendChild(cursorSpan);
       }
 
       (function terminalTyping() {
         const container = document.getElementById('terminal-content');
+        if (!container) return;
         const lines = Array.from(container.querySelectorAll('.t-line'));
         const commands = lines.map(line => ({
           cmd: line.dataset.cmd,
@@ -1150,7 +1040,6 @@
 
         function typeCommand(cmdIdx) {
           if (cmdIdx >= commands.length) {
-            // Done — leave blinking cursor
             const cursorSpan = document.createElement('span');
             cursorSpan.className = 'terminal-cursor';
             cursorSpan.textContent = '|';
@@ -1183,16 +1072,13 @@
               charIdx++;
               setTimeout(typeChar, 30);
             } else {
-              // Remove cursor from this line
               if (cursorSpan.parentNode) cursorSpan.parentNode.removeChild(cursorSpan);
-              // Show output instantly
               c.output.forEach(line => {
                 const outDiv = document.createElement('div');
                 const escaped = escapeHtml(line);
                 outDiv.innerHTML = '<span class="t-output">' + escaped.replace(/✓/g, '<span class="t-highlight">✓</span>') + '</span>';
                 container.appendChild(outDiv);
               });
-              // Pause then next
               setTimeout(() => typeCommand(cmdIdx + 1), 600);
             }
           }
