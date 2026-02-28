@@ -28,6 +28,7 @@ import {
   Key,
   BarChart3,
   Circle,
+  X,
 } from 'lucide-react';
 import { apiClient, Usage, ApiKey } from '@/lib/api';
 import { ApiErrorBanner } from '@/components/api-error-banner';
@@ -66,10 +67,14 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const token = (session as any)?.apiToken as string | undefined;
   const [storedApiKey, setStoredApiKey] = useState<string | null>(null);
+  const [gettingStartedDismissed, setGettingStartedDismissed] = useState(false);
 
   useEffect(() => {
     const key = localStorage.getItem('webpeel_first_api_key');
     if (key) setStoredApiKey(key);
+    if (localStorage.getItem('webpeel-getting-started-dismissed') === 'true') {
+      setGettingStartedDismissed(true);
+    }
   }, []);
 
   // SWR config: limit retries to avoid thundering herd on failures
@@ -137,8 +142,9 @@ export default function DashboardPage() {
   // Stats
   const totalRequests = stats?.totalRequests || 0;
   const remaining = usage?.weekly ? usage.weekly.totalAvailable - usage.weekly.totalUsed : 0;
-  const successRate = stats?.successRate || 100;
+  const successRate = stats?.successRate ?? 100;
   const avgResponseTime = stats?.avgResponseTime || 0;
+  const hasData = totalRequests > 0;
   const weeklyPercentage = usage?.weekly ? (usage.weekly.totalUsed / usage.weekly.totalAvailable) * 100 : 0;
 
   // Usage chart data
@@ -202,8 +208,8 @@ print(r.json()['markdown'])`,
           <>
             <StatCard icon={Activity} label="Total Requests" value={totalRequests.toLocaleString()} delay={0} />
             <StatCard icon={Zap} label="Remaining" value={remaining.toLocaleString()} iconColor="text-emerald-600" iconBg="bg-emerald-100" delay={100} />
-            <StatCard icon={CheckCircle2} label="Success Rate" value={`${successRate.toFixed(1)}%`} iconColor="text-blue-600" iconBg="bg-blue-100" delay={200} />
-            <StatCard icon={Clock} label="Avg Response" value={`${avgResponseTime}ms`} iconColor="text-amber-600" iconBg="bg-amber-100" delay={300} />
+            <StatCard icon={CheckCircle2} label="Success Rate" value={hasData ? `${successRate.toFixed(1)}%` : '—'} iconColor="text-blue-600" iconBg="bg-blue-100" delay={200} />
+            <StatCard icon={Clock} label="Avg Response" value={hasData ? `${avgResponseTime}ms` : '—'} iconColor="text-amber-600" iconBg="bg-amber-100" delay={300} />
           </>
         )}
       </div>
@@ -226,54 +232,68 @@ print(r.json()['markdown'])`,
 
         <a
           href="/keys"
-          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-amber-300 hover:shadow-sm transition-all"
+          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-zinc-500 hover:shadow-sm transition-all"
         >
-          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors flex-shrink-0">
-            <Key className="h-5 w-5 text-amber-600" />
+          <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200 transition-colors flex-shrink-0">
+            <Key className="h-5 w-5 text-zinc-800" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-zinc-900">Manage Keys</p>
             <p className="text-xs text-zinc-500 truncate">Create & rotate API keys</p>
           </div>
-          <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-amber-400 transition-colors flex-shrink-0" />
+          <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
         </a>
 
         <a
           href="/usage"
-          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all"
+          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-zinc-500 hover:shadow-sm transition-all"
         >
-          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors flex-shrink-0">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+          <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200 transition-colors flex-shrink-0">
+            <BarChart3 className="h-5 w-5 text-zinc-800" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-zinc-900">View Usage</p>
             <p className="text-xs text-zinc-500 truncate">Charts & quota breakdown</p>
           </div>
-          <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-blue-400 transition-colors flex-shrink-0" />
+          <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
         </a>
 
         <a
           href="https://webpeel.dev/docs/mcp"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-emerald-300 hover:shadow-sm transition-all"
+          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-zinc-500 hover:shadow-sm transition-all"
         >
-          <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors flex-shrink-0">
-            <Terminal className="h-5 w-5 text-emerald-600" />
+          <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200 transition-colors flex-shrink-0">
+            <Terminal className="h-5 w-5 text-zinc-800" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-zinc-900">Set up MCP</p>
             <p className="text-xs text-zinc-500 truncate">Claude / Cursor / Windsurf</p>
           </div>
-          <ExternalLink className="h-4 w-4 text-zinc-300 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
+          <ExternalLink className="h-4 w-4 text-zinc-300 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
         </a>
       </div>
 
       {/* Getting Started Checklist */}
-      <Card className="border-zinc-200">
+      {!gettingStartedDismissed && <Card className="border-zinc-200">
         <CardHeader>
-          <CardTitle className="text-lg">Getting Started</CardTitle>
-          <CardDescription>Complete these steps to get the most out of WebPeel</CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-lg">Getting Started</CardTitle>
+              <CardDescription>Complete these steps to get the most out of WebPeel</CardDescription>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.setItem('webpeel-getting-started-dismissed', 'true');
+                setGettingStartedDismissed(true);
+              }}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -334,7 +354,7 @@ print(r.json()['markdown'])`,
             ))}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Usage + Activity Chart */}
       <div className="grid md:grid-cols-2 gap-6">

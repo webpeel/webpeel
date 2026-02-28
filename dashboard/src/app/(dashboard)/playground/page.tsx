@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
+import { apiClient, ApiKey } from '@/lib/api';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,9 +56,20 @@ const exampleUrls = [
   'https://github.com/trending',
 ];
 
+const fetcher = async <T,>(url: string, token: string): Promise<T> => {
+  return apiClient<T>(url, { token });
+};
+
 export default function PlaygroundPage() {
   const { data: session } = useSession();
   const token = (session as any)?.apiToken as string | undefined;
+
+  const { data: keysData } = useSWR<{ keys: ApiKey[] }>(
+    token ? ['/v1/keys', token] : null,
+    ([url, t]: [string, string]) => fetcher<{ keys: ApiKey[] }>(url, t)
+  );
+  const firstKeyPrefix = keysData?.keys?.find((k) => k.isActive && !k.isExpired)?.prefix;
+  const displayApiKey = firstKeyPrefix ? `${firstKeyPrefix}...` : 'YOUR_API_KEY';
 
   const [url, setUrl] = useState('');
   const [format, setFormat] = useState<Format>('markdown');
@@ -108,9 +122,12 @@ export default function PlaygroundPage() {
 
       const data = await response.json();
       setResult(data);
+      toast.success('Page fetched successfully');
     } catch (err: any) {
       setElapsed(Date.now() - startTime);
-      setError(err.message || 'An unexpected error occurred');
+      const msg = err.message || 'An unexpected error occurred';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -129,9 +146,9 @@ export default function PlaygroundPage() {
 
   const curlCommand = url
     ? `curl "${API_URL}/v1/fetch?url=${encodeURIComponent(url)}&format=${format}${renderBrowser ? '&render=true' : ''}${stealthMode ? '&stealth=true' : ''}" \\
-  -H "Authorization: Bearer YOUR_API_KEY"`
+  -H "Authorization: Bearer ${displayApiKey}"`
     : `curl "${API_URL}/v1/fetch?url=https://example.com&format=markdown" \\
-  -H "Authorization: Bearer YOUR_API_KEY"`;
+  -H "Authorization: Bearer ${displayApiKey}"`;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
@@ -235,7 +252,7 @@ export default function PlaygroundPage() {
                   onCheckedChange={setRenderBrowser}
                 />
                 <label htmlFor="render-toggle" className="text-xs text-zinc-600 cursor-pointer">
-                  {renderBrowser ? 'JS rendering on' : 'Basic fetch'}
+                  {renderBrowser ? 'Enabled' : 'Off'}
                 </label>
               </div>
             </div>
@@ -250,7 +267,7 @@ export default function PlaygroundPage() {
                   onCheckedChange={setStealthMode}
                 />
                 <label htmlFor="stealth-toggle" className="text-xs text-zinc-600 cursor-pointer">
-                  {stealthMode ? 'Anti-bot bypass' : 'Standard mode'}
+                  {stealthMode ? 'Enabled' : 'Off'}
                 </label>
               </div>
             </div>

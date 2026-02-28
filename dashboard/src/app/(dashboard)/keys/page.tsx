@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Trash2, AlertTriangle, AlertCircle, Key, Copy, CheckCircle2, ChevronDown, ChevronUp, Globe } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, AlertCircle, Key, Copy, CheckCircle2, ChevronDown, ChevronUp, Globe, Pencil, X, Check } from 'lucide-react';
 import { apiClient, ApiKey } from '@/lib/api';
 import { toast } from 'sonner';
 import { CopyButton } from '@/components/copy-button';
@@ -81,6 +81,54 @@ export default function ApiKeysPage() {
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [newKeyKeyCopied, setNewKeyKeyCopied] = useState(false);
+
+  // Banner dismiss
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  useEffect(() => {
+    if (localStorage.getItem('webpeel-keys-banner-dismissed') === 'true') {
+      setBannerDismissed(true);
+    }
+  }, []);
+  const handleDismissBanner = () => {
+    localStorage.setItem('webpeel-keys-banner-dismissed', 'true');
+    setBannerDismissed(true);
+  };
+
+  // Inline key rename
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditingName(currentName);
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingName('');
+  };
+
+  const saveEdit = async (id: string) => {
+    if (!editingName.trim()) { cancelEdit(); return; }
+    setSaving(true);
+    try {
+      await apiClient(`/v1/keys/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: editingName.trim() }),
+        token,
+      });
+      mutate();
+      toast.success('Key renamed');
+      cancelEdit();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to rename key');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Compute preview date for selected expiry option
   const expiryPreviewDate = (() => {
@@ -378,17 +426,26 @@ export default function ApiKeysPage() {
       )}
 
       {/* Security Warning */}
-      <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="flex items-start gap-3 pt-4 md:pt-6">
-          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-amber-900">Keep your keys secure</p>
-            <p className="text-xs sm:text-sm text-amber-700">
-              API keys are shown only once when created. Store them in environment variables or a password manager, never in source code.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {!bannerDismissed && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="flex items-start gap-3 pt-4 md:pt-6 relative">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1 flex-1">
+              <p className="text-sm font-medium text-amber-900">Keep your keys secure</p>
+              <p className="text-xs sm:text-sm text-amber-700">
+                API keys are shown only once when created. Store them in environment variables or a password manager, never in source code.
+              </p>
+            </div>
+            <button
+              onClick={handleDismissBanner}
+              className="absolute top-3 right-3 p-1 rounded-md text-amber-500 hover:text-amber-700 hover:bg-amber-100 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Keys Table */}
       <Card>
@@ -416,8 +473,41 @@ export default function ApiKeysPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{key.name}</p>
-                        <code className="text-xs text-muted-foreground">{key.prefix}...</code>
+                        {editingId === key.id ? (
+                          <div className="flex items-center gap-1 mb-1">
+                            <input
+                              ref={editInputRef}
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEdit(key.id);
+                                if (e.key === 'Escape') cancelEdit();
+                              }}
+                              onBlur={() => saveEdit(key.id)}
+                              className="flex-1 text-sm font-medium border border-zinc-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
+                              disabled={saving}
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 mb-1">
+                            <p className="font-medium text-sm truncate">{key.name}</p>
+                            {key.isActive && (
+                              <button onClick={() => startEdit(key.id, key.name)} className="p-0.5 text-zinc-400 hover:text-zinc-700 transition-colors flex-shrink-0">
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <code className="text-xs text-muted-foreground">{key.prefix}...</code>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(key.prefix + '...'); toast.success('Prefix copied'); }}
+                            className="p-0.5 text-zinc-400 hover:text-zinc-600 transition-colors"
+                            title="Copy prefix"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        </div>
                       </div>
                       <Badge variant={key.isActive ? 'default' : 'secondary'} className={`text-xs ${key.isExpired ? 'bg-red-100 text-red-700 border-0' : ''}`}>
                         {key.isExpired ? 'expired' : key.isActive ? 'active' : 'revoked'}
@@ -487,15 +577,49 @@ export default function ApiKeysPage() {
                   </TableHeader>
                   <TableBody>
                     {keys.map((key) => (
-                      <TableRow key={key.id} className={!key.isActive || key.isExpired ? 'opacity-60' : ''}>
+                      <TableRow key={key.id} className={`group ${!key.isActive || key.isExpired ? 'opacity-60' : ''}`}>
                         <TableCell>
                           <div>
-                            <p className="font-medium text-sm">{key.name}</p>
+                            {editingId === key.id ? (
+                              <div className="flex items-center gap-1 mb-1">
+                                <input
+                                  ref={editInputRef}
+                                  value={editingName}
+                                  onChange={(e) => setEditingName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') saveEdit(key.id);
+                                    if (e.key === 'Escape') cancelEdit();
+                                  }}
+                                  onBlur={() => saveEdit(key.id)}
+                                  className="flex-1 text-sm font-medium border border-zinc-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
+                                  disabled={saving}
+                                />
+                                <button onClick={cancelEdit} className="p-0.5 text-zinc-400 hover:text-zinc-600"><X className="h-3.5 w-3.5" /></button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <p className="font-medium text-sm">{key.name}</p>
+                                {key.isActive && (
+                                  <button onClick={() => startEdit(key.id, key.name)} className="p-0.5 text-zinc-400 hover:text-zinc-700 transition-colors opacity-0 group-hover:opacity-100">
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
                             {key.isActive && <CurlExample keyPrefix={key.prefix} />}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <code className="text-sm bg-zinc-100 px-2 py-0.5 rounded">{key.prefix}...</code>
+                          <div className="flex items-center gap-1">
+                            <code className="text-sm bg-zinc-100 px-2 py-0.5 rounded">{key.prefix}...</code>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(key.prefix + '...'); toast.success('Prefix copied'); }}
+                              className="p-0.5 text-zinc-400 hover:text-zinc-600 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Copy prefix"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(key.createdAt).toLocaleDateString()}

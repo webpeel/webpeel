@@ -99,6 +99,7 @@ export default function ActivityPage() {
   const avgResponseTime = requests.length > 0
     ? Math.round(requests.reduce((sum, r) => sum + r.responseTime, 0) / requests.length)
     : 0;
+  const hasActivityData = totalCount > 0;
 
   if (error) {
     return (
@@ -141,7 +142,7 @@ export default function ActivityPage() {
           { label: 'Total Requests', value: totalCount.toLocaleString(), color: 'text-zinc-900' },
           { label: 'Successful', value: successCount.toLocaleString(), color: 'text-emerald-600' },
           { label: 'Errors', value: errorCount.toLocaleString(), color: errorCount > 0 ? 'text-red-600' : 'text-zinc-400' },
-          { label: 'Avg Response', value: `${avgResponseTime}ms`, color: 'text-amber-600' },
+          { label: 'Avg Response', value: hasActivityData ? `${avgResponseTime}ms` : '—', color: 'text-amber-600' },
         ].map((stat) => (
           <Card key={stat.label} className="border-zinc-200">
             <CardContent className="pt-4 pb-4">
