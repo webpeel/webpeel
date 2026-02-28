@@ -173,7 +173,7 @@ export default function PlaygroundPage() {
               <Button
                 onClick={handleFetch}
                 disabled={loading || !url.trim()}
-                className="bg-zinc-800 hover:bg-zinc-800 gap-2 px-6 flex-shrink-0"
+                className="bg-[#5865F2] hover:bg-[#4752C4] gap-2 px-6 flex-shrink-0"
               >
                 {loading ? (
                   <>

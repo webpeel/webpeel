@@ -549,7 +549,7 @@ print(r.json()['markdown'])`,
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild className="bg-zinc-800 hover:bg-zinc-800 flex-1 gap-2">
+            <Button asChild className="bg-[#5865F2] hover:bg-[#4752C4] flex-1 gap-2">
               <a href="/playground">
                 <Play className="h-4 w-4" />
                 Try in Playground

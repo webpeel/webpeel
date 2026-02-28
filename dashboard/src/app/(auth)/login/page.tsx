@@ -54,10 +54,10 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="mb-8 sm:mb-12">
             <svg width="36" height="36" viewBox="0 0 32 32" className="mb-4 sm:mb-6">
-              <rect width="32" height="32" fill="#18181B" rx="8"/>
+              <rect width="32" height="32" fill="#5865F2" rx="8"/>
               <path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFFFFF" fillOpacity="0.95"/>
               <path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/>
-              <path d="M8 16h10" stroke="#18181B" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M8 16h10" stroke="#5865F2" strokeWidth="2.5" strokeLinecap="round"/>
               <path d="M8 21h14" stroke="#52525B" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
             <h1 className="font-serif text-[28px] sm:text-[32px] leading-tight text-zinc-900">
@@ -120,7 +120,7 @@ export default function LoginPage() {
                     if (email) setMode('email');
                     else toast.error('Please enter your email');
                   }}
-                  className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.99]"
+                  className="mt-3 w-full rounded-xl bg-[#5865F2] px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-[#4752C4] active:scale-[0.99]"
                 >
                   Continue with email
                 </button>
@@ -160,7 +160,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-50"
+                  className="w-full rounded-xl bg-[#5865F2] px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-[#4752C4] active:scale-[0.99] disabled:opacity-50"
                 >
                   {loading ? 'Signing in...' : 'Sign in'}
                 </button>

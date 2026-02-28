@@ -45,7 +45,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
         title={collapsed ? item.name : undefined}
       >
         {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-zinc-800 rounded-r" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#5865F2] rounded-r" />
         )}
         <item.icon className="h-4 w-4 flex-shrink-0" />
         {!collapsed && item.name}
@@ -59,10 +59,10 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
       <div className="flex h-14 items-center border-b border-zinc-100 px-5">
         <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
           <svg width="24" height="24" viewBox="0 0 32 32">
-            <rect width="32" height="32" fill="#18181B" rx="7"/>
+            <rect width="32" height="32" fill="#5865F2" rx="7"/>
             <path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFFFFF" fillOpacity="0.95"/>
             <path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/>
-            <path d="M8 16h10" stroke="#18181B" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M8 16h10" stroke="#5865F2" strokeWidth="2.5" strokeLinecap="round"/>
             <path d="M8 21h14" stroke="#52525B" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
           {!collapsed && <span className="text-[15px] font-semibold text-zinc-900">WebPeel</span>}
@@ -82,7 +82,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
         {showUpgrade && !collapsed && (
           <Link
             href="/billing"
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 mb-2 bg-gradient-to-r from-zinc-900 to-zinc-800 text-white text-[13px] font-medium transition-all hover:from-zinc-800 hover:to-zinc-800 hover:shadow-md group"
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 mb-2 bg-gradient-to-r from-[#5865F2] to-[#4752C4] text-white text-[13px] font-medium transition-all hover:from-[#4752C4] hover:to-[#4752C4] hover:shadow-md group"
           >
             <Zap className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
             Upgrade to Pro
@@ -132,10 +132,10 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
           <div className="flex items-center justify-between h-14 px-5 border-b border-zinc-100">
             <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
               <svg width="24" height="24" viewBox="0 0 32 32">
-                <rect width="32" height="32" fill="#18181B" rx="7"/>
+                <rect width="32" height="32" fill="#5865F2" rx="7"/>
                 <path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFFFFF" fillOpacity="0.95"/>
                 <path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/>
-                <path d="M8 16h10" stroke="#18181B" strokeWidth="2.5" strokeLinecap="round"/>
+                <path d="M8 16h10" stroke="#5865F2" strokeWidth="2.5" strokeLinecap="round"/>
                 <path d="M8 21h14" stroke="#52525B" strokeWidth="2.5" strokeLinecap="round"/>
               </svg>
               <span className="text-[15px] font-semibold text-zinc-900">WebPeel</span>
@@ -161,7 +161,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
               <Link
                 href="/billing"
                 onClick={onClose}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 mb-2 bg-gradient-to-r from-zinc-900 to-zinc-800 text-white text-[13px] font-medium transition-all hover:from-zinc-800 hover:to-zinc-800 hover:shadow-md"
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 mb-2 bg-gradient-to-r from-[#5865F2] to-[#4752C4] text-white text-[13px] font-medium transition-all hover:from-[#4752C4] hover:to-[#4752C4] hover:shadow-md"
               >
                 <Zap className="h-4 w-4" />
                 Upgrade to Pro
@@ -188,10 +188,10 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
         <div className="flex h-14 items-center justify-center border-b border-zinc-100">
           <Link href="/dashboard">
             <svg width="24" height="24" viewBox="0 0 32 32">
-              <rect width="32" height="32" fill="#18181B" rx="7"/>
+              <rect width="32" height="32" fill="#5865F2" rx="7"/>
               <path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFFFFF" fillOpacity="0.95"/>
               <path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/>
-              <path d="M8 16h10" stroke="#18181B" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M8 16h10" stroke="#5865F2" strokeWidth="2.5" strokeLinecap="round"/>
               <path d="M8 21h14" stroke="#52525B" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
           </Link>
@@ -215,7 +215,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
                 title={item.name}
               >
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-zinc-800 rounded-r" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#5865F2] rounded-r" />
                 )}
                 <item.icon className="h-4 w-4" />
               </Link>
@@ -227,7 +227,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
           {showUpgrade && (
             <Link
               href="/billing"
-              className="flex items-center justify-center rounded-lg p-2.5 bg-zinc-800 text-white transition-colors hover:bg-zinc-800"
+              className="flex items-center justify-center rounded-lg p-2.5 bg-[#5865F2] text-white transition-colors hover:bg-[#4752C4]"
               title="Upgrade to Pro"
             >
               <Zap className="h-4 w-4" />

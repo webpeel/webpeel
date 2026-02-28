@@ -47,10 +47,10 @@ export default function SignupPage() {
         <div className="w-full max-w-[380px]">
           <div className="mb-12">
             <svg width="36" height="36" viewBox="0 0 32 32" className="mb-6">
-              <rect width="32" height="32" fill="#18181B" rx="8"/>
+              <rect width="32" height="32" fill="#5865F2" rx="8"/>
               <path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFFFFF" fillOpacity="0.95"/>
               <path d="M20 3v5a2 2 0 002 2h5" fill="#DDD6FE"/>
-              <path d="M8 16h10" stroke="#18181B" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M8 16h10" stroke="#5865F2" strokeWidth="2.5" strokeLinecap="round"/>
               <path d="M8 21h14" stroke="#52525B" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
             <h1 className="font-serif text-[32px] leading-tight text-zinc-900">
@@ -82,7 +82,7 @@ export default function SignupPage() {
 
               <div>
                 <input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-zinc-900 placeholder-zinc-400 shadow-sm outline-none transition-all focus:border-zinc-500 focus:ring-2 focus:ring-zinc-100" />
-                <button onClick={() => { if (email) setMode('email'); else toast.error('Please enter your email'); }} className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.99]">
+                <button onClick={() => { if (email) setMode('email'); else toast.error('Please enter your email'); }} className="mt-3 w-full rounded-xl bg-[#5865F2] px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-[#4752C4] active:scale-[0.99]">
                   Continue with email
                 </button>
               </div>
@@ -101,7 +101,7 @@ export default function SignupPage() {
                 <label className="mb-1.5 block text-[13px] font-medium text-zinc-500">Confirm password</label>
                 <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-[15px] text-zinc-900 shadow-sm outline-none transition-all focus:border-zinc-500 focus:ring-2 focus:ring-zinc-100" />
               </div>
-              <button type="submit" disabled={loading} className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-50">
+              <button type="submit" disabled={loading} className="w-full rounded-xl bg-[#5865F2] px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-[#4752C4] active:scale-[0.99] disabled:opacity-50">
                 {loading ? 'Creating account...' : 'Create account'}
               </button>
               <button type="button" onClick={() => setMode('oauth')} className="w-full text-center text-[13px] text-zinc-400 hover:text-zinc-600 transition-colors">

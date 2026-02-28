@@ -174,7 +174,7 @@ export default function ApiKeysPage() {
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 bg-zinc-800 hover:bg-zinc-800 w-full sm:w-auto">
+            <Button className="gap-2 bg-[#5865F2] hover:bg-[#4752C4] w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               Create New Key
             </Button>
@@ -207,7 +207,7 @@ export default function ApiKeysPage() {
                       className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                         newKeyKeyCopied
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-zinc-800 hover:bg-zinc-800 text-white'
+                          : 'bg-[#5865F2] hover:bg-[#4752C4] text-white'
                       }`}
                     >
                       {newKeyKeyCopied ? (
@@ -274,7 +274,7 @@ export default function ApiKeysPage() {
               {newKey ? (
                 <Button
                   onClick={closeCreateDialog}
-                  className={`w-full sm:w-auto ${newKeyKeyCopied ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-zinc-800 hover:bg-zinc-800'}`}
+                  className={`w-full sm:w-auto ${newKeyKeyCopied ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-[#5865F2] hover:bg-[#4752C4]'}`}
                 >
                   {newKeyKeyCopied ? '✓ Done' : "I've saved my key"}
                 </Button>
@@ -286,7 +286,7 @@ export default function ApiKeysPage() {
                   <Button
                     onClick={handleCreate}
                     disabled={creating || !newKeyName.trim()}
-                    className="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-800 text-white"
+                    className="w-full sm:w-auto bg-[#5865F2] hover:bg-[#4752C4] text-white"
                   >
                     {creating ? 'Creating...' : 'Create Key'}
                   </Button>
@@ -473,7 +473,7 @@ export default function ApiKeysPage() {
               <p className="text-sm text-zinc-500 text-center mb-4 max-w-md">
                 Create your first API key to start making requests to the WebPeel API.
               </p>
-              <Button onClick={() => setCreateOpen(true)} className="bg-zinc-800 hover:bg-zinc-800 gap-2">
+              <Button onClick={() => setCreateOpen(true)} className="bg-[#5865F2] hover:bg-[#4752C4] gap-2">
                 <Plus className="h-4 w-4" />
                 Create your first key
               </Button>

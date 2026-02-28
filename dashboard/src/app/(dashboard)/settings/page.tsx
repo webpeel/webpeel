@@ -171,7 +171,7 @@ export default function SettingsPage() {
               />
             </div>
 
-            <Button type="submit" disabled={loading} className="bg-zinc-800 hover:bg-zinc-800">
+            <Button type="submit" disabled={loading} className="bg-[#5865F2] hover:bg-[#4752C4]">
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>
           </form>
@@ -221,7 +221,7 @@ export default function SettingsPage() {
                   className="focus:ring-2 focus:ring-zinc-100 focus:border-zinc-500"
                 />
               </div>
-              <Button type="submit" disabled={loading} className="bg-zinc-800 hover:bg-zinc-800">
+              <Button type="submit" disabled={loading} className="bg-[#5865F2] hover:bg-[#4752C4]">
                 {loading ? 'Changing...' : 'Change Password'}
               </Button>
             </form>
