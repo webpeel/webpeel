@@ -52,9 +52,10 @@ function createTestApp(router: express.Router): Express {
   app.use(express.json());
 
   // Fake auth middleware – gives every request a free-tier identity
+  // keyInfo.accountId must be set so routes don't return 401 (required since v0.17.9)
   app.use((req: Request, _res: Response, next: NextFunction) => {
     req.auth = {
-      keyInfo: null,
+      keyInfo: { accountId: 'test-user-id', key: 'test-api-key-00000000' } as any,
       tier: 'free',
       rateLimit: 25,
       softLimited: false,

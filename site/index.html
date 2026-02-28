@@ -359,6 +359,50 @@
     @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
 
+    /* ── 3.5 DEMO SECTION ───────────────────────────────── */
+    .demo-section { padding: clamp(60px, 8vw, 100px) 0; background: var(--bg-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .demo-inner { max-width: 760px; margin: 0 auto; text-align: center; }
+    .demo-subtitle { font-size: 17px; color: var(--text-2); margin: 0 auto 32px; max-width: 500px; }
+    .demo-url-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+    .demo-pill { padding: 8px 18px; border: 1.5px solid var(--border); border-radius: 100px; font-size: 14px; font-weight: 500; background: var(--card-bg); color: var(--text-2); cursor: pointer; transition: all 150ms ease; }
+    .demo-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .demo-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .demo-widget { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--card-shadow); margin-bottom: 16px; }
+    .demo-input-row { display: flex; gap: 12px; align-items: center; }
+    .demo-url-display { flex: 1; font-family: var(--font-mono); font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .demo-extract-btn { flex-shrink: 0; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 150ms ease; display: flex; align-items: center; gap: 6px; }
+    .demo-extract-btn:hover { opacity: 0.85; }
+    .demo-extract-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .demo-btn-spinner { display: inline-block; animation: spin 0.8s linear infinite; font-style: normal; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .demo-result { text-align: left; }
+    .demo-result-header { margin-bottom: 8px; }
+    .demo-meta-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .demo-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+    .demo-chip.url { background: rgba(88,101,242,0.1); color: var(--accent); }
+    .demo-chip.words { background: rgba(0,0,0,0.05); color: var(--text-2); }
+    .demo-chip.time { background: rgba(34,197,94,0.1); color: #16a34a; }
+    .demo-content-box { background: var(--bg-dark); border-radius: 12px; padding: 24px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: #94A3B8; min-height: 200px; overflow: hidden; position: relative; max-height: 360px; overflow-y: auto; }
+    .demo-content-box::-webkit-scrollbar { width: 6px; }
+    .demo-content-box::-webkit-scrollbar-track { background: transparent; }
+    .demo-content-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    .demo-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 160px; gap: 12px; }
+    .demo-placeholder-icon { font-size: 32px; color: rgba(255,255,255,0.15); }
+    .demo-placeholder-text { font-size: 14px; color: rgba(255,255,255,0.3); font-family: var(--font-body); }
+    .demo-typed-text { white-space: pre-wrap; word-break: break-word; }
+    .demo-typed-cursor { display: inline; color: var(--accent); animation: cursorBlink 800ms step-end infinite; }
+    .demo-md-h1 { color: #E2E8F0; font-weight: 700; font-size: 15px; }
+    .demo-md-h2 { color: #CBD5E1; font-weight: 600; margin-top: 4px; }
+    .demo-md-bold { color: #E2E8F0; font-weight: 600; }
+    .demo-md-link { color: #8B94F7; }
+    .demo-md-quote { color: #64748B; border-left: 2px solid #334155; padding-left: 8px; display: block; margin: 2px 0; }
+    .demo-md-emoji { color: inherit; }
+    @media (max-width: 768px) {
+      .demo-input-row { flex-direction: column; align-items: stretch; }
+      .demo-extract-btn { justify-content: center; }
+      .demo-content-box { font-size: 12px; padding: 16px; max-height: 280px; }
+    }
+
     /* ── RESPONSIVE ──────────────────────────────────── */
     @media (max-width: 1024px) {
       :root { --gutter: 32px; }
@@ -475,6 +519,45 @@
         <span class="ww-chip"><span style="color:#1C4FAD;font-size:10px;">●</span> LangChain</span>
         <span class="ww-chip"><span style="color:#0EA5E9;font-size:10px;">●</span> Windsurf</span>
         <span class="ww-chip"><span style="color:#5865F2;font-size:10px;">●</span> OpenClaw</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════
+       3.5. LIVE DEMO WIDGET
+       ═══════════════════════════════════════════════════ -->
+  <section class="demo-section" id="demo">
+    <div class="container">
+      <div class="demo-inner reveal">
+        <div class="section-eyebrow" style="text-align:center;">TRY IT NOW</div>
+        <h2 class="section-h2" style="text-align:center;margin-bottom:12px;">See WebPeel in action</h2>
+        <p class="demo-subtitle">Click a URL below and watch WebPeel extract clean, structured content in milliseconds.</p>
+        <div class="demo-url-pills">
+          <button class="demo-pill active" data-demo="hn">Hacker News</button>
+          <button class="demo-pill" data-demo="wiki">Wikipedia</button>
+          <button class="demo-pill" data-demo="yt">YouTube</button>
+          <button class="demo-pill" data-demo="example">example.com</button>
+        </div>
+        <div class="demo-widget">
+          <div class="demo-input-row">
+            <div class="demo-url-display" id="demo-url-display">https://news.ycombinator.com</div>
+            <button class="demo-extract-btn" id="demo-extract-btn">
+              <span class="demo-btn-text">Extract ↗</span>
+              <span class="demo-btn-spinner" style="display:none;">⟳</span>
+            </button>
+          </div>
+        </div>
+        <div class="demo-result" id="demo-result">
+          <div class="demo-result-header" id="demo-result-header" style="display:none;">
+            <div class="demo-meta-chips" id="demo-meta-chips"></div>
+          </div>
+          <div class="demo-content-box" id="demo-content-box">
+            <div class="demo-placeholder">
+              <div class="demo-placeholder-icon">◈</div>
+              <div class="demo-placeholder-text">Click "Extract" to see the result</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -855,6 +938,52 @@
        SCRIPTS
        ═══════════════════════════════════════════════════ -->
   <script>
+    /* ── Interactive Demo ─────────────────────────────── */
+    (function() {
+      const demoData = {
+        hn: { url: 'https://news.ycombinator.com', title: 'Hacker News', words: 737, time: 396, content: "# Hacker News\n\n1. Show HN: I built an open-source alternative to Notion\n2. Why SQLite is taking over the embedded database market\n3. The unreasonable effectiveness of simple HTML\n4. Ask HN: What are you working on this weekend?\n5. Launch HN: WebPeel – AI-ready web content extraction\n6. How we reduced our AWS bill by 90%\n7. The death of the traditional resume\n8. Rust is eating the world, one rewrite at a time\n9. Why I left Google after 12 years\n10. Show HN: A terminal UI for managing Docker containers..." },
+        wiki: { url: 'https://en.wikipedia.org/wiki/Web_scraping', title: 'Web scraping - Wikipedia', words: 3994, time: 172, content: "# Web scraping\n\n**Web scraping**, **web harvesting**, or **web data extraction** is data scraping used for extracting data from websites. Web scraping software may directly access the World Wide Web using the Hypertext Transfer Protocol or a web browser.\n\nWhile web scraping can be done manually by a software user, the term typically refers to automated processes implemented using a bot or web crawler. It is a form of copying in which specific data is gathered and copied from the web...\n\n## Techniques\n\nWeb scraping is the process of automatically mining data or collecting information from the World Wide Web. It is a field with active developments sharing a common goal with the semantic web vision..." },
+        yt: { url: 'https://www.youtube.com/watch?v=aircAruvnKk', title: 'But what is a neural network? | Deep learning chapter 1', words: 3200, time: 3428, content: "# But what is a neural network? | Deep learning chapter 1\n\n**Channel:** 3Blue1Brown | **Duration:** 18:40\n\n## Transcript\n\nThis is a 3. It's sloppily written and rendered at an extremely low resolution of 28x28 pixels, but your brain has no trouble recognizing it as a 3. And I want you to take a moment to appreciate how crazy it is that brains can do this so effortlessly.\n\nI mean, this, this and this are also recognizable as 3s, even though the specific values of each pixel is very different from one image to the next..." },
+        example: { url: 'https://example.com', title: 'Example Domain', words: 23, time: 42, content: "# Example Domain\n\nThis domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.\n\n[More information...](https://www.iana.org/domains/example)" }
+      };
+      let currentDemo = 'hn';
+      const pills = document.querySelectorAll('.demo-pill');
+      const urlDisplay = document.getElementById('demo-url-display');
+      const extractBtn = document.getElementById('demo-extract-btn');
+      const resultHeader = document.getElementById('demo-result-header');
+      const metaChips = document.getElementById('demo-meta-chips');
+      const contentBox = document.getElementById('demo-content-box');
+
+      if (pills.length && extractBtn) {
+        pills.forEach(p => p.addEventListener('click', function() {
+          pills.forEach(x => x.classList.remove('active'));
+          this.classList.add('active');
+          currentDemo = this.dataset.demo;
+          if (urlDisplay) urlDisplay.textContent = demoData[currentDemo].url;
+          contentBox.innerHTML = '<div class="demo-placeholder"><div class="demo-placeholder-icon">◈</div><div class="demo-placeholder-text">Click "Extract" to see the result</div></div>';
+          resultHeader.style.display = 'none';
+        }));
+
+        extractBtn.addEventListener('click', function() {
+          const data = demoData[currentDemo];
+          const btnText = this.querySelector('.demo-btn-text');
+          const spinner = this.querySelector('.demo-btn-spinner');
+          btnText.style.display = 'none';
+          spinner.style.display = 'inline-block';
+          const fakeDelay = Math.min(data.time, 800);
+          setTimeout(() => {
+            btnText.style.display = '';
+            spinner.style.display = 'none';
+            metaChips.innerHTML = '<span class="demo-chip url">' + data.url + '</span><span class="demo-chip words">📝 ' + data.words.toLocaleString() + ' words</span><span class="demo-chip time">⚡ ' + data.time + 'ms</span>';
+            resultHeader.style.display = '';
+            const lines = data.content.split('\n');
+            contentBox.innerHTML = '<pre style="white-space:pre-wrap;font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--text);margin:0;max-height:300px;overflow-y:auto;">' + lines.map(l => l.replace(/</g,'&lt;')).join('\n') + '</pre>';
+          }, fakeDelay);
+        });
+      }
+    })();
+    </script>
+    <script>
     (function() {
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

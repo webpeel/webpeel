@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebPeel</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <svg class="logo" width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#5865F2"/>
+        <rect x="8" y="7" width="14" height="18" rx="2" fill="white" opacity="0.15"/>
+        <rect x="10" y="9" width="12" height="16" rx="2" fill="white"/>
+        <rect x="12" y="13" width="8" height="1.5" rx="0.75" fill="#5865F2" opacity="0.6"/>
+        <rect x="12" y="16" width="6" height="1.5" rx="0.75" fill="#5865F2" opacity="0.6"/>
+        <rect x="12" y="19" width="7" height="1.5" rx="0.75" fill="#5865F2" opacity="0.6"/>
+      </svg>
+      <span class="brand-name">WebPeel</span>
+      <span class="mode-badge" id="modeBadge">Free</span>
+    </div>
+    <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Open settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- URL bar -->
+  <div class="url-bar">
+    <svg class="url-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+    <span class="url-text" id="currentUrl">Loading...</span>
+  </div>
+
+  <!-- Main panel -->
+  <main class="main" id="mainPanel">
+    <!-- Format selector -->
+    <div class="format-bar">
+      <span class="format-label">Format</span>
+      <div class="format-toggle" role="group" aria-label="Output format">
+        <button class="fmt-btn active" data-fmt="markdown">Markdown</button>
+        <button class="fmt-btn" data-fmt="text">Plain Text</button>
+        <button class="fmt-btn" data-fmt="json">JSON</button>
+      </div>
+    </div>
+
+    <!-- Extract button -->
+    <button class="extract-btn" id="extractBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="7 17 17 7"/><polyline points="7 7 17 7"/><polyline points="17 7 17 17"/>
+      </svg>
+      Extract Content
+    </button>
+
+    <!-- Result area (hidden until extraction) -->
+    <div class="result-area" id="resultArea" hidden>
+      <div class="result-meta">
+        <span class="result-title" id="resultTitle"></span>
+        <div class="result-stats">
+          <span id="wordCount"></span>
+          <span class="stat-sep">·</span>
+          <span id="tokenCount"></span>
+        </div>
+      </div>
+      <div class="result-preview" id="resultPreview"></div>
+      <button class="copy-btn" id="copyBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span id="copyBtnText">Copy to Clipboard</span>
+      </button>
+    </div>
+
+    <!-- Error area -->
+    <div class="error-area" id="errorArea" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="errorMsg"></span>
+    </div>
+  </main>
+
+  <!-- Settings panel (hidden by default) -->
+  <div class="settings-panel" id="settingsPanel" hidden>
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="icon-btn" id="closeSettingsBtn" aria-label="Close settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <label class="settings-label" for="apiKeyInput">WebPeel API Key</label>
+    <input
+      class="api-key-input"
+      id="apiKeyInput"
+      type="password"
+      placeholder="wp_live_xxxxxxxxxxxx"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <p class="settings-hint">
+      Optional. Without a key, extraction runs client-side (free mode).<br>
+      Get a key at <a href="https://webpeel.dev" target="_blank">webpeel.dev</a>.
+    </p>
+
+    <div class="settings-modes">
+      <div class="mode-row">
+        <div class="mode-icon free">✦</div>
+        <div>
+          <strong>Free Mode</strong>
+          <p>Client-side extraction. Works offline, no account needed. Good for most pages.</p>
+        </div>
+      </div>
+      <div class="mode-row">
+        <div class="mode-icon api">⚡</div>
+        <div>
+          <strong>API Mode</strong>
+          <p>Server-side rendering + smart extraction. Works on SPAs, paywalls, JS-heavy sites.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-actions">
+      <button class="save-btn" id="saveApiKey">Save API Key</button>
+      <button class="clear-btn" id="clearApiKey">Clear</button>
+    </div>
+    <p class="settings-saved" id="settingsSaved" hidden>✓ Saved</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

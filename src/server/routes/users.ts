@@ -489,7 +489,7 @@ export function createUserRouter(): Router {
         [payload.jti]
       );
 
-      // Issue new access token (1h) + new refresh token (30d)
+      // Issue new access token (7d) + new refresh token (30d)
       const newToken = jwt.sign(
         {
           userId: user.id,
@@ -497,7 +497,7 @@ export function createUserRouter(): Router {
           tier: user.tier,
         } as JwtPayload,
         jwtSecret,
-        { expiresIn: '1h' }
+        { expiresIn: '7d' }
       );
 
       const newRefreshToken = await createRefreshToken(user.id, jwtSecret);
@@ -505,7 +505,7 @@ export function createUserRouter(): Router {
       res.json({
         token: newToken,
         refreshToken: newRefreshToken,
-        expiresIn: 3600,
+        expiresIn: 604800,
       });
     } catch (error) {
       console.error('Refresh token error:', error);

@@ -89,7 +89,7 @@ export type DomainExtractor = (
 // ---------------------------------------------------------------------------
 
 const REGISTRY: Array<{
-  match: (hostname: string) => boolean;
+  match: (hostname: string, url?: string) => boolean;
   extractor: DomainExtractor;
 }> = [
   { match: (h) => h === 'twitter.com' || h === 'x.com' || h === 'www.twitter.com' || h === 'www.x.com', extractor: twitterExtractor },
@@ -112,6 +112,17 @@ const REGISTRY: Array<{
   { match: (h) => h === 'pypi.org' || h === 'www.pypi.org', extractor: pypiExtractor },
   { match: (h) => h === 'dev.to' || h === 'www.dev.to', extractor: devtoExtractor },
   { match: (h) => h === 'craigslist.org' || h === 'www.craigslist.org' || h.endsWith('.craigslist.org'), extractor: craigslistExtractor },
+  // ── New extractors ────────────────────────────────────────────────────────
+  { match: (h) => h === 'open.spotify.com', extractor: spotifyExtractor },
+  { match: (h) => h === 'tiktok.com' || h === 'www.tiktok.com' || h === 'vm.tiktok.com', extractor: tiktokExtractor },
+  { match: (h) => h === 'pinterest.com' || h === 'www.pinterest.com' || h.endsWith('.pinterest.com'), extractor: pinterestExtractor },
+  { match: (h) => h === 'nytimes.com' || h === 'www.nytimes.com', extractor: nytimesExtractor },
+  { match: (h) => h === 'bbc.com' || h === 'www.bbc.com' || h === 'bbc.co.uk' || h === 'www.bbc.co.uk', extractor: bbcExtractor },
+  { match: (h) => h === 'cnn.com' || h === 'www.cnn.com', extractor: cnnExtractor },
+  { match: (h) => h === 'twitch.tv' || h === 'www.twitch.tv' || h === 'clips.twitch.tv', extractor: twitchExtractor },
+  { match: (h) => h === 'soundcloud.com' || h === 'www.soundcloud.com', extractor: soundcloudExtractor },
+  { match: (h) => h === 'instagram.com' || h === 'www.instagram.com', extractor: instagramExtractor },
+  { match: (_h, url = '') => /\.pdf(\?|$|#)/i.test(url) || /\/pdf\//i.test(url), extractor: pdfExtractor },
 ];
 
 /**
@@ -122,7 +133,7 @@ export function getDomainExtractor(url: string): DomainExtractor | null {
     const { hostname } = new URL(url);
     const host = hostname.toLowerCase();
     for (const entry of REGISTRY) {
-      if (entry.match(host)) return entry.extractor;
+      if (entry.match(host, url)) return entry.extractor;
     }
   } catch (e) {
     if (process.env.DEBUG) console.debug('[webpeel]', 'url parse failed:', e instanceof Error ? e.message : e);
@@ -2533,3 +2544,405 @@ async function craigslistExtractor(html: string, url: string): Promise<DomainExt
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// 21. Spotify extractor (oEmbed)
+// ---------------------------------------------------------------------------
+
+async function spotifyExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`;
+    const data = await fetchJson(oembedUrl);
+    if (!data || !data.title) return null;
+
+    // Detect type from URL path: track, album, playlist, episode, show, artist
+    const pathMatch = url.match(/open\.spotify\.com\/(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]+)/);
+    const contentType = pathMatch?.[1] || 'track';
+    const spotifyId = pathMatch?.[2] || '';
+
+    const structured: Record<string, any> = {
+      title: data.title,
+      type: contentType,
+      spotifyId,
+      provider: 'Spotify',
+      thumbnailUrl: data.thumbnail_url || '',
+      thumbnailWidth: data.thumbnail_width || 0,
+      thumbnailHeight: data.thumbnail_height || 0,
+      embedHtml: data.html || '',
+    };
+
+    const typeEmoji = contentType === 'track' ? '🎵' : contentType === 'album' ? '💿' : contentType === 'playlist' ? '📋' : contentType === 'episode' ? '🎙️' : contentType === 'artist' ? '🎤' : '🎵';
+    const cleanContent = `## ${typeEmoji} Spotify ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}: ${data.title}\n\n**Platform:** Spotify\n**Type:** ${contentType}\n**URL:** ${url}`;
+
+    return { domain: 'open.spotify.com', type: contentType, structured, cleanContent };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'Spotify oEmbed failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 22. TikTok extractor (oEmbed)
+// ---------------------------------------------------------------------------
+
+async function tiktokExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    // TikTok official oEmbed endpoint
+    const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+    const data = await fetchJson(oembedUrl);
+    if (!data || !data.title) return null;
+
+    const structured: Record<string, any> = {
+      title: data.title,
+      author: data.author_name || '',
+      authorUrl: data.author_url || '',
+      thumbnailUrl: data.thumbnail_url || '',
+      thumbnailWidth: data.thumbnail_width || 0,
+      thumbnailHeight: data.thumbnail_height || 0,
+      provider: 'TikTok',
+    };
+
+    const cleanContent = `## 🎵 TikTok: ${structured.title}\n\n**Creator:** [${structured.author}](${structured.authorUrl})\n**URL:** ${url}`;
+
+    return { domain: 'tiktok.com', type: 'video', structured, cleanContent };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'TikTok oEmbed failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 23. Pinterest extractor (oEmbed)
+// ---------------------------------------------------------------------------
+
+async function pinterestExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const oembedUrl = `https://www.pinterest.com/oembed/?url=${encodeURIComponent(url)}`;
+    const data = await fetchJson(oembedUrl);
+    if (!data || !data.title) return null;
+
+    // Detect content type from URL
+    const isPinPage = /\/pin\//.test(url);
+    const isBoardPage = /\/[^/]+\/[^/]+\/?$/.test(new URL(url).pathname) && !isPinPage;
+    const contentType = isPinPage ? 'pin' : isBoardPage ? 'board' : 'profile';
+
+    const structured: Record<string, any> = {
+      title: data.title,
+      description: data.description || '',
+      type: contentType,
+      thumbnailUrl: data.thumbnail_url || '',
+      authorName: data.author_name || '',
+      authorUrl: data.author_url || '',
+      provider: 'Pinterest',
+    };
+
+    const typeEmoji = contentType === 'pin' ? '📌' : contentType === 'board' ? '📋' : '👤';
+    const descLine = structured.description ? `\n\n${structured.description}` : '';
+    const cleanContent = `## ${typeEmoji} Pinterest ${contentType}: ${structured.title}${descLine}\n\n**By:** [${structured.authorName}](${structured.authorUrl})\n**URL:** ${url}`;
+
+    return { domain: 'pinterest.com', type: contentType, structured, cleanContent };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'Pinterest oEmbed failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 24–26. News article extractor helper (NYTimes / BBC / CNN)
+// ---------------------------------------------------------------------------
+
+/** Shared news article extractor using Schema.org JSON-LD + HTML fallbacks. */
+async function extractNewsArticle(html: string, url: string, domain: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    // Try JSON-LD first
+    let jsonLd: any = null;
+    $('script[type="application/ld+json"]').each((_: any, el: any) => {
+      if (jsonLd) return;
+      const raw = $(el).html() || '';
+      const parsed = tryParseJson(raw);
+      const candidates = Array.isArray(parsed) ? parsed : [parsed];
+      for (const item of candidates) {
+        if (item?.['@type'] === 'NewsArticle' || item?.['@type'] === 'Article' || item?.['@type'] === 'WebPage') {
+          jsonLd = item;
+          break;
+        }
+        if (item?.['@graph']) {
+          const g = item['@graph'].find((n: any) => n?.['@type'] === 'NewsArticle' || n?.['@type'] === 'Article');
+          if (g) { jsonLd = g; break; }
+        }
+      }
+    });
+
+    const ogTitle = $('meta[property="og:title"]').attr('content') || '';
+    const title = jsonLd?.headline || ogTitle || $('h1').first().text().trim() || '';
+    if (!title) return null;
+
+    // Author
+    let author = '';
+    if (jsonLd?.author) {
+      const a = Array.isArray(jsonLd.author) ? jsonLd.author[0] : jsonLd.author;
+      author = typeof a === 'string' ? a : a?.name || '';
+    }
+    if (!author) author = $('meta[name="author"]').attr('content') || $('[itemprop="author"] [itemprop="name"]').first().text().trim() || $('[data-testid="byline"]').first().text().trim() || $('[class*="author"]').first().text().trim() || '';
+
+    // Date
+    const publishDate = jsonLd?.datePublished || $('meta[property="article:published_time"]').attr('content') || $('time[datetime]').first().attr('datetime') || '';
+    const modifiedDate = jsonLd?.dateModified || $('meta[property="article:modified_time"]').attr('content') || '';
+
+    // Description / summary
+    const description = jsonLd?.description || $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || '';
+
+    // Section / category
+    const section = jsonLd?.articleSection || $('meta[property="article:section"]').attr('content') || '';
+
+    // Keywords / tags
+    const keywords: string[] = (() => {
+      if (jsonLd?.keywords) {
+        return (Array.isArray(jsonLd.keywords) ? jsonLd.keywords : String(jsonLd.keywords).split(',')).map((k: string) => k.trim()).filter(Boolean);
+      }
+      const kwMeta = $('meta[name="keywords"]').attr('content') || '';
+      return kwMeta ? kwMeta.split(',').map(k => k.trim()).filter(Boolean) : [];
+    })();
+
+    // Article body — try various content selectors
+    let articleBody = '';
+    const contentSelectors = [
+      'article', '[data-testid="article-body"]', '.article-body', '#article-body',
+      '.story-body', '.article__body', '.entry-content', '.post-content',
+      'main article', '.content-body', '[itemprop="articleBody"]',
+    ];
+
+    for (const selector of contentSelectors) {
+      const el = $(selector).first();
+      if (!el.length) continue;
+      el.find('script, style, nav, aside, .ad, [class*="ad-"], button, figure figcaption').remove();
+      const parts: string[] = [];
+      el.find('h1, h2, h3, h4, p, blockquote, ul, ol').each((_: any, node: any) => {
+        const tag = (node as any).name;
+        const text = $(node).text().trim();
+        if (!text || text.length < 5) return;
+        if (tag === 'h1') return; // Skip — already have title
+        if (tag === 'h2') parts.push(`## ${text}`);
+        else if (tag === 'h3' || tag === 'h4') parts.push(`### ${text}`);
+        else if (tag === 'blockquote') parts.push(`> ${text}`);
+        else parts.push(text);
+      });
+      articleBody = parts.join('\n\n');
+      if (articleBody.length > 200) break;
+    }
+
+    // Fallback to og:description
+    const contentBody = articleBody || description;
+
+    const structured: Record<string, any> = {
+      title, author, publishDate, modifiedDate,
+      description, section, keywords, url, domain,
+    };
+
+    const authorLine = author ? `\n**Author:** ${author}` : '';
+    const dateLine = publishDate ? `\n**Published:** ${publishDate.split('T')[0]}` : '';
+    const sectionLine = section ? `\n**Section:** ${section}` : '';
+    const tagsLine = keywords.length ? `\n**Topics:** ${keywords.slice(0, 8).join(', ')}` : '';
+
+    const cleanContent = `# ${title}${authorLine}${dateLine}${sectionLine}${tagsLine}\n\n${contentBody.substring(0, 10000)}`;
+
+    return { domain, type: 'article', structured, cleanContent };
+  } catch {
+    return null;
+  }
+}
+
+async function nytimesExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  return extractNewsArticle(html, url, 'nytimes.com');
+}
+
+async function bbcExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  return extractNewsArticle(html, url, 'bbc.com');
+}
+
+async function cnnExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  return extractNewsArticle(html, url, 'cnn.com');
+}
+
+// ---------------------------------------------------------------------------
+// 27. Twitch extractor (noembed / Twitch API)
+// ---------------------------------------------------------------------------
+
+async function twitchExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    // Use noembed.com for Twitch clips and channel pages
+    const noembedUrl = `https://noembed.com/embed?url=${encodeURIComponent(url)}`;
+    const data = await fetchJson(noembedUrl);
+    if (!data || data.error) return null;
+
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+    const isClip = pathParts[1] === 'clip' || pathParts[0] === 'clip' || url.includes('clips.twitch.tv');
+    const channelName = !isClip ? pathParts[0] : '';
+    const contentType = isClip ? 'clip' : 'channel';
+
+    const structured: Record<string, any> = {
+      title: data.title || '',
+      author: data.author_name || channelName,
+      authorUrl: data.author_url || '',
+      thumbnailUrl: data.thumbnail_url || '',
+      provider: 'Twitch',
+      contentType,
+      channelName: channelName || data.author_name || '',
+    };
+
+    const typeEmoji = isClip ? '🎬' : '🎮';
+    const titleText = structured.title || structured.channelName;
+    const cleanContent = `## ${typeEmoji} Twitch ${contentType}: ${titleText}\n\n**Channel:** [${structured.author}](${structured.authorUrl})\n**URL:** ${url}`;
+
+    return { domain: 'twitch.tv', type: contentType, structured, cleanContent };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'Twitch oEmbed failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 28. SoundCloud extractor (oEmbed)
+// ---------------------------------------------------------------------------
+
+async function soundcloudExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const oembedUrl = `https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    const data = await fetchJson(oembedUrl);
+    if (!data || !data.title) return null;
+
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+    const isPlaylist = pathParts.includes('sets');
+    const contentType = isPlaylist ? 'playlist' : pathParts.length >= 2 ? 'track' : 'profile';
+
+    const structured: Record<string, any> = {
+      title: data.title,
+      author: data.author_name || '',
+      authorUrl: data.author_url || '',
+      thumbnailUrl: data.thumbnail_url || '',
+      description: data.description || '',
+      contentType,
+      provider: 'SoundCloud',
+    };
+
+    const typeEmoji = contentType === 'track' ? '🎵' : contentType === 'playlist' ? '📋' : '🎤';
+    const descLine = structured.description ? `\n\n${structured.description.substring(0, 500)}` : '';
+    const cleanContent = `## ${typeEmoji} SoundCloud ${contentType}: ${structured.title}${descLine}\n\n**Artist:** [${structured.author}](${structured.authorUrl})\n**URL:** ${url}`;
+
+    return { domain: 'soundcloud.com', type: contentType, structured, cleanContent };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'SoundCloud oEmbed failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 29. Instagram extractor (oEmbed)
+// ---------------------------------------------------------------------------
+
+async function instagramExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    // Instagram official oEmbed (no access token needed for basic data)
+    const oembedUrl = `https://graph.facebook.com/v22.0/instagram_oembed?url=${encodeURIComponent(url)}&fields=title,author_name,provider_name,thumbnail_url`;
+    const data = await fetchJson(oembedUrl);
+
+    // Also try noembed.com as fallback
+    let resolvedData = data;
+    if (!data || data.error) {
+      const noembedUrl = `https://noembed.com/embed?url=${encodeURIComponent(url)}`;
+      resolvedData = await fetchJson(noembedUrl);
+    }
+    if (!resolvedData || resolvedData.error) return null;
+
+    const pathParts = new URL(url).pathname.split('/').filter(Boolean);
+    const contentType = pathParts[0] === 'p' ? 'post' : pathParts[0] === 'reel' ? 'reel' : pathParts[0] === 'tv' ? 'igtv' : pathParts.length === 1 ? 'profile' : 'post';
+
+    const structured: Record<string, any> = {
+      title: resolvedData.title || '',
+      author: resolvedData.author_name || '',
+      authorUrl: resolvedData.author_url || '',
+      thumbnailUrl: resolvedData.thumbnail_url || '',
+      contentType,
+      provider: 'Instagram',
+    };
+
+    const typeEmoji = contentType === 'reel' ? '🎬' : contentType === 'post' ? '📸' : contentType === 'profile' ? '👤' : '📱';
+    const titleText = structured.title || `Instagram ${contentType} by ${structured.author}`;
+    const cleanContent = `## ${typeEmoji} Instagram ${contentType}: ${titleText}\n\n**Creator:** @${structured.author.replace('@', '')}\n**URL:** ${url}`;
+
+    return { domain: 'instagram.com', type: contentType, structured, cleanContent };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'Instagram oEmbed failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 30. PDF extractor (URL-based detection)
+// ---------------------------------------------------------------------------
+
+async function pdfExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const urlObj = new URL(url);
+    const filename = urlObj.pathname.split('/').pop() || 'document.pdf';
+    const hostname = urlObj.hostname;
+
+    // Try to get HEAD request metadata
+    let contentType = 'application/pdf';
+    let contentLength = '';
+    try {
+      const { default: https } = await import('https');
+      const { default: http } = await import('http');
+      const client = url.startsWith('https') ? https : http;
+      await new Promise<void>((resolve) => {
+        const req = client.request(url, { method: 'HEAD', timeout: 5000 }, (res) => {
+          contentType = res.headers['content-type'] || 'application/pdf';
+          contentLength = res.headers['content-length'] || '';
+          resolve();
+          res.resume();
+        });
+        req.on('error', () => resolve());
+        req.on('timeout', () => { req.destroy(); resolve(); });
+        req.end();
+      });
+    } catch { /* best-effort */ }
+
+    const isPdf = contentType.toLowerCase().includes('pdf') || /\.pdf(\?|$|#)/i.test(url);
+    if (!isPdf) return null;
+
+    const fileSizeKb = contentLength ? Math.round(parseInt(contentLength) / 1024) : null;
+
+    const structured: Record<string, any> = {
+      filename,
+      url,
+      contentType,
+      fileSizeKb,
+      hostname,
+      note: 'PDF binary content — text extraction requires a PDF parser. Use a dedicated PDF extraction service for full text content.',
+    };
+
+    const sizeStr = fileSizeKb ? ` (${fileSizeKb > 1024 ? (fileSizeKb / 1024).toFixed(1) + ' MB' : fileSizeKb + ' KB'})` : '';
+    const cleanContent = `## 📄 PDF Document: ${filename}
+
+**URL:** ${url}
+**Host:** ${hostname}${sizeStr ? `\n**Size:** ${sizeStr}` : ''}
+
+> **Note:** This is a PDF document. Binary PDF content cannot be directly extracted as text through standard web fetching. To extract the full text, consider:
+>
+> 1. Use a dedicated PDF extraction service (e.g., Adobe PDF Extract API, pdfminer, PyMuPDF)
+> 2. Download the file and process locally with \`pdf-parse\` (Node.js) or \`pdfplumber\` (Python)
+> 3. For academic PDFs, check if an HTML version is available at the same URL without \`.pdf\`
+
+**Direct download URL:** ${url}`;
+
+    return { domain: hostname, type: 'pdf', structured, cleanContent };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'PDF extractor failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
