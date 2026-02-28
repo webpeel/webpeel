@@ -41,8 +41,8 @@
       --accent-light: #E8EAFD;
       --border: #E5E0D8;
       --card-bg: #FFFFFF;
-      --card-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
-      --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.08);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08);
+      --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.1), 0 16px 48px rgba(0,0,0,0.1);
       --font-display: 'Instrument Serif', Georgia, serif;
       --font-body: 'Inter', -apple-system, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
@@ -152,8 +152,8 @@
     .hero h1 .accent { color: #A5B4FC; }
     .hero-sub { font-size: 20px; font-weight: 400; color: rgba(255,255,255,0.6); line-height: 1.6; max-width: 520px; margin: 0 auto 36px; }
     .hero-ctas { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
-    .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 500; padding: 14px 32px; border-radius: 8px; border: none; transition: opacity var(--transition-fast); }
-    .btn-primary:hover { opacity: 0.85; color: #fff; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px; border: none; transition: all 150ms ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(88,101,242,0.4), inset 0 1px 0 rgba(255,255,255,0.12); color: #fff; }
     .btn-ghost { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.85); padding: 13px 28px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.25); background: transparent; transition: background var(--transition-fast), border-color var(--transition-fast); }
     .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.45); color: #fff; }
     /* Cream CTA variant for non-hero */
@@ -167,7 +167,8 @@
     .hero-terminal {
       max-width: 860px; margin: 64px auto 0; background: #0B1120; border-radius: 16px;
       overflow: hidden; text-align: left; position: relative;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 64px -16px rgba(0,0,0,0.5), 0 0 120px rgba(88,101,242,0.12);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 32px 64px -16px rgba(0,0,0,0.6), 0 0 160px rgba(88,101,242,0.18);
+      border: 1px solid rgba(255,255,255,0.06);
     }
     .terminal-chrome { height: 48px; background: #1E293B; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
     .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
@@ -264,9 +265,9 @@
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 64px; margin-top: 64px; }
     .how-grid > * { min-width: 0; }
     .how-step-num { font-size: 14px; font-family: var(--font-mono); color: var(--accent); font-weight: 600; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 3px solid var(--accent); width: 32px; }
-    .how-step h3 { font-size: var(--text-h3); font-weight: 500; color: var(--text); margin-bottom: 12px; }
+    .how-step h3 { font-size: var(--text-h3); font-weight: 600; color: var(--text); margin-bottom: 12px; letter-spacing: -0.02em; }
     .how-step p { font-size: 16px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
-    .mini-code { background: var(--bg-dark); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; white-space: pre-wrap; }
+    .mini-code { background: var(--bg-dark); border-radius: 10px; padding: 16px; font-family: var(--font-mono); font-size: 13px; color: #E2E8F0; overflow: hidden; max-width: 100%; word-break: break-word; white-space: pre-wrap; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     @media (max-width: 768px) {
       .how-section { padding: 64px 0; }
       .how-grid { grid-template-columns: 1fr; gap: 40px; margin-top: 48px; }
@@ -307,8 +308,9 @@
 
     /* Stat cards (dark variant) */
     .stat-cards-dark { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px; }
-    .stat-card-dark { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; }
-    .stat-card-dark .num { font-size: clamp(24px, 3vw, 32px); font-weight: 600; color: #fff; letter-spacing: -0.02em; line-height: 1.1; }
+    .stat-card-dark { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: border-color 200ms ease; }
+    .stat-card-dark:hover { border-color: rgba(88,101,242,0.3); }
+    .stat-card-dark .num { font-size: clamp(32px, 4vw, 48px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
     .stat-card-dark .label { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 6px; }
 
     /* Integration chips (dark) */
@@ -341,8 +343,8 @@
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; margin: 0 auto; }
     .price-card { background: var(--card-bg); border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; padding: 36px; position: relative; box-shadow: var(--card-shadow); transition: transform 200ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo); }
     .price-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
-    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.04); background: #F0F1FE; box-shadow: 0 4px 16px rgba(88,101,242,0.15), 0 12px 40px rgba(0,0,0,0.08); }
-    .price-card.featured:hover { transform: scale(1.04) translateY(-4px); box-shadow: 0 8px 24px rgba(88,101,242,0.22), 0 16px 48px rgba(0,0,0,0.1); }
+    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.04); background: #F0F1FE; box-shadow: 0 0 0 1px rgba(88,101,242,0.1), 0 8px 24px rgba(88,101,242,0.2), 0 16px 48px rgba(0,0,0,0.1); }
+    .price-card.featured:hover { transform: scale(1.04) translateY(-4px); box-shadow: 0 0 0 1px rgba(88,101,242,0.15), 0 12px 32px rgba(88,101,242,0.3), 0 24px 64px rgba(0,0,0,0.12); }
     .price-badge { position: absolute; top: -12px; right: 24px; display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
     .price-plan { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 8px; }
     .price-amount { font-size: 40px; font-weight: 600; color: var(--text); }
