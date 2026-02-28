@@ -134,8 +134,105 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.17.9</div>
+              <div class="release-version mono">v0.17.16</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>31 domain extractors</strong> — Added 20 new extractors: Amazon, Medium, Substack, AllRecipes, IMDB, LinkedIn, PyPI, Dev.to, Craigslist, NYTimes, BBC, CNN, Spotify, TikTok, Pinterest, and more</li>
+            <li><strong>Interactive demo</strong> — Landing page now includes pre-baked demo results for HN, Wikipedia, YouTube, and example.com</li>
+            <li><strong>Loading skeletons</strong> — Dashboard pages show pulse animation skeletons while data loads</li>
+            <li><strong>Google OAuth documentation</strong> — Added <code>AUTH_TRUST_HOST=true</code> fix and redirect URI setup guide</li>
+            <li><strong>CI fix</strong> — Screenshot test updated for test user credentials</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.15</div>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Honest landing page stats</strong> — Replaced inflated claims with real benchmarks: 97.6% success rate, 200ms average response time, 41 URLs tested</li>
+            <li><strong>21 domain extractors</strong> — Expanded from 11 to 21 with structured data for more sites</li>
+            <li><strong>Site logo updated</strong> — Diamond symbol replaced with paper/peel SVG icon matching the dashboard</li>
+            <li><strong>Screenshot fixes</strong> — Improved full-page screenshot reliability</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.14</div>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Search fallback chain fixed</strong> — DuckDuckGo blocks Render's cloud IP at TCP level (<code>ConnectTimeoutError</code>). Added <code>ddgConnectionBlocked</code> detection to skip DDG and go straight to Bing+Ecosia via StealthSearchProvider</li>
+            <li><strong>Bing URL decoding</strong> — All <code>bing.com/ck/a</code> redirect URLs now properly base64-decoded to real URLs instead of deduplicating to 1 result</li>
+            <li><strong>Warm browser pool</strong> — Module-level cached browser via <code>getStealthBrowser()</code> + <code>browser.newContext()</code> per request (~50ms vs 1-3s cold start). Search dropped from 27s to 4.4s</li>
+            <li><strong>YouTube deep understanding</strong> — <code>getYouTubeTranscript()</code> returns chapters, key points, summary, word count, description, and publish date. Chapter parsing from description timestamps</li>
+            <li><strong><code>?detail=brief</code> mode</strong> — Truncates to 500 words, extracts TL;DR, adds <code>X-Detail-Mode</code> and <code>X-Token-Estimate</code> headers</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.13</div>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Firefox search fallback</strong> — Added Firefox-based search fallback for environments where DuckDuckGo blocks cloud IPs</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.12</div>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Search diagnostics</strong> — Added search fallback logging to diagnose cloud IP blocking issues</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.11</div>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Search results parsing fix</strong> — API returns <code>data.web</code> but dashboard expected <code>results</code>. Fixed the response format mismatch</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.10</div>
+            </div>
+            <div class="release-meta">February 28, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>JWT auth on ALL endpoints</strong> — 6 endpoints fixed: search, MCP, quick-answer, deep-fetch, answer, YouTube. Previously only fetch/screenshot required auth</li>
+            <li><strong>Playground tabs</strong> — Added Search and Screenshot tabs alongside existing Fetch tab (986 lines of new UI)</li>
+            <li><strong>Markdown pruning</strong> — <code>content-pruner.ts</code> strips "Load More" buttons, bare image URLs, and consecutive horizontal rules from extracted content</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.9</div>
             </div>
             <div class="release-meta">February 28, 2026</div>
           </div>
@@ -197,7 +294,7 @@
             <div class="release-title">
               <div class="release-version mono">v0.17.5</div>
             </div>
-            <div class="release-meta">February 28, 2026</div>
+            <div class="release-meta">February 27, 2026</div>
           </div>
           <ul>
             <li><strong>OpenAPI spec:</strong> Fixed <code>/openapi.yaml</code> and <code>/openapi.json</code> (301 redirect) — now correctly served from Docker deployments.</li>
