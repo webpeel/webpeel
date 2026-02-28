@@ -333,7 +333,7 @@ export function createOAuthRouter(): Router {
             tier: user.tier,
           } as JwtPayload,
           jwtSecret,
-          { expiresIn: '1h' }
+          { expiresIn: '7d' }
         );
 
         await client.query('COMMIT');
@@ -352,7 +352,7 @@ export function createOAuthRouter(): Router {
           },
           token,
           refreshToken,
-          expiresIn: 3600,
+          expiresIn: 604800,
           isNew,
         };
 

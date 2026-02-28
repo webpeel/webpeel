@@ -391,7 +391,7 @@ export function createUserRouter(): Router {
           tier: user.tier,
         } as JwtPayload,
         jwtSecret,
-        { expiresIn: '1h' }
+        { expiresIn: '7d' }
       );
 
       let refreshToken: string | null = null;
@@ -404,7 +404,7 @@ export function createUserRouter(): Router {
       res.json({
         token,
         ...(refreshToken ? { refreshToken } : {}),
-        expiresIn: 3600,
+        expiresIn: 604800,
         user: {
           id: user.id,
           email: user.email,
