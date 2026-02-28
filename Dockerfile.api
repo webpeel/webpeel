@@ -20,16 +20,16 @@ WORKDIR /app
 
 # Install WebPeel from npm FIRST (includes rebrowser-playwright)
 # Pin version to bust Docker layer cache on updates
-RUN npm install webpeel@0.17.11
+RUN npm install webpeel@0.17.12
 
 # Install Playwright browser + system dependencies
 # 1. Install the Chromium binary (respects PLAYWRIGHT_BROWSERS_PATH)
 # 2. Re-fetch apt lists (cleared earlier) so install-deps can work
 # 3. Install OS-level Chromium dependencies via playwright install-deps
 # 4. Clean apt lists to keep image lean
-RUN npx playwright install chromium \
+RUN npx playwright install chromium firefox \
     && apt-get update \
-    && npx playwright install-deps chromium \
+    && npx playwright install-deps chromium firefox \
     && rm -rf /var/lib/apt/lists/*
 
 # Non-root user for security

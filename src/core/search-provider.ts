@@ -15,8 +15,6 @@
 
 import { fetch as undiciFetch } from 'undici';
 import { load } from 'cheerio';
-import { existsSync } from 'fs';
-import { resolve as pathResolve } from 'path';
 
 export type SearchProviderId = 'duckduckgo' | 'brave' | 'stealth' | 'google';
 
@@ -423,6 +421,89 @@ export class DuckDuckGoProvider implements SearchProvider {
     return `https://html.duckduckgo.com/html/?${params.toString()}`;
   }
 
+  /**
+   * Scrape DuckDuckGo with Firefox — different browser fingerprint bypasses
+   * cloud IP bot detection that specifically targets Chromium fingerprints.
+   * Used when Chromium-based HTTP/stealth requests return 0 results from cloud IPs.
+   */
+  private async scrapeDDGFirefox(query: string, count: number): Promise<WebSearchResult[]> {
+    let browser: import('playwright').Browser | undefined;
+    try {
+      const { firefox } = await import('playwright');
+      const params = new URLSearchParams({ q: query });
+      const url = `https://html.duckduckgo.com/html/?${params.toString()}`;
+
+      browser = await firefox.launch({
+        headless: true,
+        firefoxUserPrefs: {
+          'general.useragent.override': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) Gecko/20100101 Firefox/125.0',
+        },
+      });
+
+      const ctx = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) Gecko/20100101 Firefox/125.0',
+        locale: 'en-US',
+        timezoneId: 'America/New_York',
+        extraHTTPHeaders: {
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'DNT': '1',
+          'Upgrade-Insecure-Requests': '1',
+        },
+      });
+
+      const page = await ctx.newPage();
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      const html = await page.content();
+
+      const { load } = await import('cheerio');
+      const $ = load(html);
+      const results: WebSearchResult[] = [];
+      const seen = new Set<string>();
+
+      $('.result').each((_i, elem) => {
+        if (results.length >= count) return;
+        const $r = $(elem);
+        const titleRaw = $r.find('.result__title').text() || $r.find('.result__a').text();
+        const rawUrl = $r.find('.result__a').attr('href') || '';
+        const snippetRaw = $r.find('.result__snippet').text();
+
+        const title = cleanText(titleRaw, { maxLen: 200 });
+        const snippet = cleanText(snippetRaw, { maxLen: 500, stripEllipsisPadding: true });
+        if (!title || !rawUrl) return;
+
+        // Extract real URL from DDG redirect param
+        let finalUrl = rawUrl;
+        try {
+          const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
+          const uddg = ddgUrl.searchParams.get('uddg');
+          if (uddg) finalUrl = decodeURIComponent(uddg);
+        } catch { /* use raw */ }
+
+        // SECURITY: only allow HTTP/HTTPS URLs
+        try {
+          const parsed = new URL(finalUrl);
+          if (!['http:', 'https:'].includes(parsed.protocol)) return;
+          finalUrl = parsed.href;
+        } catch { return; }
+
+        const key = normalizeUrlForDedupe(finalUrl);
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        results.push({ title, url: finalUrl, snippet });
+      });
+
+      return results;
+    } catch (e) {
+      console.log('[webpeel:search] Firefox DDG failed:', e instanceof Error ? e.message : e);
+      return [];
+    } finally {
+      await browser?.close().catch(() => {});
+    }
+  }
+
   private async searchOnce(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
     const { count, signal } = options;
 
@@ -599,6 +680,20 @@ export class DuckDuckGoProvider implements SearchProvider {
       console.log('[webpeel:search] DDG Lite also returned 0 results');
     } catch (e) {
       console.log('[webpeel:search] DDG Lite failed:', e instanceof Error ? e.message : e);
+    }
+
+    // Fallback: try DDG with Firefox — different browser fingerprint bypasses
+    // cloud IP detection that specifically targets Chromium
+    console.log('[webpeel:search] Trying Firefox DDG (different browser fingerprint)...');
+    try {
+      const firefoxResults = await this.scrapeDDGFirefox(query, options.count);
+      if (firefoxResults.length > 0) {
+        console.log(`[webpeel:search] Firefox DDG returned ${firefoxResults.length} results ✓`);
+        return firefoxResults;
+      }
+      console.log('[webpeel:search] Firefox DDG also returned 0 results');
+    } catch (e) {
+      console.log('[webpeel:search] Firefox DDG failed:', e instanceof Error ? e.message : e);
     }
 
     // Fallback: try Brave Search API if key is configured
@@ -973,22 +1068,7 @@ export function getSearchProvider(id: SearchProviderId | undefined): SearchProvi
 }
 
 /**
- * Check whether playwright-extra is available synchronously.
- * Uses fs.existsSync on node_modules to avoid making getBestSearchProvider async.
- */
-function isPlaywrightExtraAvailable(): boolean {
-  try {
-    const cwd = process.cwd();
-    return (
-      existsSync(pathResolve(cwd, 'node_modules', 'playwright-extra')) ||
-      existsSync(pathResolve(cwd, '..', 'node_modules', 'playwright-extra'))
-    );
-  } catch {
-    return false;
-  }
-}
-
-/**
+ /**
  * Get the best available search provider based on configured API keys and
  * available runtime dependencies.
  *
@@ -1013,13 +1093,8 @@ export function getBestSearchProvider(): { provider: SearchProvider; apiKey?: st
     return { provider: new BraveSearchProvider(), apiKey: braveKey };
   }
 
-  // 3. Google stealth browser — works from datacenter IPs where DDG/Bing/Ecosia fail.
-  // GoogleSearchProvider.searchWeb() falls back to stealth scraping when no API key is set.
-  if (isPlaywrightExtraAvailable()) {
-    return { provider: new GoogleSearchProvider() };
-  }
-
-  // 4. DuckDuckGo with full internal fallback chain
-  // (DDG HTTP → DDG Lite → stealth multi-engine)
+  // 3. DuckDuckGo with full internal fallback chain
+  // (DDG HTTP → DDG Lite → Firefox browser → stealth multi-engine)
+  // Firefox fallback bypasses cloud IP bot detection targeting Chromium fingerprints.
   return { provider: new DuckDuckGoProvider() };
 }
