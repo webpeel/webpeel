@@ -78,7 +78,7 @@ info:
     | `NETWORK` | 502 | Could not reach the target URL |
     | `internal_error` | 500 | Unexpected server error |
 
-  version: 0.15.2
+  version: 0.17.15
   contact:
     name: WebPeel Support
     url: https://webpeel.dev

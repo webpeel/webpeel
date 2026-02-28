@@ -1,0 +1,187 @@
+{
+  "timestamp": "2026-02-28T09:48:12.552Z",
+  "totalUrls": 25,
+  "successes": 23,
+  "failures": 2,
+  "successRate": 92,
+  "avgResponseTimeMs": 1199,
+  "medianResponseTimeMs": 441,
+  "p95ResponseTimeMs": 5270,
+  "details": [
+    {
+      "url": "https://www.bbc.com/news",
+      "elapsed": 441,
+      "success": true,
+      "tokens": 1616,
+      "error": ""
+    },
+    {
+      "url": "https://edition.cnn.com/",
+      "elapsed": 3085,
+      "success": true,
+      "tokens": 1288,
+      "error": ""
+    },
+    {
+      "url": "https://www.reuters.com/",
+      "elapsed": 734,
+      "success": true,
+      "tokens": 1209,
+      "error": ""
+    },
+    {
+      "url": "https://www.nytimes.com/",
+      "elapsed": 771,
+      "success": true,
+      "tokens": 636,
+      "error": ""
+    },
+    {
+      "url": "https://techcrunch.com/",
+      "elapsed": 423,
+      "success": true,
+      "tokens": 2107,
+      "error": ""
+    },
+    {
+      "url": "https://github.com/anthropics/claude-code",
+      "elapsed": 214,
+      "success": true,
+      "tokens": 511,
+      "error": ""
+    },
+    {
+      "url": "https://stackoverflow.com/questions/927358/how-do-i-undo-the-most-recent-local-commits-in-git",
+      "elapsed": 254,
+      "success": true,
+      "tokens": 1348,
+      "error": ""
+    },
+    {
+      "url": "https://www.npmjs.com/package/express",
+      "elapsed": 183,
+      "success": true,
+      "tokens": 83,
+      "error": ""
+    },
+    {
+      "url": "https://docs.python.org/3/tutorial/index.html",
+      "elapsed": 80,
+      "success": true,
+      "tokens": 1373,
+      "error": ""
+    },
+    {
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+      "elapsed": 226,
+      "success": true,
+      "tokens": 1096,
+      "error": ""
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Artificial_intelligence",
+      "elapsed": 179,
+      "success": true,
+      "tokens": 16815,
+      "error": ""
+    },
+    {
+      "url": "https://news.ycombinator.com/",
+      "elapsed": 324,
+      "success": true,
+      "tokens": 743,
+      "error": ""
+    },
+    {
+      "url": "https://old.reddit.com/r/programming/",
+      "elapsed": 520,
+      "success": true,
+      "tokens": 333,
+      "error": ""
+    },
+    {
+      "url": "https://www.amazon.com/dp/B0D1XD1ZV3",
+      "elapsed": 5270,
+      "success": true,
+      "tokens": 4668,
+      "error": ""
+    },
+    {
+      "url": "https://www.bestbuy.com/site/apple-macbook-air-13-inch-laptop-m4-chip-16gb-memory-256gb/6604203.p",
+      "elapsed": 5743,
+      "success": true,
+      "tokens": 95,
+      "error": ""
+    },
+    {
+      "url": "https://www.walmart.com/",
+      "elapsed": 3696,
+      "success": true,
+      "tokens": 391,
+      "error": ""
+    },
+    {
+      "url": "https://arxiv.org/abs/2301.07041",
+      "elapsed": 225,
+      "success": true,
+      "tokens": 311,
+      "error": ""
+    },
+    {
+      "url": "https://www.imdb.com/title/tt0111161/",
+      "elapsed": 1367,
+      "success": true,
+      "tokens": 2197,
+      "error": ""
+    },
+    {
+      "url": "https://blog.cloudflare.com/",
+      "elapsed": 2335,
+      "success": true,
+      "tokens": 1183,
+      "error": ""
+    },
+    {
+      "url": "https://www.theverge.com/",
+      "elapsed": 579,
+      "success": true,
+      "tokens": 2207,
+      "error": ""
+    },
+    {
+      "url": "https://arstechnica.com/",
+      "elapsed": 645,
+      "success": true,
+      "tokens": 1815,
+      "error": ""
+    },
+    {
+      "url": "https://httpbin.org/html",
+      "elapsed": 138,
+      "success": true,
+      "tokens": 808,
+      "error": ""
+    },
+    {
+      "url": "https://example.com/",
+      "elapsed": 48,
+      "success": false,
+      "tokens": 29,
+      "error": "low content"
+    },
+    {
+      "url": "https://jsonplaceholder.typicode.com/posts/1",
+      "elapsed": 49,
+      "success": false,
+      "tokens": 49,
+      "error": "low content"
+    },
+    {
+      "url": "https://www.iana.org/domains/reserved",
+      "elapsed": 137,
+      "success": true,
+      "tokens": 427,
+      "error": ""
+    }
+  ]
+}

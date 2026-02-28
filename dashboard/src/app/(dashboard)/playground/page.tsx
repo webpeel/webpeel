@@ -265,11 +265,6 @@ export default function PlaygroundPage() {
       normalizedUrl = 'https://' + normalizedUrl;
     }
 
-    // Revoke previous blob URL if any
-    if (screenshotSrc && screenshotSrc.startsWith('blob:')) {
-      URL.revokeObjectURL(screenshotSrc);
-    }
-
     setScreenshotLoading(true);
     setScreenshotError(null);
     setScreenshotSrc(null);
@@ -297,9 +292,12 @@ export default function PlaygroundPage() {
         throw new Error(errData.message || `Request failed with status ${response.status}`);
       }
 
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      setScreenshotSrc(objectUrl);
+      const json = await response.json();
+      const dataUrl = json?.data?.screenshot;
+      if (!dataUrl || typeof dataUrl !== 'string') {
+        throw new Error('No screenshot data in response');
+      }
+      setScreenshotSrc(dataUrl);
       toast.success('Screenshot captured');
     } catch (err: any) {
       setScreenshotElapsed(Date.now() - startTime);
