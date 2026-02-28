@@ -7,6 +7,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "WebPeel Dashboard",
   description: "Manage your WebPeel API keys and usage",
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({
