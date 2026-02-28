@@ -103,6 +103,15 @@ const REGISTRY: Array<{
   { match: (h) => h === 'www.npmjs.com' || h === 'npmjs.com', extractor: npmExtractor },
   { match: (h) => h === 'www.bestbuy.com' || h === 'bestbuy.com', extractor: bestBuyExtractor },
   { match: (h) => h === 'www.walmart.com' || h === 'walmart.com', extractor: walmartExtractor },
+  { match: (h) => h === 'www.amazon.com' || h === 'amazon.com', extractor: amazonExtractor },
+  { match: (h) => h === 'medium.com' || h === 'www.medium.com' || h.endsWith('.medium.com'), extractor: mediumExtractor },
+  { match: (h) => h.endsWith('.substack.com'), extractor: substackExtractor },
+  { match: (h) => h === 'www.allrecipes.com' || h === 'allrecipes.com', extractor: allrecipesExtractor },
+  { match: (h) => h === 'www.imdb.com' || h === 'imdb.com', extractor: imdbExtractor },
+  { match: (h) => h === 'www.linkedin.com' || h === 'linkedin.com', extractor: linkedinExtractor },
+  { match: (h) => h === 'pypi.org' || h === 'www.pypi.org', extractor: pypiExtractor },
+  { match: (h) => h === 'dev.to' || h === 'www.dev.to', extractor: devtoExtractor },
+  { match: (h) => h === 'craigslist.org' || h === 'www.craigslist.org' || h.endsWith('.craigslist.org'), extractor: craigslistExtractor },
 ];
 
 /**
@@ -1710,6 +1719,817 @@ async function walmartExtractor(_html: string, url: string): Promise<DomainExtra
   } catch (e) {
     if (process.env.DEBUG) console.debug('[webpeel]', 'Walmart API failed:', e instanceof Error ? e.message : e);
     return null; // API not accessible, fall through to other methods
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 12. Amazon Products extractor
+// ---------------------------------------------------------------------------
+
+async function amazonExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    // Extract from JSON-LD first
+    let jsonLdData: any = null;
+    $('script[type="application/ld+json"]').each((_: any, el: any) => {
+      if (jsonLdData) return;
+      const raw = $(el).html() || '';
+      const parsed = tryParseJson(raw);
+      if (parsed?.['@type'] === 'Product') jsonLdData = parsed;
+    });
+
+    // Meta tag fallbacks
+    const ogTitle = $('meta[property="og:title"]').attr('content') || '';
+    const ogDescription = $('meta[property="og:description"]').attr('content') || '';
+    const ogImage = $('meta[property="og:image"]').attr('content') || '';
+
+    // HTML selectors
+    const title = jsonLdData?.name ||
+      $('#productTitle').text().trim() ||
+      $('#title').text().trim() ||
+      ogTitle;
+
+    if (!title) return null;
+
+    const priceWhole = $('#priceblock_ourprice').text().trim() ||
+      $('.a-price .a-offscreen').first().text().trim() ||
+      $('[data-asin-price]').first().attr('data-asin-price') || '';
+
+    const rating = jsonLdData?.aggregateRating?.ratingValue ||
+      $('#acrPopover .a-size-base.a-color-base').first().text().trim() ||
+      $('span[data-hook="rating-out-of-text"]').text().trim() || '';
+
+    const reviewCount = jsonLdData?.aggregateRating?.reviewCount ||
+      $('#acrCustomerReviewText').text().replace(/[^0-9,]/g, '').trim() || '';
+
+    const availability = jsonLdData?.offers?.availability?.replace('https://schema.org/', '') ||
+      $('#availability span').first().text().trim() || '';
+
+    const description = jsonLdData?.description ||
+      $('#feature-bullets .a-list-item').map((_: any, el: any) => $(el).text().trim()).get().join('\n') ||
+      $('#productDescription p').text().trim() ||
+      ogDescription;
+
+    const features: string[] = [];
+    $('#feature-bullets li').each((_: any, el: any) => {
+      const text = $(el).text().trim();
+      if (text && !text.includes('Make sure this fits')) features.push(text);
+    });
+
+    // ASIN from URL
+    const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/i);
+    const asin = asinMatch?.[1] || '';
+
+    const structured: Record<string, any> = {
+      title,
+      price: priceWhole,
+      rating,
+      reviewCount,
+      availability,
+      description,
+      features,
+      asin,
+      image: ogImage,
+      url,
+    };
+
+    const ratingLine = rating ? `\n**Rating:** ${rating}${reviewCount ? ` (${reviewCount} reviews)` : ''}` : '';
+    const priceLine = priceWhole ? `\n**Price:** ${priceWhole}` : '';
+    const availLine = availability ? `\n**Availability:** ${availability}` : '';
+    const featuresSection = features.length
+      ? `\n\n## Features\n\n${features.map(f => `- ${f}`).join('\n')}`
+      : '';
+    const descSection = description ? `\n\n## Description\n\n${description.substring(0, 1000)}` : '';
+
+    const cleanContent = `# 🛒 ${title}${priceLine}${ratingLine}${availLine}${descSection}${featuresSection}`;
+
+    return { domain: 'amazon.com', type: 'product', structured, cleanContent };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 13. Medium Articles extractor
+// ---------------------------------------------------------------------------
+
+async function mediumExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    // JSON-LD
+    let jsonLdData: any = null;
+    $('script[type="application/ld+json"]').each((_: any, el: any) => {
+      if (jsonLdData) return;
+      const raw = $(el).html() || '';
+      const parsed = tryParseJson(raw);
+      if (parsed?.['@type'] === 'NewsArticle' || parsed?.['@type'] === 'Article') jsonLdData = parsed;
+    });
+
+    const title = jsonLdData?.headline ||
+      $('meta[property="og:title"]').attr('content') ||
+      $('h1').first().text().trim() || '';
+
+    if (!title) return null;
+
+    const author = jsonLdData?.author?.name ||
+      $('meta[name="author"]').attr('content') ||
+      $('[data-testid="authorName"]').text().trim() ||
+      $('a[rel="author"]').first().text().trim() || '';
+
+    const publishDate = jsonLdData?.datePublished ||
+      $('meta[property="article:published_time"]').attr('content') || '';
+
+    const readingTime = $('[data-testid="storyReadTime"]').text().trim() ||
+      $('span').filter((_: any, el: any) => $(el).text().includes('min read')).first().text().trim() || '';
+
+    const description = jsonLdData?.description ||
+      $('meta[property="og:description"]').attr('content') || '';
+
+    // Extract article body — Medium puts content in <article> or section
+    let articleBody = '';
+    const articleEl = $('article').first();
+    if (articleEl.length) {
+      // Remove nav, aside, buttons
+      articleEl.find('nav, aside, button, [data-testid="navbar"]').remove();
+      // Get paragraphs and headings
+      const parts: string[] = [];
+      articleEl.find('h1, h2, h3, h4, p, blockquote, pre, li').each((_: any, el: any) => {
+        const tag = (el as any).name;
+        const text = $(el).text().trim();
+        if (!text || text.length < 5) return;
+        if (tag === 'h1' || tag === 'h2') parts.push(`## ${text}`);
+        else if (tag === 'h3' || tag === 'h4') parts.push(`### ${text}`);
+        else if (tag === 'blockquote') parts.push(`> ${text}`);
+        else if (tag === 'pre') parts.push('```\n' + text + '\n```');
+        else parts.push(text);
+      });
+      articleBody = parts.join('\n\n');
+    }
+
+    // Fallback to og:description if no body
+    const contentBody = articleBody || description;
+
+    const structured: Record<string, any> = {
+      title,
+      author,
+      publishDate,
+      readingTime,
+      description,
+      url,
+    };
+
+    const authorLine = author ? `\n**Author:** ${author}` : '';
+    const dateLine = publishDate ? `\n**Published:** ${publishDate.split('T')[0]}` : '';
+    const timeLine = readingTime ? `\n**Reading time:** ${readingTime}` : '';
+
+    const cleanContent = `# ${title}${authorLine}${dateLine}${timeLine}\n\n${contentBody.substring(0, 8000)}`;
+
+    return { domain: 'medium.com', type: 'article', structured, cleanContent };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 14. Substack Posts extractor
+// ---------------------------------------------------------------------------
+
+async function substackExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    // JSON-LD
+    let jsonLdData: any = null;
+    $('script[type="application/ld+json"]').each((_: any, el: any) => {
+      if (jsonLdData) return;
+      const raw = $(el).html() || '';
+      const parsed = tryParseJson(raw);
+      if (parsed?.['@type'] === 'NewsArticle' || parsed?.['@type'] === 'Article') jsonLdData = parsed;
+    });
+
+    const title = jsonLdData?.headline ||
+      $('meta[property="og:title"]').attr('content') ||
+      $('h1.post-title').first().text().trim() ||
+      $('h1').first().text().trim() || '';
+
+    if (!title) return null;
+
+    const author = jsonLdData?.author?.name ||
+      $('meta[name="author"]').attr('content') ||
+      $('a.author-name').first().text().trim() ||
+      $('[class*="author"]').first().text().trim() || '';
+
+    const publishDate = jsonLdData?.datePublished ||
+      $('meta[property="article:published_time"]').attr('content') ||
+      $('time').first().attr('datetime') || '';
+
+    const publication = $('meta[property="og:site_name"]').attr('content') ||
+      $('a.navbar-title-link').text().trim() || new URL(url).hostname.replace('.substack.com', '');
+
+    const description = jsonLdData?.description ||
+      $('meta[property="og:description"]').attr('content') || '';
+
+    // Article content
+    let articleBody = '';
+    const postContent = $('.body.markup, .post-content, article').first();
+    if (postContent.length) {
+      postContent.find('script, style, nav, .paywall, .subscribe-widget').remove();
+      const parts: string[] = [];
+      postContent.find('h1, h2, h3, h4, p, blockquote, pre, li').each((_: any, el: any) => {
+        const tag = (el as any).name;
+        const text = $(el).text().trim();
+        if (!text || text.length < 3) return;
+        if (tag === 'h1' || tag === 'h2') parts.push(`## ${text}`);
+        else if (tag === 'h3' || tag === 'h4') parts.push(`### ${text}`);
+        else if (tag === 'blockquote') parts.push(`> ${text}`);
+        else if (tag === 'pre') parts.push('```\n' + text + '\n```');
+        else parts.push(text);
+      });
+      articleBody = parts.join('\n\n');
+    }
+
+    const contentBody = articleBody || description;
+
+    const structured: Record<string, any> = {
+      title,
+      author,
+      publication,
+      publishDate,
+      description,
+      url,
+    };
+
+    const authorLine = author ? `\n**Author:** ${author}` : '';
+    const pubLine = publication ? `\n**Publication:** ${publication}` : '';
+    const dateLine = publishDate ? `\n**Published:** ${publishDate.split('T')[0]}` : '';
+
+    const cleanContent = `# ${title}${authorLine}${pubLine}${dateLine}\n\n${contentBody.substring(0, 8000)}`;
+
+    return { domain: 'substack.com', type: 'post', structured, cleanContent };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 15. Allrecipes (Recipe Sites) extractor
+// ---------------------------------------------------------------------------
+
+async function allrecipesExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    // Try Schema.org Recipe JSON-LD first
+    let recipe: any = null;
+    $('script[type="application/ld+json"]').each((_: any, el: any) => {
+      if (recipe) return;
+      const raw = $(el).html() || '';
+      const parsed = tryParseJson(raw);
+      // Can be an array or direct object
+      const candidates = Array.isArray(parsed) ? parsed : [parsed];
+      for (const item of candidates) {
+        if (item?.['@type'] === 'Recipe' || (Array.isArray(item?.['@type']) && item['@type'].includes('Recipe'))) {
+          recipe = item;
+          break;
+        }
+        // Sometimes it's nested in @graph
+        if (item?.['@graph']) {
+          const graphRecipe = item['@graph'].find((g: any) => g?.['@type'] === 'Recipe');
+          if (graphRecipe) { recipe = graphRecipe; break; }
+        }
+      }
+    });
+
+    let title: string;
+    let ingredients: string[] = [];
+    let instructions: string[] = [];
+    let prepTime = '';
+    let cookTime = '';
+    let totalTime = '';
+    let servings = '';
+    let rating = '';
+    let reviewCount = '';
+    let description = '';
+
+    if (recipe) {
+      title = recipe.name || '';
+      description = recipe.description || '';
+      ingredients = (recipe.recipeIngredient || []).map((i: string) => i.trim());
+      // Instructions can be strings or HowToStep objects
+      const rawInstructions = recipe.recipeInstructions || [];
+      for (const step of rawInstructions) {
+        if (typeof step === 'string') instructions.push(step.trim());
+        else if (step.text) instructions.push(step.text.trim());
+        else if (step['@type'] === 'HowToSection' && step.itemListElement) {
+          for (const s of step.itemListElement) {
+            if (s.text) instructions.push(s.text.trim());
+          }
+        }
+      }
+      // Parse ISO 8601 duration (PT30M, PT1H30M)
+      const parseDuration = (d: string) => {
+        if (!d) return '';
+        const h = d.match(/(\d+)H/)?.[1];
+        const m = d.match(/(\d+)M/)?.[1];
+        return [h ? `${h}h` : '', m ? `${m}m` : ''].filter(Boolean).join(' ');
+      };
+      prepTime = parseDuration(recipe.prepTime || '');
+      cookTime = parseDuration(recipe.cookTime || '');
+      totalTime = parseDuration(recipe.totalTime || '');
+      servings = String(recipe.recipeYield || '');
+      rating = recipe.aggregateRating?.ratingValue ? String(recipe.aggregateRating.ratingValue) : '';
+      reviewCount = recipe.aggregateRating?.reviewCount ? String(recipe.aggregateRating.reviewCount) : '';
+    } else {
+      // HTML fallback
+      title = $('h1').first().text().trim() ||
+        $('meta[property="og:title"]').attr('content') || '';
+      description = $('meta[property="og:description"]').attr('content') || '';
+      $('[class*="ingredient"]').each((_: any, el: any) => {
+        const text = $(el).text().trim();
+        if (text && text.length < 200) ingredients.push(text);
+      });
+      $('[class*="instruction"] li, [class*="step"] li').each((_: any, el: any) => {
+        const text = $(el).text().trim();
+        if (text) instructions.push(text);
+      });
+    }
+
+    if (!title) return null;
+
+    const structured: Record<string, any> = {
+      title, description, ingredients, instructions,
+      prepTime, cookTime, totalTime, servings, rating, reviewCount, url,
+    };
+
+    const timeParts = [
+      prepTime ? `Prep: ${prepTime}` : '',
+      cookTime ? `Cook: ${cookTime}` : '',
+      totalTime ? `Total: ${totalTime}` : '',
+    ].filter(Boolean).join(' | ');
+    const metaLine = [
+      timeParts,
+      servings ? `Servings: ${servings}` : '',
+      rating ? `Rating: ${rating}${reviewCount ? ` (${reviewCount} reviews)` : ''}` : '',
+    ].filter(Boolean).join(' | ');
+
+    const ingredientsMd = ingredients.length
+      ? `## Ingredients\n\n${ingredients.map(i => `- ${i}`).join('\n')}`
+      : '';
+    const instructionsMd = instructions.length
+      ? `## Instructions\n\n${instructions.map((s, i) => `${i + 1}. ${s}`).join('\n')}`
+      : '';
+
+    const cleanContent = `# 🍽️ ${title}\n\n${metaLine ? `*${metaLine}*\n\n` : ''}${description ? description + '\n\n' : ''}${ingredientsMd}\n\n${instructionsMd}`.trim();
+
+    return { domain: 'allrecipes.com', type: 'recipe', structured, cleanContent };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 16. IMDB extractor
+// ---------------------------------------------------------------------------
+
+async function imdbExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    // IMDB uses JSON-LD richly
+    let jsonLd: any = null;
+    $('script[type="application/ld+json"]').each((_: any, el: any) => {
+      if (jsonLd) return;
+      const raw = $(el).html() || '';
+      const parsed = tryParseJson(raw);
+      if (parsed?.['@type'] === 'Movie' || parsed?.['@type'] === 'TVSeries' || parsed?.['@type'] === 'TVEpisode') {
+        jsonLd = parsed;
+      }
+    });
+
+    const title = jsonLd?.name ||
+      $('meta[property="og:title"]').attr('content')?.replace(/ - IMDb$/, '') ||
+      $('h1[data-testid="hero__pageTitle"] span').first().text().trim() || '';
+
+    if (!title) return null;
+
+    const description = jsonLd?.description ||
+      $('meta[property="og:description"]').attr('content') ||
+      $('p[data-testid="plot"]').text().trim() || '';
+
+    const year = jsonLd?.datePublished?.substring(0, 4) ||
+      $('a[href*="releaseinfo"]').first().text().trim() || '';
+
+    const ratingValue = jsonLd?.aggregateRating?.ratingValue ||
+      $('[data-testid="hero-rating-bar__aggregate-rating__score"] span').first().text().trim() || '';
+
+    const ratingCount = jsonLd?.aggregateRating?.ratingCount || '';
+
+    const contentType = jsonLd?.['@type'] || 'Movie';
+
+    // Genres
+    const genres: string[] = jsonLd?.genre
+      ? (Array.isArray(jsonLd.genre) ? jsonLd.genre : [jsonLd.genre])
+      : [];
+    if (!genres.length) {
+      $('[data-testid="genres"] a, a[href*="/search/title?genres"]').each((_: any, el: any) => {
+        const g = $(el).text().trim();
+        if (g && !genres.includes(g)) genres.push(g);
+      });
+    }
+
+    // Director
+    const director = jsonLd?.director
+      ? (Array.isArray(jsonLd.director)
+        ? jsonLd.director.map((d: any) => d.name || d).join(', ')
+        : jsonLd.director?.name || String(jsonLd.director))
+      : $('a[href*="/name/"][class*="ipc-metadata-list-item__list-content-item"]').first().text().trim() || '';
+
+    // Cast (top few from JSON-LD actor field)
+    const cast: string[] = jsonLd?.actor
+      ? (Array.isArray(jsonLd.actor) ? jsonLd.actor : [jsonLd.actor])
+          .map((a: any) => a.name || a).slice(0, 6)
+      : [];
+
+    // Runtime
+    const runtime = jsonLd?.duration
+      ? (() => {
+          const m = String(jsonLd.duration).match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+          if (m) return [m[1] ? `${m[1]}h` : '', m[2] ? `${m[2]}m` : ''].filter(Boolean).join(' ');
+          return String(jsonLd.duration);
+        })()
+      : '';
+
+    const structured: Record<string, any> = {
+      title, year, contentType, description, ratingValue, ratingCount,
+      genres, director, cast, runtime, url,
+    };
+
+    const ratingLine = ratingValue ? `⭐ ${ratingValue}/10${ratingCount ? ` (${Number(ratingCount).toLocaleString()} votes)` : ''}` : '';
+    const genreLine = genres.length ? genres.join(', ') : '';
+    const directorLine = director ? `**Director:** ${director}` : '';
+    const castLine = cast.length ? `**Cast:** ${cast.join(', ')}` : '';
+    const runtimeLine = runtime ? `**Runtime:** ${runtime}` : '';
+
+    const metaParts = [ratingLine, genreLine, runtimeLine, year ? `**Year:** ${year}` : ''].filter(Boolean).join(' | ');
+
+    const cleanContent = `# 🎬 ${title}\n\n${metaParts}\n\n${directorLine ? directorLine + '\n' : ''}${castLine ? castLine + '\n' : ''}\n## Plot\n\n${description}`;
+
+    return { domain: 'imdb.com', type: contentType === 'TVSeries' ? 'tv_show' : 'movie', structured, cleanContent };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 17. LinkedIn extractor
+// ---------------------------------------------------------------------------
+
+async function linkedinExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    // LinkedIn SSR exposes some data in meta tags and JSON-LD
+    let jsonLd: any = null;
+    $('script[type="application/ld+json"]').each((_: any, el: any) => {
+      if (jsonLd) return;
+      const raw = $(el).html() || '';
+      const parsed = tryParseJson(raw);
+      if (parsed?.['@type'] === 'Person' || parsed?.['@type'] === 'Organization') jsonLd = parsed;
+    });
+
+    const ogTitle = $('meta[property="og:title"]').attr('content') || '';
+    const ogDescription = $('meta[property="og:description"]').attr('content') || '';
+    const ogImage = $('meta[property="og:image"]').attr('content') || '';
+
+    const name = jsonLd?.name || ogTitle.replace(/ \| LinkedIn$/, '').trim() || '';
+    if (!name) return null;
+
+    const headline = jsonLd?.jobTitle ||
+      $('meta[name="description"]').attr('content')?.split('|')?.[0]?.trim() ||
+      ogDescription || '';
+
+    const description = jsonLd?.description || ogDescription || '';
+
+    // Try to detect page type from URL
+    const pathParts = new URL(url).pathname.split('/').filter(Boolean);
+    const pageType = pathParts[0] === 'company' ? 'company'
+      : pathParts[0] === 'in' ? 'profile'
+      : pathParts[0] === 'jobs' ? 'job'
+      : 'page';
+
+    // Extract any visible structured info from the HTML
+    const location = $('[class*="location"]').first().text().trim() ||
+      jsonLd?.address?.addressLocality || '';
+
+    const structured: Record<string, any> = {
+      name, headline, description, location, pageType,
+      image: ogImage, url,
+    };
+
+    const typeLine = pageType === 'company' ? '🏢' : pageType === 'profile' ? '👤' : '🔗';
+    const locationLine = location ? `\n📍 ${location}` : '';
+    const headlineLine = headline ? `\n*${headline}*` : '';
+
+    const cleanContent = `# ${typeLine} ${name}${headlineLine}${locationLine}\n\n${description}`;
+
+    return { domain: 'linkedin.com', type: pageType, structured, cleanContent };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 18. PyPI extractor
+// ---------------------------------------------------------------------------
+
+async function pypiExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  const urlObj = new URL(url);
+  const path = urlObj.pathname;
+
+  // Match /project/name or /project/name/version/
+  const packageMatch = path.match(/\/project\/([^/]+)/);
+  if (!packageMatch) return null;
+
+  const packageName = packageMatch[1];
+
+  try {
+    const apiUrl = `https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`;
+    const data = await fetchJson(apiUrl);
+
+    if (!data?.info) return null;
+    const info = data.info;
+
+    const structured: Record<string, any> = {
+      name: info.name,
+      version: info.version,
+      description: info.summary || '',
+      author: info.author || '',
+      authorEmail: info.author_email || '',
+      license: info.license || 'N/A',
+      homepage: info.home_page || info.project_url || null,
+      projectUrls: info.project_urls || {},
+      keywords: info.keywords ? info.keywords.split(/[,\s]+/).filter(Boolean) : [],
+      requiresPython: info.requires_python || '',
+      requiresDist: (info.requires_dist || []).slice(0, 20),
+      classifiers: (info.classifiers || []).slice(0, 10),
+    };
+
+    const installCmd = `pip install ${info.name}`;
+    const keywordsLine = structured.keywords.length ? `\n**Keywords:** ${structured.keywords.join(', ')}` : '';
+    const pyVersionLine = structured.requiresPython ? `\n**Requires Python:** ${structured.requiresPython}` : '';
+    const depsLine = structured.requiresDist.length
+      ? `\n\n## Dependencies\n\n${structured.requiresDist.map((d: string) => `- ${d}`).join('\n')}`
+      : '';
+
+    // Find project URLs
+    const projectUrlLines: string[] = [];
+    for (const [label, u] of Object.entries(structured.projectUrls)) {
+      projectUrlLines.push(`- **${label}:** ${u}`);
+    }
+
+    const cleanContent = `# 📦 ${info.name} ${info.version}
+
+${info.summary || ''}
+
+\`\`\`
+${installCmd}
+\`\`\`
+
+**Author:** ${info.author || 'N/A'} | **License:** ${info.license || 'N/A'}${keywordsLine}${pyVersionLine}
+
+${projectUrlLines.length ? `## Links\n\n${projectUrlLines.join('\n')}\n` : ''}${depsLine}`;
+
+    return { domain: 'pypi.org', type: 'package', structured, cleanContent };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'PyPI API failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 19. Dev.to extractor
+// ---------------------------------------------------------------------------
+
+async function devtoExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    // Try Dev.to article API if we can get the slug from the URL
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+
+    // Dev.to article URL: /@username/article-slug-id or /username/article-slug-id
+    const slug = pathParts.length >= 2
+      ? pathParts.slice(0, 2).join('/').replace(/^@/, '')
+      : null;
+
+    if (slug) {
+      try {
+        const apiUrl = `https://dev.to/api/articles/${slug}`;
+        const apiData = await fetchJson(apiUrl);
+        if (apiData?.title) {
+          const structured: Record<string, any> = {
+            title: apiData.title,
+            author: apiData.user?.name || '',
+            authorUsername: apiData.user?.username || '',
+            publishDate: apiData.published_at || '',
+            tags: apiData.tag_list || [],
+            readingTime: apiData.reading_time_minutes ? `${apiData.reading_time_minutes} min read` : '',
+            reactions: apiData.public_reactions_count || 0,
+            comments: apiData.comments_count || 0,
+            description: apiData.description || '',
+            url: apiData.url || url,
+          };
+
+          const authorLine = structured.author ? `**Author:** ${structured.author} (@${structured.authorUsername})` : '';
+          const dateLine = structured.publishDate ? `**Published:** ${structured.publishDate.split('T')[0]}` : '';
+          const tagsLine = structured.tags.length ? `**Tags:** ${structured.tags.join(', ')}` : '';
+          const statsLine = `❤️ ${structured.reactions} reactions | 💬 ${structured.comments} comments${structured.readingTime ? ` | ⏱️ ${structured.readingTime}` : ''}`;
+
+          const metaParts = [authorLine, dateLine, tagsLine, statsLine].filter(Boolean).join('\n');
+
+          // Use body_html if available for article content
+          let articleContent = '';
+          if (apiData.body_html) {
+            // Strip HTML tags for clean content
+            articleContent = stripHtml(apiData.body_html)
+              .replace(/\n{3,}/g, '\n\n')
+              .substring(0, 8000);
+          } else if (apiData.body_markdown) {
+            articleContent = apiData.body_markdown.substring(0, 8000);
+          }
+
+          const cleanContent = `# ${structured.title}\n\n${metaParts}\n\n${articleContent || structured.description}`;
+
+          return { domain: 'dev.to', type: 'article', structured, cleanContent };
+        }
+      } catch { /* fall through to HTML */ }
+    }
+
+    // HTML fallback
+    const title = $('meta[property="og:title"]').attr('content') ||
+      $('h1').first().text().trim() || '';
+    if (!title) return null;
+
+    const author = $('meta[name="author"]').attr('content') ||
+      $('[itemprop="name"]').first().text().trim() || '';
+    const description = $('meta[property="og:description"]').attr('content') || '';
+    const tags: string[] = [];
+    $('a[data-no-instant][href*="/t/"]').each((_: any, el: any) => {
+      const tag = $(el).text().trim().replace('#', '');
+      if (tag) tags.push(tag);
+    });
+
+    // Article body
+    let articleBody = '';
+    const articleEl = $('article#article-body, .crayons-article__main, #article-body').first();
+    if (articleEl.length) {
+      const parts: string[] = [];
+      articleEl.find('h1, h2, h3, h4, p, blockquote, pre, li').each((_: any, el: any) => {
+        const tag = (el as any).name;
+        const text = $(el).text().trim();
+        if (!text || text.length < 3) return;
+        if (tag === 'h2') parts.push(`## ${text}`);
+        else if (tag === 'h3' || tag === 'h4') parts.push(`### ${text}`);
+        else if (tag === 'blockquote') parts.push(`> ${text}`);
+        else if (tag === 'pre') parts.push('```\n' + text + '\n```');
+        else parts.push(text);
+      });
+      articleBody = parts.join('\n\n');
+    }
+
+    const structured: Record<string, any> = {
+      title, author, description, tags, url,
+    };
+
+    const authorLine = author ? `\n**Author:** ${author}` : '';
+    const tagsLine = tags.length ? `\n**Tags:** ${tags.join(', ')}` : '';
+
+    const cleanContent = `# ${title}${authorLine}${tagsLine}\n\n${articleBody || description}`.substring(0, 10000);
+
+    return { domain: 'dev.to', type: 'article', structured, cleanContent };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 20. Craigslist extractor
+// ---------------------------------------------------------------------------
+
+async function craigslistExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    const urlObj = new URL(url);
+    const path = urlObj.pathname;
+
+    // Detect if it's a listing page or individual post
+    // Individual post: /xxx/yyy/d/title/12345678.html
+    const isPost = /\/d\/[^/]+\/\d+\.html/.test(path) || /\/\d{10,}\.html/.test(path);
+
+    if (isPost) {
+      const title = $('#titletextonly').text().trim() ||
+        $('span#titletextonly').text().trim() ||
+        $('meta[property="og:title"]').attr('content') ||
+        $('h2.postingtitle').text().trim() || '';
+
+      if (!title) return null;
+
+      const price = $('.price').first().text().trim() ||
+        $('[class*="price"]').first().text().trim() || '';
+
+      const location = $('.postingtitletext small').text().trim().replace(/[()]/g, '') ||
+        $('#map').attr('data-address') || '';
+
+      const postDate = $('#display-date time').attr('datetime') ||
+        $('time.date').first().attr('datetime') ||
+        $('p.postinginfo time').first().attr('datetime') || '';
+
+      // Body text
+      const bodyEl = $('#postingbody');
+      bodyEl.find('.print-information, .QR-code').remove();
+      const bodyText = bodyEl.text().trim()
+        .replace(/QR Code Link to This Post/, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+      // Images
+      const images: string[] = [];
+      $('img.slide').each((_: any, el: any) => {
+        const src = $(el).attr('src') || '';
+        if (src && !images.includes(src)) images.push(src);
+      });
+      $('img[id^="ii"]').each((_: any, el: any) => {
+        const src = $(el).attr('src') || '';
+        if (src && !images.includes(src)) images.push(src);
+      });
+
+      // Attributes
+      const attrs: Record<string, string> = {};
+      $('.attrgroup span').each((_: any, el: any) => {
+        const text = $(el).text().trim();
+        const parts = text.split(':');
+        if (parts.length === 2) attrs[parts[0].trim()] = parts[1].trim();
+      });
+
+      const structured: Record<string, any> = {
+        title, price, location, postDate,
+        bodyText, images, attributes: attrs, url,
+      };
+
+      const priceLine = price ? `\n**Price:** ${price}` : '';
+      const locationLine = location ? `\n**Location:** ${location}` : '';
+      const dateLine = postDate ? `\n**Posted:** ${postDate.split('T')[0]}` : '';
+      const attrsSection = Object.keys(attrs).length
+        ? `\n\n## Details\n\n${Object.entries(attrs).map(([k, v]) => `- **${k}:** ${v}`).join('\n')}`
+        : '';
+      const imagesLine = images.length ? `\n\n📷 ${images.length} image${images.length > 1 ? 's' : ''}` : '';
+
+      const cleanContent = `# 📋 ${title}${priceLine}${locationLine}${dateLine}${attrsSection}${imagesLine}\n\n${bodyText.substring(0, 3000)}`;
+
+      return { domain: 'craigslist.org', type: 'listing', structured, cleanContent };
+    }
+
+    // Listing page (search results)
+    const pageTitle = $('title').text().trim() ||
+      $('meta[property="og:title"]').attr('content') || 'Craigslist Listings';
+
+    const listings: Array<Record<string, string>> = [];
+    $('.result-row, li.cl-static-search-result, .cl-search-result').each((_: any, el: any) => {
+      const titleEl = $(el).find('a.titlestring, a[class*="title"], .result-title').first();
+      const postTitle = titleEl.text().trim();
+      const postUrl = titleEl.attr('href') || '';
+      const postPrice = $(el).find('.result-price, [class*="price"]').first().text().trim();
+      const postHood = $(el).find('.result-hood, [class*="hood"]').first().text().trim().replace(/[()]/g, '');
+      if (postTitle) {
+        listings.push({ title: postTitle, url: postUrl, price: postPrice, location: postHood });
+      }
+    });
+
+    if (!listings.length) return null;
+
+    const structured: Record<string, any> = { pageTitle, listings, url };
+
+    const listMd = listings.slice(0, 20).map((l, i) =>
+      `${i + 1}. **${l.title}**${l.price ? ` — ${l.price}` : ''}${l.location ? ` (${l.location})` : ''}${l.url ? `\n   ${l.url}` : ''}`
+    ).join('\n\n');
+
+    const cleanContent = `# 📋 ${pageTitle}\n\n${listMd}`;
+
+    return { domain: 'craigslist.org', type: 'search', structured, cleanContent };
+  } catch {
+    return null;
   }
 }
 

@@ -1,0 +1,302 @@
+{
+  "timestamp": "2026-02-28T09:52:51.600Z",
+  "totalUrls": 41,
+  "fetchSuccess": 41,
+  "fetchSuccessRate": 100,
+  "meaningfulContent": 40,
+  "meaningfulRate": 97.6,
+  "avgResponseMs": 1477,
+  "medianResponseMs": 569,
+  "p90Ms": 4634,
+  "p95Ms": 5658,
+  "simpleHttpAvgMs": 225,
+  "details": [
+    {
+      "url": "https://www.bbc.com/news",
+      "elapsed": 417,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1616
+    },
+    {
+      "url": "https://edition.cnn.com/",
+      "elapsed": 3017,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1288
+    },
+    {
+      "url": "https://www.reuters.com/",
+      "elapsed": 707,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1227
+    },
+    {
+      "url": "https://techcrunch.com/",
+      "elapsed": 419,
+      "success": true,
+      "meaningful": true,
+      "tokens": 2107
+    },
+    {
+      "url": "https://arstechnica.com/",
+      "elapsed": 583,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1815
+    },
+    {
+      "url": "https://www.theverge.com/",
+      "elapsed": 569,
+      "success": true,
+      "meaningful": true,
+      "tokens": 2207
+    },
+    {
+      "url": "https://www.wired.com/",
+      "elapsed": 855,
+      "success": true,
+      "meaningful": true,
+      "tokens": 903
+    },
+    {
+      "url": "https://www.engadget.com/",
+      "elapsed": 646,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1029
+    },
+    {
+      "url": "https://github.com/anthropics/claude-code",
+      "elapsed": 178,
+      "success": true,
+      "meaningful": true,
+      "tokens": 511
+    },
+    {
+      "url": "https://stackoverflow.com/questions/927358/how-do-i-undo-the-most-recent-local-commits-in-git",
+      "elapsed": 201,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1348
+    },
+    {
+      "url": "https://www.npmjs.com/package/express",
+      "elapsed": 159,
+      "success": true,
+      "meaningful": true,
+      "tokens": 83
+    },
+    {
+      "url": "https://docs.python.org/3/tutorial/index.html",
+      "elapsed": 85,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1373
+    },
+    {
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+      "elapsed": 175,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1096
+    },
+    {
+      "url": "https://go.dev/doc/",
+      "elapsed": 243,
+      "success": true,
+      "meaningful": true,
+      "tokens": 2328
+    },
+    {
+      "url": "https://docs.rs/tokio/latest/tokio/",
+      "elapsed": 393,
+      "success": true,
+      "meaningful": true,
+      "tokens": 372
+    },
+    {
+      "url": "https://pkg.go.dev/net/http",
+      "elapsed": 953,
+      "success": true,
+      "meaningful": true,
+      "tokens": 28673
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Artificial_intelligence",
+      "elapsed": 180,
+      "success": true,
+      "meaningful": true,
+      "tokens": 16815
+    },
+    {
+      "url": "https://news.ycombinator.com/",
+      "elapsed": 259,
+      "success": true,
+      "meaningful": true,
+      "tokens": 743
+    },
+    {
+      "url": "https://old.reddit.com/r/programming/",
+      "elapsed": 574,
+      "success": true,
+      "meaningful": true,
+      "tokens": 333
+    },
+    {
+      "url": "https://medium.com/@acubed/product-thinking-is-hard-72d08ddee4a3",
+      "elapsed": 2440,
+      "success": true,
+      "meaningful": true,
+      "tokens": 321
+    },
+    {
+      "url": "https://www.quora.com/What-is-the-best-programming-language-to-learn-first",
+      "elapsed": 4634,
+      "success": true,
+      "meaningful": true,
+      "tokens": 100
+    },
+    {
+      "url": "https://dev.to/",
+      "elapsed": 483,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1124
+    },
+    {
+      "url": "https://www.amazon.com/dp/B0D1XD1ZV3",
+      "elapsed": 5422,
+      "success": true,
+      "meaningful": true,
+      "tokens": 4379
+    },
+    {
+      "url": "https://www.bestbuy.com/site/apple-macbook-air-13-inch-laptop-m4-chip-16gb-memory-256gb/6604203.p",
+      "elapsed": 5658,
+      "success": true,
+      "meaningful": true,
+      "tokens": 79
+    },
+    {
+      "url": "https://www.walmart.com/",
+      "elapsed": 3576,
+      "success": true,
+      "meaningful": true,
+      "tokens": 228
+    },
+    {
+      "url": "https://www.target.com/",
+      "elapsed": 6606,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1512
+    },
+    {
+      "url": "https://www.etsy.com/",
+      "elapsed": 3946,
+      "success": true,
+      "meaningful": true,
+      "tokens": 68
+    },
+    {
+      "url": "https://arxiv.org/abs/2301.07041",
+      "elapsed": 127,
+      "success": true,
+      "meaningful": true,
+      "tokens": 311
+    },
+    {
+      "url": "https://www.imdb.com/title/tt0111161/",
+      "elapsed": 2130,
+      "success": true,
+      "meaningful": true,
+      "tokens": 2313
+    },
+    {
+      "url": "https://plato.stanford.edu/entries/artificial-intelligence/",
+      "elapsed": 835,
+      "success": true,
+      "meaningful": true,
+      "tokens": 38540
+    },
+    {
+      "url": "https://www.britannica.com/technology/artificial-intelligence",
+      "elapsed": 197,
+      "success": true,
+      "meaningful": true,
+      "tokens": 171
+    },
+    {
+      "url": "https://blog.cloudflare.com/",
+      "elapsed": 2515,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1183
+    },
+    {
+      "url": "https://openai.com/blog",
+      "elapsed": 6589,
+      "success": true,
+      "meaningful": true,
+      "tokens": 56
+    },
+    {
+      "url": "https://www.anthropic.com/",
+      "elapsed": 257,
+      "success": true,
+      "meaningful": true,
+      "tokens": 108
+    },
+    {
+      "url": "https://stripe.com/docs",
+      "elapsed": 233,
+      "success": true,
+      "meaningful": true,
+      "tokens": 149
+    },
+    {
+      "url": "https://vercel.com/blog",
+      "elapsed": 100,
+      "success": true,
+      "meaningful": true,
+      "tokens": 21812
+    },
+    {
+      "url": "https://httpbin.org/html",
+      "elapsed": 59,
+      "success": true,
+      "meaningful": true,
+      "tokens": 808
+    },
+    {
+      "url": "https://example.com/",
+      "elapsed": 45,
+      "success": true,
+      "meaningful": false,
+      "tokens": 29
+    },
+    {
+      "url": "https://www.iana.org/domains/reserved",
+      "elapsed": 299,
+      "success": true,
+      "meaningful": true,
+      "tokens": 427
+    },
+    {
+      "url": "https://news.google.com/",
+      "elapsed": 1095,
+      "success": true,
+      "meaningful": true,
+      "tokens": 392
+    },
+    {
+      "url": "https://www.craigslist.org/",
+      "elapsed": 2695,
+      "success": true,
+      "meaningful": true,
+      "tokens": 1523
+    }
+  ]
+}
