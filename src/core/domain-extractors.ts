@@ -1273,33 +1273,74 @@ async function youtubeExtractor(_html: string, url: string): Promise<DomainExtra
     const title = transcript.title || oembedData?.title || '';
     const channel = transcript.channel || oembedData?.author_name || '';
     const channelUrl = oembedData?.author_url || `https://www.youtube.com/@${channel}`;
-    const description = (noembedData as any)?.description || (oembedData as any)?.description || '';
+    const description = transcript.description || (noembedData as any)?.description || (oembedData as any)?.description || '';
     const thumbnailUrl = (oembedData as any)?.thumbnail_url || '';
+    const publishDate = transcript.publishDate || '';
+    const hasTranscript = transcript.segments.length > 0;
 
     const structured: Record<string, any> = {
       title,
       channel,
       channelUrl,
       duration: transcript.duration,
+      publishDate,
       language: transcript.language,
       availableLanguages: transcript.availableLanguages,
       transcriptSegments: transcript.segments.length,
+      wordCount: transcript.wordCount ?? 0,
       description,
       thumbnailUrl,
+      chapters: transcript.chapters ?? [],
+      keyPoints: transcript.keyPoints ?? [],
       source: 'transcript',
     };
 
-    const availLangs = transcript.availableLanguages.length;
-    const langLine = `${transcript.language}${availLangs > 1 ? ` (${availLangs} available)` : ''}`;
-    const hasTranscript = transcript.segments.length > 0;
-    let cleanContent: string;
-    if (hasTranscript) {
-      const descSection = description ? `\n\n**Description:** ${description}` : '';
-      cleanContent = `## 🎬 ${title}\n\n**Channel:** [${channel}](${channelUrl})\n**Duration:** ${transcript.duration}\n**Language:** ${langLine}${descSection}\n\n### Transcript\n\n${transcript.fullText}`;
-    } else {
-      // No transcript — use description as content
-      cleanContent = `## 🎬 ${title}\n\n**Channel:** [${channel}](${channelUrl})\n**Duration:** ${transcript.duration}\n\n### Description\n\n${transcript.fullText}`;
+    // Format the publish date nicely if it's an ISO date
+    let publishStr = '';
+    if (publishDate) {
+      try {
+        const d = new Date(publishDate);
+        publishStr = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', day: 'numeric' });
+      } catch {
+        publishStr = publishDate;
+      }
     }
+
+    // Build header line
+    const headerParts = [`**Channel:** ${channel}`];
+    if (transcript.duration && transcript.duration !== '0:00') headerParts.push(`**Duration:** ${transcript.duration}`);
+    if (publishStr) headerParts.push(`**Published:** ${publishStr}`);
+    const headerLine = headerParts.join(' | ');
+
+    const parts: string[] = [];
+    parts.push(`# ${title}`);
+    parts.push(headerLine);
+
+    // Summary section
+    if (transcript.summary && hasTranscript) {
+      parts.push(`## Summary\n\n${transcript.summary}`);
+    } else if (!hasTranscript && transcript.fullText) {
+      parts.push(`## Description\n\n${transcript.fullText}`);
+    }
+
+    // Key Points section
+    if (transcript.keyPoints && transcript.keyPoints.length > 0) {
+      const kpLines = transcript.keyPoints.map(kp => `- ${kp}`).join('\n');
+      parts.push(`## Key Points\n\n${kpLines}`);
+    }
+
+    // Chapters section
+    if (transcript.chapters && transcript.chapters.length > 0) {
+      const chLines = transcript.chapters.map(ch => `- ${ch.time} — ${ch.title}`).join('\n');
+      parts.push(`## Chapters\n\n${chLines}`);
+    }
+
+    // Full Transcript section (only if we have real transcript segments)
+    if (hasTranscript) {
+      parts.push(`## Full Transcript\n\n${transcript.fullText}`);
+    }
+
+    const cleanContent = parts.join('\n\n');
 
     return { domain: 'youtube.com', type: 'video', structured, cleanContent };
   }

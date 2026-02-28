@@ -7,7 +7,7 @@
  * no external API keys required.
  *
  * Provider fallback chain (DDG):
- *   DDG HTTP → DDG Lite → Brave (if key) → StealthSearchProvider (multi-engine)
+ *   DDG HTTP → DDG Lite → Brave (if key) → StealthSearchProvider (Bing + Ecosia)
  *
  * In production with no API keys configured, getBestSearchProvider() returns
  * StealthSearchProvider since DDG HTTP is often blocked on datacenter IPs.
@@ -15,6 +15,7 @@
 
 import { fetch as undiciFetch } from 'undici';
 import { load } from 'cheerio';
+import { getStealthBrowser, getRandomUserAgent, applyStealthScripts } from './browser-pool.js';
 
 export type SearchProviderId = 'duckduckgo' | 'brave' | 'stealth' | 'google';
 
@@ -142,22 +143,33 @@ export class StealthSearchProvider implements SearchProvider {
 
   /**
    * Scrape DuckDuckGo HTML endpoint with stealth browser.
-   * Uses the same HTML endpoint as DuckDuckGoProvider for consistent parsing.
+   * Uses the warm shared stealth browser (new context per call) for speed.
    */
   private async scrapeDDG(query: string, count: number): Promise<WebSearchResult[]> {
+    let ctx: import('playwright').BrowserContext | undefined;
     try {
-      const { peel } = await import('../index.js');
+      const browser = await getStealthBrowser();
       const params = new URLSearchParams({ q: query });
       const url = `https://html.duckduckgo.com/html/?${params.toString()}`;
 
-      const result = await Promise.race([
-        peel(url, { render: true, stealth: true, format: 'html', wait: 3000 }),
+      ctx = await browser.newContext({
+        userAgent: getRandomUserAgent(),
+        locale: 'en-US',
+        timezoneId: 'America/New_York',
+      });
+
+      const page = await ctx.newPage();
+      await applyStealthScripts(page);
+
+      await Promise.race([
+        page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12_000 }),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('DDG stealth timeout')), 15_000),
         ),
       ]);
 
-      const html = (result as any).content || '';
+      await page.waitForTimeout(3000);
+      const html = await page.content();
       if (!html) return [];
 
       const $ = load(html);
@@ -196,6 +208,8 @@ export class StealthSearchProvider implements SearchProvider {
       return results;
     } catch {
       return [];
+    } finally {
+      await ctx?.close().catch(() => {});
     }
   }
 
@@ -204,19 +218,30 @@ export class StealthSearchProvider implements SearchProvider {
    * Selectors: li.b_algo for result containers.
    */
   private async scrapeBing(query: string, count: number): Promise<WebSearchResult[]> {
+    let ctx: import('playwright').BrowserContext | undefined;
     try {
-      const { peel } = await import('../index.js');
+      const browser = await getStealthBrowser();
       const params = new URLSearchParams({ q: query });
       const url = `https://www.bing.com/search?${params.toString()}`;
 
-      const result = await Promise.race([
-        peel(url, { render: true, stealth: true, format: 'html', wait: 2000 }),
+      ctx = await browser.newContext({
+        userAgent: getRandomUserAgent(),
+        locale: 'en-US',
+        timezoneId: 'America/New_York',
+      });
+
+      const page = await ctx.newPage();
+      await applyStealthScripts(page);
+
+      await Promise.race([
+        page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12_000 }),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Bing stealth timeout')), 15_000),
         ),
       ]);
 
-      const html = (result as any).content || '';
+      await page.waitForTimeout(2000);
+      const html = await page.content();
       if (!html) return [];
 
       const $ = load(html);
@@ -233,7 +258,21 @@ export class StealthSearchProvider implements SearchProvider {
         const rawUrl = $a.attr('href') || '';
         if (!title || !rawUrl) return;
 
-        const validated = this.validateUrl(rawUrl);
+        // Decode Bing redirect URLs: https://www.bing.com/ck/a?...&u=a1<base64url>&ntb=1
+        // The `u` param is a base64url-encoded real URL prefixed with "a1"
+        let finalUrl = rawUrl;
+        try {
+          const bingUrl = new URL(rawUrl);
+          if (bingUrl.hostname.endsWith('bing.com') && bingUrl.pathname.startsWith('/ck/')) {
+            const u = bingUrl.searchParams.get('u');
+            if (u && u.startsWith('a1')) {
+              const decoded = Buffer.from(u.slice(2), 'base64url').toString('utf-8');
+              if (decoded.startsWith('http')) finalUrl = decoded;
+            }
+          }
+        } catch { /* use raw */ }
+
+        const validated = this.validateUrl(finalUrl);
         if (!validated) return;
 
         // Snippet: prefer .b_lineclamp2 > p, then div.b_caption > p
@@ -253,27 +292,41 @@ export class StealthSearchProvider implements SearchProvider {
       return results;
     } catch {
       return [];
+    } finally {
+      await ctx?.close().catch(() => {});
     }
   }
 
   /**
    * Scrape Ecosia web search with stealth browser.
+   * Uses the warm shared stealth browser (new context per call) for speed.
    * Tries multiple selector patterns since Ecosia updates their HTML frequently.
    */
   private async scrapeEcosia(query: string, count: number): Promise<WebSearchResult[]> {
+    let ctx: import('playwright').BrowserContext | undefined;
     try {
-      const { peel } = await import('../index.js');
+      const browser = await getStealthBrowser();
       const params = new URLSearchParams({ q: query });
       const url = `https://www.ecosia.org/search?${params.toString()}`;
 
-      const result = await Promise.race([
-        peel(url, { render: true, stealth: true, format: 'html', wait: 2000 }),
+      ctx = await browser.newContext({
+        userAgent: getRandomUserAgent(),
+        locale: 'en-US',
+        timezoneId: 'America/New_York',
+      });
+
+      const page = await ctx.newPage();
+      await applyStealthScripts(page);
+
+      await Promise.race([
+        page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12_000 }),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Ecosia stealth timeout')), 15_000),
         ),
       ]);
 
-      const html = (result as any).content || '';
+      await page.waitForTimeout(2000);
+      const html = await page.content();
       if (!html) return [];
 
       const $ = load(html);
@@ -316,6 +369,8 @@ export class StealthSearchProvider implements SearchProvider {
       return results;
     } catch {
       return [];
+    } finally {
+      await ctx?.close().catch(() => {});
     }
   }
 
@@ -419,89 +474,6 @@ export class DuckDuckGoProvider implements SearchProvider {
     }
 
     return `https://html.duckduckgo.com/html/?${params.toString()}`;
-  }
-
-  /**
-   * Scrape DuckDuckGo with Firefox — different browser fingerprint bypasses
-   * cloud IP bot detection that specifically targets Chromium fingerprints.
-   * Used when Chromium-based HTTP/stealth requests return 0 results from cloud IPs.
-   */
-  private async scrapeDDGFirefox(query: string, count: number): Promise<WebSearchResult[]> {
-    let browser: import('playwright').Browser | undefined;
-    try {
-      const { firefox } = await import('playwright');
-      const params = new URLSearchParams({ q: query });
-      const url = `https://html.duckduckgo.com/html/?${params.toString()}`;
-
-      browser = await firefox.launch({
-        headless: true,
-        firefoxUserPrefs: {
-          'general.useragent.override': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) Gecko/20100101 Firefox/125.0',
-        },
-      });
-
-      const ctx = await browser.newContext({
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) Gecko/20100101 Firefox/125.0',
-        locale: 'en-US',
-        timezoneId: 'America/New_York',
-        extraHTTPHeaders: {
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'DNT': '1',
-          'Upgrade-Insecure-Requests': '1',
-        },
-      });
-
-      const page = await ctx.newPage();
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-      const html = await page.content();
-
-      const { load } = await import('cheerio');
-      const $ = load(html);
-      const results: WebSearchResult[] = [];
-      const seen = new Set<string>();
-
-      $('.result').each((_i, elem) => {
-        if (results.length >= count) return;
-        const $r = $(elem);
-        const titleRaw = $r.find('.result__title').text() || $r.find('.result__a').text();
-        const rawUrl = $r.find('.result__a').attr('href') || '';
-        const snippetRaw = $r.find('.result__snippet').text();
-
-        const title = cleanText(titleRaw, { maxLen: 200 });
-        const snippet = cleanText(snippetRaw, { maxLen: 500, stripEllipsisPadding: true });
-        if (!title || !rawUrl) return;
-
-        // Extract real URL from DDG redirect param
-        let finalUrl = rawUrl;
-        try {
-          const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
-          const uddg = ddgUrl.searchParams.get('uddg');
-          if (uddg) finalUrl = decodeURIComponent(uddg);
-        } catch { /* use raw */ }
-
-        // SECURITY: only allow HTTP/HTTPS URLs
-        try {
-          const parsed = new URL(finalUrl);
-          if (!['http:', 'https:'].includes(parsed.protocol)) return;
-          finalUrl = parsed.href;
-        } catch { return; }
-
-        const key = normalizeUrlForDedupe(finalUrl);
-        if (seen.has(key)) return;
-        seen.add(key);
-
-        results.push({ title, url: finalUrl, snippet });
-      });
-
-      return results;
-    } catch (e) {
-      console.log('[webpeel:search] Firefox DDG failed:', e instanceof Error ? e.message : e);
-      return [];
-    } finally {
-      await browser?.close().catch(() => {});
-    }
   }
 
   private async searchOnce(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
@@ -663,8 +635,6 @@ export class DuckDuckGoProvider implements SearchProvider {
   async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
     const attempts = this.buildQueryAttempts(query);
 
-    // Retry only when DDG returns 0 results.
-    let ddgConnectionBlocked = false;
     for (const q of attempts) {
       try {
         const results = await this.searchOnce(q, options);
@@ -672,43 +642,22 @@ export class DuckDuckGoProvider implements SearchProvider {
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         console.log('[webpeel:search] DDG HTTP failed:', msg);
-        // If connection itself failed (TCP block), DDG Lite and Firefox DDG will
-        // also fail on the same domain — skip straight to multi-engine fallback
-        if (msg.includes('Timeout') || msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
-          ddgConnectionBlocked = true;
-        }
         break;
       }
     }
 
-    if (!ddgConnectionBlocked) {
-      // DDG responded but returned 0 results (CAPTCHA/challenge page)
-      // Try DDG Lite and Firefox which may bypass the challenge
-      console.log('[webpeel:search] DDG returned 0 results, trying DDG Lite...');
-      try {
-        const liteResults = await this.searchLite(query, options);
-        if (liteResults.length > 0) {
-          console.log(`[webpeel:search] DDG Lite returned ${liteResults.length} results`);
-          return liteResults;
-        }
-        console.log('[webpeel:search] DDG Lite also returned 0 results');
-      } catch (e) {
-        console.log('[webpeel:search] DDG Lite failed:', e instanceof Error ? e.message : e);
+    // DDG responded but returned 0 results or connection failed
+    // Try DDG Lite which may bypass challenges
+    console.log('[webpeel:search] DDG returned 0 results, trying DDG Lite...');
+    try {
+      const liteResults = await this.searchLite(query, options);
+      if (liteResults.length > 0) {
+        console.log(`[webpeel:search] DDG Lite returned ${liteResults.length} results`);
+        return liteResults;
       }
-
-      console.log('[webpeel:search] Trying Firefox DDG...');
-      try {
-        const firefoxResults = await this.scrapeDDGFirefox(query, options.count);
-        if (firefoxResults.length > 0) {
-          console.log(`[webpeel:search] Firefox DDG returned ${firefoxResults.length} results ✓`);
-          return firefoxResults;
-        }
-        console.log('[webpeel:search] Firefox DDG also returned 0 results');
-      } catch (e) {
-        console.log('[webpeel:search] Firefox DDG failed:', e instanceof Error ? e.message : e);
-      }
-    } else {
-      console.log('[webpeel:search] DDG connection blocked at TCP level, skipping DDG variants → multi-engine');
+      console.log('[webpeel:search] DDG Lite also returned 0 results');
+    } catch (e) {
+      console.log('[webpeel:search] DDG Lite failed:', e instanceof Error ? e.message : e);
     }
 
     // Fallback: try Brave Search API if key is configured
@@ -1092,7 +1041,7 @@ export function getSearchProvider(id: SearchProviderId | undefined): SearchProvi
  *   2. Brave Search (if BRAVE_SEARCH_KEY is set)
  *   3. Google stealth browser scraping (works from datacenter IPs; no API key needed)
  *      — only when playwright-extra is available in node_modules
- *   4. DuckDuckGo with full fallback chain (DDG HTTP → DDG Lite → stealth multi-engine)
+ *   4. DuckDuckGo with full fallback chain (DDG HTTP → DDG Lite → stealth multi-engine (Bing + Ecosia))
  */
 export function getBestSearchProvider(): { provider: SearchProvider; apiKey?: string } {
   // 1. Google Custom Search JSON API (BYOK) — works from any IP
@@ -1109,7 +1058,6 @@ export function getBestSearchProvider(): { provider: SearchProvider; apiKey?: st
   }
 
   // 3. DuckDuckGo with full internal fallback chain
-  // (DDG HTTP → DDG Lite → Firefox browser → stealth multi-engine)
-  // Firefox fallback bypasses cloud IP bot detection targeting Chromium fingerprints.
+  // (DDG HTTP → DDG Lite → stealth multi-engine (Bing + Ecosia))
   return { provider: new DuckDuckGoProvider() };
 }

@@ -36,6 +36,18 @@ export interface YouTubeTranscript {
   fullText: string;
   /** Language codes available for this video */
   availableLanguages: string[];
+  /** Video description text */
+  description?: string;
+  /** Video publish date (ISO or human-readable) */
+  publishDate?: string;
+  /** Chapters parsed from description timestamp markers */
+  chapters?: { time: string; title: string }[];
+  /** Key points: first substantive sentence from each chapter / 2-min block */
+  keyPoints?: string[];
+  /** First ~200 words of transcript as a quick summary */
+  summary?: string;
+  /** Total word count of transcript */
+  wordCount?: number;
 }
 
 export interface YouTubeVideoInfo {
@@ -168,6 +180,108 @@ export function extractVideoInfo(html: string): YouTubeVideoInfo {
 }
 
 // ---------------------------------------------------------------------------
+// Structured content helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse chapter markers from a YouTube video description.
+ * Looks for lines like "0:00 Intro\n2:34 Main topic\n5:12 Conclusion"
+ */
+export function parseChaptersFromDescription(description: string): { time: string; title: string }[] {
+  if (!description) return [];
+  // Match lines that start with a timestamp: "0:00", "1:23", "1:23:45"
+  const chapterRegex = /^(\d+:\d{2}(?::\d{2})?)\s+(.+)$/gm;
+  const chapters: { time: string; title: string }[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = chapterRegex.exec(description)) !== null) {
+    const time = match[1].trim();
+    const title = match[2].trim();
+    if (title) chapters.push({ time, title });
+  }
+  // Only treat as chapters if there are at least 2 (otherwise it's probably not a chapter list)
+  return chapters.length >= 2 ? chapters : [];
+}
+
+/**
+ * Convert a time string "1:23" or "1:23:45" to seconds.
+ */
+function timeStringToSeconds(timeStr: string): number {
+  const parts = timeStr.split(':').map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return 0;
+}
+
+/**
+ * Split a text into sentences (basic, good enough for transcript sentences).
+ */
+function splitSentences(text: string): string[] {
+  // Split on sentence-ending punctuation followed by space/end
+  return text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+}
+
+/**
+ * Extract key points from transcript segments.
+ * Uses chapter timestamps when available; otherwise segments every 2 minutes.
+ * Returns the first substantive sentence (≥5 words) from each time block.
+ */
+export function extractKeyPoints(
+  segments: TranscriptSegment[],
+  chapters: { time: string; title: string }[],
+  durationSeconds: number,
+): string[] {
+  if (segments.length === 0) return [];
+
+  const totalDuration =
+    durationSeconds ||
+    (segments.length > 0
+      ? segments[segments.length - 1].start + segments[segments.length - 1].duration
+      : 0);
+
+  // Build time blocks
+  let blocks: { start: number; end: number }[];
+  if (chapters.length >= 2) {
+    blocks = chapters.map((ch, i) => ({
+      start: timeStringToSeconds(ch.time),
+      end: i + 1 < chapters.length
+        ? timeStringToSeconds(chapters[i + 1].time)
+        : totalDuration || Infinity,
+    }));
+  } else {
+    // Auto-segment every 2 minutes
+    const blockDuration = 120;
+    blocks = [];
+    for (let t = 0; t < (totalDuration || 600); t += blockDuration) {
+      blocks.push({ start: t, end: t + blockDuration });
+    }
+    if (blocks.length === 0) blocks = [{ start: 0, end: Infinity }];
+  }
+
+  const keyPoints: string[] = [];
+  for (const block of blocks) {
+    const blockSegments = segments.filter(s => s.start >= block.start && s.start < block.end);
+    if (blockSegments.length === 0) continue;
+    const blockText = blockSegments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
+    const sentences = splitSentences(blockText);
+    // Find first sentence with at least 5 words
+    const point = sentences.find(s => s.split(/\s+/).length >= 5);
+    if (point) keyPoints.push(point.trim());
+  }
+
+  return keyPoints.slice(0, 12);
+}
+
+/**
+ * Extract a summary as the first ~200 words of the full transcript text.
+ */
+export function extractSummary(fullText: string): string {
+  if (!fullText) return '';
+  const words = fullText.split(/\s+/);
+  if (words.length <= 200) return fullText;
+  return words.slice(0, 200).join(' ') + '...';
+}
+
+// ---------------------------------------------------------------------------
 // Transcript extraction
 // ---------------------------------------------------------------------------
 
@@ -201,9 +315,12 @@ export async function getYouTubeTranscript(
     if (!playerResponse) throw new Error('Could not parse player response');
 
     const videoDetails = playerResponse.videoDetails ?? {};
+    const microformat = playerResponse.microformat?.playerMicroformatRenderer ?? {};
     const title = videoDetails.title ?? '';
     const channel = videoDetails.author ?? '';
-    const lengthSeconds = parseInt(videoDetails.lengthSeconds ?? '0', 10);
+    const lengthSeconds = parseInt(videoDetails.lengthSeconds ?? microformat.lengthSeconds ?? '0', 10);
+    const description = (videoDetails.shortDescription ?? microformat.description?.simpleText ?? '').trim();
+    const publishDate = microformat.publishDate ?? microformat.uploadDate ?? '';
     const captionTracks: CaptionTrack[] = extractCaptionTracks(playerResponse);
     if (captionTracks.length === 0) throw new Error('No captions available');
 
@@ -212,6 +329,10 @@ export async function getYouTubeTranscript(
     const captionXml = await fetchCaptionXml(selectedTrack.baseUrl);
     const segments = parseCaptionXml(captionXml);
     const fullText = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
+    const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+    const chapters = parseChaptersFromDescription(description);
+    const keyPoints = extractKeyPoints(segments, chapters, lengthSeconds);
+    const summary = extractSummary(fullText);
 
     return {
       videoId,
@@ -222,6 +343,12 @@ export async function getYouTubeTranscript(
       segments,
       fullText,
       availableLanguages,
+      description,
+      publishDate,
+      chapters: chapters.length > 0 ? chapters : undefined,
+      keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
+      summary,
+      wordCount,
     };
   } catch {
     // simpleFetch path failed — fall through to browser intercept approach
@@ -285,15 +412,18 @@ async function getTranscriptViaBrowserIntercept(
     const html = await page.content();
     const playerResponse = extractPlayerResponse(html);
     const videoDetails = playerResponse?.videoDetails ?? {};
+    const microformat = playerResponse?.microformat?.playerMicroformatRenderer ?? {};
     const title = videoDetails.title ?? '';
     const channel = videoDetails.author ?? '';
-    const lengthSeconds = parseInt(videoDetails.lengthSeconds ?? '0', 10);
+    const lengthSeconds = parseInt(videoDetails.lengthSeconds ?? microformat.lengthSeconds ?? '0', 10);
+    const description = (videoDetails.shortDescription ?? microformat.description?.simpleText ?? '').trim();
+    const publishDate = microformat.publishDate ?? microformat.uploadDate ?? '';
     const captionTracks: CaptionTrack[] = playerResponse ? extractCaptionTracks(playerResponse) : [];
     const availableLanguages = captionTracks.map(t => t.languageCode);
+    const descriptionChapters = parseChaptersFromDescription(description);
 
     // If no captions were intercepted, fall back to video description from player response
     if (!capturedJson) {
-      const description = (playerResponse?.videoDetails?.shortDescription ?? '').trim();
       if (description.length > 50) {
         // Return description as transcript content (better than nothing)
         return {
@@ -305,6 +435,10 @@ async function getTranscriptViaBrowserIntercept(
           segments: [],
           fullText: description,
           availableLanguages,
+          description,
+          publishDate: publishDate || undefined,
+          chapters: descriptionChapters.length > 0 ? descriptionChapters : undefined,
+          wordCount: description.split(/\s+/).filter(Boolean).length,
         };
       }
       throw new Error(`No captions available for video ${videoId} — captions may be disabled`);
@@ -314,7 +448,6 @@ async function getTranscriptViaBrowserIntercept(
     const segments = parseJson3Events(capturedJson);
     if (segments.length === 0) {
       // Fallback to description if JSON3 parsing yields nothing
-      const description = (playerResponse?.videoDetails?.shortDescription ?? '').trim();
       if (description.length > 50) {
         return {
           videoId,
@@ -325,12 +458,20 @@ async function getTranscriptViaBrowserIntercept(
           segments: [],
           fullText: description,
           availableLanguages,
+          description,
+          publishDate: publishDate || undefined,
+          chapters: descriptionChapters.length > 0 ? descriptionChapters : undefined,
+          wordCount: description.split(/\s+/).filter(Boolean).length,
         };
       }
       throw new Error(`Captured caption response had no segments for video ${videoId}`);
     }
 
     const fullText = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
+    const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+    const chapters = descriptionChapters;
+    const keyPoints = extractKeyPoints(segments, chapters, lengthSeconds);
+    const summary = extractSummary(fullText);
 
     return {
       videoId,
@@ -341,6 +482,12 @@ async function getTranscriptViaBrowserIntercept(
       segments,
       fullText,
       availableLanguages,
+      description,
+      publishDate: publishDate || undefined,
+      chapters: chapters.length > 0 ? chapters : undefined,
+      keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
+      summary,
+      wordCount,
     };
   } finally {
     await page.close().catch(() => { /* best effort */ });

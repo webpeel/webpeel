@@ -76,7 +76,10 @@ export function createFetchRouter(authStore: AuthStore): Router {
         lite,
         timeout,
         schema,
+        detail,
       } = req.query;
+      
+      const detailMode = (detail as string) || 'standard';
 
       // Validate URL parameter
       if (!url || typeof url !== 'string') {
@@ -401,6 +404,28 @@ export function createFetchRouter(authStore: AuthStore): Router {
           result,
           timestamp: Date.now(),
         }, { ttl: cacheTtlMs });
+      }
+
+      // Apply ?detail=brief mode: truncate content and prepend TL;DR
+      if (detailMode === 'brief' && result.content) {
+        const words = result.content.split(/\s+/);
+        const truncatedWords = words.slice(0, 500);
+        const truncated = truncatedWords.join(' ');
+
+        // Extract TL;DR from first non-empty paragraph
+        const firstPara = result.content
+          .split(/\n{2,}/)
+          .map((p: string) => p.replace(/^#+\s*/, '').trim())
+          .find((p: string) => p.length > 40 && !p.startsWith('!') && !p.startsWith('['));
+        const tldr = firstPara
+          ? firstPara.replace(/\s+/g, ' ').slice(0, 300) + (firstPara.length > 300 ? '...' : '')
+          : truncated.slice(0, 200) + '...';
+
+        result.content = `**TL;DR:** ${tldr}\n\n---\n\n${truncated}${words.length > 500 ? '\n\n*[Content truncated — use ?detail=full for complete output]*' : ''}`;
+
+        const tokenEstimate = Math.round(truncatedWords.length * 0.75);
+        res.setHeader('X-Detail-Mode', 'brief');
+        res.setHeader('X-Token-Estimate', tokenEstimate.toString());
       }
 
       // Add usage headers (kept for backward compat; also surfaced in envelope metadata)
