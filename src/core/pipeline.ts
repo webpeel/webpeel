@@ -19,7 +19,7 @@ import {
   filterByTags,
   cleanMarkdownNoise,
 } from './markdown.js';
-import { pruneContent } from './content-pruner.js';
+import { pruneContent, pruneMarkdown } from './content-pruner.js';
 import { distillToBudget } from './budget.js';
 import { extractMetadata, extractLinks, extractImages } from './metadata.js';
 import { autoScroll as runAutoScroll, type AutoScrollOptions } from './actions.js';
@@ -807,6 +807,7 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
     // Clean up markdown noise (empty links, excess newlines, trailing spaces)
     if (format === 'markdown') {
       ctx.content = cleanMarkdownNoise(ctx.content);
+      ctx.content = pruneMarkdown(ctx.content);
     }
 
     ctx.quality = calculateQuality(ctx.content, fetchResult.html);
