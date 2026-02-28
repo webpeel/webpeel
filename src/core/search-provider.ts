@@ -664,36 +664,51 @@ export class DuckDuckGoProvider implements SearchProvider {
     const attempts = this.buildQueryAttempts(query);
 
     // Retry only when DDG returns 0 results.
+    let ddgConnectionBlocked = false;
     for (const q of attempts) {
-      const results = await this.searchOnce(q, options);
-      if (results.length > 0) return results;
+      try {
+        const results = await this.searchOnce(q, options);
+        if (results.length > 0) return results;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.log('[webpeel:search] DDG HTTP failed:', msg);
+        // If connection itself failed (TCP block), DDG Lite and Firefox DDG will
+        // also fail on the same domain — skip straight to multi-engine fallback
+        if (msg.includes('Timeout') || msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
+          ddgConnectionBlocked = true;
+        }
+        break;
+      }
     }
 
-    // Fallback: try DDG Lite endpoint (different HTML, sometimes bypasses blocks)
-    console.log('[webpeel:search] DDG HTML returned 0 results, trying DDG Lite...');
-    try {
-      const liteResults = await this.searchLite(query, options);
-      if (liteResults.length > 0) {
-        console.log(`[webpeel:search] DDG Lite returned ${liteResults.length} results`);
-        return liteResults;
+    if (!ddgConnectionBlocked) {
+      // DDG responded but returned 0 results (CAPTCHA/challenge page)
+      // Try DDG Lite and Firefox which may bypass the challenge
+      console.log('[webpeel:search] DDG returned 0 results, trying DDG Lite...');
+      try {
+        const liteResults = await this.searchLite(query, options);
+        if (liteResults.length > 0) {
+          console.log(`[webpeel:search] DDG Lite returned ${liteResults.length} results`);
+          return liteResults;
+        }
+        console.log('[webpeel:search] DDG Lite also returned 0 results');
+      } catch (e) {
+        console.log('[webpeel:search] DDG Lite failed:', e instanceof Error ? e.message : e);
       }
-      console.log('[webpeel:search] DDG Lite also returned 0 results');
-    } catch (e) {
-      console.log('[webpeel:search] DDG Lite failed:', e instanceof Error ? e.message : e);
-    }
 
-    // Fallback: try DDG with Firefox — different browser fingerprint bypasses
-    // cloud IP detection that specifically targets Chromium
-    console.log('[webpeel:search] Trying Firefox DDG (different browser fingerprint)...');
-    try {
-      const firefoxResults = await this.scrapeDDGFirefox(query, options.count);
-      if (firefoxResults.length > 0) {
-        console.log(`[webpeel:search] Firefox DDG returned ${firefoxResults.length} results ✓`);
-        return firefoxResults;
+      console.log('[webpeel:search] Trying Firefox DDG...');
+      try {
+        const firefoxResults = await this.scrapeDDGFirefox(query, options.count);
+        if (firefoxResults.length > 0) {
+          console.log(`[webpeel:search] Firefox DDG returned ${firefoxResults.length} results ✓`);
+          return firefoxResults;
+        }
+        console.log('[webpeel:search] Firefox DDG also returned 0 results');
+      } catch (e) {
+        console.log('[webpeel:search] Firefox DDG failed:', e instanceof Error ? e.message : e);
       }
-      console.log('[webpeel:search] Firefox DDG also returned 0 results');
-    } catch (e) {
-      console.log('[webpeel:search] Firefox DDG failed:', e instanceof Error ? e.message : e);
+    } else {
+      console.log('[webpeel:search] DDG connection blocked at TCP level, skipping DDG variants → multi-engine');
     }
 
     // Fallback: try Brave Search API if key is configured
