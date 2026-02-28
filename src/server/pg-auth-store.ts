@@ -166,7 +166,8 @@ export class PostgresAuthStore implements AuthStore {
           u.email
         FROM api_keys ak
         JOIN users u ON ak.user_id = u.id
-        WHERE ak.key_hash = $1 AND ak.is_active = true`,
+        WHERE ak.key_hash = $1 AND ak.is_active = true
+          AND (ak.expires_at IS NULL OR ak.expires_at > NOW())`,
         [keyHash]
       );
 
@@ -192,6 +193,23 @@ export class PostgresAuthStore implements AuthStore {
     } catch (error) {
       console.error('Failed to validate API key:', error);
       return null;
+    }
+  }
+
+  /**
+   * Check if a key exists but is expired (used to return specific 401 error)
+   */
+  async isKeyExpired(key: string): Promise<boolean> {
+    if (!key || typeof key !== 'string') return false;
+    const keyHash = this.hashKey(key);
+    try {
+      const result = await this.pool.query(
+        `SELECT 1 FROM api_keys WHERE key_hash = $1 AND is_active = true AND expires_at IS NOT NULL AND expires_at <= NOW()`,
+        [keyHash]
+      );
+      return result.rows.length > 0;
+    } catch {
+      return false;
     }
   }
 

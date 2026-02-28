@@ -180,6 +180,9 @@ export interface ApiKey {
   isActive: boolean;
   createdAt: string;
   lastUsedAt?: string;
+  expiresAt?: string | null;
+  isExpired?: boolean;
+  expiresIn?: string | null;
 }
 
 export interface User {
