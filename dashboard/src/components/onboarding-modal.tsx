@@ -80,7 +80,7 @@ export function OnboardingModal({ sessionApiKey }: OnboardingModalProps) {
       iconBg: 'bg-zinc-100',
       iconColor: 'text-zinc-800',
       title: 'Welcome to WebPeel',
-      subtitle: 'Your AI-ready web scraping API',
+      subtitle: 'AI-ready web understanding',
     },
     {
       icon: Key,
@@ -109,7 +109,7 @@ export function OnboardingModal({ sessionApiKey }: OnboardingModalProps) {
     /* Step 0 — Welcome */
     <div className="space-y-4" key="step0">
       <p className="text-sm text-zinc-600 leading-relaxed">
-        WebPeel turns any website into clean, structured data — perfect for AI agents, scrapers, and developer tools.
+        WebPeel turns any website into clean, structured data — perfect for AI agents, research tools, and developer workflows.
       </p>
       <div className="grid gap-3">
         {[
@@ -241,7 +241,7 @@ npx webpeel "https://example.com"`}
     /* Step 3 — What's Next */
     <div className="space-y-4" key="step3">
       <p className="text-sm text-zinc-600">
-        You're ready to start scraping. Here's where to go next:
+        You're ready to go. Here's where to start:
       </p>
       <div className="grid gap-3">
         {[
@@ -298,17 +298,17 @@ npx webpeel "https://example.com"`}
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto p-0">
-        {/* Progress bar */}
-        <div className="h-1 bg-zinc-100 rounded-t-lg overflow-hidden">
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] p-0 flex flex-col overflow-hidden">
+        {/* Progress bar — fixed top */}
+        <div className="h-1 bg-zinc-100 rounded-t-lg overflow-hidden flex-shrink-0">
           <div
             className="h-full bg-gradient-to-r from-zinc-900 to-zinc-800 transition-all duration-500 ease-out"
             style={{ width: `${((step + 1) / steps.length) * 100}%` }}
           />
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Header */}
+        {/* Header — fixed */}
+        <div className="px-6 pt-6 pb-2 flex-shrink-0">
           <div className="flex items-start gap-4">
             <div className={`w-12 h-12 rounded-xl ${currentStep.iconBg} flex items-center justify-center flex-shrink-0`}>
               <Icon className={`h-6 w-6 ${currentStep.iconColor}`} />
@@ -318,10 +318,15 @@ npx webpeel "https://example.com"`}
               <p className="text-sm text-zinc-500 mt-0.5">{currentStep.subtitle}</p>
             </div>
           </div>
+        </div>
 
-          {/* Step content */}
-          <div>{stepContent[step]}</div>
+        {/* Step content — scrollable middle */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          {stepContent[step]}
+        </div>
 
+        {/* Footer — always visible */}
+        <div className="px-6 pb-6 pt-2 flex-shrink-0 space-y-3">
           {/* Progress dots */}
           <div className="flex items-center justify-center gap-2">
             {steps.map((_, index) => (
