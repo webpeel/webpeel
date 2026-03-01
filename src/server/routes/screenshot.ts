@@ -11,6 +11,84 @@ import type { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
 import { normalizeActions } from '../../core/actions.js';
 
+// ── Module-level helpers ──────────────────────────────────────────────────────
+
+/**
+ * Validate a URL from a request body. Sends a 400 response and returns false on failure.
+ * Returns true when the URL is valid and safe to use.
+ */
+function validateRequestUrl(url: unknown, res: Response): boolean {
+  if (!url || typeof url !== 'string') {
+    res.status(400).json({ error: 'invalid_request', message: 'Missing or invalid "url" parameter' });
+    return false;
+  }
+  if ((url as string).length > 2048) {
+    res.status(400).json({ error: 'invalid_url', message: 'URL too long (max 2048 characters)' });
+    return false;
+  }
+  try {
+    const parsed = new URL(url as string);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      res.status(400).json({ error: 'invalid_url', message: 'Only HTTP and HTTPS protocols are allowed' });
+      return false;
+    }
+  } catch {
+    res.status(400).json({ error: 'invalid_url', message: 'Invalid URL format' });
+    return false;
+  }
+  try {
+    validateUrlForSSRF(url as string);
+  } catch (error) {
+    if (error instanceof SSRFError) {
+      res.status(400).json({ error: 'ssrf_blocked', message: 'Cannot fetch localhost, private networks, or non-HTTP URLs' });
+      return false;
+    }
+    throw error;
+  }
+  return true;
+}
+
+/**
+ * Fire-and-forget usage tracking + DB logging for screenshot endpoints.
+ */
+function trackUsageAndLog(
+  req: Request,
+  res: Response,
+  authStore: AuthStore,
+  endpoint: string,
+  url: string,
+  elapsed: number
+): void {
+  const isSoftLimited = req.auth?.softLimited === true;
+  const hasExtraUsage = req.auth?.extraUsageAvailable === true;
+  const pgStore = authStore as any;
+
+  if (req.auth?.keyInfo?.key && typeof pgStore.trackBurstUsage === 'function') {
+    pgStore.trackBurstUsage(req.auth.keyInfo.key).then(async () => {
+      if (isSoftLimited && hasExtraUsage) {
+        const extraResult = await pgStore.trackExtraUsage(req.auth!.keyInfo!.key, 'stealth', url, elapsed, 200);
+        if (extraResult.success) {
+          res.setHeader('X-Extra-Usage-Charged', `$${extraResult.cost.toFixed(4)}`);
+          res.setHeader('X-Extra-Usage-New-Balance', extraResult.newBalance.toFixed(2));
+        }
+      } else if (!isSoftLimited) {
+        await pgStore.trackUsage(req.auth!.keyInfo!.key, 'stealth');
+      }
+    }).catch(() => {});
+  }
+
+  if (req.auth?.keyInfo?.accountId && typeof pgStore.pool !== 'undefined') {
+    pgStore.pool.query(
+      `INSERT INTO usage_logs (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [req.auth.keyInfo.accountId, endpoint, url, 'stealth', elapsed, 200,
+        req.ip || req.socket.remoteAddress, req.get('user-agent')]
+    ).catch(() => {});
+  }
+}
+
+// ── Router factory ────────────────────────────────────────────────────────────
+
 export function createScreenshotRouter(authStore: AuthStore): Router {
   const router = Router();
 
@@ -39,51 +117,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       } = req.body;
 
       // --- Validate URL --------------------------------------------------
-      if (!url || typeof url !== 'string') {
-        res.status(400).json({
-          error: 'invalid_request',
-          message: 'Missing or invalid "url" parameter',
-        });
-        return;
-      }
-
-      if (url.length > 2048) {
-        res.status(400).json({
-          error: 'invalid_url',
-          message: 'URL too long (max 2048 characters)',
-        });
-        return;
-      }
-
-      try {
-        const parsed = new URL(url);
-        if (!['http:', 'https:'].includes(parsed.protocol)) {
-          res.status(400).json({
-            error: 'invalid_url',
-            message: 'Only HTTP and HTTPS protocols are allowed',
-          });
-          return;
-        }
-      } catch {
-        res.status(400).json({
-          error: 'invalid_url',
-          message: 'Invalid URL format',
-        });
-        return;
-      }
-
-      try {
-        validateUrlForSSRF(url);
-      } catch (error) {
-        if (error instanceof SSRFError) {
-          res.status(400).json({
-            error: 'ssrf_blocked',
-            message: 'Cannot fetch localhost, private networks, or non-HTTP URLs',
-          });
-          return;
-        }
-        throw error;
-      }
+      if (!validateRequestUrl(url, res)) return;
 
       // --- Validate options -----------------------------------------------
       if (format !== undefined && !['png', 'jpeg', 'jpg'].includes(format)) {
@@ -290,36 +324,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       } = req.body;
 
       // --- Validate URL --------------------------------------------------
-      if (!url || typeof url !== 'string') {
-        res.status(400).json({ error: 'invalid_request', message: 'Missing or invalid "url" parameter' });
-        return;
-      }
-
-      if (url.length > 2048) {
-        res.status(400).json({ error: 'invalid_url', message: 'URL too long (max 2048 characters)' });
-        return;
-      }
-
-      try {
-        const parsed = new URL(url);
-        if (!['http:', 'https:'].includes(parsed.protocol)) {
-          res.status(400).json({ error: 'invalid_url', message: 'Only HTTP and HTTPS protocols are allowed' });
-          return;
-        }
-      } catch {
-        res.status(400).json({ error: 'invalid_url', message: 'Invalid URL format' });
-        return;
-      }
-
-      try {
-        validateUrlForSSRF(url);
-      } catch (error) {
-        if (error instanceof SSRFError) {
-          res.status(400).json({ error: 'ssrf_blocked', message: 'Cannot fetch localhost, private networks, or non-HTTP URLs' });
-          return;
-        }
-        throw error;
-      }
+      if (!validateRequestUrl(url, res)) return;
 
       // --- Validate options -----------------------------------------------
       if (frames !== undefined && (typeof frames !== 'number' || frames < 2 || frames > 12)) {
@@ -463,74 +468,6 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
     }
   });
 
-  // ── Helper: shared URL validation ─────────────────────────────────────────
-  function validateRequestUrl(url: unknown, res: Response): boolean {
-    if (!url || typeof url !== 'string') {
-      res.status(400).json({ error: 'invalid_request', message: 'Missing or invalid "url" parameter' });
-      return false;
-    }
-    if ((url as string).length > 2048) {
-      res.status(400).json({ error: 'invalid_url', message: 'URL too long (max 2048 characters)' });
-      return false;
-    }
-    try {
-      const parsed = new URL(url as string);
-      if (!['http:', 'https:'].includes(parsed.protocol)) {
-        res.status(400).json({ error: 'invalid_url', message: 'Only HTTP and HTTPS protocols are allowed' });
-        return false;
-      }
-    } catch {
-      res.status(400).json({ error: 'invalid_url', message: 'Invalid URL format' });
-      return false;
-    }
-    try {
-      validateUrlForSSRF(url as string);
-    } catch (error) {
-      if (error instanceof SSRFError) {
-        res.status(400).json({ error: 'ssrf_blocked', message: 'Cannot fetch localhost, private networks, or non-HTTP URLs' });
-        return false;
-      }
-      throw error;
-    }
-    return true;
-  }
-
-  function trackUsageAndLog(
-    req: Request,
-    res: Response,
-    authStore: AuthStore,
-    endpoint: string,
-    url: string,
-    elapsed: number
-  ): void {
-    const isSoftLimited = req.auth?.softLimited === true;
-    const hasExtraUsage = req.auth?.extraUsageAvailable === true;
-    const pgStore = authStore as any;
-
-    if (req.auth?.keyInfo?.key && typeof pgStore.trackBurstUsage === 'function') {
-      pgStore.trackBurstUsage(req.auth.keyInfo.key).then(async () => {
-        if (isSoftLimited && hasExtraUsage) {
-          const extraResult = await pgStore.trackExtraUsage(req.auth!.keyInfo!.key, 'stealth', url, elapsed, 200);
-          if (extraResult.success) {
-            res.setHeader('X-Extra-Usage-Charged', `$${extraResult.cost.toFixed(4)}`);
-            res.setHeader('X-Extra-Usage-New-Balance', extraResult.newBalance.toFixed(2));
-          }
-        } else if (!isSoftLimited) {
-          await pgStore.trackUsage(req.auth!.keyInfo!.key, 'stealth');
-        }
-      }).catch(() => {});
-    }
-
-    if (req.auth?.keyInfo?.accountId && typeof pgStore.pool !== 'undefined') {
-      pgStore.pool.query(
-        `INSERT INTO usage_logs (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [req.auth.keyInfo.accountId, endpoint, url, 'stealth', elapsed, 200,
-          req.ip || req.socket.remoteAddress, req.get('user-agent')]
-      ).catch(() => {});
-    }
-  }
-
   // ── POST /v1/screenshot/audit ──────────────────────────────────────────────
   router.post('/v1/screenshot/audit', async (req: Request, res: Response) => {
     try {
@@ -604,6 +541,11 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
 
       if (!validateRequestUrl(url, res)) return;
 
+      if (format !== undefined && !['png', 'jpeg', 'jpg'].includes(format)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid format: must be "png", "jpeg", or "jpg"' });
+        return;
+      }
+
       if (frames !== undefined && (typeof frames !== 'number' || frames < 1 || frames > 30)) {
         res.status(400).json({ error: 'invalid_request', message: 'Invalid frames: must be between 1 and 30' });
         return;
@@ -661,6 +603,11 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
 
       if (!validateRequestUrl(url, res)) return;
 
+      if (format !== undefined && !['png', 'jpeg', 'jpg'].includes(format)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid format: must be "png", "jpeg", or "jpg"' });
+        return;
+      }
+
       if (!Array.isArray(viewports) || viewports.length === 0) {
         res.status(400).json({ error: 'invalid_request', message: 'Missing or invalid "viewports" array' });
         return;
@@ -713,8 +660,8 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
     }
   });
 
-  // ── POST /v1/design-audit ──────────────────────────────────────────────────
-  router.post('/v1/design-audit', async (req: Request, res: Response) => {
+  // ── POST /v1/screenshot/design-audit ──────────────────────────────────────
+  router.post('/v1/screenshot/design-audit', async (req: Request, res: Response) => {
     try {
       const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!ssUserId) {

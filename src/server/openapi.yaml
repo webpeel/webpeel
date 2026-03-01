@@ -3257,6 +3257,654 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /v1/screenshot/filmstrip:
+    post:
+      operationId: takeFilmstrip
+      summary: Capture filmstrip screenshots
+      description: |
+        Capture multiple screenshots at evenly distributed scroll positions across
+        the full page height. Returns an array of base64-encoded images (2–12 frames).
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/screenshot/filmstrip \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com", "frames": 6}'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to capture. Must be HTTP or HTTPS.
+                  example: https://example.com
+                frames:
+                  type: integer
+                  minimum: 2
+                  maximum: 12
+                  default: 6
+                  description: Number of frames to capture (2–12).
+                width:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 1280
+                  description: Viewport width in pixels.
+                height:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 720
+                  description: Viewport height in pixels.
+                format:
+                  type: string
+                  enum: [png, jpeg, jpg]
+                  default: png
+                  description: Image format.
+                quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: JPEG quality (1–100). Ignored for PNG.
+                waitFor:
+                  type: integer
+                  minimum: 0
+                  maximum: 60000
+                  description: Milliseconds to wait after page load before capturing.
+                timeout:
+                  type: integer
+                  description: Request timeout in milliseconds. Default is 30000.
+      responses:
+        "200":
+          description: Filmstrip captured successfully.
+          headers:
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      format:
+                        type: string
+                      frameCount:
+                        type: integer
+                      frames:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            index:
+                              type: integer
+                            screenshot:
+                              type: string
+                              description: Base64 data URL
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/screenshot/audit:
+    post:
+      operationId: takeAuditScreenshots
+      summary: Section-aware audit screenshots
+      description: |
+        Find all elements matching a CSS selector and capture a viewport screenshot
+        scrolled to each one. Returns one image per matching element — useful for
+        auditing a page's sections, cards, or components.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/screenshot/audit \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com", "selector": "section"}'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to audit. Must be HTTP or HTTPS.
+                  example: https://example.com
+                selector:
+                  type: string
+                  default: section
+                  description: CSS selector for elements to capture. Defaults to "section".
+                  example: "section"
+                scrollThrough:
+                  type: boolean
+                  default: false
+                  description: Scroll through the page before capturing to trigger lazy-loaded content.
+                width:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 1440
+                  description: Viewport width in pixels.
+                height:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 900
+                  description: Viewport height in pixels.
+                format:
+                  type: string
+                  enum: [png, jpeg, jpg]
+                  default: jpeg
+                  description: Image format.
+                quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: JPEG quality (1–100). Ignored for PNG.
+                waitFor:
+                  type: integer
+                  minimum: 0
+                  maximum: 60000
+                  description: Milliseconds to wait after page load before capturing.
+                timeout:
+                  type: integer
+                  description: Request timeout in milliseconds. Default is 60000.
+      responses:
+        "200":
+          description: Audit screenshots captured successfully.
+          headers:
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      format:
+                        type: string
+                      sections:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            index:
+                              type: integer
+                            tag:
+                              type: string
+                            id:
+                              type: string
+                            className:
+                              type: string
+                            top:
+                              type: number
+                            height:
+                              type: number
+                            screenshot:
+                              type: string
+                              description: Base64 data URL
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/screenshot/animation:
+    post:
+      operationId: takeAnimationCapture
+      summary: Capture CSS animation states
+      description: |
+        Capture N viewport screenshots at fixed intervals to record CSS animation states.
+        Useful for verifying transitions, hover effects, or time-based animations.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/screenshot/animation \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com", "frames": 8, "intervalMs": 200}'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to capture. Must be HTTP or HTTPS.
+                  example: https://example.com
+                frames:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                  default: 6
+                  description: Number of frames to capture (1–30).
+                intervalMs:
+                  type: integer
+                  minimum: 50
+                  maximum: 10000
+                  default: 500
+                  description: Milliseconds between frames (50–10000).
+                scrollTo:
+                  type: integer
+                  description: Scroll to this Y position (pixels) before capturing.
+                selector:
+                  type: string
+                  description: CSS selector — scroll element into view before capturing.
+                width:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 1440
+                  description: Viewport width in pixels.
+                height:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 900
+                  description: Viewport height in pixels.
+                format:
+                  type: string
+                  enum: [png, jpeg, jpg]
+                  default: jpeg
+                  description: Image format.
+                quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: JPEG quality (1–100). Ignored for PNG.
+                waitFor:
+                  type: integer
+                  minimum: 0
+                  maximum: 60000
+                  description: Milliseconds to wait after page load before capturing.
+                timeout:
+                  type: integer
+                  description: Request timeout in milliseconds. Default is 60000.
+      responses:
+        "200":
+          description: Animation frames captured successfully.
+          headers:
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      format:
+                        type: string
+                      frameCount:
+                        type: integer
+                      frames:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            index:
+                              type: integer
+                            timestampMs:
+                              type: integer
+                            screenshot:
+                              type: string
+                              description: Base64 data URL
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/screenshot/viewports:
+    post:
+      operationId: takeViewportsBatch
+      summary: Multi-viewport screenshots
+      description: |
+        Capture screenshots at multiple viewport widths in a single browser session.
+        Ideal for responsive design testing across mobile, tablet, and desktop.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/screenshot/viewports \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "url": "https://example.com",
+            "viewports": [
+              {"width": 375, "height": 812, "label": "mobile"},
+              {"width": 768, "height": 1024, "label": "tablet"},
+              {"width": 1440, "height": 900, "label": "desktop"}
+            ]
+          }'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, viewports]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to capture. Must be HTTP or HTTPS.
+                  example: https://example.com
+                viewports:
+                  type: array
+                  minItems: 1
+                  maxItems: 6
+                  description: List of viewport sizes to capture (max 6).
+                  items:
+                    type: object
+                    required: [width, height]
+                    properties:
+                      width:
+                        type: integer
+                        minimum: 100
+                        maximum: 5000
+                        description: Viewport width in pixels.
+                      height:
+                        type: integer
+                        minimum: 100
+                        maximum: 5000
+                        description: Viewport height in pixels.
+                      label:
+                        type: string
+                        description: Human-readable label for this viewport (e.g. "mobile").
+                fullPage:
+                  type: boolean
+                  default: false
+                  description: Capture the full scrollable page at each viewport.
+                scrollThrough:
+                  type: boolean
+                  default: false
+                  description: Scroll through the page at each viewport to trigger lazy content.
+                format:
+                  type: string
+                  enum: [png, jpeg, jpg]
+                  default: jpeg
+                  description: Image format.
+                quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: JPEG quality (1–100). Ignored for PNG.
+                waitFor:
+                  type: integer
+                  minimum: 0
+                  maximum: 60000
+                  description: Milliseconds to wait after page load before capturing.
+                timeout:
+                  type: integer
+                  description: Request timeout in milliseconds. Default is 90000.
+      responses:
+        "200":
+          description: Viewport screenshots captured successfully.
+          headers:
+            X-Credits-Used:
+              schema:
+                type: string
+              description: Number of credits consumed (equals number of viewports).
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      format:
+                        type: string
+                      viewports:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            width:
+                              type: integer
+                            height:
+                              type: integer
+                            label:
+                              type: string
+                            screenshot:
+                              type: string
+                              description: Base64 data URL
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/screenshot/design-audit:
+    post:
+      operationId: takeDesignAudit
+      summary: Design system audit
+      description: |
+        Extract computed CSS values and validate them against design rules.
+        Returns structured JSON with spacing, touch target, and contrast violations,
+        plus typography and spacing scale discovery.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/screenshot/design-audit \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "url": "https://example.com",
+            "rules": {"spacingGrid": 8, "minTouchTarget": 44, "minContrast": 4.5}
+          }'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to audit. Must be HTTP or HTTPS.
+                  example: https://example.com
+                rules:
+                  type: object
+                  description: Design rules to enforce.
+                  properties:
+                    spacingGrid:
+                      type: integer
+                      default: 8
+                      description: Spacing grid multiple in pixels (e.g. 8 for 8pt grid).
+                    minTouchTarget:
+                      type: integer
+                      default: 44
+                      description: Minimum touch target size in pixels (WCAG recommends 44px).
+                    minContrast:
+                      type: number
+                      default: 4.5
+                      description: Minimum WCAG contrast ratio (4.5 for AA, 7.0 for AAA).
+                selector:
+                  type: string
+                  default: body
+                  description: CSS selector for the root element to audit. Defaults to "body".
+                width:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 1440
+                  description: Viewport width in pixels.
+                height:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 900
+                  description: Viewport height in pixels.
+                waitFor:
+                  type: integer
+                  minimum: 0
+                  maximum: 60000
+                  description: Milliseconds to wait after page load before auditing.
+                timeout:
+                  type: integer
+                  description: Request timeout in milliseconds. Default is 60000.
+      responses:
+        "200":
+          description: Design audit completed successfully.
+          headers:
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      audit:
+                        type: object
+                        properties:
+                          score:
+                            type: integer
+                            minimum: 0
+                            maximum: 100
+                            description: Design quality score (0–100, weighted by violation severity).
+                          summary:
+                            type: string
+                            description: Human-readable summary of violations found.
+                          spacingViolations:
+                            type: array
+                            description: Elements with spacing not on the grid.
+                            items:
+                              type: object
+                              properties:
+                                element:
+                                  type: string
+                                property:
+                                  type: string
+                                value:
+                                  type: number
+                                nearestGridValue:
+                                  type: number
+                          touchTargetViolations:
+                            type: array
+                            description: Interactive elements below minimum touch target size.
+                            items:
+                              type: object
+                              properties:
+                                element:
+                                  type: string
+                                width:
+                                  type: number
+                                height:
+                                  type: number
+                                minRequired:
+                                  type: number
+                          contrastViolations:
+                            type: array
+                            description: Elements with insufficient text/background contrast.
+                            items:
+                              type: object
+                              properties:
+                                element:
+                                  type: string
+                                textColor:
+                                  type: string
+                                bgColor:
+                                  type: string
+                                ratio:
+                                  type: number
+                                required:
+                                  type: number
+                          typography:
+                            type: object
+                            properties:
+                              fontSizes:
+                                type: array
+                                items:
+                                  type: string
+                              lineHeights:
+                                type: array
+                                items:
+                                  type: string
+                              letterSpacings:
+                                type: array
+                                items:
+                                  type: string
+                          spacingScale:
+                            type: array
+                            items:
+                              type: number
+                            description: Discovered spacing values (px) sorted ascending.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   # ===========================================================================
   # Watch
   # ===========================================================================

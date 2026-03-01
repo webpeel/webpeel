@@ -1078,6 +1078,107 @@ export async function browserFilmstrip(
   }
 }
 
+// ── withBrowserPage ───────────────────────────────────────────────────────────
+
+/**
+ * Shared boilerplate for the 4 new screenshot functions:
+ * - Queue concurrency wait
+ * - Launch browser (stealth or normal)
+ * - Open a new page with viewport + userAgent
+ * - Apply stealth scripts
+ * - Set custom headers and cookies
+ * - Navigate to the URL (with error normalisation)
+ * - Wait optional extra time
+ * - Call `fn(page)` for the unique per-function logic
+ * - Always close the page and decrement the counter
+ *
+ * NOTE: Do NOT touch browserFetch / browserScreenshot / browserFilmstrip —
+ * they have slightly different pooling / keep-open logic.
+ */
+async function withBrowserPage<T>(
+  url: string,
+  opts: {
+    width?: number;
+    height?: number;
+    userAgent?: string;
+    headers?: Record<string, string>;
+    cookies?: string[];
+    stealth?: boolean;
+    waitMs?: number;
+    timeoutMs?: number;
+  },
+  fn: (page: Page) => Promise<T>
+): Promise<{ result: T; finalUrl: string }> {
+  validateUrl(url);
+
+  const {
+    width = 1440,
+    height = 900,
+    userAgent,
+    headers,
+    cookies,
+    stealth = false,
+    waitMs = 0,
+    timeoutMs = 60000,
+  } = opts;
+
+  const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
+
+  const queueStartTime = Date.now();
+  const QUEUE_TIMEOUT_MS = 30000;
+  while (activePagesCount >= MAX_CONCURRENT_PAGES) {
+    if (Date.now() - queueStartTime > QUEUE_TIMEOUT_MS) {
+      throw new TimeoutError('Browser page queue timeout - too many concurrent requests');
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  activePagesCount++;
+  let page: Page | null = null;
+
+  try {
+    const browser = stealth ? await getStealthBrowser() : await getBrowser();
+    page = await browser.newPage({
+      userAgent: validatedUserAgent,
+      viewport: { width, height },
+    });
+    await applyStealthScripts(page);
+
+    if (headers) await page.setExtraHTTPHeaders(headers);
+
+    if (cookies && cookies.length > 0) {
+      const parsedCookies = cookies.map(cookie => {
+        const [nameValue] = cookie.split(';').map((s: string) => s.trim());
+        const [name, value] = nameValue.split('=');
+        if (!name || value === undefined) throw new WebPeelError(`Invalid cookie format: ${cookie}`);
+        return { name: name.trim(), value: value.trim(), url };
+      });
+      await page.context().addCookies(parsedCookies);
+    }
+
+    try {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+    } catch (gotoError: any) {
+      const msg = gotoError?.message || String(gotoError);
+      if (/timeout/i.test(msg)) throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
+      if (/net::ERR_/i.test(msg)) throw new NetworkError(`Browser network error: ${msg.match(/net::ERR_\w+/i)?.[0] || msg}`);
+      throw gotoError;
+    }
+
+    if (waitMs > 0) await page.waitForTimeout(waitMs);
+
+    const result = await fn(page);
+    const finalUrl = page.url();
+    return { result, finalUrl };
+  } catch (error) {
+    if (error instanceof BlockedError || error instanceof WebPeelError || error instanceof TimeoutError) throw error;
+    if (error instanceof Error && error.message.includes('Timeout')) throw new TimeoutError('Browser operation timed out');
+    throw new NetworkError(`Browser operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    if (page) await page.close().catch(() => {});
+    activePagesCount--;
+  }
+}
+
 // ── browserAudit ──────────────────────────────────────────────────────────────
 
 /**
@@ -1105,8 +1206,6 @@ export async function browserAudit(
   frames: { index: number; tag: string; id: string; className: string; top: number; height: number; buffer: Buffer }[];
   finalUrl: string;
 }> {
-  validateUrl(url);
-
   const {
     width = 1440,
     height = 900,
@@ -1122,109 +1221,59 @@ export async function browserAudit(
     scrollThrough = false,
   } = options;
 
-  const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
-
-  const queueStartTime = Date.now();
-  const QUEUE_TIMEOUT_MS = 30000;
-  while (activePagesCount >= MAX_CONCURRENT_PAGES) {
-    if (Date.now() - queueStartTime > QUEUE_TIMEOUT_MS) {
-      throw new TimeoutError('Browser page queue timeout - too many concurrent requests');
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  activePagesCount++;
-  let page: Page | null = null;
-
-  try {
-    const browser = stealth ? await getStealthBrowser() : await getBrowser();
-    page = await browser.newPage({
-      userAgent: validatedUserAgent,
-      viewport: { width, height },
-    });
-    await applyStealthScripts(page);
-
-    if (headers) await page.setExtraHTTPHeaders(headers);
-
-    if (cookies && cookies.length > 0) {
-      const parsedCookies = cookies.map(cookie => {
-        const [nameValue] = cookie.split(';').map((s: string) => s.trim());
-        const [name, value] = nameValue.split('=');
-        if (!name || value === undefined) throw new WebPeelError(`Invalid cookie format: ${cookie}`);
-        return { name: name.trim(), value: value.trim(), url };
-      });
-      await page.context().addCookies(parsedCookies);
-    }
-
-    await page.route('**/*', (route) => route.continue());
-
-    try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    } catch (gotoError: any) {
-      const msg = gotoError?.message || String(gotoError);
-      if (/timeout/i.test(msg)) throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
-      if (/net::ERR_/i.test(msg)) throw new NetworkError(`Browser network error: ${msg.match(/net::ERR_\w+/i)?.[0] || msg}`);
-      throw gotoError;
-    }
-
-    if (waitMs > 0) await page.waitForTimeout(waitMs);
-
-    // Scroll through to trigger lazy content
-    if (scrollThrough) {
-      const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
-      const vh = await page.evaluate(() => window.innerHeight);
-      for (let y = 0; y < scrollHeight; y += Math.round(vh * 0.75)) {
-        await page.evaluate((sy: number) => window.scrollTo({ top: sy, behavior: 'instant' }), y);
-        await page.waitForTimeout(200);
+  const { result: frames, finalUrl } = await withBrowserPage(
+    url,
+    { width, height, userAgent, headers, cookies, stealth, waitMs, timeoutMs },
+    async (page) => {
+      // Scroll through to trigger lazy content
+      if (scrollThrough) {
+        const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
+        const vh = await page.evaluate(() => window.innerHeight);
+        for (let y = 0; y < scrollHeight; y += Math.round(vh * 0.75)) {
+          await page.evaluate((sy: number) => window.scrollTo({ top: sy, behavior: 'instant' }), y);
+          await page.waitForTimeout(200);
+        }
+        await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
+        await page.waitForTimeout(300);
+        await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+        await page.waitForTimeout(400);
       }
-      await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
-      await page.waitForTimeout(300);
-      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-      await page.waitForTimeout(400);
+
+      // Get metadata for all matching elements
+      type ElemMeta = { tag: string; id: string; className: string; top: number; height: number };
+      const elements: ElemMeta[] = await page.evaluate((sel: string) => {
+        const nodes = Array.from(document.querySelectorAll(sel)) as Element[];
+        return nodes.map(el => {
+          const rect = el.getBoundingClientRect();
+          const scrollY = window.scrollY || document.documentElement.scrollTop;
+          return {
+            tag: el.tagName.toLowerCase(),
+            id: el.id || '',
+            className: el.className || '',
+            top: rect.top + scrollY,
+            height: rect.height,
+          };
+        });
+      }, selector);
+
+      const capturedFrames: { index: number; tag: string; id: string; className: string; top: number; height: number; buffer: Buffer }[] = [];
+
+      for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
+        await page.evaluate((y: number) => window.scrollTo({ top: y, behavior: 'instant' }), el.top);
+        await page.waitForTimeout(200);
+        const buf = await page.screenshot({
+          type: format,
+          ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
+        });
+        capturedFrames.push({ index: i, ...el, buffer: buf });
+      }
+
+      return capturedFrames;
     }
+  );
 
-    // Get metadata for all matching elements
-    type ElemMeta = { tag: string; id: string; className: string; top: number; height: number };
-    const elements: ElemMeta[] = await page.evaluate((sel: string) => {
-      const nodes = Array.from(document.querySelectorAll(sel)) as Element[];
-      return nodes.map(el => {
-        const rect = el.getBoundingClientRect();
-        const scrollY = window.scrollY || document.documentElement.scrollTop;
-        return {
-          tag: el.tagName.toLowerCase(),
-          id: el.id || '',
-          className: el.className || '',
-          top: rect.top + scrollY,
-          height: rect.height,
-        };
-      });
-    }, selector);
-
-    const capturedFrames: { index: number; tag: string; id: string; className: string; top: number; height: number; buffer: Buffer }[] = [];
-
-    for (let i = 0; i < elements.length; i++) {
-      const el = elements[i];
-      // Scroll so the element is at the top of the viewport
-      await page.evaluate((y: number) => window.scrollTo({ top: y, behavior: 'instant' }), el.top);
-      await page.waitForTimeout(200);
-
-      const buf = await page.screenshot({
-        type: format,
-        ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
-      });
-
-      capturedFrames.push({ index: i, ...el, buffer: buf });
-    }
-
-    const finalUrl = page.url();
-    return { frames: capturedFrames, finalUrl };
-  } catch (error) {
-    if (error instanceof BlockedError || error instanceof WebPeelError || error instanceof TimeoutError) throw error;
-    if (error instanceof Error && error.message.includes('Timeout')) throw new TimeoutError('Browser audit timed out');
-    throw new NetworkError(`Browser audit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (page) await page.close().catch(() => {});
-    activePagesCount--;
-  }
+  return { frames, finalUrl };
 }
 
 // ── browserAnimationCapture ───────────────────────────────────────────────────
@@ -1251,8 +1300,6 @@ export async function browserAnimationCapture(
     stealth?: boolean;
   } = {}
 ): Promise<{ frames: { index: number; timestampMs: number; buffer: Buffer }[]; finalUrl: string }> {
-  validateUrl(url);
-
   const {
     frames: frameCount = 6,
     intervalMs = 500,
@@ -1271,89 +1318,43 @@ export async function browserAnimationCapture(
   } = options;
 
   const numFrames = Math.max(1, Math.min(30, frameCount));
-  const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
 
-  const queueStartTime = Date.now();
-  const QUEUE_TIMEOUT_MS = 30000;
-  while (activePagesCount >= MAX_CONCURRENT_PAGES) {
-    if (Date.now() - queueStartTime > QUEUE_TIMEOUT_MS) {
-      throw new TimeoutError('Browser page queue timeout - too many concurrent requests');
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  activePagesCount++;
-  let page: Page | null = null;
-
-  try {
-    const browser = stealth ? await getStealthBrowser() : await getBrowser();
-    page = await browser.newPage({
-      userAgent: validatedUserAgent,
-      viewport: { width, height },
-    });
-    await applyStealthScripts(page);
-
-    if (headers) await page.setExtraHTTPHeaders(headers);
-
-    if (cookies && cookies.length > 0) {
-      const parsedCookies = cookies.map(cookie => {
-        const [nameValue] = cookie.split(';').map((s: string) => s.trim());
-        const [name, value] = nameValue.split('=');
-        if (!name || value === undefined) throw new WebPeelError(`Invalid cookie format: ${cookie}`);
-        return { name: name.trim(), value: value.trim(), url };
-      });
-      await page.context().addCookies(parsedCookies);
-    }
-
-    await page.route('**/*', (route) => route.continue());
-
-    try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    } catch (gotoError: any) {
-      const msg = gotoError?.message || String(gotoError);
-      if (/timeout/i.test(msg)) throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
-      if (/net::ERR_/i.test(msg)) throw new NetworkError(`Browser network error: ${msg.match(/net::ERR_\w+/i)?.[0] || msg}`);
-      throw gotoError;
-    }
-
-    if (waitMs > 0) await page.waitForTimeout(waitMs);
-
-    // Position the viewport
-    if (selector) {
-      await page.evaluate((sel: string) => {
-        const el = document.querySelector(sel);
-        if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
-      }, selector);
-      await page.waitForTimeout(300);
-    } else if (typeof scrollTo === 'number') {
-      await page.evaluate((y: number) => window.scrollTo({ top: y, behavior: 'instant' }), scrollTo);
-      await page.waitForTimeout(300);
-    }
-
-    const capturedFrames: { index: number; timestampMs: number; buffer: Buffer }[] = [];
-    const startTime = Date.now();
-
-    for (let i = 0; i < numFrames; i++) {
-      const buf = await page.screenshot({
-        type: format,
-        ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
-      });
-      capturedFrames.push({ index: i, timestampMs: Date.now() - startTime, buffer: buf });
-
-      if (i < numFrames - 1) {
-        await page.waitForTimeout(intervalMs);
+  const { result: frames, finalUrl } = await withBrowserPage(
+    url,
+    { width, height, userAgent, headers, cookies, stealth, waitMs, timeoutMs },
+    async (page) => {
+      // Position the viewport
+      if (selector) {
+        await page.evaluate((sel: string) => {
+          const el = document.querySelector(sel);
+          if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }, selector);
+        await page.waitForTimeout(300);
+      } else if (typeof scrollTo === 'number') {
+        await page.evaluate((y: number) => window.scrollTo({ top: y, behavior: 'instant' }), scrollTo);
+        await page.waitForTimeout(300);
       }
-    }
 
-    const finalUrl = page.url();
-    return { frames: capturedFrames, finalUrl };
-  } catch (error) {
-    if (error instanceof BlockedError || error instanceof WebPeelError || error instanceof TimeoutError) throw error;
-    if (error instanceof Error && error.message.includes('Timeout')) throw new TimeoutError('Browser animation capture timed out');
-    throw new NetworkError(`Browser animation capture failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (page) await page.close().catch(() => {});
-    activePagesCount--;
-  }
+      const capturedFrames: { index: number; timestampMs: number; buffer: Buffer }[] = [];
+      const startTime = Date.now();
+
+      for (let i = 0; i < numFrames; i++) {
+        const buf = await page.screenshot({
+          type: format,
+          ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
+        });
+        capturedFrames.push({ index: i, timestampMs: Date.now() - startTime, buffer: buf });
+
+        if (i < numFrames - 1) {
+          await page.waitForTimeout(intervalMs);
+        }
+      }
+
+      return capturedFrames;
+    }
+  );
+
+  return { frames, finalUrl };
 }
 
 // ── browserViewports ──────────────────────────────────────────────────────────
@@ -1378,8 +1379,6 @@ export async function browserViewports(
     scrollThrough?: boolean;
   }
 ): Promise<{ frames: { width: number; height: number; label: string; buffer: Buffer }[]; finalUrl: string }> {
-  validateUrl(url);
-
   const {
     viewports,
     fullPage = false,
@@ -1398,94 +1397,47 @@ export async function browserViewports(
     throw new WebPeelError('At least one viewport is required');
   }
 
-  const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
+  // Use first viewport dimensions for initial page setup
+  const firstVp = viewports[0];
 
-  const queueStartTime = Date.now();
-  const QUEUE_TIMEOUT_MS = 30000;
-  while (activePagesCount >= MAX_CONCURRENT_PAGES) {
-    if (Date.now() - queueStartTime > QUEUE_TIMEOUT_MS) {
-      throw new TimeoutError('Browser page queue timeout - too many concurrent requests');
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  activePagesCount++;
-  let page: Page | null = null;
+  const { result: frames, finalUrl } = await withBrowserPage(
+    url,
+    { width: firstVp.width, height: firstVp.height, userAgent, headers, cookies, stealth, waitMs, timeoutMs },
+    async (page) => {
+      const capturedFrames: { width: number; height: number; label: string; buffer: Buffer }[] = [];
 
-  try {
-    const browser = stealth ? await getStealthBrowser() : await getBrowser();
+      for (const vp of viewports) {
+        const label = vp.label || `${vp.width}x${vp.height}`;
 
-    // Use first viewport to initialize
-    const firstVp = viewports[0];
-    page = await browser.newPage({
-      userAgent: validatedUserAgent,
-      viewport: { width: firstVp.width, height: firstVp.height },
-    });
-    await applyStealthScripts(page);
+        // Resize viewport
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.waitForTimeout(500); // Wait for reflow
 
-    if (headers) await page.setExtraHTTPHeaders(headers);
-
-    if (cookies && cookies.length > 0) {
-      const parsedCookies = cookies.map(cookie => {
-        const [nameValue] = cookie.split(';').map((s: string) => s.trim());
-        const [name, value] = nameValue.split('=');
-        if (!name || value === undefined) throw new WebPeelError(`Invalid cookie format: ${cookie}`);
-        return { name: name.trim(), value: value.trim(), url };
-      });
-      await page.context().addCookies(parsedCookies);
-    }
-
-    await page.route('**/*', (route) => route.continue());
-
-    try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    } catch (gotoError: any) {
-      const msg = gotoError?.message || String(gotoError);
-      if (/timeout/i.test(msg)) throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
-      if (/net::ERR_/i.test(msg)) throw new NetworkError(`Browser network error: ${msg.match(/net::ERR_\w+/i)?.[0] || msg}`);
-      throw gotoError;
-    }
-
-    if (waitMs > 0) await page.waitForTimeout(waitMs);
-
-    const capturedFrames: { width: number; height: number; label: string; buffer: Buffer }[] = [];
-
-    for (const vp of viewports) {
-      const label = vp.label || `${vp.width}x${vp.height}`;
-
-      // Resize viewport
-      await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.waitForTimeout(500); // Wait for reflow
-
-      if (scrollThrough) {
-        const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
-        const vh = await page.evaluate(() => window.innerHeight);
-        for (let y = 0; y < scrollHeight; y += Math.round(vh * 0.75)) {
-          await page.evaluate((sy: number) => window.scrollTo({ top: sy, behavior: 'instant' }), y);
-          await page.waitForTimeout(150);
+        if (scrollThrough) {
+          const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
+          const vh = await page.evaluate(() => window.innerHeight);
+          for (let y = 0; y < scrollHeight; y += Math.round(vh * 0.75)) {
+            await page.evaluate((sy: number) => window.scrollTo({ top: sy, behavior: 'instant' }), y);
+            await page.waitForTimeout(150);
+          }
+          await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+          await page.waitForTimeout(300);
         }
-        await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-        await page.waitForTimeout(300);
+
+        const buf = await page.screenshot({
+          fullPage,
+          type: format,
+          ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
+        });
+
+        capturedFrames.push({ width: vp.width, height: vp.height, label, buffer: buf });
       }
 
-      const buf = await page.screenshot({
-        fullPage,
-        type: format,
-        ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
-      });
-
-      capturedFrames.push({ width: vp.width, height: vp.height, label, buffer: buf });
+      return capturedFrames;
     }
+  );
 
-    const finalUrl = page.url();
-    return { frames: capturedFrames, finalUrl };
-  } catch (error) {
-    if (error instanceof BlockedError || error instanceof WebPeelError || error instanceof TimeoutError) throw error;
-    if (error instanceof Error && error.message.includes('Timeout')) throw new TimeoutError('Browser viewports timed out');
-    throw new NetworkError(`Browser viewports failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (page) await page.close().catch(() => {});
-    activePagesCount--;
-  }
+  return { frames, finalUrl };
 }
 
 // ── browserDesignAudit ────────────────────────────────────────────────────────
@@ -1523,8 +1475,6 @@ export async function browserDesignAudit(
     stealth?: boolean;
   } = {}
 ): Promise<{ audit: DesignAuditResult; finalUrl: string }> {
-  validateUrl(url);
-
   const {
     rules = {},
     selector = 'body',
@@ -1542,219 +1492,172 @@ export async function browserDesignAudit(
   const minTouchTarget = rules.minTouchTarget ?? 44;
   const minContrast = rules.minContrast ?? 4.5;
 
-  const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
+  const { result: auditData, finalUrl } = await withBrowserPage(
+    url,
+    { width, height, userAgent, headers, cookies, stealth, waitMs, timeoutMs },
+    async (page) => {
+      // Run design audit inside the browser
+      return page.evaluate((params: { sel: string; spacingGrid: number; minTouchTarget: number; minContrast: number }) => {
+        const { sel, spacingGrid, minTouchTarget, minContrast } = params;
 
-  const queueStartTime = Date.now();
-  const QUEUE_TIMEOUT_MS = 30000;
-  while (activePagesCount >= MAX_CONCURRENT_PAGES) {
-    if (Date.now() - queueStartTime > QUEUE_TIMEOUT_MS) {
-      throw new TimeoutError('Browser page queue timeout - too many concurrent requests');
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  activePagesCount++;
-  let page: Page | null = null;
-
-  try {
-    const browser = stealth ? await getStealthBrowser() : await getBrowser();
-    page = await browser.newPage({
-      userAgent: validatedUserAgent,
-      viewport: { width, height },
-    });
-    await applyStealthScripts(page);
-
-    if (headers) await page.setExtraHTTPHeaders(headers);
-
-    if (cookies && cookies.length > 0) {
-      const parsedCookies = cookies.map(cookie => {
-        const [nameValue] = cookie.split(';').map((s: string) => s.trim());
-        const [name, value] = nameValue.split('=');
-        if (!name || value === undefined) throw new WebPeelError(`Invalid cookie format: ${cookie}`);
-        return { name: name.trim(), value: value.trim(), url };
-      });
-      await page.context().addCookies(parsedCookies);
-    }
-
-    await page.route('**/*', (route) => route.continue());
-
-    try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    } catch (gotoError: any) {
-      const msg = gotoError?.message || String(gotoError);
-      if (/timeout/i.test(msg)) throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
-      if (/net::ERR_/i.test(msg)) throw new NetworkError(`Browser network error: ${msg.match(/net::ERR_\w+/i)?.[0] || msg}`);
-      throw gotoError;
-    }
-
-    if (waitMs > 0) await page.waitForTimeout(waitMs);
-
-    // Run design audit inside the browser
-    const auditData = await page.evaluate((params: { sel: string; spacingGrid: number; minTouchTarget: number; minContrast: number }) => {
-      const { sel, spacingGrid, minTouchTarget, minContrast } = params;
-
-      // --- Helpers ---
-      function parsePixels(val: string): number {
-        const n = parseFloat(val);
-        return isNaN(n) ? 0 : n;
-      }
-
-      function parseRgb(color: string): [number, number, number] | null {
-        const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-        if (!m) return null;
-        return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
-      }
-
-      function luminance(r: number, g: number, b: number): number {
-        const [rs, gs, bs] = [r, g, b].map(c => {
-          const s = c / 255;
-          return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-        });
-        return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-      }
-
-      function contrastRatio(c1: [number, number, number], c2: [number, number, number]): number {
-        const l1 = luminance(...c1);
-        const l2 = luminance(...c2);
-        const lighter = Math.max(l1, l2);
-        const darker = Math.min(l1, l2);
-        return (lighter + 0.05) / (darker + 0.05);
-      }
-
-      function elementLabel(el: Element): string {
-        const id = el.id ? `#${el.id}` : '';
-        const cls = el.className && typeof el.className === 'string'
-          ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.')
-          : '';
-        return `${el.tagName.toLowerCase()}${id}${cls}`;
-      }
-
-      function nearestMultiple(val: number, grid: number): number {
-        if (grid <= 0) return val;
-        return Math.round(val / grid) * grid;
-      }
-
-      const root = document.querySelector(sel) || document.body;
-      const allElements = Array.from(root.querySelectorAll('*')) as HTMLElement[];
-
-      const spacingViolations: any[] = [];
-      const touchTargetViolations: any[] = [];
-      const contrastViolations: any[] = [];
-      const fontSizesSet = new Set<string>();
-      const lineHeightsSet = new Set<string>();
-      const letterSpacingsSet = new Set<string>();
-      const spacingValuesSet = new Set<number>();
-
-      const interactiveTags = new Set(['a', 'button', 'input', 'select', 'textarea', 'label']);
-
-      for (const el of allElements) {
-        const style = window.getComputedStyle(el);
-        const rect = el.getBoundingClientRect();
-
-        // Skip invisible elements
-        if (rect.width === 0 && rect.height === 0) continue;
-
-        const label = elementLabel(el);
-
-        // Spacing
-        const spacingProps = ['marginTop', 'marginRight', 'marginBottom', 'marginLeft',
-          'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'gap', 'rowGap', 'columnGap'];
-        for (const prop of spacingProps) {
-          const raw = (style as any)[prop];
-          if (!raw || raw === 'normal' || raw === 'auto') continue;
-          const px = parsePixels(raw);
-          if (px <= 0) continue;
-          spacingValuesSet.add(px);
-          if (spacingGrid > 0 && Math.round(px) % spacingGrid !== 0) {
-            spacingViolations.push({
-              element: label,
-              property: prop,
-              value: Math.round(px),
-              nearestGridValue: nearestMultiple(px, spacingGrid),
-            });
-          }
+        // --- Helpers ---
+        function parsePixels(val: string): number {
+          const n = parseFloat(val);
+          return isNaN(n) ? 0 : n;
         }
 
-        // Typography
-        const fs = style.fontSize;
-        const lh = style.lineHeight;
-        const ls = style.letterSpacing;
-        if (fs) fontSizesSet.add(fs);
-        if (lh && lh !== 'normal') lineHeightsSet.add(lh);
-        if (ls && ls !== 'normal') letterSpacingsSet.add(ls);
-
-        // Touch targets
-        const tag = el.tagName.toLowerCase();
-        if (interactiveTags.has(tag)) {
-          const w = rect.width;
-          const h = rect.height;
-          if (w > 0 && h > 0 && (w < minTouchTarget || h < minTouchTarget)) {
-            touchTargetViolations.push({ element: label, width: Math.round(w), height: Math.round(h), minRequired: minTouchTarget });
-          }
+        function parseRgb(color: string): [number, number, number] | null {
+          const m = color.match(/rgba?\(([0-9]+),\s*([0-9]+),\s*([0-9]+)/);
+          if (!m) return null;
+          return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
         }
 
-        // Contrast
-        const textColor = style.color;
-        const bgColor = style.backgroundColor;
-        if (textColor && bgColor) {
-          const fg = parseRgb(textColor);
-          const bg = parseRgb(bgColor);
-          if (fg && bg) {
-            const ratio = contrastRatio(fg, bg);
-            if (ratio < minContrast && ratio < 20) { // ratio < 20 filters out identical colors
-              // Only flag elements with visible text content
-              const text = el.textContent?.trim() || '';
-              if (text.length > 0 && text.length < 200) {
-                contrastViolations.push({
-                  element: label,
-                  textColor,
-                  bgColor,
-                  ratio: Math.round(ratio * 100) / 100,
-                  required: minContrast,
-                });
+        function luminance(r: number, g: number, b: number): number {
+          const [rs, gs, bs] = [r, g, b].map(c => {
+            const s = c / 255;
+            return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+          });
+          return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+        }
+
+        function contrastRatio(c1: [number, number, number], c2: [number, number, number]): number {
+          const l1 = luminance(...c1);
+          const l2 = luminance(...c2);
+          const lighter = Math.max(l1, l2);
+          const darker = Math.min(l1, l2);
+          return (lighter + 0.05) / (darker + 0.05);
+        }
+
+        function elementLabel(el: Element): string {
+          const id = el.id ? `#${el.id}` : '';
+          const cls = el.className && typeof el.className === 'string'
+            ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.')
+            : '';
+          return `${el.tagName.toLowerCase()}${id}${cls}`;
+        }
+
+        function nearestMultiple(val: number, grid: number): number {
+          if (grid <= 0) return val;
+          return Math.round(val / grid) * grid;
+        }
+
+        const root = document.querySelector(sel) || document.body;
+        const allElements = Array.from(root.querySelectorAll('*')) as HTMLElement[];
+
+        const spacingViolations: any[] = [];
+        const touchTargetViolations: any[] = [];
+        const contrastViolations: any[] = [];
+        const fontSizesSet = new Set<string>();
+        const lineHeightsSet = new Set<string>();
+        const letterSpacingsSet = new Set<string>();
+        const spacingValuesSet = new Set<number>();
+
+        const interactiveTags = new Set(['a', 'button', 'input', 'select', 'textarea', 'label']);
+
+        for (const el of allElements) {
+          const style = window.getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+
+          // Skip invisible elements
+          if (rect.width === 0 && rect.height === 0) continue;
+
+          const label = elementLabel(el);
+
+          // Spacing
+          const spacingProps = ['marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+            'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'gap', 'rowGap', 'columnGap'];
+          for (const prop of spacingProps) {
+            const raw = (style as any)[prop];
+            if (!raw || raw === 'normal' || raw === 'auto') continue;
+            const px = parsePixels(raw);
+            if (px <= 0) continue;
+            spacingValuesSet.add(px);
+            if (spacingGrid > 0 && Math.round(px) % spacingGrid !== 0) {
+              spacingViolations.push({
+                element: label,
+                property: prop,
+                value: Math.round(px),
+                nearestGridValue: nearestMultiple(px, spacingGrid),
+              });
+            }
+          }
+
+          // Typography
+          const fs = style.fontSize;
+          const lh = style.lineHeight;
+          const ls = style.letterSpacing;
+          if (fs) fontSizesSet.add(fs);
+          if (lh && lh !== 'normal') lineHeightsSet.add(lh);
+          if (ls && ls !== 'normal') letterSpacingsSet.add(ls);
+
+          // Touch targets
+          const tag = el.tagName.toLowerCase();
+          if (interactiveTags.has(tag)) {
+            const w = rect.width;
+            const h = rect.height;
+            if (w > 0 && h > 0 && (w < minTouchTarget || h < minTouchTarget)) {
+              touchTargetViolations.push({ element: label, width: Math.round(w), height: Math.round(h), minRequired: minTouchTarget });
+            }
+          }
+
+          // Contrast — Fix: skip near-identical colors (ratio ≤ 1.05) to avoid false positives
+          const textColor = style.color;
+          const bgColor = style.backgroundColor;
+          if (textColor && bgColor) {
+            const fg = parseRgb(textColor);
+            const bg = parseRgb(bgColor);
+            if (fg && bg) {
+              const ratio = contrastRatio(fg, bg);
+              if (ratio > 1.05 && ratio < minContrast) {
+                // Only flag elements with visible text content
+                const text = el.textContent?.trim() || '';
+                if (text.length > 0 && text.length < 200) {
+                  contrastViolations.push({
+                    element: label,
+                    textColor,
+                    bgColor,
+                    ratio: Math.round(ratio * 100) / 100,
+                    required: minContrast,
+                  });
+                }
               }
             }
           }
         }
-      }
 
-      const spacingScale = Array.from(spacingValuesSet).sort((a, b) => a - b).map(v => Math.round(v));
+        const spacingScale = Array.from(spacingValuesSet).sort((a, b) => a - b).map(v => Math.round(v));
 
-      return {
-        spacingViolations: spacingViolations.slice(0, 50),
-        touchTargetViolations: touchTargetViolations.slice(0, 50),
-        contrastViolations: contrastViolations.slice(0, 50),
-        typography: {
-          fontSizes: Array.from(fontSizesSet).slice(0, 20),
-          lineHeights: Array.from(lineHeightsSet).slice(0, 20),
-          letterSpacings: Array.from(letterSpacingsSet).slice(0, 20),
-        },
-        spacingScale: [...new Set(spacingScale)].slice(0, 30),
-      };
-    }, { sel: selector, spacingGrid, minTouchTarget, minContrast });
+        return {
+          spacingViolations: spacingViolations.slice(0, 50),
+          touchTargetViolations: touchTargetViolations.slice(0, 50),
+          contrastViolations: contrastViolations.slice(0, 50),
+          typography: {
+            fontSizes: Array.from(fontSizesSet).slice(0, 20),
+            lineHeights: Array.from(lineHeightsSet).slice(0, 20),
+            letterSpacings: Array.from(letterSpacingsSet).slice(0, 20),
+          },
+          spacingScale: [...new Set(spacingScale)].slice(0, 30),
+        };
+      }, { sel: selector, spacingGrid, minTouchTarget, minContrast });
+    }
+  );
 
-    // Compute score (0-100): deduct points for each category of violations
-    const totalIssues = auditData.spacingViolations.length +
-      auditData.touchTargetViolations.length +
-      auditData.contrastViolations.length;
-    const score = Math.max(0, Math.round(100 - Math.min(100, totalIssues * 2)));
+  // Weighted scoring: contrast failures are most serious (accessibility),
+  // touch target issues affect usability, spacing is cosmetic.
+  const contrastPenalty = auditData.contrastViolations.length * 5;
+  const touchPenalty = auditData.touchTargetViolations.length * 3;
+  const spacingPenalty = auditData.spacingViolations.length * 1;
+  const totalPenalty = contrastPenalty + touchPenalty + spacingPenalty;
+  const score = Math.max(0, Math.round(100 - Math.min(100, totalPenalty)));
 
-    const parts: string[] = [];
-    if (auditData.spacingViolations.length > 0) parts.push(`${auditData.spacingViolations.length} spacing violation(s)`);
-    if (auditData.touchTargetViolations.length > 0) parts.push(`${auditData.touchTargetViolations.length} touch target violation(s)`);
-    if (auditData.contrastViolations.length > 0) parts.push(`${auditData.contrastViolations.length} contrast violation(s)`);
-    const summary = parts.length === 0
-      ? 'No design violations found.'
-      : `Found: ${parts.join(', ')}.`;
+  const parts: string[] = [];
+  if (auditData.spacingViolations.length > 0) parts.push(`${auditData.spacingViolations.length} spacing violation(s)`);
+  if (auditData.touchTargetViolations.length > 0) parts.push(`${auditData.touchTargetViolations.length} touch target violation(s)`);
+  if (auditData.contrastViolations.length > 0) parts.push(`${auditData.contrastViolations.length} contrast violation(s)`);
+  const summary = parts.length === 0
+    ? 'No design violations found.'
+    : `Found: ${parts.join(', ')}.`;
 
-    const audit: DesignAuditResult = { score, summary, ...auditData };
-    const finalUrl = page.url();
-    return { audit, finalUrl };
-  } catch (error) {
-    if (error instanceof BlockedError || error instanceof WebPeelError || error instanceof TimeoutError) throw error;
-    if (error instanceof Error && error.message.includes('Timeout')) throw new TimeoutError('Browser design audit timed out');
-    throw new NetworkError(`Browser design audit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (page) await page.close().catch(() => {});
-    activePagesCount--;
-  }
+  const audit: DesignAuditResult = { score, summary, ...auditData };
+  return { audit, finalUrl };
 }
