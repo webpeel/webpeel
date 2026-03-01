@@ -1336,29 +1336,8 @@ Ready for your AI agent.</div>
     }, { threshold: 0.15 });
     document.querySelectorAll('[data-bar-group]').forEach(g => barObs.observe(g));
 
-    /* ── Stat number count-up ──────────────────────── */
-    const statObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        const numEl = entry.target.querySelector('.stat-n');
-        if (numEl) {
-          const target = numEl.textContent.trim();
-          const num = parseInt(target);
-          if (!isNaN(num) && num > 0) {
-            let current = 0;
-            const step = Math.ceil(num / 30);
-            const suffix = target.replace(/[\d]/g, '');
-            const intervalId = setInterval(() => {
-              current += step;
-              if (current >= num) { current = num; clearInterval(intervalId); }
-              numEl.textContent = current + suffix;
-            }, 30);
-          }
-        }
-        statObserver.unobserve(entry.target);
-      });
-    }, { threshold: 0.3 });
-    document.querySelectorAll('.stat-card').forEach(el => statObserver.observe(el));
+    /* Stat counter removed — was corrupting text ("2-3×" → "2-×", "646ms" → intermediate values).
+       Stat cards already have the reveal animation which is sufficient. */
 
     /* ── Terminal typing animation ─────────────────── */
     (function() {
