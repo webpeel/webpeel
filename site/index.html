@@ -240,7 +240,6 @@
       color: rgba(255,255,255,0.72);
       line-height: 1.6; max-width: 540px; margin: 24px auto 40px;
     }
-    @media (max-width: 1024px) { .hero h1 { font-size: 72px; } }
     @media (max-width: 768px) { .hero h1 { font-size: 52px; } .hero-sub { font-size: var(--text-base); line-height: 1.65; } }
     @media (max-width: 480px) { .hero h1 { font-size: 38px; letter-spacing: -0.03em; } .hero-sub { font-size: var(--text-sm); max-width: 100%; } }
     .hero-ctas { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
@@ -271,6 +270,20 @@
       transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
     }
     .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.4); transform: translateY(-1px); color: #fff; }
+    .hero-ctas .btn-primary {
+      font-size: var(--text-md);
+      padding: 18px 40px;
+      min-height: 56px;
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(88,101,242,0.4), 0 0 40px rgba(88,101,242,0.15);
+    }
+    .hero-ctas .btn-ghost {
+      font-size: var(--text-sm);
+      padding: 12px 24px;
+      min-height: 48px;
+      opacity: 0.7;
+    }
+    .hero-ctas .btn-ghost:hover { opacity: 1; }
     .btn-light {
       display: inline-flex; align-items: center; gap: 6px;
       font-size: var(--text-sm); font-weight: 500; color: var(--text-2);
@@ -372,6 +385,8 @@
     .section-eyebrow {
       font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;
       letter-spacing: 0.07em; color: var(--accent); margin-bottom: 24px;
+      display: inline-block; padding: 6px 14px;
+      background: var(--accent-subtle); border-radius: 20px;
     }
     .section-h2 {
       font-family: var(--font-display); font-size: var(--text-h2);
@@ -379,7 +394,7 @@
       color: var(--text); margin-bottom: 32px;
     }
     .section-h2-dark { color: var(--text-on-dark); }
-    .why-section .section-h2 { font-size: clamp(36px, 3.5vw, 52px); line-height: 1.35; }
+    .why-section .section-h2 { font-size: clamp(40px, 5vw, 64px); line-height: 1.2; }
     .section-h2 .accent { color: var(--accent-pale); }
 
     /* ── DEMO SECTION ───────────────────────────────── */
@@ -394,7 +409,7 @@
       border-radius: 20px; padding: 40px; margin-top: 8px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.05), 0 0 0 1px rgba(88,101,242,0.04);
     }
-    .demo-subtitle { font-size: var(--text-md); color: var(--text-2); text-align: center; margin: 16px auto 48px; max-width: 520px; }
+    .demo-subtitle { font-size: var(--text-md); color: var(--text-2); text-align: center; margin: 16px auto 48px; max-width: 520px; line-height: 1.6; }
     .demo-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
     .demo-pill {
       padding: 8px 16px; border: 1.5px solid var(--border-card);
@@ -484,7 +499,7 @@
       background-size: auto, 64px 64px, 64px 64px;
       padding: var(--space-section) 0;
     }
-    .why-section .section-eyebrow { color: var(--accent-light); }
+    .why-section .section-eyebrow { color: var(--accent-light); background: rgba(88,101,242,0.12); }
     .why-inner { display: grid; grid-template-columns: 3fr 2fr; gap: 64px; align-items: start; }
     .why-body { font-size: var(--text-base); color: rgba(255,255,255,0.65); max-width: 480px; line-height: 1.7; margin-top: 32px; }
     .why-checks { list-style: none; margin-top: 32px; display: flex; flex-direction: column; gap: 16px; }
@@ -583,7 +598,7 @@
       white-space: nowrap; box-shadow: 0 4px 12px rgba(88,101,242,0.4);
     }
     .price-plan { font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-2); margin-bottom: 8px; }
-    .price-amount { font-size: 48px; font-weight: 700; color: var(--text); letter-spacing: -0.04em; line-height: 1; }
+    .price-amount { font-size: clamp(36px, 8vw, 48px); font-weight: 700; color: var(--text); letter-spacing: -0.04em; line-height: 1; }
     .price-amount .per { font-size: var(--text-base); font-weight: 400; color: var(--text-3); letter-spacing: 0; }
     .price-desc { font-size: var(--text-sm); color: var(--text-2); margin: 16px 0 24px; }
     .price-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 24px; }
@@ -613,16 +628,15 @@
       .price-card { padding: 32px 24px; }
       .price-card.featured { order: -1; transform: none; border-width: 2px; padding: 32px 24px; }
       .price-card.featured:hover { transform: translateY(-4px); }
-      .price-amount { font-size: 40px; }
     }
 
     /* ── FAQ ────────────────────────────────────────── */
     .faq-section { padding: var(--space-section) 0; background: var(--bg-elevated); border-top: 1px solid var(--border); }
     .faq-list { max-width: var(--container-narrow); margin: 56px auto 0; }
-    .faq-item { border-bottom: 1px solid var(--border); }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 4px 0; }
     .faq-q {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 0; font-size: var(--text-base); font-weight: 500; color: var(--text);
+      padding: 20px 0; font-size: var(--text-md); font-weight: 500; color: var(--text);
       cursor: pointer; background: none; border: none; width: 100%; text-align: left;
       gap: 16px; transition: color 150ms ease; min-height: 56px;
     }
@@ -631,7 +645,7 @@
     .faq-item.open .faq-icon { color: var(--accent); }
     .faq-item.open .faq-icon { transform: rotate(45deg); }
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 400ms var(--ease-out); }
-    .faq-answer-inner { padding: 0 0 32px; font-size: var(--text-sm); color: var(--text-2); line-height: 1.7; }
+    .faq-answer-inner { padding: 0 0 32px; font-size: var(--text-base); color: var(--text-2); line-height: 1.7; }
     .faq-item.open .faq-answer { max-height: 320px; }
 
     /* ── FINAL CTA ──────────────────────────────────── */
@@ -651,9 +665,9 @@
     .install-card code { font-family: var(--font-mono); font-size: var(--text-sm); color: #E2E8F0; white-space: nowrap; }
     .install-copy-btn {
       background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.65); border-radius: 6px; padding: 8px 16px;
+      color: rgba(255,255,255,0.65); border-radius: 6px; padding: 10px 16px;
       font-size: var(--text-xs); font-weight: 500; cursor: pointer; flex-shrink: 0;
-      transition: all 150ms ease;
+      transition: all 150ms ease; min-height: 44px;
     }
     .install-copy-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
     @media (max-width: 480px) { .install-card { flex-direction: column; gap: 8px; } .install-card code { font-size: var(--text-xs); word-break: break-all; white-space: normal; } }
@@ -678,7 +692,7 @@
     .footer-col a:hover { color: rgba(255,255,255,0.9); }
     .footer-bottom { margin-top: 40px; padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .footer-bottom p { font-size: var(--text-sm); color: rgba(255,255,255,0.28); }
-    .footer-bottom a { font-size: var(--text-sm); color: rgba(255,255,255,0.28); margin-left: 16px; transition: color 150ms ease; }
+    .footer-bottom a { font-size: var(--text-sm); color: rgba(255,255,255,0.28); margin-left: 16px; transition: color 150ms ease; padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center; }
     .footer-bottom a:hover { color: rgba(255,255,255,0.6); }
     @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; } }
     @media (max-width: 480px) {
@@ -1013,12 +1027,12 @@ Ready for your AI agent.</div>
       <div class="why-integrations reveal">
         <div class="why-integrations-inner">
           <span class="int-label">WORKS WITH</span>
-          <span class="int-chip"><span style="color:#D4721A;font-size:9px;">●</span> Claude</span>
-          <span class="int-chip"><span style="color:#E2E8F0;font-size:9px;">●</span> Cursor</span>
-          <span class="int-chip"><span style="color:#10A37F;font-size:9px;">●</span> GPT-4o</span>
-          <span class="int-chip"><span style="color:#6EA8FE;font-size:9px;">●</span> LangChain</span>
-          <span class="int-chip"><span style="color:#0EA5E9;font-size:9px;">●</span> Windsurf</span>
-          <span class="int-chip"><span style="color:#818CF8;font-size:9px;">●</span> OpenClaw</span>
+          <span class="int-chip"><span style="color:#D4721A;font-size:11px;">●</span> Claude</span>
+          <span class="int-chip"><span style="color:#E2E8F0;font-size:11px;">●</span> Cursor</span>
+          <span class="int-chip"><span style="color:#10A37F;font-size:11px;">●</span> GPT-4o</span>
+          <span class="int-chip"><span style="color:#6EA8FE;font-size:11px;">●</span> LangChain</span>
+          <span class="int-chip"><span style="color:#0EA5E9;font-size:11px;">●</span> Windsurf</span>
+          <span class="int-chip"><span style="color:#818CF8;font-size:11px;">●</span> OpenClaw</span>
         </div>
       </div>
     </div>
