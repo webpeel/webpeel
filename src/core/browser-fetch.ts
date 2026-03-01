@@ -1602,7 +1602,7 @@ export async function browserDesignAudit(
     stealth = false,
   } = options;
 
-  const spacingGrid = rules.spacingGrid ?? 8;
+  const spacingGrid = rules.spacingGrid ?? 4; // 4px base grid (accepts 4, 8, 12, 16, 20, 24...)
   const minTouchTarget = rules.minTouchTarget ?? 44;
   const minContrast = rules.minContrast ?? 4.5;
 
