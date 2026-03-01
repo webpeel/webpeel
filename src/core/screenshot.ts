@@ -114,3 +114,241 @@ export async function takeFilmstrip(url: string, options: FilmstripOptions = {})
     frameCount: frames.length,
   };
 }
+
+// ── Audit ─────────────────────────────────────────────────────────────────────
+
+import { browserAudit, browserAnimationCapture, browserViewports, browserDesignAudit } from './fetcher.js';
+export type { DesignAuditResult } from './fetcher.js';
+
+export interface AuditOptions {
+  width?: number;
+  height?: number;
+  format?: 'png' | 'jpeg' | 'jpg';
+  quality?: number;
+  selector?: string;
+  waitFor?: number;
+  timeout?: number;
+  userAgent?: string;
+  headers?: Record<string, string>;
+  cookies?: string[];
+  stealth?: boolean;
+  scrollThrough?: boolean;
+}
+
+export interface AuditSection {
+  index: number;
+  tag: string;
+  id: string;
+  className: string;
+  top: number;
+  height: number;
+  screenshot: string; // base64
+}
+
+export interface AuditResult {
+  url: string;
+  format: ScreenshotFormat;
+  sections: AuditSection[];
+}
+
+export async function takeAuditScreenshots(url: string, options: AuditOptions = {}): Promise<AuditResult> {
+  const format: ScreenshotFormat = (options.format === 'jpg' ? 'jpeg' : (options.format || 'jpeg')) as ScreenshotFormat;
+
+  const { frames, finalUrl } = await browserAudit(url, {
+    width: options.width,
+    height: options.height,
+    format,
+    quality: options.quality,
+    selector: options.selector,
+    waitMs: options.waitFor,
+    timeoutMs: options.timeout,
+    userAgent: options.userAgent,
+    headers: options.headers,
+    cookies: options.cookies,
+    stealth: options.stealth,
+    scrollThrough: options.scrollThrough,
+  });
+
+  return {
+    url: finalUrl,
+    format,
+    sections: frames.map(f => ({
+      index: f.index,
+      tag: f.tag,
+      id: f.id,
+      className: f.className,
+      top: f.top,
+      height: f.height,
+      screenshot: f.buffer.toString('base64'),
+    })),
+  };
+}
+
+// ── Animation Capture ─────────────────────────────────────────────────────────
+
+export interface AnimationCaptureOptions {
+  frames?: number;
+  intervalMs?: number;
+  scrollTo?: number;
+  selector?: string;
+  width?: number;
+  height?: number;
+  format?: 'png' | 'jpeg' | 'jpg';
+  quality?: number;
+  waitFor?: number;
+  timeout?: number;
+  userAgent?: string;
+  headers?: Record<string, string>;
+  cookies?: string[];
+  stealth?: boolean;
+}
+
+export interface AnimationFrame {
+  index: number;
+  timestampMs: number;
+  screenshot: string; // base64
+}
+
+export interface AnimationCaptureResult {
+  url: string;
+  format: ScreenshotFormat;
+  frames: AnimationFrame[];
+  frameCount: number;
+}
+
+export async function takeAnimationCapture(url: string, options: AnimationCaptureOptions = {}): Promise<AnimationCaptureResult> {
+  const format: ScreenshotFormat = (options.format === 'jpg' ? 'jpeg' : (options.format || 'jpeg')) as ScreenshotFormat;
+
+  const { frames, finalUrl } = await browserAnimationCapture(url, {
+    frames: options.frames,
+    intervalMs: options.intervalMs,
+    scrollTo: options.scrollTo,
+    selector: options.selector,
+    width: options.width,
+    height: options.height,
+    format,
+    quality: options.quality,
+    waitMs: options.waitFor,
+    timeoutMs: options.timeout,
+    userAgent: options.userAgent,
+    headers: options.headers,
+    cookies: options.cookies,
+    stealth: options.stealth,
+  });
+
+  return {
+    url: finalUrl,
+    format,
+    frames: frames.map(f => ({
+      index: f.index,
+      timestampMs: f.timestampMs,
+      screenshot: f.buffer.toString('base64'),
+    })),
+    frameCount: frames.length,
+  };
+}
+
+// ── Multi-Viewport Batch ──────────────────────────────────────────────────────
+
+export interface ViewportSpec {
+  width: number;
+  height: number;
+  label?: string;
+}
+
+export interface ViewportsBatchOptions {
+  viewports: ViewportSpec[];
+  fullPage?: boolean;
+  format?: 'png' | 'jpeg' | 'jpg';
+  quality?: number;
+  waitFor?: number;
+  timeout?: number;
+  userAgent?: string;
+  headers?: Record<string, string>;
+  cookies?: string[];
+  stealth?: boolean;
+  scrollThrough?: boolean;
+}
+
+export interface ViewportResult {
+  width: number;
+  height: number;
+  label: string;
+  screenshot: string; // base64
+}
+
+export interface ViewportsBatchResult {
+  url: string;
+  format: ScreenshotFormat;
+  viewports: ViewportResult[];
+}
+
+export async function takeViewportsBatch(url: string, options: ViewportsBatchOptions): Promise<ViewportsBatchResult> {
+  const format: ScreenshotFormat = (options.format === 'jpg' ? 'jpeg' : (options.format || 'jpeg')) as ScreenshotFormat;
+
+  const { frames, finalUrl } = await browserViewports(url, {
+    viewports: options.viewports,
+    fullPage: options.fullPage,
+    format,
+    quality: options.quality,
+    waitMs: options.waitFor,
+    timeoutMs: options.timeout,
+    userAgent: options.userAgent,
+    headers: options.headers,
+    cookies: options.cookies,
+    stealth: options.stealth,
+    scrollThrough: options.scrollThrough,
+  });
+
+  return {
+    url: finalUrl,
+    format,
+    viewports: frames.map(f => ({
+      width: f.width,
+      height: f.height,
+      label: f.label,
+      screenshot: f.buffer.toString('base64'),
+    })),
+  };
+}
+
+// ── Design Audit ──────────────────────────────────────────────────────────────
+
+export interface DesignAuditOptions {
+  rules?: {
+    spacingGrid?: number;
+    minTouchTarget?: number;
+    minContrast?: number;
+  };
+  selector?: string;
+  width?: number;
+  height?: number;
+  waitFor?: number;
+  timeout?: number;
+  userAgent?: string;
+  headers?: Record<string, string>;
+  cookies?: string[];
+  stealth?: boolean;
+}
+
+export interface DesignAuditSummaryResult {
+  url: string;
+  audit: import('./fetcher.js').DesignAuditResult;
+}
+
+export async function takeDesignAudit(url: string, options: DesignAuditOptions = {}): Promise<DesignAuditSummaryResult> {
+  const { audit, finalUrl } = await browserDesignAudit(url, {
+    rules: options.rules,
+    selector: options.selector,
+    width: options.width,
+    height: options.height,
+    waitMs: options.waitFor,
+    timeoutMs: options.timeout,
+    userAgent: options.userAgent,
+    headers: options.headers,
+    cookies: options.cookies,
+    stealth: options.stealth,
+  });
+
+  return { url: finalUrl, audit };
+}
