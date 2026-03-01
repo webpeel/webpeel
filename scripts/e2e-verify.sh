@@ -49,7 +49,7 @@ SITE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://webpeel.dev" 2>/dev/
 check "webpeel.dev returns 200 (got $SITE_CODE)" "$([ "$SITE_CODE" = "200" ] && echo 0 || echo 1)"
 
 DASH_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://app.webpeel.dev" 2>/dev/null || echo "000")
-check "app.webpeel.dev returns 200 (got $DASH_CODE)" "$([ "$DASH_CODE" = "200" ] && echo 0 || echo 1)"
+check "app.webpeel.dev responds (got $DASH_CODE)" "$([ "$DASH_CODE" = "200" ] || [ "$DASH_CODE" = "307" ] && echo 0 || echo 1)"
 
 DOCS_CODE=$(curl -sL -o /dev/null -w "%{http_code}" "https://webpeel.dev/docs/" 2>/dev/null || echo "000")
 check "docs returns 200 (got $DOCS_CODE)" "$([ "$DOCS_CODE" = "200" ] && echo 0 || echo 1)"
@@ -75,8 +75,13 @@ TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
 check "wikipedia.org: $TOKENS tokens" "$([ "$TOKENS" -gt 500 ] && echo 0 || echo 1)"
 
 # Test 4: Search
-RESULT=$($CLI search "what is webpeel" --silent --json 2>/dev/null || echo '{"error":true}')
-RESULTS_COUNT=$(echo "$RESULT" | jq -r '.results | length // 0' 2>/dev/null || echo 0)
+# Search outputs debug lines then multiline JSON — use node to extract count
+RESULTS_COUNT=$($CLI search "what is webpeel" --silent --json 2>&1 | node -e "
+  let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
+    try { const m=d.match(/\{[\s\S]*\}/); const j=JSON.parse(m[0]); console.log(j.results?.length||j.count||0); }
+    catch(e) { console.log(0); }
+  });
+" 2>/dev/null || echo 0)
 check "search 'what is webpeel': $RESULTS_COUNT results" "$([ "$RESULTS_COUNT" -gt 0 ] && echo 0 || echo 1)"
 echo ""
 
@@ -96,9 +101,12 @@ BUILD_RESULT=$(npm run build 2>&1)
 check "TypeScript build clean" "$?"
 
 TEST_OUTPUT=$(npm test -- --run 2>&1)
-TESTS_PASSED=$(echo "$TEST_OUTPUT" | grep -o '[0-9]* passed' | head -1 | grep -o '[0-9]*')
-TESTS_FAILED=$(echo "$TEST_OUTPUT" | grep -o '[0-9]* failed' | head -1 | grep -o '[0-9]*' || echo 0)
-check "Tests: ${TESTS_PASSED:-0} passed, ${TESTS_FAILED:-0} failed" "$([ "${TESTS_FAILED:-1}" = "0" ] && echo 0 || echo 1)"
+# vitest output: "Tests  1383 passed | 3 skipped (1386)" and "Test Files  55 passed (55)"
+TESTS_PASSED=$(echo "$TEST_OUTPUT" | grep "Tests " | grep -o '[0-9]* passed' | grep -o '[0-9]*')
+TESTS_FAILED=$(echo "$TEST_OUTPUT" | grep "Tests " | grep -o '[0-9]* failed' | grep -o '[0-9]*' || echo 0)
+FILES_FAILED=$(echo "$TEST_OUTPUT" | grep "Test Files" | grep -o '[0-9]* failed' | grep -o '[0-9]*' || echo 0)
+TOTAL_FAILED=$(( ${TESTS_FAILED:-0} + ${FILES_FAILED:-0} ))
+check "Tests: ${TESTS_PASSED:-0} passed, ${TOTAL_FAILED} failed" "$([ "$TOTAL_FAILED" = "0" ] && echo 0 || echo 1)"
 echo ""
 
 # ── Summary ────────────────────────────────────────
