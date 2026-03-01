@@ -131,8 +131,8 @@ describe('peel() function', () => {
   it('handles PDF URLs via simple fetch (no browser needed)', async () => {
     const result = await peel('https://example.com/document.pdf');
 
-    // PDFs are now parsed via pdf-parse in the simple HTTP path — no browser required
-    expect(result.method).toBe('simple');
+    // PDFs are routed through the domain-api pipeline extractor
+    expect(result.method).toBe('domain-api');
   });
 
   it('forces browser when screenshot requested', async () => {

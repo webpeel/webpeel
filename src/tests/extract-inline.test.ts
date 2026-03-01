@@ -61,9 +61,33 @@ import type { IJobQueue } from '../server/job-queue.js';
 
 function makeMockAuthStore(): AuthStore {
   return {
-    validateKey: vi.fn().mockResolvedValue(null),
+    validateKey: vi.fn().mockResolvedValue({
+      key: 'test-key',
+      tier: 'pro' as const,
+      rateLimit: 1000,
+      accountId: 'test-account',
+      createdAt: new Date(),
+    }),
     trackUsage: vi.fn().mockResolvedValue(undefined),
   };
+}
+
+// Middleware that sets req.auth so route handlers don't 401
+function mockAuthMiddleware(req: any, _res: any, next: any) {
+  req.auth = {
+    keyInfo: {
+      key: 'test-key',
+      tier: 'pro' as const,
+      rateLimit: 1000,
+      accountId: 'test-account',
+      createdAt: new Date(),
+    },
+    tier: 'pro' as const,
+    rateLimit: 1000,
+    softLimited: false,
+    extraUsageAvailable: false,
+  };
+  next();
 }
 
 function makeMockJobQueue(): IJobQueue {
@@ -111,6 +135,7 @@ describe('POST /v1/fetch — inline extraction', () => {
 
     app = express();
     app.use(express.json());
+    app.use(mockAuthMiddleware);
     app.use(createFetchRouter(makeMockAuthStore()));
   });
 
@@ -251,6 +276,7 @@ describe('POST /v2/scrape — inline extraction', () => {
 
     app = express();
     app.use(express.json());
+    app.use(mockAuthMiddleware);
     app.use(createFetchRouter(makeMockAuthStore()));
   });
 
