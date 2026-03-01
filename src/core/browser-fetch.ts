@@ -623,6 +623,7 @@ export async function browserScreenshot(
       to?: 'top' | 'bottom' | number;
       timeout?: number;
     }>;
+    scrollThrough?: boolean;
   } = {}
 ): Promise<{ buffer: Buffer; finalUrl: string }> {
   // SECURITY: Validate URL to prevent SSRF
@@ -641,6 +642,7 @@ export async function browserScreenshot(
     cookies,
     stealth = false,
     actions,
+    scrollThrough = false,
   } = options;
 
   const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
@@ -801,6 +803,23 @@ export async function browserScreenshot(
         await page!.waitForTimeout(waitMs);
       }
 
+      // Scroll through the page to trigger IntersectionObservers, lazy loading, animations
+      if (scrollThrough) {
+        const scrollHeight = await page!.evaluate(() => document.body.scrollHeight);
+        const viewportHeight = await page!.evaluate(() => window.innerHeight);
+        // Scroll down in viewport-sized chunks
+        for (let y = 0; y < scrollHeight; y += Math.round(viewportHeight * 0.75)) {
+          await page!.evaluate((sy: number) => window.scrollTo({ top: sy, behavior: 'instant' }), y);
+          await page!.waitForTimeout(250);
+        }
+        // Hit absolute bottom
+        await page!.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
+        await page!.waitForTimeout(400);
+        // Scroll back to top for the final capture
+        await page!.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+        await page!.waitForTimeout(600);
+      }
+
       if (actions && actions.length > 0) {
         const { executeActions } = await import('./actions.js');
         const actionScreenshot = await executeActions(page!, actions, {
@@ -922,4 +941,139 @@ export async function scrollAndWait(page: Page, times = 3): Promise<string> {
   }
 
   return page.content();
+}
+
+// ── browserFilmstrip ──────────────────────────────────────────────────────────
+
+/**
+ * Capture multiple screenshots at evenly distributed scroll positions.
+ * Returns an array of Buffers (one per frame).
+ */
+export async function browserFilmstrip(
+  url: string,
+  options: {
+    frames?: number;
+    width?: number;
+    height?: number;
+    format?: 'png' | 'jpeg';
+    quality?: number;
+    waitMs?: number;
+    timeoutMs?: number;
+    userAgent?: string;
+    headers?: Record<string, string>;
+    cookies?: string[];
+    stealth?: boolean;
+  } = {}
+): Promise<{ frames: Buffer[]; finalUrl: string }> {
+  validateUrl(url);
+
+  const {
+    frames: frameCount = 6,
+    width,
+    height,
+    format = 'png',
+    quality,
+    waitMs = 0,
+    timeoutMs = 30000,
+    userAgent,
+    headers,
+    cookies,
+    stealth = false,
+  } = options;
+
+  // Clamp frames between 2 and 12
+  const numFrames = Math.max(2, Math.min(12, frameCount));
+
+  const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
+
+  const queueStartTime = Date.now();
+  const QUEUE_TIMEOUT_MS = 30000;
+
+  while (activePagesCount >= MAX_CONCURRENT_PAGES) {
+    if (Date.now() - queueStartTime > QUEUE_TIMEOUT_MS) {
+      throw new TimeoutError('Browser page queue timeout - too many concurrent requests');
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  activePagesCount++;
+  let page: Page | null = null;
+
+  try {
+    const browser = stealth ? await getStealthBrowser() : await getBrowser();
+    page = await browser.newPage({
+      userAgent: validatedUserAgent,
+      viewport: { width: width || 1280, height: height || 720 },
+    });
+    await applyStealthScripts(page);
+
+    if (headers) await page.setExtraHTTPHeaders(headers);
+
+    if (cookies && cookies.length > 0) {
+      const parsedCookies = cookies.map(cookie => {
+        const [nameValue] = cookie.split(';').map(s => s.trim());
+        const [name, value] = nameValue.split('=');
+        if (!name || value === undefined) {
+          throw new WebPeelError(`Invalid cookie format: ${cookie}`);
+        }
+        return { name: name.trim(), value: value.trim(), url };
+      });
+      await page.context().addCookies(parsedCookies);
+    }
+
+    await page.route('**/*', (route) => route.continue());
+
+    try {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+    } catch (gotoError: any) {
+      const msg = gotoError?.message || String(gotoError);
+      if (/timeout/i.test(msg)) {
+        throw new TimeoutError(`Page load timed out after ${timeoutMs}ms: ${url}`);
+      }
+      if (/net::ERR_/i.test(msg)) {
+        throw new NetworkError(`Browser network error: ${msg.match(/net::ERR_\w+/i)?.[0] || msg}`);
+      }
+      throw gotoError;
+    }
+
+    if (waitMs > 0) await page.waitForTimeout(waitMs);
+
+    // Wait a bit for initial animations
+    await page.waitForTimeout(800);
+
+    const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    const capturedFrames: Buffer[] = [];
+
+    // Calculate scroll positions (evenly distributed)
+    const positions: number[] = [];
+    for (let i = 0; i < numFrames; i++) {
+      positions.push(Math.round((scrollHeight - viewportHeight) * i / (numFrames - 1)));
+    }
+
+    for (const pos of positions) {
+      await page.evaluate((y: number) => window.scrollTo({ top: y, behavior: 'instant' }), pos);
+      await page.waitForTimeout(350); // Let animations settle
+      const buf = await page.screenshot({
+        type: format,
+        ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
+      });
+      capturedFrames.push(buf);
+    }
+
+    const finalUrl = page.url();
+    return { frames: capturedFrames, finalUrl };
+  } catch (error) {
+    if (error instanceof BlockedError || error instanceof WebPeelError || error instanceof TimeoutError) {
+      throw error;
+    }
+    if (error instanceof Error && error.message.includes('Timeout')) {
+      throw new TimeoutError('Browser filmstrip timed out');
+    }
+    throw new NetworkError(
+      `Browser filmstrip failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  } finally {
+    if (page) await page.close().catch(() => {});
+    activePagesCount--;
+  }
 }

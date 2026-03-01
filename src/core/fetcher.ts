@@ -10,4 +10,4 @@
 // Re-export everything for backward compatibility
 export { simpleFetch, type FetchResult } from './http-fetch.js';
 export { cleanup, warmup, closePool, closeProfileBrowser, playwrightLoaded } from './browser-pool.js';
-export { browserFetch, browserScreenshot, retryFetch, scrollAndWait } from './browser-fetch.js';
+export { browserFetch, browserScreenshot, browserFilmstrip, retryFetch, scrollAndWait } from './browser-fetch.js';

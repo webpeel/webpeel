@@ -99,6 +99,27 @@ function cleanText(
   return s;
 }
 
+/** Decode DuckDuckGo redirect URLs to their final destination */
+function decodeDdgUrl(rawUrl: string): string {
+  try {
+    // Handle //duckduckgo.com/l/?uddg=... format
+    const urlStr = rawUrl.startsWith('//') ? 'https:' + rawUrl : rawUrl;
+    const parsed = new URL(urlStr);
+
+    if (parsed.hostname === 'duckduckgo.com' && parsed.pathname === '/l/') {
+      const uddg = parsed.searchParams.get('uddg');
+      if (uddg) return uddg; // Already decoded by URL parser
+    }
+
+    // Filter out DDG internal URLs (including ad redirects like /y.js)
+    if (parsed.hostname === 'duckduckgo.com') return '';
+
+    return rawUrl.startsWith('//') ? 'https:' + rawUrl : rawUrl;
+  } catch {
+    return rawUrl;
+  }
+}
+
 function normalizeUrlForDedupe(rawUrl: string): string {
   try {
     const u = new URL(rawUrl);
@@ -190,12 +211,8 @@ export class StealthSearchProvider implements SearchProvider {
         if (!title || !rawUrl) return;
 
         // Extract real URL from DDG redirect param
-        let finalUrl = rawUrl;
-        try {
-          const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
-          const uddg = ddgUrl.searchParams.get('uddg');
-          if (uddg) finalUrl = decodeURIComponent(uddg);
-        } catch { /* use raw */ }
+        const finalUrl = decodeDdgUrl(rawUrl);
+        if (!finalUrl) return; // filtered out (DDG internal link)
 
         const validated = this.validateUrl(finalUrl);
         if (!validated) return;
@@ -527,30 +544,15 @@ export class DuckDuckGoProvider implements SearchProvider {
 
       if (!title || !rawUrl) return;
 
-      // Extract actual URL from DuckDuckGo redirect
-      let url = rawUrl;
-      try {
-        const ddgUrl = new URL(rawUrl, 'https://duckduckgo.com');
-        const uddg = ddgUrl.searchParams.get('uddg');
-        if (uddg) url = decodeURIComponent(uddg);
-      } catch (e) {
-        if (process.env.DEBUG) console.debug('[webpeel]', 'ddg url parse failed:', e instanceof Error ? e.message : e);
-      }
+      // Extract actual URL from DuckDuckGo redirect; filter DDG internal/ad URLs
+      const decoded = decodeDdgUrl(rawUrl);
+      if (!decoded) return; // filtered out (DDG internal link or ad redirect)
 
       // SECURITY: Validate and sanitize results — only allow HTTP/HTTPS URLs
+      let url: string;
       try {
-        let parsed: URL;
-        try {
-          parsed = new URL(url);
-        } catch {
-          // Handle protocol-relative or relative URLs (rare but possible)
-          parsed = new URL(url, 'https://duckduckgo.com');
-        }
+        const parsed = new URL(decoded);
         if (!['http:', 'https:'].includes(parsed.protocol)) {
-          return;
-        }
-        // Filter DuckDuckGo ad redirect URLs (e.g. duckduckgo.com/y.js?ad_domain=...)
-        if (parsed.hostname === 'duckduckgo.com' && parsed.pathname === '/y.js') {
           return;
         }
         url = parsed.href;
@@ -608,19 +610,14 @@ export class DuckDuckGoProvider implements SearchProvider {
 
       if (!title || !url) return;
 
-      // Extract actual URL from DDG redirect
-      try {
-        const ddgUrl = new URL(url, 'https://lite.duckduckgo.com');
-        const uddg = ddgUrl.searchParams.get('uddg');
-        if (uddg) url = decodeURIComponent(uddg);
-      } catch { /* use raw */ }
+      // Extract actual URL from DDG redirect; filter DDG internal/ad URLs
+      const decoded = decodeDdgUrl(url);
+      if (!decoded) return; // filtered out (DDG internal link or ad redirect)
 
       // Validate URL
       try {
-        const parsed = new URL(url);
+        const parsed = new URL(decoded);
         if (!['http:', 'https:'].includes(parsed.protocol)) return;
-        // Filter DuckDuckGo ad redirect URLs (e.g. duckduckgo.com/y.js?ad_domain=...)
-        if (parsed.hostname === 'duckduckgo.com' && parsed.pathname === '/y.js') return;
         url = parsed.href;
       } catch { return; }
 

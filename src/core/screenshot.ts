@@ -5,7 +5,7 @@
  */
 
 import type { PageAction } from '../types.js';
-import { browserScreenshot } from './fetcher.js';
+import { browserScreenshot, browserFilmstrip } from './fetcher.js';
 
 export type ScreenshotFormat = 'png' | 'jpeg';
 
@@ -25,6 +25,7 @@ export interface ScreenshotOptions {
   cookies?: string[];
   stealth?: boolean;
   actions?: PageAction[];
+  scrollThrough?: boolean;
 }
 
 export interface ScreenshotResult {
@@ -51,6 +52,7 @@ export async function takeScreenshot(url: string, options: ScreenshotOptions = {
     cookies: options.cookies,
     stealth: options.stealth,
     actions: options.actions,
+    scrollThrough: options.scrollThrough,
   });
 
   return {
@@ -58,5 +60,57 @@ export async function takeScreenshot(url: string, options: ScreenshotOptions = {
     format,
     contentType: format === 'png' ? 'image/png' : 'image/jpeg',
     screenshot: buffer.toString('base64'),
+  };
+}
+
+// ── Filmstrip ─────────────────────────────────────────────────────────────────
+
+export interface FilmstripOptions {
+  frames?: number;
+  width?: number;
+  height?: number;
+  /** png | jpeg | jpg (jpg is treated as jpeg) */
+  format?: 'png' | 'jpeg' | 'jpg';
+  quality?: number;
+  waitFor?: number;
+  timeout?: number;
+  userAgent?: string;
+  headers?: Record<string, string>;
+  cookies?: string[];
+  stealth?: boolean;
+}
+
+export interface FilmstripResult {
+  url: string;
+  format: ScreenshotFormat;
+  contentType: string;
+  /** Array of base64-encoded screenshots (no data: prefix) */
+  frames: string[];
+  frameCount: number;
+}
+
+export async function takeFilmstrip(url: string, options: FilmstripOptions = {}): Promise<FilmstripResult> {
+  const format: ScreenshotFormat = (options.format === 'jpg' ? 'jpeg' : (options.format || 'png')) as ScreenshotFormat;
+
+  const { frames, finalUrl } = await browserFilmstrip(url, {
+    frames: options.frames,
+    width: options.width,
+    height: options.height,
+    format,
+    quality: options.quality,
+    waitMs: options.waitFor,
+    timeoutMs: options.timeout,
+    userAgent: options.userAgent,
+    headers: options.headers,
+    cookies: options.cookies,
+    stealth: options.stealth,
+  });
+
+  return {
+    url: finalUrl,
+    format,
+    contentType: format === 'png' ? 'image/png' : 'image/jpeg',
+    frames: frames.map(f => f.toString('base64')),
+    frameCount: frames.length,
   };
 }

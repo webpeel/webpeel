@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { takeScreenshot } from '../../core/screenshot.js';
+import { takeScreenshot, takeFilmstrip } from '../../core/screenshot.js';
 import type { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
 import { normalizeActions } from '../../core/actions.js';
@@ -35,6 +35,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         headers,
         cookies,
         stealth,
+        scrollThrough = false,
       } = req.body;
 
       // --- Validate URL --------------------------------------------------
@@ -154,6 +155,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         headers,
         cookies,
         stealth: stealth === true,
+        scrollThrough: scrollThrough === true,
       });
 
       const elapsed = Date.now() - startTime;
@@ -260,6 +262,203 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
           error: 'internal_error',
           message: 'An unexpected error occurred while taking the screenshot',
         });
+      }
+    }
+  });
+
+  // ── POST /v1/screenshot/filmstrip ──────────────────────────────────────────
+  router.post('/v1/screenshot/filmstrip', async (req: Request, res: Response) => {
+    try {
+      const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+      if (!ssUserId) {
+        res.status(401).json({ error: 'unauthorized', message: 'API key required. Get one free at https://app.webpeel.dev/keys' });
+        return;
+      }
+
+      const {
+        url,
+        frames = 6,
+        width,
+        height,
+        format = 'png',
+        quality,
+        waitFor,
+        timeout,
+        headers,
+        cookies,
+        stealth,
+      } = req.body;
+
+      // --- Validate URL --------------------------------------------------
+      if (!url || typeof url !== 'string') {
+        res.status(400).json({ error: 'invalid_request', message: 'Missing or invalid "url" parameter' });
+        return;
+      }
+
+      if (url.length > 2048) {
+        res.status(400).json({ error: 'invalid_url', message: 'URL too long (max 2048 characters)' });
+        return;
+      }
+
+      try {
+        const parsed = new URL(url);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          res.status(400).json({ error: 'invalid_url', message: 'Only HTTP and HTTPS protocols are allowed' });
+          return;
+        }
+      } catch {
+        res.status(400).json({ error: 'invalid_url', message: 'Invalid URL format' });
+        return;
+      }
+
+      try {
+        validateUrlForSSRF(url);
+      } catch (error) {
+        if (error instanceof SSRFError) {
+          res.status(400).json({ error: 'ssrf_blocked', message: 'Cannot fetch localhost, private networks, or non-HTTP URLs' });
+          return;
+        }
+        throw error;
+      }
+
+      // --- Validate options -----------------------------------------------
+      if (frames !== undefined && (typeof frames !== 'number' || frames < 2 || frames > 12)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid frames: must be between 2 and 12' });
+        return;
+      }
+
+      if (format !== undefined && !['png', 'jpeg', 'jpg'].includes(format)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid format: must be "png", "jpeg", or "jpg"' });
+        return;
+      }
+
+      if (width !== undefined && (typeof width !== 'number' || width < 100 || width > 5000)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid width: must be between 100 and 5000' });
+        return;
+      }
+
+      if (height !== undefined && (typeof height !== 'number' || height < 100 || height > 5000)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid height: must be between 100 and 5000' });
+        return;
+      }
+
+      if (quality !== undefined && (typeof quality !== 'number' || quality < 1 || quality > 100)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid quality: must be between 1 and 100' });
+        return;
+      }
+
+      if (waitFor !== undefined && (typeof waitFor !== 'number' || waitFor < 0 || waitFor > 60000)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid waitFor: must be between 0 and 60000ms' });
+        return;
+      }
+
+      // --- Take the filmstrip -------------------------------------------
+      const startTime = Date.now();
+
+      const result = await takeFilmstrip(url, {
+        frames,
+        width,
+        height,
+        format,
+        quality,
+        waitFor,
+        timeout: timeout || 30000,
+        headers,
+        cookies,
+        stealth: stealth === true,
+      });
+
+      const elapsed = Date.now() - startTime;
+
+      // --- Track usage ---------------------------------------------------
+      const isSoftLimited = req.auth?.softLimited === true;
+      const hasExtraUsage = req.auth?.extraUsageAvailable === true;
+
+      const pgStore = authStore as any;
+      if (req.auth?.keyInfo?.key && typeof pgStore.trackBurstUsage === 'function') {
+        await pgStore.trackBurstUsage(req.auth.keyInfo.key);
+
+        if (isSoftLimited && hasExtraUsage) {
+          const extraResult = await pgStore.trackExtraUsage(
+            req.auth.keyInfo.key,
+            'stealth',
+            url,
+            elapsed,
+            200
+          );
+          if (extraResult.success) {
+            res.setHeader('X-Extra-Usage-Charged', `$${extraResult.cost.toFixed(4)}`);
+            res.setHeader('X-Extra-Usage-New-Balance', extraResult.newBalance.toFixed(2));
+          }
+        } else if (!isSoftLimited) {
+          await pgStore.trackUsage(req.auth.keyInfo.key, 'stealth');
+        }
+      }
+
+      // Log to usage_logs (fire and forget)
+      if (req.auth?.keyInfo?.accountId && typeof pgStore.pool !== 'undefined') {
+        pgStore.pool.query(
+          `INSERT INTO usage_logs
+            (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            req.auth.keyInfo.accountId,
+            'screenshot_filmstrip',
+            url,
+            'stealth',
+            elapsed,
+            200,
+            req.ip || req.socket.remoteAddress,
+            req.get('user-agent'),
+          ]
+        ).catch((err: any) => {
+          console.error('Failed to log filmstrip request:', err);
+        });
+      }
+
+      // --- Respond -------------------------------------------------------
+      res.setHeader('X-Credits-Used', '1');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.setHeader('X-Fetch-Type', 'filmstrip');
+
+      res.json({
+        success: true,
+        data: {
+          url: result.url,
+          format: result.format,
+          frameCount: result.frameCount,
+          frames: result.frames,
+        },
+      });
+    } catch (error: any) {
+      console.error('Filmstrip error:', error);
+
+      const pgStore = authStore as any;
+      if (req.auth?.keyInfo?.accountId && typeof pgStore.pool !== 'undefined') {
+        pgStore.pool.query(
+          `INSERT INTO usage_logs
+            (user_id, endpoint, url, method, status_code, error, ip_address, user_agent)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            req.auth.keyInfo.accountId,
+            'screenshot_filmstrip',
+            req.body?.url,
+            'stealth',
+            500,
+            error.message || 'Unknown error',
+            req.ip || req.socket.remoteAddress,
+            req.get('user-agent'),
+          ]
+        ).catch((logErr: any) => {
+          console.error('Failed to log filmstrip error:', logErr);
+        });
+      }
+
+      if (error.code) {
+        const safeMessage = error.message.replace(/[<>"']/g, '');
+        res.status(500).json({ error: 'filmstrip_error', message: safeMessage });
+      } else {
+        res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred while taking the filmstrip' });
       }
     }
   });
