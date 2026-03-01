@@ -218,14 +218,6 @@
       text-align: center;
       position: relative;
       border-bottom: none;
-      overflow: visible;
-    }
-    .hero::after {
-      content: '';
-      position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%);
-      width: 60%; height: 120px;
-      background: radial-gradient(ellipse at center, rgba(88,101,242,0.08) 0%, transparent 70%);
-      pointer-events: none; z-index: 0;
     }
     .hero-content { max-width: 820px; margin: 0 auto; padding-bottom: 48px; }
     .hero-eyebrow {
@@ -407,18 +399,13 @@
 
     /* ── DEMO SECTION ───────────────────────────────── */
     .demo-section {
-      padding: var(--space-section) 0;
-      background: var(--bg);
+      padding: 64px 0 var(--space-section);
+      background: var(--bg-dark);
       border-top: none;
-      position: relative;
     }
-    .demo-section::before {
-      content: '';
-      position: absolute; top: -1px; left: 0; right: 0; height: 120px;
-      background: linear-gradient(to bottom, var(--bg-dark) 0%, transparent 100%);
-      pointer-events: none;
-      z-index: 0;
-    }
+    .demo-section .section-eyebrow { color: var(--accent-light); background: rgba(88,101,242,0.12); }
+    .demo-section .section-h2 { color: var(--text-on-dark); }
+    .demo-section .demo-subtitle { color: rgba(255,255,255,0.6); }
     .demo-inner { max-width: 800px; margin: 0 auto; text-align: center; }
     .demo-card-wrap {
       background: var(--bg-card); border: 1px solid var(--border-card);
@@ -483,7 +470,13 @@
     }
 
     /* ── HOW IT WORKS ───────────────────────────────── */
-    .how-section { padding: var(--space-section) 0; background: #FFFFFF; border-top: none; }
+    .how-section { padding: var(--space-section) 0; background: #FFFFFF; border-top: none; position: relative; }
+    .how-section::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 80px;
+      background: linear-gradient(to bottom, var(--bg-dark), #FFFFFF);
+      pointer-events: none;
+    }
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 56px; }
     .how-step-num {
       font-size: var(--text-xs); font-family: var(--font-mono); color: var(--accent);
