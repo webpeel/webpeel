@@ -218,6 +218,14 @@
       text-align: center;
       position: relative;
       border-bottom: none;
+      overflow: visible;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%);
+      width: 60%; height: 120px;
+      background: radial-gradient(ellipse at center, rgba(88,101,242,0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
     }
     .hero-content { max-width: 820px; margin: 0 auto; padding-bottom: 48px; }
     .hero-eyebrow {
@@ -402,6 +410,14 @@
       padding: var(--space-section) 0;
       background: var(--bg);
       border-top: none;
+      position: relative;
+    }
+    .demo-section::before {
+      content: '';
+      position: absolute; top: -1px; left: 0; right: 0; height: 120px;
+      background: linear-gradient(to bottom, var(--bg-dark) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
     }
     .demo-inner { max-width: 800px; margin: 0 auto; text-align: center; }
     .demo-card-wrap {
@@ -568,7 +584,13 @@
     }
 
     /* ── PRICING ────────────────────────────────────── */
-    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: none; }
+    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: none; position: relative; }
+    .pricing-section::before {
+      content: '';
+      position: absolute; top: -1px; left: 0; right: 0; height: 100px;
+      background: linear-gradient(to bottom, var(--bg-dark) 0%, transparent 100%);
+      pointer-events: none; z-index: 0;
+    }
     .pricing-header { text-align: center; margin-bottom: 72px; }
     .pricing-sub { font-size: var(--text-base); color: var(--text-2); margin-top: 0; }
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 960px; margin: 0 auto; align-items: start; }
