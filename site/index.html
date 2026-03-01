@@ -265,7 +265,8 @@
       max-width: 880px; margin: 64px auto 0;
       background: #0C0C0E; border-radius: 16px; overflow: hidden;
       text-align: left; position: relative;
-      border: 1px solid rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 40px 80px -20px rgba(0,0,0,0.5), 0 0 120px rgba(88,101,242,0.1);
     }
     .terminal-chrome {
       height: 48px; background: #1A1A1F;
@@ -390,7 +391,7 @@
 
     /* ── HOW IT WORKS ───────────────────────────────── */
     .how-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid var(--border); }
-    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px; margin-top: 64px; }
+    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 48px; }
     .how-step-num {
       font-size: 13px; font-family: var(--font-mono); color: var(--accent);
       font-weight: 600; padding-bottom: 12px; margin-bottom: 20px;
@@ -455,7 +456,7 @@
       transition: border-color 200ms ease;
     }
     .stat-card:hover { border-color: rgba(88,101,242,0.2); }
-    .stat-card .stat-n { font-size: var(--text-stat); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
+    .stat-card .stat-n { font-size: clamp(48px, 6vw, 72px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; }
     .stat-card .stat-l { font-size: 11.5px; color: rgba(255,255,255,0.4); margin-top: 6px; }
 
     /* Integration chips */
@@ -493,13 +494,13 @@
     .price-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-xl); }
     .price-card.featured {
       border: 2px solid var(--accent);
-      transform: scale(1.03);
+      transform: scale(1.05);
       background: #FAFAFF;
-      box-shadow: 0 0 0 1px rgba(88,101,242,0.1), 0 8px 32px rgba(88,101,242,0.15), 0 2px 8px rgba(0,0,0,0.04);
+      box-shadow: 0 0 0 1px rgba(88,101,242,0.15), 0 12px 40px rgba(88,101,242,0.2), 0 4px 12px rgba(0,0,0,0.06), 0 0 80px rgba(88,101,242,0.08);
     }
     .price-card.featured:hover {
-      transform: scale(1.03) translateY(-4px);
-      box-shadow: 0 0 0 1px rgba(88,101,242,0.15), 0 12px 40px rgba(88,101,242,0.25), 0 4px 12px rgba(0,0,0,0.06);
+      transform: scale(1.05) translateY(-4px);
+      box-shadow: 0 0 0 1px rgba(88,101,242,0.2), 0 16px 48px rgba(88,101,242,0.3), 0 6px 16px rgba(0,0,0,0.08), 0 0 100px rgba(88,101,242,0.12);
     }
     .price-badge {
       position: absolute; top: -12px; right: 24px;
@@ -538,7 +539,7 @@
     }
 
     /* ── FAQ ────────────────────────────────────────── */
-    .faq-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid var(--border); }
+    .faq-section { padding: var(--space-section) 0; background: var(--bg-card); border-top: 1px solid var(--border); }
     .faq-list { max-width: var(--container-narrow); margin: 40px auto 0; }
     .faq-item { border-bottom: 1px solid var(--border); }
     .faq-q {
