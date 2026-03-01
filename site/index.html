@@ -470,12 +470,13 @@
     }
 
     /* ── HOW IT WORKS ───────────────────────────────── */
-    .how-section { padding: var(--space-section) 0; background: #FFFFFF; border-top: none; position: relative; }
+    .how-section { padding: calc(var(--space-section) + 80px) 0 var(--space-section); background: #FFFFFF; border-top: none; position: relative; overflow: visible; }
     .how-section::before {
       content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 80px;
+      position: absolute; top: -80px; left: 0; right: 0; height: 80px;
       background: linear-gradient(to bottom, var(--bg-dark), #FFFFFF);
       pointer-events: none;
+      z-index: 1;
     }
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 56px; }
     .how-step-num {
@@ -577,12 +578,12 @@
     }
 
     /* ── PRICING ────────────────────────────────────── */
-    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: none; position: relative; }
+    .pricing-section { padding: calc(var(--space-section) + 80px) 0 var(--space-section); background: var(--bg); border-top: none; position: relative; overflow: visible; }
     .pricing-section::before {
       content: '';
-      position: absolute; top: -1px; left: 0; right: 0; height: 100px;
-      background: linear-gradient(to bottom, var(--bg-dark) 0%, transparent 100%);
-      pointer-events: none; z-index: 0;
+      position: absolute; top: -80px; left: 0; right: 0; height: 80px;
+      background: linear-gradient(to bottom, var(--bg-dark), var(--bg));
+      pointer-events: none; z-index: 1;
     }
     .pricing-header { text-align: center; margin-bottom: 72px; }
     .pricing-sub { font-size: var(--text-base); color: var(--text-2); margin-top: 0; }
