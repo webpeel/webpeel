@@ -1150,8 +1150,14 @@ Ready for your AI agent.</div>
     if (termEl) setTimeout(() => termEl.classList.add('visible'), 600);
 
     /* ── Scroll reveal (progressive enhancement) ──── */
-    /* Progressive enhancement: JS hides, observer reveals, timer fallback ensures screenshots work */
-    document.querySelectorAll('.reveal').forEach(el => el.classList.add('pending'));
+    /* Progressive enhancement: only animate for real users who scroll */
+    let userScrolled = false;
+    window.addEventListener('scroll', () => { userScrolled = true; }, { once: true, passive: true });
+    /* Hide below-fold elements only — above-fold stays visible */
+    const vh = window.innerHeight;
+    document.querySelectorAll('.reveal').forEach(el => {
+      if (el.getBoundingClientRect().top > vh * 1.1) el.classList.add('pending');
+    });
     const revealObs = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;
@@ -1162,11 +1168,13 @@ Ready for your AI agent.</div>
         revealObs.unobserve(el);
       });
     }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
-    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
-    /* Fallback: reveal everything after 1.5s (ensures full-page screenshots, crawlers, slow JS) */
+    document.querySelectorAll('.reveal.pending').forEach(el => revealObs.observe(el));
+    /* Fast fallback: if no scroll within 400ms, reveal everything (screenshots, crawlers, bots) */
     setTimeout(() => {
-      document.querySelectorAll('.reveal.pending').forEach(el => { el.classList.remove('pending'); el.classList.add('visible'); });
-    }, 1500);
+      if (!userScrolled) {
+        document.querySelectorAll('.reveal.pending').forEach(el => { el.classList.remove('pending'); });
+      }
+    }, 400);
 
     /* ── Bar chart animation ───────────────────────── */
     const barObs = new IntersectionObserver(entries => {
