@@ -75,7 +75,7 @@
 
       /* Type scale — modular 8-step system */
       --text-xs: 12px;    /* captions, badges, mono labels */
-      --text-sm: 14px;    /* secondary text, footer links, labels */
+      --text-sm: 15px;    /* secondary text, footer links, labels */
       --text-base: 16px;  /* body copy */
       --text-md: 18px;    /* subheadings, important descriptions */
       --text-lg: 24px;    /* card titles, section intros */
@@ -315,12 +315,12 @@
     }
     .hero h1 .accent { color: var(--accent-pale); }
     .hero-sub {
-      font-size: var(--text-md); font-weight: 400;
-      color: rgba(255,255,255,0.65);
-      line-height: 1.6; max-width: 540px; margin: 16px auto 28px;
+      font-size: 18px; font-weight: 400;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.7; max-width: 560px; margin: 16px auto 28px;
     }
     @media (max-width: 768px) { .hero h1 { font-size: 52px; } .hero-sub { font-size: var(--text-base); line-height: 1.65; } }
-    @media (max-width: 480px) { .hero h1 { font-size: 38px; letter-spacing: -0.03em; } .hero-sub { font-size: var(--text-sm); max-width: 100%; } }
+    @media (max-width: 480px) { .hero h1 { font-size: 38px; letter-spacing: -0.03em; } .hero-sub { font-size: 16px; max-width: 100%; } }
     .hero-ctas { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
     .btn-primary {
       display: inline-flex; align-items: center; gap: 8px;
@@ -710,7 +710,7 @@
     }
     .why-section .section-eyebrow { color: var(--accent-light); background: rgba(88,101,242,0.12); }
     .why-inner { display: grid; grid-template-columns: 3fr 2fr; gap: 64px; align-items: start; }
-    .why-body { font-size: var(--text-base); color: rgba(255,255,255,0.7); max-width: 480px; line-height: 1.7; margin-top: 32px; }
+    .why-body { font-size: 17px; color: rgba(255,255,255,0.7); max-width: 480px; line-height: 1.75; margin-top: 32px; }
     .why-checks { list-style: none; margin-top: 32px; display: flex; flex-direction: column; gap: 16px; }
     .why-checks li { font-size: var(--text-sm); color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 10px; line-height: 1.5; }
     .why-check-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex-shrink: 0; color: var(--accent-light); font-style: normal; font-size: var(--text-sm); }
@@ -725,15 +725,15 @@
 
     /* Bars */
     .bar-group { margin-bottom: 32px; }
-    .bar-group-title { font-size: var(--text-sm); font-weight: 500; color: rgba(255,255,255,0.7); margin-bottom: 12px; letter-spacing: 0.01em; }
+    .bar-group-title { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 16px; letter-spacing: 0.01em; }
     .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
-    .bar-label { width: 80px; font-size: var(--text-sm); color: rgba(255,255,255,0.5); flex-shrink: 0; }
+    .bar-label { width: 90px; font-size: 14px; color: rgba(255,255,255,0.5); flex-shrink: 0; }
     .bar-label.hl { color: rgba(255,255,255,1); font-weight: 600; }
-    .bar-track { flex: 1; height: 26px; background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 900ms var(--ease-out); }
-    .bar-fill.accent { background: var(--accent); }
+    .bar-track { flex: 1; height: 32px; background: rgba(255,255,255,0.12); border-radius: 6px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 6px; width: 0; transition: width 900ms var(--ease-out); }
+    .bar-fill.accent { background: linear-gradient(90deg, var(--accent), #818CF8); }
     .bar-fill.muted { background: rgba(255,255,255,0.45); }
-    .bar-val { font-size: var(--text-sm); font-weight: 600; color: #fff; width: 48px; text-align: right; flex-shrink: 0; }
+    .bar-val { font-size: 15px; font-weight: 600; color: #fff; width: 52px; text-align: right; flex-shrink: 0; }
 
     /* Stat cards */
     .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
@@ -752,7 +752,7 @@
       transform: translateY(-4px);
     }
     .stat-card .stat-n { font-size: clamp(48px, 6vw, 64px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; white-space: nowrap; }
-    .stat-card .stat-l { font-size: var(--text-sm); color: rgba(255,255,255,0.5); margin-top: 8px; line-height: 1.4; }
+    .stat-card .stat-l { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 8px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.04em; }
 
     /* Integration chips */
     .why-integrations { padding: 48px 0 0; }
@@ -772,8 +772,8 @@
       .stat-cards { gap: 12px; }
       .stat-card { padding: 16px; }
       .stat-card .stat-n { font-size: clamp(36px, 10vw, 48px); }
-      .bar-label { width: 68px; font-size: var(--text-xs); }
-      .bar-val { font-size: var(--text-xs); width: 42px; }
+      .bar-label { width: 72px; font-size: 13px; }
+      .bar-val { font-size: 13px; width: 46px; }
     }
     @media (max-width: 480px) {
       .stat-cards { grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -793,7 +793,7 @@
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 960px; margin: 0 auto; align-items: start; }
     .price-card {
       background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 16px; padding: 32px; position: relative;
+      border-radius: 12px; padding: 32px 28px; position: relative;
       backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
       box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 0 50px rgba(88,101,242,0.08);
       transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease, background 300ms ease;
@@ -806,18 +806,18 @@
       box-shadow: 0 0 40px rgba(88,101,242,0.18), 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 0 60px rgba(88,101,242,0.12);
     }
     .price-card.featured {
-      border: 2px solid rgba(88,101,242,0.6);
+      border: 2px solid rgba(88,101,242,0.45);
       transform: scale(1.06);
       padding: 40px 32px;
-      background: rgba(88,101,242,0.10);
+      background: rgba(88,101,242,0.06);
       backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
-      box-shadow: 0 0 80px rgba(88,101,242,0.35), 0 0 0 1px rgba(88,101,242,0.3), 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+      box-shadow: 0 0 40px rgba(88,101,242,0.15), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.18);
       z-index: 2;
     }
     .price-card.featured:hover {
       transform: scale(1.06) translateY(-4px);
-      border-color: rgba(88,101,242,0.85);
-      box-shadow: 0 0 120px rgba(88,101,242,0.5), 0 0 0 1px rgba(88,101,242,0.5), 0 28px 60px rgba(88,101,242,0.3), inset 0 1px 0 rgba(255,255,255,0.30);
+      border-color: rgba(88,101,242,0.65);
+      box-shadow: 0 0 60px rgba(88,101,242,0.25), 0 16px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
     }
     .price-badge {
       position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
@@ -832,8 +832,8 @@
     .price-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 24px; }
     .price-features { list-style: none; margin-bottom: 32px; }
     .price-features li {
-      font-size: var(--text-sm); color: var(--text-2); padding: 8px 0;
-      display: flex; align-items: center; gap: 9px; line-height: 1.5;
+      font-size: 15px; color: var(--text-2); padding: 8px 0;
+      display: flex; align-items: center; gap: 9px; line-height: 1.6;
     }
     .price-features li::before {
       content: ''; display: inline-block; width: 16px; height: 16px; flex-shrink: 0;
@@ -852,9 +852,9 @@
     .price-btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.2); color: var(--text); }
     .price-btn-outline:hover { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.04); }
     @media (max-width: 768px) {
-      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; gap: 16px; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; gap: 16px; }
       .price-card { padding: 32px 24px; }
-      .price-card.featured { order: -1; transform: none; border-width: 2px; padding: 32px 24px; }
+      .price-card.featured { order: -1; transform: none; border: 2px solid rgba(88,101,242,0.5); background: rgba(88,101,242,0.07); padding: 32px 24px; box-shadow: 0 0 30px rgba(88,101,242,0.12), 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15); }
       .price-card.featured:hover { transform: translateY(-4px); }
     }
 
@@ -864,8 +864,8 @@
     .faq-item {
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 12px;
-      padding: 4px 0;
-      margin-bottom: 12px;
+      padding: 6px 0;
+      margin-bottom: 14px;
       background: rgba(255,255,255,0.04);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.2);
@@ -891,7 +891,7 @@
     .faq-item.open .faq-icon { color: var(--accent); }
     .faq-item.open .faq-icon { transform: rotate(45deg); }
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 450ms var(--ease-out); }
-    .faq-answer-inner { padding: 0 24px 24px; font-size: var(--text-base); color: var(--text-2); line-height: 1.75; }
+    .faq-answer-inner { padding: 0 24px 24px; font-size: 16px; color: rgba(255,255,255,0.7); line-height: 1.7; }
     .faq-answer-inner code { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 5px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent-light); }
     .faq-item.open .faq-answer { max-height: 560px; }
 
@@ -1047,8 +1047,8 @@
     .how-step {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 16px;
-      padding: 28px;
+      border-radius: 12px;
+      padding: 28px 24px;
       backdrop-filter: blur(16px) saturate(140%);
       -webkit-backdrop-filter: blur(16px) saturate(140%);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 24px rgba(0,0,0,0.3), inset 0 0 30px rgba(88,101,242,0.04);
@@ -1294,6 +1294,133 @@
         gap: 16px;
       }
       .hero-stat-n { font-size: 20px; }
+    }
+
+    /* ══ POLISH ADDITIONS — 10/10 desktop+mobile ══════ */
+
+    /* 1. Section eyebrows: 13px, brighter, wider tracking */
+    .section-eyebrow {
+      font-size: 13px !important;
+      letter-spacing: 0.12em !important;
+    }
+
+    /* 2. Gradient line dividers between major sections */
+    .demo-section, .how-section, .why-section, .pricing-section {
+      position: relative;
+    }
+    .demo-section::after,
+    .how-section::after,
+    .why-section::after,
+    .pricing-section::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(88,101,242,0.2), transparent);
+      pointer-events: none;
+    }
+
+    /* 3. FAQ question text size */
+    .faq-q span:first-child { font-size: 17px; }
+    @media (max-width: 768px) {
+      .faq-q span:first-child { font-size: 16px; }
+    }
+
+    /* 4. Hero CTA note — more visible */
+    .hero-cta-note {
+      font-size: 14px !important;
+      color: rgba(255,255,255,0.5) !important;
+      margin-top: 12px !important;
+    }
+
+    /* 5. Trusted logos — slightly larger, more visible */
+    .trusted-logo {
+      font-size: 14px !important;
+      color: rgba(255,255,255,0.55) !important;
+    }
+
+    /* 6. Hero trust links — slightly brighter */
+    .hero-trust a {
+      color: rgba(255,255,255,0.6) !important;
+    }
+
+    /* 7. Terminal chrome border-radius */
+    .terminal-chrome {
+      border-radius: 12px 12px 0 0;
+    }
+
+    /* 8. Nav links — 15px (already via --text-sm:15px, but explicit override) */
+    .nav-links a {
+      font-size: 15px !important;
+    }
+
+    /* 9. Footer column headers — brighter */
+    .footer-col h3 {
+      color: rgba(255,255,255,0.65) !important;
+    }
+
+    /* 10. Footer tagline — slightly dimmer for depth hierarchy */
+    .footer-tagline {
+      color: rgba(255,255,255,0.45) !important;
+    }
+
+    /* 11. Why body mobile */
+    @media (max-width: 768px) {
+      .why-body { font-size: 16px !important; }
+    }
+
+    /* 12. Bar chart mobile: keep readable on 480px */
+    @media (max-width: 480px) {
+      .bar-track { height: 28px !important; }
+      .bar-label { width: 68px !important; font-size: 12px !important; }
+      .bar-val { font-size: 12px !important; width: 44px !important; }
+      .bar-group-title { font-size: 14px !important; }
+    }
+
+    /* 13. CTA button full width on 480px */
+    @media (max-width: 480px) {
+      .final-cta-btn { width: 100%; justify-content: center; }
+      .hero-ctas .btn-primary { width: 100%; justify-content: center; }
+    }
+
+    /* 14. Price card featured: cleaner border-radius match */
+    .price-card.featured {
+      border-radius: 12px !important;
+    }
+
+    /* 15. Final CTA section glow enhancement */
+    .final-cta::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 300px;
+      background: radial-gradient(ellipse 100% 100% at 50% 100%, rgba(88,101,242,0.28), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .final-cta { position: relative; }
+    .final-cta > .container { position: relative; z-index: 1; }
+
+    /* 16. Unify card hover state — consistent across all cards */
+    .stat-card:hover,
+    .how-step:hover {
+      border-color: rgba(88,101,242,0.3) !important;
+    }
+
+    /* 17. FAQ item margin on mobile */
+    @media (max-width: 768px) {
+      .faq-item { margin-bottom: 10px; }
+    }
+
+    /* 18. Hero trust logo wrap on mobile */
+    @media (max-width: 480px) {
+      .hero-trust { flex-wrap: wrap; gap: 6px; }
+      .hero-trusted { gap: 12px; }
     }
 
   </style>
