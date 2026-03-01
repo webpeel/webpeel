@@ -157,16 +157,7 @@
 
     html { scroll-behavior: smooth; overflow-x: hidden; }
     body { font-family: var(--font-body); background: var(--bg-dark); color: var(--text-on-dark); line-height: 1.65; font-size: var(--text-base); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-    /* Noise/grain texture overlay — adds depth to dark backgrounds */
-    body::after {
-      content: '';
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 9999;
-      opacity: 0.35;
-      mix-blend-mode: overlay;
-    }
+    /* Noise/grain texture overlay — defined below with base64 PNG for better grain quality */
     ::selection { background: rgba(88,101,242,0.15); }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; }
@@ -798,15 +789,16 @@
       display: flex; justify-content: space-between; align-items: center;
       padding: 20px 24px; font-size: var(--text-md); font-weight: 500; color: var(--text);
       cursor: pointer; background: none; border: none; width: 100%; text-align: left;
-      gap: 16px; transition: color 150ms ease; min-height: 56px;
+      gap: 16px; transition: color 200ms ease; min-height: 56px;
     }
-    .faq-q:hover { color: var(--accent); }
+    .faq-q:hover { color: var(--accent-light); }
     .faq-icon { font-size: var(--text-lg); color: var(--text-2); transition: transform 300ms var(--ease-out), color 150ms ease; flex-shrink: 0; }
     .faq-item.open .faq-icon { color: var(--accent); }
     .faq-item.open .faq-icon { transform: rotate(45deg); }
-    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 400ms var(--ease-out); }
-    .faq-answer-inner { padding: 0 24px 24px; font-size: var(--text-base); color: var(--text-2); line-height: 1.7; }
-    .faq-item.open .faq-answer { max-height: 320px; }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 450ms var(--ease-out); }
+    .faq-answer-inner { padding: 0 24px 24px; font-size: var(--text-base); color: var(--text-2); line-height: 1.75; }
+    .faq-answer-inner code { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 5px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent-light); }
+    .faq-item.open .faq-answer { max-height: 560px; }
 
     /* ── FINAL CTA ──────────────────────────────────── */
     .final-cta {
@@ -877,7 +869,7 @@
     }
     @media (max-width: 768px) {
       :root { --gutter: 20px; --space-section: clamp(64px, 10vw, 96px); --text-hero: clamp(40px, 8vw, 56px); --text-h2: clamp(32px, 6vw, 44px); }
-      .faq-q { min-height: 56px; padding: 16px 0; font-size: var(--text-sm); }
+      .faq-q { min-height: 56px; padding: 16px 20px; font-size: var(--text-sm); }
       .demo-card-wrap { padding: 24px; }
     }
     @media (max-width: 480px) {
@@ -1101,6 +1093,51 @@
       }
     }
 
+    /* ── NAV CTA HOVER GLOW ──────────────────────────── */
+    .nav-cta:hover {
+      box-shadow: 0 0 20px rgba(88,101,242,0.45), 0 2px 8px rgba(88,101,242,0.3);
+    }
+
+    /* ── FINAL CTA BUTTON GLOW ───────────────────────── */
+    .final-cta-btn {
+      box-shadow: 0 4px 20px rgba(88,101,242,0.35), 0 1px 3px rgba(0,0,0,0.2);
+      transition: opacity 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+    }
+    .final-cta-btn:hover {
+      opacity: 1 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 32px rgba(88,101,242,0.55), 0 2px 8px rgba(0,0,0,0.2) !important;
+      color: #fff !important;
+    }
+
+    /* ── FAQ OPEN STATE REFINEMENT ───────────────────── */
+    .faq-item.open .faq-q { color: var(--accent-light); }
+
+    /* ── DEMO SECTION HEADLINE SIZE ──────────────────── */
+    .demo-section .section-h2 { margin-bottom: 8px; }
+
+    /* ── PRICING CTA OUTLINE COLOR FIX ──────────────── */
+    .pricing-section .price-btn-outline { color: rgba(255,255,255,0.88); }
+    .pricing-section .price-btn-outline:hover { color: #fff; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.45); }
+
+    /* ── HERO TRUST LINE SPACING ─────────────────────── */
+    .hero-trust { margin-top: 16px; }
+
+    /* ── HOW SECTION H2 ACCENT ───────────────────────── */
+    .how-section .section-h2 .period { color: var(--accent); }
+
+    /* ── MOBILE MENU LAST ITEM ACCENT ────────────────── */
+    .mobile-menu a:last-child { color: #fff; background: var(--accent); border-radius: 8px; padding: 12px 16px; margin-top: 4px; justify-content: center; font-weight: 600; }
+    .mobile-menu a:last-child:hover { background: var(--accent-hover); }
+
+    /* ── SECTION EYEBROW CONSISTENCY ────────────────── */
+    .faq-section .section-eyebrow,
+    .how-section .section-eyebrow { color: var(--accent-light); background: rgba(88,101,242,0.12); border-color: rgba(88,101,242,0.25); }
+
+    /* ── HERO H1 WEIGHT ──────────────────────────────── */
+    .hero h1 { font-weight: 300; }
+    .hero h1 .accent { font-style: italic; }
+
   </style>
 </head>
 <body>
@@ -1117,7 +1154,7 @@
         <a href="/docs/">Docs</a>
         <a href="/pricing">Pricing</a>
         <a href="https://github.com/webpeel/webpeel" class="ext" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://app.webpeel.dev/signup" class="nav-cta">Get Started →</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-cta">Start Free →</a>
       </div>
       <button class="nav-hamburger" id="hamburger-btn" aria-label="Toggle menu">
         <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
@@ -1141,9 +1178,9 @@
           <span class="hero-el" style="display:block;" data-delay="120">Give your AI</span>
           <span class="accent hero-el" style="display:block;" data-delay="200">the entire web.</span>
         </h1>
-        <p class="hero-sub hero-el" data-delay="320">One API call. Any page — including JS&#8209;rendered, Cloudflare&#8209;protected, and&nbsp;dynamic&nbsp;content.</p>
+        <p class="hero-sub hero-el" data-delay="320">One API call. Any page — JS&#8209;rendered, Cloudflare&#8209;protected, dynamic. Structured content back in milliseconds.</p>
         <div class="hero-ctas hero-el" data-delay="420">
-          <a href="https://app.webpeel.dev/signup" class="btn-primary">Get Started Free →</a>
+          <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Scraping Free →</a>
           <a href="/docs/" class="btn-ghost">View Docs</a>
           <span class="hero-cta-note">No credit card required · Free 500 fetches/week</span>
         </div>
@@ -1217,8 +1254,8 @@
     <div class="container">
       <div class="demo-inner reveal">
         <div class="section-eyebrow" style="text-align:center;">TRY IT NOW</div>
-        <h2 class="section-h2" style="text-align:center;">See WebPeel in action</h2>
-        <p class="demo-subtitle">Click a URL and watch WebPeel extract clean, structured content.</p>
+        <h2 class="section-h2" style="text-align:center;">Any URL. Clean content.</h2>
+        <p class="demo-subtitle">Pick a URL below and watch WebPeel extract structured, AI-ready content in real time.</p>
         <div class="demo-card-wrap reveal">
         <div class="demo-pills">
           <button class="demo-pill active" data-demo="hn">Hacker News</button>
@@ -1459,7 +1496,7 @@ Ready for your AI agent.</div>
         </div>
         <div class="faq-item">
           <button class="faq-q"><span>Can I self-host?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">Yes. WebPeel is open source. Install the CLI with <code style="background:rgba(0,0,0,0.06);padding:2px 7px;border-radius:4px;font-family:var(--font-mono);font-size:var(--text-xs);">npm install -g webpeel</code> and run your own MCP server locally for unlimited usage.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes. WebPeel is open source. Install the CLI with <code>npm install -g webpeel</code> and run your own MCP server locally for unlimited usage.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-q"><span>Is WebPeel compliant with robots.txt and ToS?</span><span class="faq-icon">+</span></button>
