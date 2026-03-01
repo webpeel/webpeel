@@ -861,3 +861,245 @@ describe('POST /v1/screenshot — responseFormat: binary', () => {
     expect(res.body).not.toHaveProperty('success');
   });
 });
+
+// ── Design audit: bgResolved + accessibilityViolations + headingStructure ─────
+
+describe('design audit — contrast bgResolved + WCAG accessibility fields', () => {
+  it('audit response includes accessibilityViolations array', async () => {
+    const auditWithA11y = {
+      url: 'https://example.com',
+      audit: {
+        score: 72,
+        summary: 'Found: 2 accessibility violation(s).',
+        spacingViolations: [],
+        touchTargetViolations: [],
+        contrastViolations: [],
+        typography: { fontSizes: ['16px'], lineHeights: ['1.5'], letterSpacings: [] },
+        spacingScale: [8, 16],
+        accessibilityViolations: [
+          { type: 'missing-alt', element: 'img', details: 'src: /logo.png' },
+          { type: 'empty-link', element: 'a.nav-link', details: 'href: /about' },
+        ],
+        headingStructure: ['h1', 'h2', 'h3'],
+      },
+    };
+
+    const app = makeApp();
+    (mockTakeDesignAudit as any).mockResolvedValue(auditWithA11y);
+
+    const res = await request(app)
+      .post('/v1/screenshot/design-audit')
+      .send({ url: 'https://example.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.audit.accessibilityViolations).toBeDefined();
+    expect(Array.isArray(res.body.data.audit.accessibilityViolations)).toBe(true);
+    expect(res.body.data.audit.accessibilityViolations).toHaveLength(2);
+    expect(res.body.data.audit.accessibilityViolations[0].type).toBe('missing-alt');
+  });
+
+  it('audit response includes headingStructure array', async () => {
+    const auditWithHeadings = {
+      url: 'https://example.com',
+      audit: {
+        score: 90,
+        summary: 'No design violations found.',
+        spacingViolations: [],
+        touchTargetViolations: [],
+        contrastViolations: [],
+        typography: { fontSizes: ['16px'], lineHeights: ['1.5'], letterSpacings: [] },
+        spacingScale: [8, 16],
+        accessibilityViolations: [],
+        headingStructure: ['h1', 'h2', 'h2', 'h3', 'h2'],
+      },
+    };
+
+    const app = makeApp();
+    (mockTakeDesignAudit as any).mockResolvedValue(auditWithHeadings);
+
+    const res = await request(app)
+      .post('/v1/screenshot/design-audit')
+      .send({ url: 'https://example.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.audit.headingStructure).toBeDefined();
+    expect(Array.isArray(res.body.data.audit.headingStructure)).toBe(true);
+    expect(res.body.data.audit.headingStructure).toEqual(['h1', 'h2', 'h2', 'h3', 'h2']);
+  });
+
+  it('contrast violation can carry bgResolved flag', async () => {
+    const auditWithBgResolved = {
+      url: 'https://example.com',
+      audit: {
+        score: 75,
+        summary: 'Found: 1 contrast violation(s).',
+        spacingViolations: [],
+        touchTargetViolations: [],
+        contrastViolations: [
+          { element: 'p.text', textColor: 'rgb(100,100,100)', bgColor: 'rgb(255,255,255)', ratio: 3.5, required: 4.5, bgResolved: true },
+        ],
+        typography: { fontSizes: ['16px'], lineHeights: ['1.5'], letterSpacings: [] },
+        spacingScale: [8, 16],
+        accessibilityViolations: [],
+        headingStructure: ['h1'],
+      },
+    };
+
+    const app = makeApp();
+    (mockTakeDesignAudit as any).mockResolvedValue(auditWithBgResolved);
+
+    const res = await request(app)
+      .post('/v1/screenshot/design-audit')
+      .send({ url: 'https://example.com' });
+
+    expect(res.status).toBe(200);
+    const violation = res.body.data.audit.contrastViolations[0];
+    expect(violation).toBeDefined();
+    expect(violation.bgResolved).toBe(true);
+  });
+});
+
+// ── POST /v1/review ───────────────────────────────────────────────────────────
+
+describe('POST /v1/review', () => {
+  let app: Express;
+
+  const reviewViewportsResult = {
+    url: 'https://example.com',
+    format: 'jpeg' as const,
+    viewports: [
+      { width: 375, height: 812, label: 'mobile', screenshot: 'mobile==' },
+      { width: 768, height: 1024, label: 'tablet', screenshot: 'tablet==' },
+      { width: 1440, height: 900, label: 'desktop', screenshot: 'desktop==' },
+    ],
+  };
+
+  const reviewAuditResult = {
+    url: 'https://example.com',
+    audit: {
+      score: 88,
+      summary: 'No design violations found.',
+      spacingViolations: [],
+      touchTargetViolations: [],
+      contrastViolations: [],
+      typography: { fontSizes: ['16px', '24px'], lineHeights: ['1.5'], letterSpacings: [] },
+      spacingScale: [8, 16, 24],
+      accessibilityViolations: [],
+      headingStructure: ['h1', 'h2'],
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    app = makeApp();
+  });
+
+  it('returns combined viewports + audit for valid URL', async () => {
+    (mockTakeViewports as any).mockResolvedValue(reviewViewportsResult);
+    (mockTakeDesignAudit as any).mockResolvedValue(reviewAuditResult);
+
+    const res = await request(app)
+      .post('/v1/review')
+      .send({ url: 'https://example.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.url).toBe('https://example.com');
+    expect(res.body.data.viewports).toHaveLength(3);
+    expect(res.body.data.viewports[0].label).toBe('mobile');
+    expect(res.body.data.viewports[1].label).toBe('tablet');
+    expect(res.body.data.viewports[2].label).toBe('desktop');
+    expect(res.body.data.audit).toBeDefined();
+    expect(res.body.data.audit.score).toBe(88);
+    expect(res.headers['x-fetch-type']).toBe('review');
+    expect(res.headers['x-credits-used']).toBe('4');
+  });
+
+  it('returns 400 for missing URL', async () => {
+    const res = await request(app)
+      .post('/v1/review')
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('url');
+  });
+
+  it('returns 400 for SSRF (localhost)', async () => {
+    const res = await request(app)
+      .post('/v1/review')
+      .send({ url: 'http://localhost:3000' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it('returns 400 for SSRF (private network)', async () => {
+    const res = await request(app)
+      .post('/v1/review')
+      .send({ url: 'http://192.168.1.1/admin' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it('passes rules and selector to takeDesignAudit', async () => {
+    (mockTakeViewports as any).mockResolvedValue(reviewViewportsResult);
+    (mockTakeDesignAudit as any).mockResolvedValue(reviewAuditResult);
+
+    await request(app)
+      .post('/v1/review')
+      .send({
+        url: 'https://example.com',
+        rules: { spacingGrid: 4, minContrast: 7.0 },
+        selector: '.main-content',
+      });
+
+    expect(mockTakeDesignAudit).toHaveBeenCalledWith(
+      'https://example.com',
+      expect.objectContaining({
+        rules: { spacingGrid: 4, minContrast: 7.0 },
+        selector: '.main-content',
+      })
+    );
+  });
+
+  it('runs viewports and audit in parallel (both called)', async () => {
+    (mockTakeViewports as any).mockResolvedValue(reviewViewportsResult);
+    (mockTakeDesignAudit as any).mockResolvedValue(reviewAuditResult);
+
+    await request(app)
+      .post('/v1/review')
+      .send({ url: 'https://example.com' });
+
+    expect(mockTakeViewports).toHaveBeenCalledOnce();
+    expect(mockTakeDesignAudit).toHaveBeenCalledOnce();
+  });
+
+  it('requests 3 standard viewports (mobile/tablet/desktop)', async () => {
+    (mockTakeViewports as any).mockResolvedValue(reviewViewportsResult);
+    (mockTakeDesignAudit as any).mockResolvedValue(reviewAuditResult);
+
+    await request(app)
+      .post('/v1/review')
+      .send({ url: 'https://example.com' });
+
+    const callArg = (mockTakeViewports as any).mock.calls[0][1];
+    expect(callArg.viewports).toHaveLength(3);
+    expect(callArg.viewports[0]).toMatchObject({ width: 375, label: 'mobile' });
+    expect(callArg.viewports[1]).toMatchObject({ width: 768, label: 'tablet' });
+    expect(callArg.viewports[2]).toMatchObject({ width: 1440, label: 'desktop' });
+  });
+
+  it('returns 500 on internal error', async () => {
+    (mockTakeViewports as any).mockRejectedValue(new Error('Browser crashed'));
+    (mockTakeDesignAudit as any).mockResolvedValue(reviewAuditResult);
+
+    const res = await request(app)
+      .post('/v1/review')
+      .send({ url: 'https://example.com' });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBeDefined();
+  });
+});
