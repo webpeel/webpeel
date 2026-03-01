@@ -89,10 +89,18 @@ function parseActions(actionStrings: string[]): PageAction[] {
       case 'click': 
         return { type: 'click' as const, selector: value };
       case 'scroll': {
-        // scroll:down:500  or  scroll:bottom  or  scroll:500
+        // scroll:down:500  or  scroll:bottom  or  scroll:500  or  scroll:0,1500
         const parts = value.split(':');
         const dir = parts[0];
-        
+
+        // Handle scroll:x,y format (e.g., scroll:0,1500)
+        if (dir && dir.includes(',')) {
+          const [x, y] = dir.split(',').map(Number);
+          if (!isNaN(x) && !isNaN(y)) {
+            return { type: 'scroll' as const, to: { x, y } };
+          }
+        }
+
         if (dir === 'top' || dir === 'bottom') {
           return { type: 'scroll' as const, to: dir };
         }
@@ -3332,6 +3340,7 @@ program
   .option('-t, --timeout <ms>', 'Request timeout (ms)', (v: string) => parseInt(v, 10), 30000)
   .option('--stealth', 'Use stealth mode to bypass bot detection')
   .option('--action <actions...>', 'Page actions before screenshot (e.g., "click:.btn" "wait:2000")')
+  .option('--scroll-through', 'Auto-scroll page before screenshot (triggers lazy content + scroll animations)')
   .option('-o, --output <path>', 'Output file path (default: screenshot.png)')
   .option('-s, --silent', 'Silent mode (no spinner)')
   .option('--json', 'Output base64 JSON instead of binary file')
@@ -3388,6 +3397,7 @@ program
         timeout: options.timeout,
         stealth: options.stealth || false,
         actions,
+        scrollThrough: options.scrollThrough || false,
       });
 
       if (spinner) {

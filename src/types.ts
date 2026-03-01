@@ -26,7 +26,7 @@ export interface PageAction {
    * Scroll target (absolute) — legacy/internal.
    * Use direction+amount for relative scrolling.
    */
-  to?: 'top' | 'bottom' | number;
+  to?: 'top' | 'bottom' | number | { x: number; y: number };
 
   /** Relative scroll direction (Firecrawl-style) */
   direction?: 'up' | 'down' | 'left' | 'right';

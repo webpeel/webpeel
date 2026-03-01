@@ -620,7 +620,7 @@ export async function browserScreenshot(
       value?: string;
       key?: string;
       ms?: number;
-      to?: 'top' | 'bottom' | number;
+      to?: 'top' | 'bottom' | number | { x: number; y: number };
       timeout?: number;
     }>;
     scrollThrough?: boolean;
