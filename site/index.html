@@ -102,8 +102,8 @@
       --text: #FAFAFA;
       --text-2: rgba(255,255,255,0.65);
       --text-3: rgba(255,255,255,0.45);
-      --border: rgba(255,255,255,0.08);
-      --border-card: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.12);
+      --border-card: rgba(255,255,255,0.15);
       --accent-subtle: rgba(88,101,242,0.12);
       --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
       --shadow-xl: 0 16px 48px rgba(0,0,0,0.4);
@@ -464,7 +464,7 @@
       background: var(--accent-subtle); border-radius: 20px;
       border: 1px solid rgba(88,101,242,0.22);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 0 20px rgba(88,101,242,0.12), inset 0 1px 0 rgba(255,255,255,0.08);
+      box-shadow: 0 0 20px rgba(88,101,242,0.12), inset 0 1px 0 rgba(255,255,255,0.20);
     }
     .section-h2 {
       font-family: var(--font-display); font-size: var(--text-h2);
@@ -482,7 +482,7 @@
       border-top: none;
       --bg: var(--bg-dark);
       --bg-card: rgba(255,255,255,0.04);
-      --border-card: rgba(255,255,255,0.08);
+      --border-card: rgba(255,255,255,0.15);
       --text: var(--text-on-dark);
       --text-2: var(--text-on-dark-2);
       color: var(--text-on-dark);
@@ -493,7 +493,7 @@
     .demo-section .demo-card-wrap {
       background: rgba(255,255,255,0.08);
       border-color: rgba(255,255,255,0.18);
-      box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 0 40px rgba(88,101,242,0.05);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 40px rgba(88,101,242,0.05);
       backdrop-filter: blur(24px) saturate(150%);
       -webkit-backdrop-filter: blur(24px) saturate(150%);
       will-change: backdrop-filter;
@@ -587,8 +587,8 @@
     .how-section { padding: var(--space-section) 0; background: var(--bg); }
     /* Glowing section dividers — border-top + inward glow */
     .how-section, .pricing-section, .faq-section {
-      border-top: 1px solid rgba(139,92,246,0.2);
-      box-shadow: inset 0 1px 30px rgba(88,101,242,0.08);
+      border-top: 1px solid rgba(139,92,246,0.35);
+      box-shadow: inset 0 1px 60px rgba(88,101,242,0.12), inset 0 0 120px rgba(139,92,246,0.05);
     }
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 56px; }
     .how-step-num {
@@ -606,7 +606,7 @@
       font-family: var(--font-mono); font-size: var(--text-xs); color: #E2E8F0;
       word-break: break-word; white-space: pre-wrap;
       border: 1px solid rgba(255,255,255,0.14); 
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.10);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.22);
       line-height: 1.7;
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
@@ -656,7 +656,7 @@
       background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
       border-radius: 12px; padding: 24px;
       backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 0 40px rgba(88,101,242,0.05);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 40px rgba(88,101,242,0.05);
       transition: border-color 300ms ease, background 300ms ease, box-shadow 300ms ease, transform 300ms ease;
       will-change: transform;
     }
@@ -709,14 +709,14 @@
       background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.16);
       border-radius: 16px; padding: 32px; position: relative;
       backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 0 40px rgba(88,101,242,0.05);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 40px rgba(88,101,242,0.05);
       transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease, background 300ms ease;
       will-change: transform;
     }
     .price-card:hover {
       transform: translateY(-4px);
       background: rgba(255,255,255,0.11);
-      border-color: rgba(88,101,242,0.35);
+      border-color: rgba(88,101,242,0.5);
       box-shadow: 0 0 40px rgba(88,101,242,0.15), 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.28);
     }
     .price-card.featured {
@@ -782,11 +782,11 @@
       margin-bottom: 12px;
       background: rgba(255,255,255,0.04);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 2px 8px rgba(0,0,0,0.2);
       transition: border-color 250ms ease, background 250ms ease, box-shadow 250ms ease;
     }
     .faq-item:hover {
-      border-color: rgba(88,101,242,0.25);
+      border-color: rgba(88,101,242,0.45);
       background: rgba(255,255,255,0.06);
     }
     .faq-item.open {
@@ -948,7 +948,7 @@
     }
     .int-chip:hover {
       background: rgba(88,101,242,0.14);
-      border-color: rgba(88,101,242,0.35);
+      border-color: rgba(88,101,242,0.5);
       color: rgba(255,255,255,0.92);
       transform: translateY(-2px);
       box-shadow: 0 0 20px rgba(88,101,242,0.12);
@@ -962,15 +962,15 @@
       padding: 28px;
       backdrop-filter: blur(16px) saturate(140%);
       -webkit-backdrop-filter: blur(16px) saturate(140%);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 24px rgba(0,0,0,0.3), inset 0 0 30px rgba(88,101,242,0.04);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 24px rgba(0,0,0,0.3), inset 0 0 30px rgba(88,101,242,0.04);
       transition: transform 300ms ease, border-color 300ms ease, box-shadow 300ms ease, background 300ms ease;
       will-change: transform;
     }
     .how-step:hover {
       transform: translateY(-4px);
-      border-color: rgba(88,101,242,0.35);
+      border-color: rgba(88,101,242,0.5);
       background: rgba(255,255,255,0.08);
-      box-shadow: 0 0 40px rgba(88,101,242,0.12), inset 0 1px 0 rgba(255,255,255,0.22), 0 12px 40px rgba(0,0,0,0.35);
+      box-shadow: 0 0 40px rgba(88,101,242,0.12), inset 0 1px 0 rgba(255,255,255,0.30), 0 12px 40px rgba(0,0,0,0.35);
     }
     .how-step:hover .mini-code {
       border-color: rgba(88,101,242,0.30);
