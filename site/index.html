@@ -97,6 +97,22 @@
       --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
+    /* Dark theme overrides for formerly-light sections */
+    .how-section, .pricing-section, .faq-section {
+      --text: #FAFAFA;
+      --text-2: rgba(255,255,255,0.65);
+      --text-3: rgba(255,255,255,0.45);
+      --border: rgba(255,255,255,0.08);
+      --border-card: rgba(255,255,255,0.08);
+      --accent-subtle: rgba(88,101,242,0.12);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+      --shadow-xl: 0 16px 48px rgba(0,0,0,0.4);
+      color: #FAFAFA;
+    }
+    .how-section { --bg: #0b0b10; --bg-card: rgba(255,255,255,0.03); }
+    .pricing-section { --bg: #0e0e14; --bg-card: rgba(255,255,255,0.04); }
+    .faq-section { --bg: #0b0b10; --bg-elevated: #0b0b10; --bg-card: rgba(255,255,255,0.03); }
+
     html { scroll-behavior: smooth; overflow-x: hidden; }
     body { font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.65; font-size: var(--text-base); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
     ::selection { background: rgba(88,101,242,0.15); }
@@ -476,7 +492,7 @@
     }
 
     /* ── HOW IT WORKS ───────────────────────────────── */
-    .how-section { padding: var(--space-section) 0; background: #FFFFFF; border-top: none; }
+    .how-section { padding: var(--space-section) 0; background: var(--bg); border-top: none; }
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 56px; }
     .how-step-num {
       font-size: var(--text-xs); font-family: var(--font-mono); color: var(--accent);
@@ -592,8 +608,8 @@
       border: 2px solid var(--accent);
       transform: scale(1.06);
       padding: 40px 32px;
-      background: #FAFAFF;
-      box-shadow: var(--shadow-xl), 0 0 40px rgba(88,101,242,0.15), 0 0 0 1px rgba(88,101,242,0.15), 0 12px 40px rgba(88,101,242,0.2);
+      background: rgba(88,101,242,0.06);
+      box-shadow: 0 0 40px rgba(88,101,242,0.15), 0 0 0 1px rgba(88,101,242,0.15), 0 12px 40px rgba(88,101,242,0.2);
       z-index: 2;
     }
     .price-card.featured:hover {
@@ -630,8 +646,8 @@
     .price-btn:hover { opacity: 0.85; transform: translateY(-1px); }
     .price-btn-filled { background: var(--accent); color: #fff; font-size: var(--text-base); font-weight: 600; padding: 14px; min-height: 52px; box-shadow: 0 4px 16px rgba(88,101,242,0.35); }
     .price-btn-filled:hover { box-shadow: 0 6px 24px rgba(88,101,242,0.45); }
-    .price-btn-outline { background: transparent; border: 1.5px solid rgba(0,0,0,0.2); color: var(--text); }
-    .price-btn-outline:hover { border-color: rgba(0,0,0,0.35); background: rgba(0,0,0,0.02); }
+    .price-btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.2); color: var(--text); }
+    .price-btn-outline:hover { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.04); }
     @media (max-width: 768px) {
       .pricing-grid { grid-template-columns: 1fr; max-width: 400px; gap: 16px; }
       .price-card { padding: 32px 24px; }
