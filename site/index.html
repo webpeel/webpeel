@@ -112,30 +112,38 @@
     .how-section { --bg: #0b0b10; --bg-card: rgba(255,255,255,0.03); }
     .pricing-section { --bg: #0d0d14; --bg-card: rgba(255,255,255,0.04); }
     .faq-section { --bg: #0b0b10; --bg-elevated: #0b0b10; --bg-card: rgba(255,255,255,0.03); }
-    /* Ambient glow orbs — gives glass something to refract */
+    /* Ambient glow orbs — visible through glass cards */
     .how-section {
       background: #0b0b10;
       background-image:
-        radial-gradient(600px circle at 20% 40%, rgba(88,101,242,0.12), transparent 60%),
-        radial-gradient(400px circle at 80% 70%, rgba(139,92,246,0.08), transparent 50%);
+        radial-gradient(600px circle at 15% 30%, rgba(88,101,242,0.25), transparent 60%),
+        radial-gradient(400px circle at 85% 70%, rgba(139,92,246,0.15), transparent 55%);
     }
     .pricing-section {
       background: #0d0d14;
       background-image:
-        radial-gradient(500px circle at 70% 20%, rgba(88,101,242,0.14), transparent 55%),
-        radial-gradient(400px circle at 25% 80%, rgba(99,102,241,0.08), transparent 50%);
+        radial-gradient(600px circle at 75% 15%, rgba(88,101,242,0.25), transparent 55%),
+        radial-gradient(450px circle at 20% 75%, rgba(99,102,241,0.15), transparent 50%);
     }
     .faq-section {
       background: #0b0b10;
-      background-image: radial-gradient(500px circle at 50% 40%, rgba(88,101,242,0.08), transparent 55%);
+      background-image: radial-gradient(500px circle at 40% 40%, rgba(88,101,242,0.15), transparent 55%);
     }
     .demo-section {
       background-image:
-        radial-gradient(500px circle at 50% 60%, rgba(88,101,242,0.1), transparent 55%),
-        radial-gradient(300px circle at 80% 20%, rgba(139,92,246,0.06), transparent 50%);
+        radial-gradient(600px circle at 50% 70%, rgba(88,101,242,0.2), transparent 55%),
+        radial-gradient(400px circle at 85% 15%, rgba(139,92,246,0.12), transparent 50%);
+    }
+    .why-section {
+      background-image:
+        radial-gradient(600px circle at 70% 25%, rgba(88,101,242,0.18), transparent 55%),
+        radial-gradient(400px circle at 20% 80%, rgba(139,92,246,0.1), transparent 50%),
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px) !important;
+      background-size: auto, auto, 64px 64px, 64px 64px !important;
     }
     .final-cta {
-      background-image: radial-gradient(500px circle at 50% 80%, rgba(88,101,242,0.12), transparent 55%) !important;
+      background-image: radial-gradient(500px circle at 50% 70%, rgba(88,101,242,0.2), transparent 55%) !important;
     }
 
     html { scroll-behavior: smooth; overflow-x: hidden; }
@@ -461,9 +469,9 @@
     .demo-section .section-h2 { color: var(--text-on-dark); }
     .demo-section .demo-subtitle { color: rgba(255,255,255,0.6); }
     .demo-section .demo-card-wrap {
-      background: rgba(255,255,255,0.05);
-      border-color: rgba(255,255,255,0.1);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.12);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
     }
@@ -610,10 +618,10 @@
     /* Stat cards */
     .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
     .stat-card {
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
       border-radius: 12px; padding: 24px;
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
       transition: border-color 200ms ease, background 200ms ease;
     }
     .stat-card:hover { border-color: rgba(88,101,242,0.25); background: rgba(255,255,255,0.06); }
@@ -657,10 +665,10 @@
     .pricing-sub { font-size: var(--text-base); color: var(--text-2); margin-top: 0; }
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 960px; margin: 0 auto; align-items: start; }
     .price-card {
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
       border-radius: 16px; padding: 32px; position: relative;
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
       transition: transform 350ms ease, box-shadow 350ms ease, border-color 350ms ease, background 350ms ease;
     }
     .price-card:hover { transform: translateY(-4px); background: rgba(255,255,255,0.06); box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(88,101,242,0.15); }
