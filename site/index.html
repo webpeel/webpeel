@@ -584,7 +584,13 @@
     }
 
     /* ── HOW IT WORKS ───────────────────────────────── */
-    .how-section { padding: var(--space-section) 0; background: var(--bg); border-top: none; }
+    .how-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid rgba(255,255,255,0.06); }
+    /* Accent glow dividers between sections */
+    .how-section::before, .why-section::before, .pricing-section::before, .faq-section::before {
+      content: ''; display: block; width: 40%; max-width: 400px; height: 1px; margin: 0 auto calc(var(--space-section) * -0.5);
+      background: linear-gradient(90deg, transparent, rgba(88,101,242,0.5), transparent);
+      position: relative; top: calc(var(--space-section) * -0.5);
+    }
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 56px; }
     .how-step-num {
       font-size: var(--text-xs); font-family: var(--font-mono); color: var(--accent);
@@ -696,7 +702,7 @@
     }
 
     /* ── PRICING ────────────────────────────────────── */
-    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: none; }
+    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid rgba(255,255,255,0.06); }
     .pricing-header { text-align: center; margin-bottom: 72px; }
     .pricing-sub { font-size: var(--text-base); color: var(--text-2); margin-top: 0; }
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 960px; margin: 0 auto; align-items: start; }
