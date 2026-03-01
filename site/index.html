@@ -584,12 +584,12 @@
     }
 
     /* ── HOW IT WORKS ───────────────────────────────── */
-    .how-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid rgba(255,255,255,0.06); }
-    /* Accent glow dividers between sections */
-    .how-section::before, .why-section::before, .pricing-section::before, .faq-section::before {
-      content: ''; display: block; width: 40%; max-width: 400px; height: 1px; margin: 0 auto calc(var(--space-section) * -0.5);
-      background: linear-gradient(90deg, transparent, rgba(88,101,242,0.5), transparent);
-      position: relative; top: calc(var(--space-section) * -0.5);
+    .how-section { padding: var(--space-section) 0; background: var(--bg); border-top: none; position: relative; }
+    /* Glowing accent hairline dividers between sections */
+    .how-section::before, .pricing-section::before, .faq-section::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.7) 30%, rgba(88,101,242,0.9) 50%, rgba(139,92,246,0.7) 70%, transparent 100%);
+      box-shadow: 0 0 8px rgba(139,92,246,0.5), 0 0 30px rgba(88,101,242,0.2);
     }
     .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 56px; }
     .how-step-num {
@@ -702,7 +702,7 @@
     }
 
     /* ── PRICING ────────────────────────────────────── */
-    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid rgba(255,255,255,0.06); }
+    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: none; position: relative; }
     .pricing-header { text-align: center; margin-bottom: 72px; }
     .pricing-sub { font-size: var(--text-base); color: var(--text-2); margin-top: 0; }
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 960px; margin: 0 auto; align-items: start; }
@@ -774,7 +774,7 @@
     }
 
     /* ── FAQ ────────────────────────────────────────── */
-    .faq-section { padding: var(--space-section) 0; background: var(--bg-elevated); border-top: none; }
+    .faq-section { padding: var(--space-section) 0; background: var(--bg-elevated); border-top: none; position: relative; }
     .faq-list { max-width: var(--container-narrow); margin: 56px auto 0; }
     .faq-item {
       border: 1px solid rgba(255,255,255,0.10);
