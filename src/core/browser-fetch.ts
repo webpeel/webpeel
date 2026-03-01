@@ -624,6 +624,7 @@ export async function browserScreenshot(
       timeout?: number;
     }>;
     scrollThrough?: boolean;
+    selector?: string;
   } = {}
 ): Promise<{ buffer: Buffer; finalUrl: string }> {
   // SECURITY: Validate URL to prevent SSRF
@@ -643,6 +644,7 @@ export async function browserScreenshot(
     stealth = false,
     actions,
     scrollThrough = false,
+    selector,
   } = options;
 
   const validatedUserAgent = userAgent ? validateUserAgent(userAgent) : getRandomUserAgent();
@@ -803,6 +805,18 @@ export async function browserScreenshot(
         await page!.waitForTimeout(waitMs);
       }
 
+      // Element-level screenshot (clip to a specific CSS selector)
+      if (selector) {
+        const count = await page!.locator(selector).count();
+        if (count === 0) throw new WebPeelError(`Element not found: ${selector}`);
+        const element = await page!.locator(selector).first();
+        const buf = await element.screenshot({
+          type: format,
+          ...(format === 'jpeg' && typeof quality === 'number' ? { quality } : {}),
+        });
+        return { finalUrl: page!.url(), screenshotBuffer: buf };
+      }
+
       // Scroll through the page to trigger IntersectionObservers, lazy loading, animations
       if (scrollThrough) {
         const scrollHeight = await page!.evaluate(() => document.body.scrollHeight);
@@ -879,6 +893,99 @@ export async function browserScreenshot(
     }
     activePagesCount--;
   }
+}
+
+// ── browserDiff ───────────────────────────────────────────────────────────────
+
+/**
+ * Capture screenshots of two URLs and compute a pixel-level visual diff.
+ */
+export async function browserDiff(
+  url1: string,
+  url2: string,
+  options: {
+    width?: number;
+    height?: number;
+    fullPage?: boolean;
+    threshold?: number;
+    format?: 'png' | 'jpeg';
+    quality?: number;
+    stealth?: boolean;
+    waitMs?: number;
+    timeoutMs?: number;
+  } = {}
+): Promise<{
+  diffBuffer: Buffer;
+  diffPixels: number;
+  totalPixels: number;
+  diffPercent: number;
+  dimensions: { width: number; height: number };
+}> {
+  const {
+    width = 1280,
+    height = 720,
+    fullPage = false,
+    threshold = 0.1,
+    stealth = false,
+    waitMs = 0,
+    timeoutMs = 30000,
+  } = options;
+
+  // Take both screenshots as PNG (required for pixelmatch)
+  const [res1, res2] = await Promise.all([
+    browserScreenshot(url1, { width, height, fullPage, format: 'png', stealth, waitMs, timeoutMs }),
+    browserScreenshot(url2, { width, height, fullPage, format: 'png', stealth, waitMs, timeoutMs }),
+  ]);
+
+  // Dynamically import pngjs and pixelmatch (ESM-compatible)
+  const { PNG } = await import('pngjs');
+  const pixelmatch = (await import('pixelmatch')).default;
+
+  const img1 = PNG.sync.read(res1.buffer);
+  const img2 = PNG.sync.read(res2.buffer);
+
+  // Use the larger of the two dimensions
+  const outWidth = Math.max(img1.width, img2.width);
+  const outHeight = Math.max(img1.height, img2.height);
+
+  // Pad images to the same size if needed
+  function padImage(img: InstanceType<typeof PNG>, targetW: number, targetH: number): Buffer {
+    if (img.width === targetW && img.height === targetH) {
+      return img.data as unknown as Buffer;
+    }
+    const padded = Buffer.alloc(targetW * targetH * 4, 0);
+    for (let y = 0; y < img.height && y < targetH; y++) {
+      for (let x = 0; x < img.width && x < targetW; x++) {
+        const srcIdx = (y * img.width + x) * 4;
+        const dstIdx = (y * targetW + x) * 4;
+        padded[dstIdx] = (img.data as Buffer)[srcIdx];
+        padded[dstIdx + 1] = (img.data as Buffer)[srcIdx + 1];
+        padded[dstIdx + 2] = (img.data as Buffer)[srcIdx + 2];
+        padded[dstIdx + 3] = (img.data as Buffer)[srcIdx + 3];
+      }
+    }
+    return padded;
+  }
+
+  const data1 = padImage(img1, outWidth, outHeight);
+  const data2 = padImage(img2, outWidth, outHeight);
+  const diffData = Buffer.alloc(outWidth * outHeight * 4);
+
+  const diffPixels = pixelmatch(data1, data2, diffData, outWidth, outHeight, { threshold });
+  const totalPixels = outWidth * outHeight;
+  const diffPercent = totalPixels > 0 ? (diffPixels / totalPixels) * 100 : 0;
+
+  const diffPng = new PNG({ width: outWidth, height: outHeight });
+  diffPng.data = diffData;
+  const diffBuffer = PNG.sync.write(diffPng);
+
+  return {
+    diffBuffer,
+    diffPixels,
+    totalPixels,
+    diffPercent,
+    dimensions: { width: outWidth, height: outHeight },
+  };
 }
 
 // ── retryFetch ────────────────────────────────────────────────────────────────
@@ -1446,9 +1553,15 @@ export interface DesignAuditResult {
   score: number;
   spacingViolations: { element: string; property: string; value: number; nearestGridValue: number }[];
   touchTargetViolations: { element: string; width: number; height: number; minRequired: number }[];
-  contrastViolations: { element: string; textColor: string; bgColor: string; ratio: number; required: number }[];
+  contrastViolations: { element: string; textColor: string; bgColor: string; ratio: number; required: number; bgResolved?: boolean }[];
   typography: { fontSizes: string[]; lineHeights: string[]; letterSpacings: string[] };
   spacingScale: number[];
+  accessibilityViolations: {
+    type: 'missing-alt' | 'missing-label' | 'missing-aria' | 'heading-skip' | 'empty-link' | 'empty-button';
+    element: string;
+    details: string;
+  }[];
+  headingStructure: string[];
   summary: string;
 }
 
@@ -1510,6 +1623,27 @@ export async function browserDesignAudit(
           const m = color.match(/rgba?\(([0-9]+),\s*([0-9]+),\s*([0-9]+)/);
           if (!m) return null;
           return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
+        }
+
+        function parseRgba(color: string): [number, number, number, number] | null {
+          const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+          if (!m) return null;
+          return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), m[4] !== undefined ? parseFloat(m[4]) : 1];
+        }
+
+        function getEffectiveBackground(el: Element): [number, number, number] {
+          let current: Element | null = el;
+          while (current && current !== document.documentElement) {
+            const style = window.getComputedStyle(current);
+            const bg = style.backgroundColor;
+            const parsed = parseRgba(bg);
+            if (parsed && parsed[3] > 0.5) {
+              return [parsed[0], parsed[1], parsed[2]];
+            }
+            current = current.parentElement;
+          }
+          // Fallback: assume white background
+          return [255, 255, 255];
         }
 
         function luminance(r: number, g: number, b: number): number {
@@ -1600,14 +1734,16 @@ export async function browserDesignAudit(
             }
           }
 
-          // Contrast — Fix: skip near-identical colors (ratio ≤ 1.05) to avoid false positives
+          // Contrast — Walk up DOM tree to find effective opaque background
           const textColor = style.color;
           const bgColor = style.backgroundColor;
-          if (textColor && bgColor) {
+          if (textColor) {
             const fg = parseRgb(textColor);
-            const bg = parseRgb(bgColor);
-            if (fg && bg) {
-              const ratio = contrastRatio(fg, bg);
+            if (fg) {
+              const effectiveBg = getEffectiveBackground(el);
+              const ownBgParsed = parseRgba(bgColor);
+              const bgResolved = !ownBgParsed || ownBgParsed[3] <= 0.5;
+              const ratio = contrastRatio(fg, effectiveBg);
               if (ratio > 1.05 && ratio < minContrast) {
                 // Only flag elements with visible text content
                 const text = el.textContent?.trim() || '';
@@ -1615,9 +1751,10 @@ export async function browserDesignAudit(
                   contrastViolations.push({
                     element: label,
                     textColor,
-                    bgColor,
+                    bgColor: `rgb(${effectiveBg.join(',')})`,
                     ratio: Math.round(ratio * 100) / 100,
                     required: minContrast,
+                    bgResolved,
                   });
                 }
               }
@@ -1626,6 +1763,64 @@ export async function browserDesignAudit(
         }
 
         const spacingScale = Array.from(spacingValuesSet).sort((a, b) => a - b).map(v => Math.round(v));
+
+        // ── WCAG Accessibility Audit ──────────────────────────────────────
+        const a11yViolations: any[] = [];
+        const headingStructure: string[] = [];
+
+        // 1. Images without alt text
+        const images = root.querySelectorAll('img');
+        for (const img of Array.from(images)) {
+          if (!img.getAttribute('alt') && !img.getAttribute('aria-label') && !img.getAttribute('role')?.includes('presentation')) {
+            a11yViolations.push({ type: 'missing-alt', element: elementLabel(img), details: `src: ${(img.getAttribute('src') || '').slice(0, 80)}` });
+          }
+        }
+
+        // 2. Form inputs without labels
+        const inputs = root.querySelectorAll('input, select, textarea');
+        for (const input of Array.from(inputs) as HTMLInputElement[]) {
+          const id = input.getAttribute('id');
+          const hasLabel = id && document.querySelector(`label[for="${id}"]`);
+          const hasAria = input.getAttribute('aria-label') || input.getAttribute('aria-labelledby');
+          const hasTitle = input.getAttribute('title');
+          if (!hasLabel && !hasAria && !hasTitle && input.getAttribute('type') !== 'hidden') {
+            a11yViolations.push({ type: 'missing-label', element: elementLabel(input), details: `type: ${input.getAttribute('type') || 'text'}` });
+          }
+        }
+
+        // 3. Heading hierarchy
+        const headings = root.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        let prevLevel = 0;
+        for (const h of Array.from(headings)) {
+          const level = parseInt(h.tagName[1]);
+          headingStructure.push(h.tagName.toLowerCase());
+          if (prevLevel > 0 && level > prevLevel + 1) {
+            a11yViolations.push({ type: 'heading-skip', element: elementLabel(h), details: `Jumped from h${prevLevel} to h${level}` });
+          }
+          prevLevel = level;
+        }
+
+        // 4. Empty links
+        const links = root.querySelectorAll('a');
+        for (const link of Array.from(links)) {
+          const text = (link.textContent || '').trim();
+          const aria = link.getAttribute('aria-label');
+          const title = link.getAttribute('title');
+          const hasImg = link.querySelector('img[alt]');
+          if (!text && !aria && !title && !hasImg) {
+            a11yViolations.push({ type: 'empty-link', element: elementLabel(link), details: `href: ${(link.getAttribute('href') || '').slice(0, 60)}` });
+          }
+        }
+
+        // 5. Empty buttons
+        const buttons = root.querySelectorAll('button');
+        for (const btn of Array.from(buttons)) {
+          const text = (btn.textContent || '').trim();
+          const aria = btn.getAttribute('aria-label');
+          if (!text && !aria) {
+            a11yViolations.push({ type: 'empty-button', element: elementLabel(btn), details: '' });
+          }
+        }
 
         return {
           spacingViolations: spacingViolations.slice(0, 50),
@@ -1637,23 +1832,27 @@ export async function browserDesignAudit(
             letterSpacings: Array.from(letterSpacingsSet).slice(0, 20),
           },
           spacingScale: [...new Set(spacingScale)].slice(0, 30),
+          accessibilityViolations: a11yViolations.slice(0, 50),
+          headingStructure,
         };
       }, { sel: selector, spacingGrid, minTouchTarget, minContrast });
     }
   );
 
   // Weighted scoring: contrast failures are most serious (accessibility),
-  // touch target issues affect usability, spacing is cosmetic.
+  // touch target issues affect usability, spacing is cosmetic, a11y is significant.
   const contrastPenalty = auditData.contrastViolations.length * 5;
   const touchPenalty = auditData.touchTargetViolations.length * 3;
   const spacingPenalty = auditData.spacingViolations.length * 1;
-  const totalPenalty = contrastPenalty + touchPenalty + spacingPenalty;
+  const a11yPenalty = auditData.accessibilityViolations.length * 4;
+  const totalPenalty = contrastPenalty + touchPenalty + spacingPenalty + a11yPenalty;
   const score = Math.max(0, Math.round(100 - Math.min(100, totalPenalty)));
 
   const parts: string[] = [];
   if (auditData.spacingViolations.length > 0) parts.push(`${auditData.spacingViolations.length} spacing violation(s)`);
   if (auditData.touchTargetViolations.length > 0) parts.push(`${auditData.touchTargetViolations.length} touch target violation(s)`);
   if (auditData.contrastViolations.length > 0) parts.push(`${auditData.contrastViolations.length} contrast violation(s)`);
+  if (auditData.accessibilityViolations.length > 0) parts.push(`${auditData.accessibilityViolations.length} accessibility violation(s)`);
   const summary = parts.length === 0
     ? 'No design violations found.'
     : `Found: ${parts.join(', ')}.`;

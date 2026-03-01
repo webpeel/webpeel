@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { takeScreenshot, takeFilmstrip, takeAuditScreenshots, takeAnimationCapture, takeViewportsBatch, takeDesignAudit } from '../../core/screenshot.js';
+import { takeScreenshot, takeFilmstrip, takeAuditScreenshots, takeAnimationCapture, takeViewportsBatch, takeDesignAudit, takeScreenshotDiff } from '../../core/screenshot.js';
 import type { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
 import { normalizeActions } from '../../core/actions.js';
@@ -114,6 +114,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         cookies,
         stealth,
         scrollThrough = false,
+        selector,
       } = req.body;
 
       // --- Validate URL --------------------------------------------------
@@ -160,6 +161,14 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         return;
       }
 
+      if (selector !== undefined && typeof selector !== 'string') {
+        res.status(400).json({
+          error: 'invalid_request',
+          message: 'Invalid selector: must be a string',
+        });
+        return;
+      }
+
       // Normalize user-provided actions (accepts Firecrawl-style too)
       let normalizedActions;
       if (actions !== undefined) {
@@ -190,6 +199,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         cookies,
         stealth: stealth === true,
         scrollThrough: scrollThrough === true,
+        selector: typeof selector === 'string' ? selector : undefined,
       });
 
       const elapsed = Date.now() - startTime;
@@ -245,6 +255,16 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       res.setHeader('X-Credits-Used', '1');
       res.setHeader('X-Processing-Time', elapsed.toString());
       res.setHeader('X-Fetch-Type', 'screenshot');
+
+      // Binary response format support
+      const responseFormat = req.body.responseFormat || req.query.responseFormat;
+      if (responseFormat === 'binary') {
+        const imgBuf = Buffer.from(result.screenshot, 'base64');
+        res.setHeader('Content-Type', `image/${result.format}`);
+        res.setHeader('X-Final-URL', result.url);
+        res.send(imgBuf);
+        return;
+      }
 
       res.json({
         success: true,
@@ -706,6 +726,153 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         res.status(500).json({ error: 'design_audit_error', message: error.message.replace(/[<>"']/g, '') });
       } else {
         res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during design audit' });
+      }
+    }
+  });
+
+  // ── POST /v1/screenshot/diff ───────────────────────────────────────────────
+  router.post('/v1/screenshot/diff', async (req: Request, res: Response) => {
+    try {
+      const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+      if (!ssUserId) {
+        res.status(401).json({ error: 'unauthorized', message: 'API key required. Get one free at https://app.webpeel.dev/keys' });
+        return;
+      }
+
+      const { url1, url2, width, height, fullPage = false, threshold, waitFor, timeout } = req.body;
+
+      // --- Validate URLs ------------------------------------------------
+      if (!validateRequestUrl(url1, res)) return;
+      if (!validateRequestUrl(url2, res)) return;
+
+      if (url1 === url2) {
+        res.status(400).json({ error: 'invalid_request', message: 'url1 and url2 must be different URLs' });
+        return;
+      }
+
+      // --- Validate options -----------------------------------------------
+      if (threshold !== undefined && (typeof threshold !== 'number' || threshold < 0 || threshold > 1)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid threshold: must be a number between 0 and 1' });
+        return;
+      }
+
+      if (width !== undefined && (typeof width !== 'number' || width < 100 || width > 5000)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid width: must be between 100 and 5000' });
+        return;
+      }
+
+      if (height !== undefined && (typeof height !== 'number' || height < 100 || height > 5000)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid height: must be between 100 and 5000' });
+        return;
+      }
+
+      // --- Take diff ---------------------------------------------------
+      const startTime = Date.now();
+
+      const result = await takeScreenshotDiff(url1, url2, {
+        width,
+        height,
+        fullPage: fullPage === true,
+        threshold: threshold ?? 0.1,
+        waitFor,
+        timeout: timeout || 60000,
+      });
+
+      const elapsed = Date.now() - startTime;
+
+      // --- Track usage ---------------------------------------------------
+      trackUsageAndLog(req, res, authStore, 'screenshot_diff', url1, elapsed);
+
+      // --- Respond -------------------------------------------------------
+      res.setHeader('X-Credits-Used', '2');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.setHeader('X-Fetch-Type', 'diff');
+
+      // Binary response format support
+      const responseFormat = req.body.responseFormat || req.query.responseFormat;
+      if (responseFormat === 'binary') {
+        const imgBuf = Buffer.from(result.diff, 'base64');
+        res.setHeader('Content-Type', 'image/png');
+        res.send(imgBuf);
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          diff: result.diff,
+          diffPixels: result.diffPixels,
+          totalPixels: result.totalPixels,
+          diffPercent: result.diffPercent,
+          dimensions: result.dimensions,
+        },
+      });
+    } catch (error: any) {
+      console.error('Diff screenshot error:', error);
+      if (error.code) {
+        res.status(500).json({ error: 'diff_error', message: error.message.replace(/[<>"']/g, '') });
+      } else {
+        res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during visual diff' });
+      }
+    }
+  });
+
+  // ── POST /v1/review ────────────────────────────────────────────────────────
+  router.post('/v1/review', async (req: Request, res: Response) => {
+    try {
+      const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+      if (!ssUserId) {
+        res.status(401).json({ error: 'unauthorized', message: 'API key required. Get one free at https://app.webpeel.dev/keys' });
+        return;
+      }
+
+      const { url, rules, selector } = req.body;
+
+      if (!validateRequestUrl(url, res)) return;
+
+      const startTime = Date.now();
+
+      const [viewportsResult, auditResult] = await Promise.all([
+        takeViewportsBatch(url, {
+          viewports: [
+            { width: 375, height: 812, label: 'mobile' },
+            { width: 768, height: 1024, label: 'tablet' },
+            { width: 1440, height: 900, label: 'desktop' },
+          ],
+          fullPage: false,
+          format: 'jpeg',
+          quality: 80,
+          timeout: 90000,
+        }),
+        takeDesignAudit(url, {
+          rules: typeof rules === 'object' ? rules : undefined,
+          selector: typeof selector === 'string' ? selector : undefined,
+          timeout: 60000,
+        }),
+      ]);
+
+      const elapsed = Date.now() - startTime;
+
+      trackUsageAndLog(req, res, authStore, 'review', url, elapsed);
+
+      res.setHeader('X-Credits-Used', '4');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.setHeader('X-Fetch-Type', 'review');
+
+      res.json({
+        success: true,
+        data: {
+          url: viewportsResult.url,
+          viewports: viewportsResult.viewports,
+          audit: auditResult.audit,
+        },
+      });
+    } catch (error: any) {
+      console.error('Review error:', error);
+      if (error.code) {
+        res.status(500).json({ error: 'review_error', message: error.message.replace(/[<>"']/g, '') });
+      } else {
+        res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during review' });
       }
     }
   });

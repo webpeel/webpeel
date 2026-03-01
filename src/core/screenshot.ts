@@ -5,7 +5,7 @@
  */
 
 import type { PageAction } from '../types.js';
-import { browserScreenshot, browserFilmstrip } from './fetcher.js';
+import { browserScreenshot, browserFilmstrip, browserDiff } from './fetcher.js';
 
 export type ScreenshotFormat = 'png' | 'jpeg';
 
@@ -26,6 +26,7 @@ export interface ScreenshotOptions {
   stealth?: boolean;
   actions?: PageAction[];
   scrollThrough?: boolean;
+  selector?: string;
 }
 
 export interface ScreenshotResult {
@@ -53,6 +54,7 @@ export async function takeScreenshot(url: string, options: ScreenshotOptions = {
     stealth: options.stealth,
     actions: options.actions,
     scrollThrough: options.scrollThrough,
+    selector: options.selector,
   });
 
   return {
@@ -112,6 +114,52 @@ export async function takeFilmstrip(url: string, options: FilmstripOptions = {})
     contentType: format === 'png' ? 'image/png' : 'image/jpeg',
     frames: frames.map(f => f.toString('base64')),
     frameCount: frames.length,
+  };
+}
+
+// ── Visual Diff ───────────────────────────────────────────────────────────────
+
+export interface ScreenshotDiffOptions {
+  width?: number;
+  height?: number;
+  fullPage?: boolean;
+  threshold?: number;
+  format?: 'png' | 'jpeg' | 'jpg';
+  quality?: number;
+  stealth?: boolean;
+  waitFor?: number;
+  timeout?: number;
+}
+
+export interface ScreenshotDiffResult {
+  diff: string; // base64-encoded PNG diff image
+  diffPixels: number;
+  totalPixels: number;
+  diffPercent: number;
+  dimensions: { width: number; height: number };
+}
+
+export async function takeScreenshotDiff(
+  url1: string,
+  url2: string,
+  options: ScreenshotDiffOptions = {}
+): Promise<ScreenshotDiffResult> {
+  const { diffBuffer, diffPixels, totalPixels, diffPercent, dimensions } = await browserDiff(url1, url2, {
+    width: options.width,
+    height: options.height,
+    fullPage: options.fullPage,
+    threshold: options.threshold,
+    stealth: options.stealth,
+    waitMs: options.waitFor,
+    timeoutMs: options.timeout,
+  });
+
+  return {
+    diff: diffBuffer.toString('base64'),
+    diffPixels,
+    totalPixels,
+    diffPercent,
+    dimensions,
   };
 }
 

@@ -23,13 +23,16 @@ vi.mock('../core/screenshot.js', () => ({
   takeAnimationCapture: vi.fn(),
   takeViewportsBatch: vi.fn(),
   takeDesignAudit: vi.fn(),
+  takeScreenshotDiff: vi.fn(),
 }));
 
 import {
+  takeScreenshot as mockTakeScreenshot,
   takeAuditScreenshots as mockTakeAudit,
   takeAnimationCapture as mockTakeAnimation,
   takeViewportsBatch as mockTakeViewports,
   takeDesignAudit as mockTakeDesignAudit,
+  takeScreenshotDiff as mockTakeScreenshotDiff,
 } from '../core/screenshot.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -626,5 +629,235 @@ describe('design audit scoring — weighted penalties', () => {
 
   it('contrast violations capped at 0 when very high', () => {
     expect(computeScore(100, 100, 100)).toBe(0);
+  });
+});
+
+// ── POST /v1/screenshot — selector (element crop) ────────────────────────────
+
+describe('POST /v1/screenshot — selector (element crop)', () => {
+  let app: Express;
+
+  const screenshotResult = {
+    url: 'https://example.com',
+    format: 'png' as const,
+    contentType: 'image/png',
+    screenshot: 'iVBORw0KGgo=',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    app = makeApp();
+  });
+
+  it('passes selector through to takeScreenshot', async () => {
+    (mockTakeScreenshot as any).mockResolvedValue(screenshotResult);
+
+    await request(app)
+      .post('/v1/screenshot')
+      .send({ url: 'https://example.com', selector: '.hero' });
+
+    expect(mockTakeScreenshot).toHaveBeenCalledWith(
+      'https://example.com',
+      expect.objectContaining({ selector: '.hero' })
+    );
+  });
+
+  it('works without selector (backward compat)', async () => {
+    (mockTakeScreenshot as any).mockResolvedValue(screenshotResult);
+
+    const res = await request(app)
+      .post('/v1/screenshot')
+      .send({ url: 'https://example.com' });
+
+    expect(res.status).toBe(200);
+    expect(mockTakeScreenshot).toHaveBeenCalledWith(
+      'https://example.com',
+      expect.objectContaining({ selector: undefined })
+    );
+  });
+
+  it('returns 400 for non-string selector', async () => {
+    const res = await request(app)
+      .post('/v1/screenshot')
+      .send({ url: 'https://example.com', selector: 42 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.message).toContain('selector');
+  });
+});
+
+// ── POST /v1/screenshot/diff ──────────────────────────────────────────────────
+
+describe('POST /v1/screenshot/diff', () => {
+  let app: Express;
+
+  const diffResult = {
+    diff: 'abc123==',
+    diffPixels: 100,
+    totalPixels: 921600,
+    diffPercent: 0.01,
+    dimensions: { width: 1280, height: 720 },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    app = makeApp();
+  });
+
+  it('returns diff data for valid request', async () => {
+    (mockTakeScreenshotDiff as any).mockResolvedValue(diffResult);
+
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'https://example.com', url2: 'https://example.com/v2' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.diff).toBe('abc123==');
+    expect(res.body.data.diffPixels).toBe(100);
+    expect(res.body.data.totalPixels).toBe(921600);
+    expect(res.body.data.diffPercent).toBe(0.01);
+    expect(res.body.data.dimensions).toEqual({ width: 1280, height: 720 });
+    expect(res.headers['x-fetch-type']).toBe('diff');
+  });
+
+  it('returns 400 for missing url1', async () => {
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url2: 'https://example.com/v2' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it('returns 400 for missing url2', async () => {
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'https://example.com' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it('returns 400 for SSRF on url1 (localhost)', async () => {
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'http://localhost:3000', url2: 'https://example.com/v2' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it('returns 400 for SSRF on url2 (private network)', async () => {
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'https://example.com', url2: 'http://192.168.1.1/admin' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it('returns 400 for invalid threshold (> 1)', async () => {
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'https://example.com', url2: 'https://example.com/v2', threshold: 1.5 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('threshold');
+  });
+
+  it('returns 400 for invalid threshold (negative)', async () => {
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'https://example.com', url2: 'https://example.com/v2', threshold: -0.1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('threshold');
+  });
+
+  it('returns 400 if url1 === url2', async () => {
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'https://example.com', url2: 'https://example.com' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it('passes threshold and dimensions to takeScreenshotDiff', async () => {
+    (mockTakeScreenshotDiff as any).mockResolvedValue(diffResult);
+
+    await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'https://example.com', url2: 'https://example.com/v2', threshold: 0.05, width: 1440, height: 900 });
+
+    expect(mockTakeScreenshotDiff).toHaveBeenCalledWith(
+      'https://example.com',
+      'https://example.com/v2',
+      expect.objectContaining({ threshold: 0.05, width: 1440, height: 900 })
+    );
+  });
+});
+
+// ── Binary response format ────────────────────────────────────────────────────
+
+describe('POST /v1/screenshot — responseFormat: binary', () => {
+  let app: Express;
+
+  const screenshotResult = {
+    url: 'https://example.com',
+    format: 'png' as const,
+    contentType: 'image/png',
+    screenshot: Buffer.from('PNG_BYTES').toString('base64'),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    app = makeApp();
+  });
+
+  it('returns raw image bytes with correct Content-Type when responseFormat is binary', async () => {
+    (mockTakeScreenshot as any).mockResolvedValue(screenshotResult);
+
+    const res = await request(app)
+      .post('/v1/screenshot')
+      .send({ url: 'https://example.com', responseFormat: 'binary' });
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('image/png');
+    // Should be binary, not JSON
+    expect(res.body).not.toHaveProperty('success');
+  });
+
+  it('returns JSON by default (no responseFormat)', async () => {
+    (mockTakeScreenshot as any).mockResolvedValue(screenshotResult);
+
+    const res = await request(app)
+      .post('/v1/screenshot')
+      .send({ url: 'https://example.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.headers['content-type']).toContain('json');
+  });
+
+  it('diff endpoint returns binary diff image when responseFormat is binary', async () => {
+    const diffResult = {
+      diff: Buffer.from('DIFF_PNG_BYTES').toString('base64'),
+      diffPixels: 50,
+      totalPixels: 921600,
+      diffPercent: 0.005,
+      dimensions: { width: 1280, height: 720 },
+    };
+    (mockTakeScreenshotDiff as any).mockResolvedValue(diffResult);
+
+    const res = await request(app)
+      .post('/v1/screenshot/diff')
+      .send({ url1: 'https://example.com', url2: 'https://example.com/v2', responseFormat: 'binary' });
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('image/png');
+    expect(res.body).not.toHaveProperty('success');
   });
 });

@@ -3171,6 +3171,15 @@ paths:
                     type: string
                   description: Cookies to set (key=value format).
                   example: ["session_id=abc123", "pref=dark"]
+                selector:
+                  type: string
+                  description: CSS selector to capture a specific element instead of the full page.
+                  example: ".hero-section"
+                responseFormat:
+                  type: string
+                  enum: [json, binary]
+                  default: json
+                  description: Response format. Use "binary" to receive raw image bytes with image/png (or image/jpeg) Content-Type instead of JSON.
             examples:
               viewport:
                 summary: Viewport screenshot
@@ -3898,6 +3907,111 @@ paths:
                             items:
                               type: number
                             description: Discovered spacing values (px) sorted ascending.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/screenshot/diff:
+    post:
+      operationId: takeScreenshotDiff
+      summary: Visual diff two URLs
+      description: |
+        Capture screenshots of two URLs and compute a pixel-level visual diff using pixelmatch.
+        Returns a base64-encoded PNG diff image along with diff statistics.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/screenshot/diff \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url1": "https://example.com", "url2": "https://example.com/staging"}'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url1, url2]
+              properties:
+                url1:
+                  type: string
+                  format: uri
+                  description: First URL to compare.
+                  example: https://example.com
+                url2:
+                  type: string
+                  format: uri
+                  description: Second URL to compare.
+                  example: https://example.com/staging
+                width:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 1280
+                  description: Viewport width in pixels.
+                height:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 720
+                  description: Viewport height in pixels.
+                fullPage:
+                  type: boolean
+                  default: false
+                  description: Capture full scrollable page.
+                threshold:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  default: 0.1
+                  description: pixelmatch threshold (0–1). Lower values are more sensitive.
+                responseFormat:
+                  type: string
+                  enum: [json, binary]
+                  default: json
+                  description: Response format. Use "binary" to receive the raw diff PNG bytes.
+      responses:
+        "200":
+          description: Visual diff computed successfully.
+          headers:
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      diff:
+                        type: string
+                        description: Base64-encoded PNG diff image.
+                      diffPixels:
+                        type: integer
+                        description: Number of pixels that differ.
+                      totalPixels:
+                        type: integer
+                        description: Total number of pixels compared.
+                      diffPercent:
+                        type: number
+                        description: Percentage of pixels that differ.
+                      dimensions:
+                        type: object
+                        properties:
+                          width:
+                            type: integer
+                          height:
+                            type: integer
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
