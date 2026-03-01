@@ -100,9 +100,9 @@
     /* ── SCROLL REVEAL (progressive enhancement) ──── */
     /* Content visible by default — JS adds .pending to hide, .visible to reveal */
     .reveal {
-      transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
+      transition: opacity 400ms var(--ease-out), transform 400ms var(--ease-out);
     }
-    .reveal.pending { opacity: 0; transform: translateY(24px); }
+    .reveal.pending { opacity: 0; transform: translateY(12px); }
     .reveal.visible { opacity: 1; transform: translateY(0); }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1315,7 +1315,7 @@ Ready for your AI agent.</div>
         setTimeout(() => { el.classList.remove('pending'); el.classList.add('visible'); }, delay);
         revealObs.unobserve(el);
       });
-    }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+    }, { threshold: 0.08, rootMargin: '0px 0px -10px 0px' });
     document.querySelectorAll('.reveal.pending').forEach(el => revealObs.observe(el));
     /* Fast fallback: if no scroll within 400ms, reveal everything (screenshots, crawlers, bots) */
     setTimeout(() => {
