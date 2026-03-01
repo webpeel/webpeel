@@ -116,10 +116,15 @@ export function normalizeActions(input?: unknown): PageAction[] | undefined {
         const direction = typeof raw.direction === 'string' ? raw.direction : undefined;
         const amount = typeof raw.amount === 'number' ? raw.amount : undefined;
 
-        // Legacy/internal: to can be top|bottom|number
-        const to = raw.to === 'top' || raw.to === 'bottom' || typeof raw.to === 'number'
-          ? raw.to
-          : undefined;
+        // Legacy/internal: to can be top|bottom|number|{x,y}
+        let to: 'top' | 'bottom' | number | { x: number; y: number } | undefined;
+        if (raw.to === 'top' || raw.to === 'bottom' || typeof raw.to === 'number') {
+          to = raw.to;
+        } else if (typeof raw.to === 'object' && raw.to !== null && 'x' in raw.to && 'y' in raw.to) {
+          to = { x: (raw.to as any).x, y: (raw.to as any).y };
+        } else {
+          to = undefined;
+        }
 
         return {
           type: 'scroll',
@@ -298,6 +303,10 @@ export async function executeActions(
           }
           if (typeof action.to === 'number') {
             await page.evaluate(`window.scrollTo(0, ${action.to})`);
+            return;
+          }
+          if (typeof action.to === 'object' && action.to !== null && 'x' in action.to && 'y' in action.to) {
+            await page.evaluate(`window.scrollTo(${(action.to as any).x}, ${(action.to as any).y})`);
             return;
           }
 
