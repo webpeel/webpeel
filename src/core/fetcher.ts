@@ -10,5 +10,6 @@
 // Re-export everything for backward compatibility
 export { simpleFetch, type FetchResult } from './http-fetch.js';
 export { cleanup, warmup, closePool, closeProfileBrowser, playwrightLoaded } from './browser-pool.js';
-export { browserFetch, browserScreenshot, browserFilmstrip, browserAudit, browserAnimationCapture, browserViewports, browserDesignAudit, browserDiff, retryFetch, scrollAndWait } from './browser-fetch.js';
+export { browserFetch, browserScreenshot, browserFilmstrip, browserAudit, browserAnimationCapture, browserViewports, browserDesignAudit, browserDiff, retryFetch, scrollAndWait, browserDesignAnalysis } from './browser-fetch.js';
 export type { DesignAuditResult } from './browser-fetch.js';
+export type { DesignAnalysis, EffectInstance } from './design-analysis.js';

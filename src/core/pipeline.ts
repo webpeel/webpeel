@@ -35,6 +35,7 @@ import type { PeelOptions, PeelResult, ImageInfo } from '../types.js';
 import { BlockedError } from '../types.js';
 import type { BrandingProfile } from './branding.js';
 import type { ChangeResult } from './change-tracking.js';
+import type { DesignAnalysis } from './design-analysis.js';
 
 /** Mutable context threaded through pipeline stages */
 export interface PipelineContext {
@@ -106,6 +107,7 @@ export interface PipelineContext {
   domainData?: DomainExtractResult;
   quickAnswerResult?: QuickAnswerResult;
   brandingProfile?: BrandingProfile;
+  designAnalysisResult?: DesignAnalysis;
   changeResult?: ChangeResult;
   summaryText?: string;
   screenshotBase64?: string;
@@ -270,6 +272,11 @@ export function normalizeOptions(ctx: PipelineContext): void {
 
   // If branding is requested, force render mode
   if (opts.branding) {
+    ctx.render = true;
+  }
+
+  // If designAnalysis is requested, force render mode
+  if (opts.designAnalysis) {
     ctx.render = true;
   }
 
@@ -1165,6 +1172,28 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
     }
   }
 
+  // Extract design analysis if requested (reuses existing browser page when available)
+  if (options.designAnalysis && ctx.render && fetchResult.page) {
+    try {
+      const { extractDesignAnalysis } = await import('./design-analysis.js');
+      ctx.designAnalysisResult = await extractDesignAnalysis(fetchResult.page);
+    } catch (error) {
+      console.error('Design analysis extraction failed:', error);
+    } finally {
+      if (!options.branding) {
+        // Clean up the page and browser if branding didn't already do it
+        try {
+          await fetchResult.page.close().catch(() => {});
+          if (fetchResult.browser) {
+            await fetchResult.browser.close().catch(() => {});
+          }
+        } catch (e) {
+          if (process.env.DEBUG) console.debug('[webpeel]', 'page/browser cleanup after design analysis:', e instanceof Error ? e.message : e);
+        }
+      }
+    }
+  }
+
   // Track content changes if requested
   if (options.changeTracking) {
     try {
@@ -1272,6 +1301,7 @@ export function buildResult(ctx: PipelineContext): PeelResult {
     fingerprint,
     extracted: ctx.extracted,
     branding: ctx.brandingProfile,
+    designAnalysis: ctx.designAnalysisResult,
     changeTracking: ctx.changeResult,
     summary: ctx.summaryText,
     images: ctx.imagesList,

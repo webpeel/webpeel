@@ -1551,6 +1551,7 @@ export async function browserViewports(
 
 export interface DesignAuditResult {
   score: number;
+  colorScheme: 'light' | 'dark' | 'unknown';
   spacingViolations: { element: string; property: string; value: number; nearestGridValue: number }[];
   touchTargetViolations: { element: string; width: number; height: number; minRequired: number }[];
   contrastViolations: { element: string; textColor: string; bgColor: string; ratio: number; required: number; bgResolved?: boolean }[];
@@ -1642,8 +1643,61 @@ export async function browserDesignAudit(
             }
             current = current.parentElement;
           }
-          // Fallback: assume white background
+
+          // Check html element
+          const htmlStyle = window.getComputedStyle(document.documentElement);
+          const htmlBg = parseRgba(htmlStyle.backgroundColor);
+          if (htmlBg && htmlBg[3] > 0.5) {
+            return [htmlBg[0], htmlBg[1], htmlBg[2]];
+          }
+
+          // Check body element
+          const bodyStyle = window.getComputedStyle(document.body);
+          const bodyBg = parseRgba(bodyStyle.backgroundColor);
+          if (bodyBg && bodyBg[3] > 0.5) {
+            return [bodyBg[0], bodyBg[1], bodyBg[2]];
+          }
+
+          // Check color-scheme CSS property or meta tag
+          const colorScheme = (htmlStyle as any).colorScheme as string | undefined ||
+            document.querySelector('meta[name="color-scheme"]')?.getAttribute('content') || '';
+          if (colorScheme.includes('dark')) {
+            return [0, 0, 0]; // Dark scheme default
+          }
+
+          // Ultimate fallback: white (standard web default)
           return [255, 255, 255];
+        }
+
+        function hasBackdropFilter(el: Element): boolean {
+          let current: Element | null = el;
+          while (current) {
+            const style = window.getComputedStyle(current);
+            const bf = (style as any).backdropFilter as string | undefined;
+            if (bf && bf !== 'none' && bf !== '') return true;
+            current = current.parentElement;
+          }
+          return false;
+        }
+
+        function detectPageColorScheme(): 'light' | 'dark' | 'unknown' {
+          const htmlStyle = window.getComputedStyle(document.documentElement);
+          const htmlBg = parseRgba(htmlStyle.backgroundColor);
+          if (htmlBg && htmlBg[3] > 0.5) {
+            const lum = luminance(htmlBg[0], htmlBg[1], htmlBg[2]);
+            return lum < 0.18 ? 'dark' : 'light';
+          }
+          const bodyStyle = window.getComputedStyle(document.body);
+          const bodyBg = parseRgba(bodyStyle.backgroundColor);
+          if (bodyBg && bodyBg[3] > 0.5) {
+            const lum = luminance(bodyBg[0], bodyBg[1], bodyBg[2]);
+            return lum < 0.18 ? 'dark' : 'light';
+          }
+          const colorScheme = (htmlStyle as any).colorScheme as string | undefined ||
+            document.querySelector('meta[name="color-scheme"]')?.getAttribute('content') || '';
+          if (colorScheme.includes('dark')) return 'dark';
+          if (colorScheme.includes('light')) return 'light';
+          return 'unknown';
         }
 
         function luminance(r: number, g: number, b: number): number {
@@ -1736,26 +1790,40 @@ export async function browserDesignAudit(
 
           // Contrast — Walk up DOM tree to find effective opaque background
           const textColor = style.color;
-          const bgColor = style.backgroundColor;
           if (textColor) {
             const fg = parseRgb(textColor);
             if (fg) {
-              const effectiveBg = getEffectiveBackground(el);
-              const ownBgParsed = parseRgba(bgColor);
-              const bgResolved = !ownBgParsed || ownBgParsed[3] <= 0.5;
-              const ratio = contrastRatio(fg, effectiveBg);
-              if (ratio > 1.05 && ratio < minContrast) {
-                // Only flag elements with visible text content
+              if (hasBackdropFilter(el)) {
+                // Background can't be determined from CSS alone — mark as unresolvable
+                // and exclude from scoring (bgResolved: false)
                 const text = el.textContent?.trim() || '';
                 if (text.length > 0 && text.length < 200) {
                   contrastViolations.push({
                     element: label,
                     textColor,
-                    bgColor: `rgb(${effectiveBg.join(',')})`,
-                    ratio: Math.round(ratio * 100) / 100,
+                    bgColor: 'unknown (backdrop-filter)',
+                    ratio: 0,
                     required: minContrast,
-                    bgResolved,
+                    bgResolved: false,
                   });
+                }
+              } else {
+                const effectiveBg = getEffectiveBackground(el);
+                // bgResolved: true — background was successfully determined via DOM traversal
+                const ratio = contrastRatio(fg, effectiveBg);
+                if (ratio > 1.05 && ratio < minContrast) {
+                  // Only flag elements with visible text content
+                  const text = el.textContent?.trim() || '';
+                  if (text.length > 0 && text.length < 200) {
+                    contrastViolations.push({
+                      element: label,
+                      textColor,
+                      bgColor: `rgb(${effectiveBg.join(',')})`,
+                      ratio: Math.round(ratio * 100) / 100,
+                      required: minContrast,
+                      bgResolved: true,
+                    });
+                  }
                 }
               }
             }
@@ -1823,6 +1891,7 @@ export async function browserDesignAudit(
         }
 
         return {
+          colorScheme: detectPageColorScheme(),
           spacingViolations: spacingViolations.slice(0, 50),
           touchTargetViolations: touchTargetViolations.slice(0, 50),
           contrastViolations: contrastViolations.slice(0, 50),
@@ -1841,17 +1910,29 @@ export async function browserDesignAudit(
 
   // Weighted scoring: contrast failures are most serious (accessibility),
   // touch target issues affect usability, spacing is cosmetic, a11y is significant.
-  const contrastPenalty = auditData.contrastViolations.length * 5;
-  const touchPenalty = auditData.touchTargetViolations.length * 3;
-  const spacingPenalty = auditData.spacingViolations.length * 1;
-  const a11yPenalty = auditData.accessibilityViolations.length * 4;
+  // Only count contrast violations where we could resolve the background (bgResolved: true).
+  // Violations with unresolvable backgrounds (backdrop-filter etc.) are excluded from scoring.
+  const resolvedContrastViolations = auditData.contrastViolations.filter(v => v.bgResolved !== false);
+  const unresolvedContrastViolations = auditData.contrastViolations.filter(v => v.bgResolved === false);
+  const contrastPenalty = Math.min(40, resolvedContrastViolations.length * 5); // cap at 40pts
+  const touchPenalty = Math.min(30, auditData.touchTargetViolations.length * 3); // cap at 30pts
+  const spacingPenalty = Math.min(20, auditData.spacingViolations.length * 1);
+  const a11yPenalty = Math.min(30, auditData.accessibilityViolations.length * 4);
+
+  // Bonus for zero violations in a category (up to 5 pts total)
+  let bonus = 0;
+  if (resolvedContrastViolations.length === 0) bonus += 2;
+  if (auditData.touchTargetViolations.length === 0) bonus += 1;
+  if (auditData.accessibilityViolations.length === 0) bonus += 2;
+
   const totalPenalty = contrastPenalty + touchPenalty + spacingPenalty + a11yPenalty;
-  const score = Math.max(0, Math.round(100 - Math.min(100, totalPenalty)));
+  const score = Math.min(100, Math.max(0, Math.round(100 - totalPenalty + bonus)));
 
   const parts: string[] = [];
   if (auditData.spacingViolations.length > 0) parts.push(`${auditData.spacingViolations.length} spacing violation(s)`);
   if (auditData.touchTargetViolations.length > 0) parts.push(`${auditData.touchTargetViolations.length} touch target violation(s)`);
-  if (auditData.contrastViolations.length > 0) parts.push(`${auditData.contrastViolations.length} contrast violation(s)`);
+  if (resolvedContrastViolations.length > 0) parts.push(`${resolvedContrastViolations.length} contrast violation(s)`);
+  if (unresolvedContrastViolations.length > 0) parts.push(`${unresolvedContrastViolations.length} unresolvable contrast check(s)`);
   if (auditData.accessibilityViolations.length > 0) parts.push(`${auditData.accessibilityViolations.length} accessibility violation(s)`);
   const summary = parts.length === 0
     ? 'No design violations found.'
@@ -1859,4 +1940,49 @@ export async function browserDesignAudit(
 
   const audit: DesignAuditResult = { score, summary, ...auditData };
   return { audit, finalUrl };
+}
+
+// ── browserDesignAnalysis ──────────────────────────────────────────────────────
+
+/**
+ * Extract structured visual design intelligence from a URL using a browser.
+ * Returns a DesignAnalysis object with effects, palette, layout, type scale,
+ * and quality signals.
+ */
+export async function browserDesignAnalysis(
+  url: string,
+  options: {
+    selector?: string;
+    width?: number;
+    height?: number;
+    waitMs?: number;
+    timeoutMs?: number;
+    userAgent?: string;
+    headers?: Record<string, string>;
+    cookies?: string[];
+    stealth?: boolean;
+  } = {}
+): Promise<{ analysis: import('./design-analysis.js').DesignAnalysis; finalUrl: string }> {
+  const {
+    width = 1440,
+    height = 900,
+    waitMs = 0,
+    timeoutMs = 60000,
+    userAgent,
+    headers,
+    cookies,
+    stealth = false,
+  } = options;
+
+  const { extractDesignAnalysis } = await import('./design-analysis.js');
+
+  const { result: analysis, finalUrl } = await withBrowserPage(
+    url,
+    { width, height, userAgent, headers, cookies, stealth, waitMs, timeoutMs },
+    async (page) => {
+      return extractDesignAnalysis(page);
+    }
+  );
+
+  return { analysis, finalUrl };
 }

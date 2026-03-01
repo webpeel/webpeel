@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { takeScreenshot, takeFilmstrip, takeAuditScreenshots, takeAnimationCapture, takeViewportsBatch, takeDesignAudit, takeScreenshotDiff } from '../../core/screenshot.js';
+import { takeScreenshot, takeFilmstrip, takeAuditScreenshots, takeAnimationCapture, takeViewportsBatch, takeDesignAudit, takeScreenshotDiff, takeDesignAnalysis } from '../../core/screenshot.js';
 import type { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
 import { normalizeActions } from '../../core/actions.js';
@@ -726,6 +726,51 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         res.status(500).json({ error: 'design_audit_error', message: error.message.replace(/[<>"']/g, '') });
       } else {
         res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during design audit' });
+      }
+    }
+  });
+
+  // ── POST /v1/screenshot/design-analysis ───────────────────────────────────
+  router.post('/v1/screenshot/design-analysis', async (req: Request, res: Response) => {
+    try {
+      const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+      if (!ssUserId) {
+        res.status(401).json({ error: 'unauthorized', message: 'API key required. Get one free at https://app.webpeel.dev/keys' });
+        return;
+      }
+
+      const { url, selector, width, height, waitFor, timeout, stealth } = req.body;
+
+      if (!validateRequestUrl(url, res)) return;
+
+      const startTime = Date.now();
+      const result = await takeDesignAnalysis(url, {
+        selector: typeof selector === 'string' ? selector : undefined,
+        width, height,
+        waitFor, timeout: timeout || 60000,
+        stealth: typeof stealth === 'boolean' ? stealth : undefined,
+      });
+      const elapsed = Date.now() - startTime;
+
+      trackUsageAndLog(req, res, authStore, 'design_analysis', url, elapsed);
+
+      res.setHeader('X-Credits-Used', '1');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.setHeader('X-Fetch-Type', 'design-analysis');
+
+      res.json({
+        success: true,
+        data: {
+          url: result.url,
+          analysis: result.analysis,
+        },
+      });
+    } catch (error: any) {
+      console.error('Design analysis error:', error);
+      if (error.code) {
+        res.status(500).json({ error: 'design_analysis_error', message: error.message.replace(/[<>"']/g, '') });
+      } else {
+        res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during design analysis' });
       }
     }
   });

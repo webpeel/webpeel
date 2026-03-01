@@ -116,6 +116,8 @@ export interface PeelOptions {
   changeTracking?: boolean;
   /** Extract branding/design system (requires render=true) */
   branding?: boolean;
+  /** Extract structured design analysis (requires render=true) */
+  designAnalysis?: boolean;
   /** Generate AI summary of content */
   summary?: boolean | { prompt?: string; maxLength?: number };
   /** LLM configuration for AI features (extraction, summary) */
@@ -287,6 +289,8 @@ export interface PeelResult {
   json?: Record<string, any>;
   /** Branding/design system profile */
   branding?: import('./core/branding.js').BrandingProfile;
+  /** Structured design analysis */
+  designAnalysis?: import('./core/design-analysis.js').DesignAnalysis;
   /** Content change tracking result */
   changeTracking?: import('./core/change-tracking.js').ChangeResult;
   /** AI-generated summary */

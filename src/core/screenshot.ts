@@ -165,8 +165,9 @@ export async function takeScreenshotDiff(
 
 // ── Audit ─────────────────────────────────────────────────────────────────────
 
-import { browserAudit, browserAnimationCapture, browserViewports, browserDesignAudit } from './fetcher.js';
-export type { DesignAuditResult } from './fetcher.js';
+import { browserAudit, browserAnimationCapture, browserViewports, browserDesignAudit, browserDesignAnalysis } from './fetcher.js';
+export type { DesignAuditResult, DesignAnalysis, EffectInstance } from './fetcher.js';
+import type { DesignAnalysis } from './fetcher.js';
 
 export interface AuditOptions {
   width?: number;
@@ -399,4 +400,39 @@ export async function takeDesignAudit(url: string, options: DesignAuditOptions =
   });
 
   return { url: finalUrl, audit };
+}
+
+// ── Design Analysis ────────────────────────────────────────────────────────────
+
+export interface DesignAnalysisOptions {
+  selector?: string;
+  width?: number;
+  height?: number;
+  waitFor?: number;
+  timeout?: number;
+  userAgent?: string;
+  headers?: Record<string, string>;
+  cookies?: string[];
+  stealth?: boolean;
+}
+
+export interface DesignAnalysisSummaryResult {
+  url: string;
+  analysis: DesignAnalysis;
+}
+
+export async function takeDesignAnalysis(url: string, options: DesignAnalysisOptions = {}): Promise<DesignAnalysisSummaryResult> {
+  const { analysis, finalUrl } = await browserDesignAnalysis(url, {
+    selector: options.selector,
+    width: options.width,
+    height: options.height,
+    waitMs: options.waitFor,
+    timeoutMs: options.timeout,
+    userAgent: options.userAgent,
+    headers: options.headers,
+    cookies: options.cookies,
+    stealth: options.stealth,
+  });
+
+  return { url: finalUrl, analysis };
 }
