@@ -82,7 +82,7 @@
 
       /* Sizes — aggressive scale like Linear/Resend */
       --text-hero: clamp(60px, 9vw, 104px);
-      --text-h2: clamp(40px, 5.5vw, 64px);
+      --text-h2: clamp(44px, 6vw, 72px);
       --text-h3: clamp(19px, 2.2vw, 26px);
       --text-stat: clamp(48px, 6vw, 80px);
 
@@ -98,7 +98,7 @@
     }
 
     html { scroll-behavior: smooth; overflow-x: hidden; }
-    body { font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.65; font-size: 17px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.65; font-size: var(--text-base); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
     ::selection { background: rgba(88,101,242,0.15); }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; }
@@ -176,6 +176,7 @@
       font-size: var(--text-sm); font-weight: 500; color: rgba(255,255,255,0.88);
       transition: color 200ms ease, opacity 150ms ease;
       text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+      padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center;
     }
     .nav.scrolled .nav-links a { color: var(--text-2); text-shadow: none; }
     .nav-links a:hover { color: #fff; opacity: 1; }
@@ -200,7 +201,7 @@
       z-index: 99; border-bottom: 1px solid var(--border);
     }
     .mobile-menu.open { display: flex; }
-    .mobile-menu a { font-size: 15px; font-weight: 500; padding: 12px 0; color: var(--text-2); border-bottom: 1px solid var(--border); min-height: 44px; display: flex; align-items: center; }
+    .mobile-menu a { font-size: var(--text-sm); font-weight: 500; padding: 12px 0; color: var(--text-2); border-bottom: 1px solid var(--border); min-height: 44px; display: flex; align-items: center; }
     .mobile-menu a:last-child { border-bottom: none; }
     @media (max-width: 768px) { .nav-links { display: none; } .nav-hamburger { display: flex; } }
 
@@ -341,7 +342,7 @@
       background: #0C0C0E; border-radius: 12px; padding: 16px;
       border: 1px solid rgba(255,255,255,0.08);
       font-family: var(--font-mono); font-size: var(--text-xs); color: #E2E8F0;
-      line-height: 1.6; text-align: left; overflow-x: auto;
+      line-height: 1.6; text-align: left; overflow-x: auto; word-break: break-all;
       box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 16px 40px -8px rgba(0,0,0,0.4);
     }
     @media (max-width: 768px) {
@@ -374,7 +375,7 @@
     }
     .section-h2 {
       font-family: var(--font-display); font-size: var(--text-h2);
-      font-weight: 400; letter-spacing: -0.03em; line-height: 1.2;
+      font-weight: 400; letter-spacing: -0.035em; line-height: 1.1;
       color: var(--text); margin-bottom: 32px;
     }
     .section-h2-dark { color: var(--text-on-dark); }
@@ -393,7 +394,7 @@
       border-radius: 20px; padding: 40px; margin-top: 8px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.05), 0 0 0 1px rgba(88,101,242,0.04);
     }
-    .demo-subtitle { font-size: var(--text-base); color: var(--text-2); margin: 0 auto 40px; max-width: 480px; line-height: 1.6; }
+    .demo-subtitle { font-size: var(--text-md); color: var(--text-2); text-align: center; margin: 16px auto 48px; max-width: 520px; }
     .demo-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
     .demo-pill {
       padding: 8px 16px; border: 1.5px solid var(--border-card);
@@ -434,7 +435,7 @@
     .demo-content-box {
       background: #0C0C0E; border-radius: 12px; padding: 22px;
       font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7;
-      color: #94A3B8; min-height: 290px; max-height: 480px; overflow-y: auto;
+      color: #94A3B8; min-height: 290px; max-height: 480px; overflow-x: auto; overflow-y: auto; word-break: break-word;
       border: 1px solid rgba(255,255,255,0.07);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
     }
@@ -477,7 +478,7 @@
     .why-section {
       background-color: #09090B;
       background-image:
-        linear-gradient(180deg, #0D0D10 0%, #09090B 100%),
+        linear-gradient(180deg, #13131a 0%, #09090B 80px, #09090B 100%),
         linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
       background-size: auto, 64px 64px, 64px 64px;
@@ -519,7 +520,7 @@
     }
     .stat-card:hover { border-color: rgba(88,101,242,0.2); }
     .stat-card .stat-n { font-size: clamp(48px, 6vw, 72px); font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1; white-space: nowrap; }
-    .stat-card .stat-l { font-size: var(--text-xs); color: rgba(255,255,255,0.55); margin-top: 6px; }
+    .stat-card .stat-l { font-size: var(--text-sm); color: rgba(255,255,255,0.6); margin-top: 8px; line-height: 1.4; }
 
     /* Integration chips */
     .why-integrations { padding: 48px 0 0; }
@@ -552,7 +553,7 @@
     }
 
     /* ── PRICING ────────────────────────────────────── */
-    .pricing-section { padding: var(--space-section) 0; background: var(--bg); border-top: 1px solid var(--border); }
+    .pricing-section { padding: var(--space-section) 0; background: linear-gradient(to bottom, #f0f0f5 0%, var(--bg) 80px, var(--bg) 100%); border-top: 1px solid var(--border); }
     .pricing-header { text-align: center; margin-bottom: 72px; }
     .pricing-sub { font-size: var(--text-base); color: var(--text-2); margin-top: 0; }
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 960px; margin: 0 auto; align-items: start; }
@@ -592,7 +593,7 @@
       display: flex; align-items: center; gap: 9px; line-height: 1.5;
     }
     .price-features li::before {
-      content: ''; display: inline-block; width: 15px; height: 15px; flex-shrink: 0;
+      content: ''; display: inline-block; width: 16px; height: 16px; flex-shrink: 0;
       background: var(--accent);
       -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
       mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
@@ -626,7 +627,7 @@
       gap: 16px; transition: color 150ms ease; min-height: 56px;
     }
     .faq-q:hover { color: var(--accent); }
-    .faq-icon { font-size: 22px; color: var(--text-2); transition: transform 300ms var(--ease-out), color 150ms ease; flex-shrink: 0; }
+    .faq-icon { font-size: var(--text-lg); color: var(--text-2); transition: transform 300ms var(--ease-out), color 150ms ease; flex-shrink: 0; }
     .faq-item.open .faq-icon { color: var(--accent); }
     .faq-item.open .faq-icon { transform: rotate(45deg); }
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 400ms var(--ease-out); }
@@ -1223,7 +1224,7 @@ Ready for your AI agent.</div>
         resultHeader.style.display = '';
         const snippet = esc(data.content.slice(0, 90).replace(/\n/g,' ')) + '...';
         const jsonHtml =
-          '<div style="color:#3F3F46;font-size:12px;margin-bottom:6px;">// Response from api.webpeel.dev</div>' +
+          '<div style="color:#3F3F46;font-size:var(--text-xs);margin-bottom:6px;">// Response from api.webpeel.dev</div>' +
           '<div><span style="color:#52525B;">{</span></div>' +
           '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"title"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"' + esc(data.title) + '"</span><span style="color:#52525B;">,</span></div>' +
           '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"words"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">' + data.words + '</span><span style="color:#52525B;">,</span></div>' +
@@ -1231,11 +1232,11 @@ Ready for your AI agent.</div>
           '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"content"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"' + snippet + '"</span></div>' +
           '<div><span style="color:#52525B;">}</span></div>';
         const mdLines = data.content.split('\n').map(l => l.replace(/</g,'&lt;')).join('\n');
-        const mdHtml = '<pre style="white-space:pre-wrap;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#94A3B8;margin:0;">' + mdLines + '</pre>';
+        const mdHtml = '<pre style="white-space:pre-wrap;font-family:var(--font-mono);font-size:var(--text-xs);line-height:1.6;color:#94A3B8;margin:0;">' + mdLines + '</pre>';
         contentBox.innerHTML =
-          '<div style="font-family:var(--font-mono);font-size:13px;line-height:1.7;">' + jsonHtml + '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:var(--text-xs);line-height:1.7;">' + jsonHtml + '</div>' +
           '<hr class="demo-json-sep">' +
-          '<div style="font-size:11px;color:#52525B;margin-bottom:6px;font-family:var(--font-body);">// Extracted content (markdown)</div>' +
+          '<div style="font-size:var(--text-xs);color:#52525B;margin-bottom:6px;font-family:var(--font-body);">// Extracted content (markdown)</div>' +
           mdHtml;
       }, delay);
     }
