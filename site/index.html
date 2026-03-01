@@ -45,13 +45,13 @@
       --accent-subtle: rgba(88,101,242,0.08);
       --accent-light: #818CF8;
 
-      /* Text */
+      /* Text — WCAG AA compliant (4.5:1 ratio minimum on respective bgs) */
       --text: #09090B;
-      --text-2: #71717A;
-      --text-3: #A1A1AA;
+      --text-2: #52525B;           /* was #71717A — boosted for 4.5:1 on white */
+      --text-3: #71717A;           /* was #A1A1AA — boosted for 4.5:1 on white */
       --text-on-dark: #FAFAFA;
-      --text-on-dark-2: rgba(255,255,255,0.6);
-      --text-on-dark-3: rgba(255,255,255,0.4);
+      --text-on-dark-2: rgba(255,255,255,0.7);   /* was 0.6 — boosted */
+      --text-on-dark-3: rgba(255,255,255,0.5);   /* was 0.4 — boosted */
 
       /* Borders */
       --border: rgba(0,0,0,0.07);
@@ -168,8 +168,8 @@
     }
     .nav-cta:hover { opacity: 0.88; transform: translateY(-1px); color: #fff !important; }
     .nav.scrolled .nav-cta { color: #fff !important; }
-    .nav-hamburger { display: none; background: none; border: none; padding: 8px; }
-    .nav-hamburger svg { width: 22px; height: 22px; stroke: rgba(255,255,255,0.8); transition: stroke 250ms ease; }
+    .nav-hamburger { display: none; background: none; border: none; padding: 10px; -webkit-tap-highlight-color: transparent; }
+    .nav-hamburger svg { width: 26px; height: 26px; stroke: #fff; stroke-width: 2.2; transition: stroke 250ms ease; }
     .nav.scrolled .nav-hamburger svg { stroke: var(--text); }
     .mobile-menu {
       display: none; position: fixed; top: 64px; left: 0; right: 0;
@@ -197,10 +197,10 @@
     .hero-content { max-width: 820px; margin: 0 auto; padding-bottom: 72px; }
     .hero-eyebrow {
       display: inline-flex; align-items: center;
-      border: 1px solid rgba(88,101,242,0.25);
-      background: rgba(88,101,242,0.08);
-      color: var(--accent-light);
-      font-size: 13px; font-weight: 500; padding: 6px 16px; border-radius: 100px;
+      border: 1px solid rgba(129,140,248,0.35);
+      background: rgba(88,101,242,0.12);
+      color: #A5B4FC;
+      font-size: 13.5px; font-weight: 500; padding: 7px 18px; border-radius: 100px;
       margin-bottom: 32px; letter-spacing: 0.01em;
     }
     .hero h1 {
@@ -212,7 +212,7 @@
     .hero h1 .accent { color: #A5B4FC; }
     .hero-sub {
       font-size: 18px; font-weight: 400;
-      color: var(--text-on-dark-2);
+      color: rgba(255,255,255,0.7);
       line-height: 1.65; max-width: 540px; margin: 0 auto 36px;
     }
     .hero-ctas { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
@@ -307,16 +307,30 @@
     .hero-stats .stat-n { color: rgba(255,255,255,0.85); font-weight: 700; font-size: 16px; }
     .hero-stats .dot { color: rgba(255,255,255,0.15); padding: 0 4px; }
 
+    /* Mobile: compact code snippet replaces terminal */
+    .hero-mobile-code {
+      display: none; max-width: 100%; margin: 32px auto 0;
+      background: #0C0C0E; border-radius: 12px; padding: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      font-family: var(--font-mono); font-size: 13px; color: #E2E8F0;
+      line-height: 1.6; text-align: left; overflow-x: auto;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 16px 40px -8px rgba(0,0,0,0.4);
+    }
     @media (max-width: 768px) {
       .hero { padding: 80px 0 0; }
       .hero-content { padding-bottom: 40px; }
       .hero-ctas { flex-direction: column; align-items: stretch; gap: 10px; }
       .hero-ctas .btn-primary, .hero-ctas .btn-ghost { width: 100%; justify-content: center; }
-      .hero-terminal { max-height: 270px; overflow: hidden; position: relative; }
-      .hero-terminal::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, transparent, #0C0C0E); border-radius: 0 0 16px 16px; pointer-events: none; }
+      .hero-terminal { display: none; }
+      .hero-mobile-code { display: block; }
       .terminal-body { font-size: 12px; padding: 16px; }
+      .hero-stats { font-size: 12.5px; gap: 5px; }
     }
-    @media (max-width: 480px) { .hero-terminal { max-height: 210px; } .terminal-body { font-size: 11px; padding: 12px; } }
+    @media (max-width: 480px) {
+      .hero-mobile-code { font-size: 11.5px; padding: 12px; }
+      .hero-stats { flex-direction: column; gap: 4px; }
+      .hero-stats .dot { display: none; }
+    }
 
     /* ── SHARED SECTION STYLES ──────────────────────── */
     .section-eyebrow {
@@ -423,9 +437,9 @@
     }
     .why-section .section-eyebrow { color: var(--accent-light); }
     .why-inner { display: grid; grid-template-columns: 55fr 45fr; gap: 80px; align-items: start; }
-    .why-body { font-size: 17px; color: rgba(255,255,255,0.55); max-width: 480px; line-height: 1.7; margin-top: 20px; }
+    .why-body { font-size: 17px; color: rgba(255,255,255,0.65); max-width: 480px; line-height: 1.7; margin-top: 20px; }
     .why-checks { list-style: none; margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
-    .why-checks li { font-size: 14px; color: rgba(255,255,255,0.65); display: flex; align-items: center; gap: 10px; }
+    .why-checks li { font-size: 14.5px; color: rgba(255,255,255,0.75); display: flex; align-items: center; gap: 10px; }
     .why-check-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex-shrink: 0; color: var(--accent-light); font-style: normal; font-size: 14px; }
 
     /* Before/After */
@@ -544,12 +558,13 @@
     .faq-item { border-bottom: 1px solid var(--border); }
     .faq-q {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 22px 0; font-size: 16px; font-weight: 500; color: var(--text);
+      padding: 22px 0; font-size: 16.5px; font-weight: 500; color: var(--text);
       cursor: pointer; background: none; border: none; width: 100%; text-align: left;
-      gap: 16px;
+      gap: 16px; transition: color 150ms ease;
     }
     .faq-q:hover { color: var(--accent); }
-    .faq-icon { font-size: 20px; color: var(--text-3); transition: transform 300ms var(--ease-out); flex-shrink: 0; }
+    .faq-icon { font-size: 22px; color: var(--text-2); transition: transform 300ms var(--ease-out), color 150ms ease; flex-shrink: 0; }
+    .faq-item.open .faq-icon { color: var(--accent); }
     .faq-item.open .faq-icon { transform: rotate(45deg); }
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 400ms var(--ease-out); }
     .faq-answer-inner { padding: 0 0 22px; font-size: 15.5px; color: var(--text-2); line-height: 1.7; }
@@ -579,9 +594,9 @@
     .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
     .footer-brand { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
     .footer-tagline { font-size: 13.5px; color: rgba(255,255,255,0.4); line-height: 1.6; }
-    .footer-col h4 { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.7); margin-bottom: 16px; }
-    .footer-col a { display: block; font-size: 13.5px; color: rgba(255,255,255,0.45); margin-bottom: 10px; transition: color 150ms ease; }
-    .footer-col a:hover { color: rgba(255,255,255,0.8); }
+    .footer-col h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.8); margin-bottom: 16px; }
+    .footer-col a { display: block; font-size: 14px; color: rgba(255,255,255,0.55); margin-bottom: 10px; transition: color 150ms ease; }
+    .footer-col a:hover { color: rgba(255,255,255,0.9); }
     .footer-bottom { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .footer-bottom p { font-size: 13px; color: rgba(255,255,255,0.28); }
     .footer-bottom a { font-size: 13px; color: rgba(255,255,255,0.28); margin-left: 16px; transition: color 150ms ease; }
@@ -677,6 +692,17 @@
           </div>
           <div style="display:none" id="terminal-dynamic"></div>
         </div>
+      </div>
+
+      <!-- Mobile: compact code snippet (replaces terminal on small screens) -->
+      <div class="hero-mobile-code hero-el" data-delay="500">
+        <div><span class="t-prompt">$</span> <span style="color:#E2E8F0">npx webpeel "https://stripe.com"</span></div>
+        <br>
+        <div><span class="t-dim">{</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"words"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
+        <div><span class="t-dim">}</span></div>
       </div>
 
       <div class="hero-stats hero-el" data-delay="600">
