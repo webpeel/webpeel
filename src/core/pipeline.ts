@@ -360,6 +360,7 @@ export async function handleYouTube(ctx: PipelineContext): Promise<PeelResult | 
 export async function fetchContent(ctx: PipelineContext): Promise<void> {
   const needsBranding = ctx.options.branding && ctx.render;
   const needsAutoScroll = !!ctx.autoScrollOpts && ctx.render;
+  const needsDesignAnalysis = ctx.options.designAnalysis && ctx.render;
 
   // Try API-based domain extraction first (Reddit, GitHub, HN use APIs, not HTML)
   // This avoids expensive browser fetches that often get blocked
@@ -413,7 +414,7 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       headers: ctx.headers,
       cookies: ctx.cookies,
       actions: ctx.actions,
-      keepPageOpen: needsBranding || needsAutoScroll,
+      keepPageOpen: needsBranding || needsAutoScroll || needsDesignAnalysis,
       profileDir: ctx.profileDir,
       headed: ctx.headed,
       storageState: ctx.storageState,
@@ -501,11 +502,11 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       // Non-fatal: auto-scroll failed, continuing with whatever HTML we have
       if (process.env.DEBUG) console.debug('[webpeel]', 'auto-scroll failed:', e instanceof Error ? e.message : e);
     } finally {
-      // Close page unless branding also needs it
-      if (!needsBranding) {
+      // Close page unless branding or design analysis also needs it
+      if (!needsBranding && !needsDesignAnalysis) {
         try {
           await fetchResult.page.close().catch(() => {});
-          if (fetchResult.browser && !needsBranding) {
+          if (fetchResult.browser) {
             await fetchResult.browser.close().catch(() => {});
           }
         } catch (e) {
