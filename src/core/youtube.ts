@@ -350,8 +350,13 @@ export async function getYouTubeTranscript(
       summary,
       wordCount,
     };
-  } catch {
-    // simpleFetch path failed — fall through to browser intercept approach
+  } catch (err: any) {
+    // Re-throw definitive failures (browser path won't help)
+    const msg = err?.message ?? '';
+    if (msg.includes('No captions available') || msg.includes('Not a valid YouTube URL')) {
+      throw err;
+    }
+    // Network/parsing failures — fall through to browser intercept approach
   }
 
   // --- Path 2: Browser intercept approach ---
