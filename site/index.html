@@ -382,9 +382,14 @@
     }
     .hero-trusted {
       display: flex; align-items: center; justify-content: center;
-      gap: 28px; flex-wrap: wrap;
+      gap: 20px; flex-wrap: wrap;
       margin-top: 20px; padding-top: 16px;
       border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .trusted-by-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.09em; color: rgba(255,255,255,0.28);
+      white-space: nowrap;
     }
     .hero-trust a { color: var(--text-on-dark-3); transition: color 150ms ease; padding: 0 4px; display: inline-flex; align-items: center; min-height: 48px; }
     .hero-trust a:hover { color: rgba(255,255,255,0.5); }
@@ -1345,6 +1350,7 @@
         </div>
         <!-- Trusted-by logos inline in hero -->
         <div class="hero-trusted hero-el" data-delay="550">
+          <span class="trusted-by-label">used by teams building with</span>
           <span class="trusted-logo">🤖 Claude</span>
           <span class="trusted-logo">⚡ Cursor</span>
           <span class="trusted-logo">🧠 GPT-4o</span>
