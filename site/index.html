@@ -81,7 +81,7 @@
       --text-lg: 24px;    /* card titles, section intros */
 
       /* Sizes — aggressive scale like Linear/Resend */
-      --text-hero: clamp(60px, 9vw, 104px);
+      --text-hero: clamp(52px, 7vw, 80px);
       --text-h2: clamp(48px, 7vw, 72px);
       --text-h3: clamp(20px, 2.5vw, 28px);
       --text-stat: clamp(48px, 6vw, 80px);
@@ -281,7 +281,7 @@
         linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
       background-size: auto, auto, auto, 64px 64px, 64px 64px;
-      padding: 72px 0 0;
+      padding: 56px 0 0;
       text-align: center;
       position: relative;
       border-bottom: none;
@@ -377,7 +377,7 @@
     .btn-light:hover { border-color: rgba(0,0,0,0.2); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .hero-trust {
       font-size: var(--text-xs); color: var(--text-on-dark-3);
-      margin-top: 24px; display: flex; align-items: center; justify-content: center;
+      margin-top: 16px; display: flex; align-items: center; justify-content: center;
       gap: 8px; flex-wrap: wrap;
     }
     .hero-trust a { color: var(--text-on-dark-3); transition: color 150ms ease; padding: 0 4px; display: inline-flex; align-items: center; min-height: 48px; }
@@ -1331,13 +1331,11 @@
           <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
         </div>
         <div class="hero-trust hero-el" data-delay="500">
-          <span>Free forever plan</span>
-          <span class="hero-trust-dot">·</span>
-          <span>Open source</span>
-          <span class="hero-trust-dot">·</span>
           <a href="https://www.npmjs.com/package/webpeel" target="_blank" rel="noopener">2k+ weekly downloads</a>
           <span class="hero-trust-dot">·</span>
-          <a href="/docs/" >Read the docs</a>
+          <a href="/docs/">Docs</a>
+          <span class="hero-trust-dot">·</span>
+          <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
 
