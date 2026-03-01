@@ -257,11 +257,11 @@
       display: inline-flex; align-items: center; gap: 6px;
       font-size: 15px; font-weight: 500;
       color: rgba(255,255,255,0.8); padding: 13px 28px;
-      border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.18);
-      background: transparent;
+      border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.04);
       transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
     }
-    .btn-ghost:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.32); transform: translateY(-1px); color: #fff; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.4); transform: translateY(-1px); color: #fff; }
     .btn-light {
       display: inline-flex; align-items: center; gap: 6px;
       font-size: 15px; font-weight: 500; color: var(--text-2);
@@ -549,7 +549,7 @@
       box-shadow: var(--shadow-md);
       transition: transform 350ms ease, box-shadow 350ms ease, border-color 350ms ease;
     }
-    .price-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(88,101,242,0.1); }
+    .price-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(88,101,242,0.12); }
     .price-card.featured {
       border: 2px solid var(--accent);
       transform: scale(1.05);
@@ -590,7 +590,8 @@
     }
     .price-btn:hover { opacity: 0.85; transform: translateY(-1px); }
     .price-btn-filled { background: var(--accent); color: #fff; }
-    .price-btn-outline { background: transparent; border: 1.5px solid rgba(0,0,0,0.13); color: var(--text); }
+    .price-btn-outline { background: transparent; border: 1.5px solid rgba(0,0,0,0.2); color: var(--text); }
+    .price-btn-outline:hover { border-color: rgba(0,0,0,0.35); background: rgba(0,0,0,0.02); }
     @media (max-width: 768px) {
       .pricing-grid { grid-template-columns: 1fr; max-width: 400px; gap: 16px; }
       .price-card { padding: 32px 24px; }
