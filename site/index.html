@@ -328,8 +328,8 @@
     }
     @media (max-width: 480px) {
       .hero-mobile-code { font-size: 11.5px; padding: 12px; }
-      .hero-stats { flex-direction: column; gap: 4px; }
-      .hero-stats .dot { display: none; }
+      .hero-stats { font-size: 12px; gap: 4px; }
+      .hero-stats .dot { font-size: 8px; }
     }
 
     /* ── SHARED SECTION STYLES ──────────────────────── */
@@ -423,8 +423,8 @@
       border: 1px solid rgba(255,255,255,0.05); box-shadow: var(--shadow-sm);
       line-height: 1.65;
     }
-    @media (max-width: 768px) { .how-section { padding: 64px 0; } .how-grid { grid-template-columns: 1fr; gap: 40px; margin-top: 48px; } .mini-code { font-size: 12px; } }
-    @media (max-width: 480px) { .how-grid { gap: 32px; } }
+    @media (max-width: 768px) { .how-section { padding: 64px 0; } .how-grid { grid-template-columns: 1fr; gap: 40px; margin-top: 48px; } .mini-code { font-size: 12px; overflow-x: auto; } }
+    @media (max-width: 480px) { .how-grid { gap: 32px; } .mini-code { font-size: 11px; padding: 12px; } }
 
     /* ── WHY WEBPEEL (DARK) ─────────────────────────── */
     .why-section {
@@ -548,8 +548,9 @@
     @media (max-width: 768px) {
       .pricing-grid { grid-template-columns: 1fr; max-width: 400px; gap: 16px; }
       .price-card { padding: 28px 24px; }
-      .price-card.featured { order: -1; transform: none; }
+      .price-card.featured { order: -1; transform: none; border-width: 2px; }
       .price-card.featured:hover { transform: translateY(-4px); }
+      .price-amount { font-size: 40px; }
     }
 
     /* ── FAQ ────────────────────────────────────────── */
