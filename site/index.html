@@ -3991,6 +3991,86 @@
     animation: pulse-dot 2s ease-in-out infinite;
   }
 
+  /* ══ POLISH-12: pill CTA, mobile code block restore, social proof upgrade ══ */
+
+  /* 1. Primary CTA: full pill — confident, modern (Vercel/Railway/Resend pattern) */
+  .btn-primary,
+  .hero-ctas .btn-primary,
+  .mobile-sticky-cta .btn-primary {
+    border-radius: 9999px !important;
+  }
+
+  /* 2. Mobile: restore the static terminal code block (was hidden by REDESIGN-10)
+        hero-demo-widget is hidden on mobile, so no more double-dots issue.
+        Inside display:contents hero-content → becomes direct flex child of hero-grid. */
+  @media (max-width: 768px) {
+    .hero-mobile-code {
+      display: block !important;
+      order: 9 !important;
+      margin: 20px 0 0 !important;
+      width: 100% !important;
+    }
+  }
+
+  /* 3. Social proof: bold the number for instant credibility scan */
+  .hero-trust-live {
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: rgba(255,255,255,0.85) !important;
+  }
+
+  /* 4. Social proof dot — brighter green pulse */
+  .hero-trust-dot-live {
+    background: #22C55E !important;
+    box-shadow: 0 0 8px rgba(34,197,94,0.9), 0 0 16px rgba(34,197,94,0.4) !important;
+    width: 7px !important;
+    height: 7px !important;
+  }
+
+  /* 5. Trust bar overall opacity fix — was 0.6, needs to be visible */
+  .hero-grid .hero-trust { opacity: 1 !important; }
+
+  /* 6. Desktop: ensure demo widget is vertically centered with left column */
+  @media (min-width: 769px) {
+    .hero-grid { align-items: center !important; }
+    .hero-demo-widget { align-self: center !important; }
+  }
+
+  /* 7. Mobile eyebrow: explicitly centered (matches h1, sub) */
+  @media (max-width: 768px) {
+    .hero-kicker {
+      text-align: center !important;
+      width: 100% !important;
+    }
+    .hero-eyebrow {
+      text-align: center !important;
+      align-self: center !important;
+    }
+    /* Reduce gap between trust bar and npm number */
+    .hero-trust { margin-top: 16px !important; gap: 8px !important; }
+    /* Tighten CTA note */
+    .hero-cta-note { margin-top: 8px !important; font-size: 11.5px !important; }
+  }
+
+  /* 8. Desktop: social proof bar more prominent */
+  @media (min-width: 769px) {
+    .hero-trust {
+      gap: 14px !important;
+      margin-top: 16px !important;
+      padding: 6px 0 !important;
+    }
+    .hero-trust a {
+      font-weight: 500 !important;
+      color: rgba(255,255,255,0.70) !important;
+    }
+    .hero-trust a:hover { color: rgba(255,255,255,0.92) !important; }
+  }
+
+  /* 9. Pill badge (eyebrow) border-radius consistency */
+  .hero-eyebrow {
+    border-radius: 9999px !important;
+  }
+
   /* ══ POLISH-11: comprehensive design lift — typography, mobile, spacing ══ */
 
   /* 1. Hero body copy: 16px → 19px — removes dead zone between H1 and CTA */
