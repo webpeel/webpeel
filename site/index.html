@@ -2603,8 +2603,42 @@
     transform: translateY(-2px) !important;
   }
   @media (max-width: 768px) {
-    .hero-ctas { margin-top: 28px !important; }
+    .hero-ctas { margin-top: 4px !important; }
     .hero-ctas .btn-primary { min-width: 0 !important; width: 100% !important; }
+  }
+
+  /* ══ MOBILE DEMO SECTION FIXES ══ */
+  @media (max-width: 768px) {
+    /* Prevent "YouTub" clip — scrollable pill row */
+    .demo-pills {
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none !important;
+      justify-content: flex-start !important;
+      padding-bottom: 4px !important;
+    }
+    .demo-pills::-webkit-scrollbar { display: none !important; }
+    .demo-pill {
+      flex-shrink: 0 !important;
+      white-space: nowrap !important;
+    }
+    /* Contain URL ghost element */
+    .demo-card-wrap {
+      overflow: hidden !important;
+    }
+    /* URL display — truncate cleanly, don't overflow */
+    .demo-url-display {
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      max-width: calc(100% - 100px) !important;
+    }
+    /* Chips row — wrap cleanly */
+    .demo-chips {
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+    }
   }
 
   /* Trust row — unified proof statement */
