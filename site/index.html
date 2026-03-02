@@ -91,6 +91,8 @@
       --container-narrow: 720px;
       --gutter: 24px;
       --space-section: clamp(112px, 14vw, 160px);
+      --space-section-lg: clamp(140px, 18vw, 200px);  /* centerpiece sections */
+      --space-section-sm: clamp(80px, 10vw, 112px);   /* lighter/utility sections */
 
       /* Easing */
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -1423,6 +1425,120 @@
       .hero-trusted { gap: 12px; }
     }
 
+    /* ══ SPEC-10: ALL 10 CATEGORY FINAL POLISH ══════════ */
+
+    /* 1. Section rhythm — vary section padding */
+    .how-section { padding: var(--space-section-sm) 0; }
+    .why-section { padding: var(--space-section-lg) 0; }
+    .faq-section { padding: var(--space-section-sm) 0; }
+    @media (max-width: 768px) {
+      :root {
+        --space-section-lg: clamp(96px, 14vw, 140px);
+        --space-section-sm: clamp(56px, 8vw, 80px);
+      }
+    }
+    @media (max-width: 480px) {
+      :root {
+        --space-section-lg: clamp(80px, 12vw, 120px);
+        --space-section-sm: clamp(48px, 6vw, 64px);
+      }
+    }
+
+    /* 2. Hero hierarchy — reduce eyebrow prominence */
+    .hero-eyebrow {
+      font-size: 11px !important;
+      letter-spacing: 0.14em !important;
+      color: rgba(255,255,255,0.55) !important;
+      border-color: rgba(255,255,255,0.08) !important;
+      background: rgba(255,255,255,0.03) !important;
+    }
+    /* More breathing room between headline and CTA */
+    .hero-sub { margin: 20px auto 32px !important; }
+    .hero-ctas { margin-top: 28px !important; }
+    /* Tertiary hierarchy for trust row */
+    .hero-trust { color: rgba(255,255,255,0.35) !important; }
+    .hero-trust a { color: rgba(255,255,255,0.35) !important; }
+    .hero-trust a:hover { color: rgba(255,255,255,0.6) !important; }
+    /* Tighter trusted-by strip */
+    .hero-trusted { gap: 16px !important; margin-top: 16px !important; padding-top: 12px !important; }
+    /* Whisper-level label */
+    .trusted-by-label { font-size: 10px !important; color: rgba(255,255,255,0.22) !important; }
+    /* CTA note — don't compete with CTA button */
+    .hero-cta-note { font-size: 13px !important; color: rgba(255,255,255,0.40) !important; }
+    /* More room before terminal */
+    .hero-content { padding-bottom: 32px !important; }
+
+    /* 3. Stat row label refinement */
+    .stat-card .stat-l { font-weight: 500 !important; }
+    .stat-card .stat-n { font-feature-settings: 'tnum' 1 !important; }
+
+    /* 4. Nav scroll state — frosted glass premium */
+    .nav.scrolled {
+      backdrop-filter: blur(20px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+      box-shadow: 0 1px 12px rgba(0,0,0,0.3) !important;
+    }
+
+    /* 5. Code block syntax contrast */
+    .terminal-body { line-height: 1.65 !important; }
+    .mini-code { line-height: 1.6 !important; }
+
+    /* 6. Pricing section polish — differentiate cards */
+    .price-card:not(.featured) .price-plan { color: rgba(255,255,255,0.7) !important; }
+    .price-card:not(.featured) .price-amount { color: rgba(255,255,255,0.85) !important; }
+    .price-card.featured .price-plan { color: #fff !important; }
+    .price-card.featured .price-amount { color: #fff !important; }
+    /* Price badge — more prominent gradient */
+    .price-badge {
+      background: linear-gradient(135deg, #6B73FF, #5865F2) !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      padding: 6px 20px !important;
+      border-radius: 20px !important;
+      letter-spacing: 0.04em !important;
+      text-transform: uppercase !important;
+    }
+
+    /* 7. FAQ accordion refinement */
+    .faq-icon { color: rgba(255,255,255,0.5) !important; font-size: 20px !important; }
+    .faq-q span:first-child { font-weight: 500 !important; }
+    .faq-item:hover {
+      background: rgba(255,255,255,0.06) !important;
+      border-color: rgba(255,255,255,0.15) !important;
+    }
+    .faq-item.open {
+      border-color: rgba(88,101,242,0.3) !important;
+      background: rgba(88,101,242,0.03) !important;
+    }
+
+    /* 8. Mobile comprehensive */
+    @media (max-width: 768px) {
+      .price-card.featured { margin-bottom: 8px; }
+      .faq-q { min-height: 56px !important; padding: 16px 20px !important; font-size: 16px !important; }
+    }
+    @media (max-width: 480px) {
+      .hero-sub { font-size: 16px !important; line-height: 1.65 !important; color: rgba(255,255,255,0.75) !important; }
+      .hero-cta-note { font-size: 12px !important; }
+      .hero-trusted { gap: 12px !important; }
+    }
+
+    /* 9. Comparison bar chart polish */
+    .bar-group {
+      padding: 20px !important;
+      background: rgba(255,255,255,0.02) !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(255,255,255,0.06) !important;
+      margin-bottom: 20px !important;
+    }
+    .bar-row { margin-bottom: 10px !important; }
+    .bar-label.hl { text-shadow: 0 0 12px rgba(88,101,242,0.3) !important; }
+
+    /* 10. Footer refinement */
+    .footer-brand { font-size: 16px !important; }
+    .footer-tagline { max-width: 280px !important; }
+    .footer-col h3 { color: rgba(255,255,255,0.55) !important; font-size: 12px !important; }
+    .footer-bottom { margin-top: 48px !important; padding-top: 36px !important; }
+
   </style>
 </head>
 <body>
@@ -1605,14 +1721,14 @@
           <div class="how-step-num">01</div>
           <h3>Install</h3>
           <p>One command. Works everywhere — macOS, Linux, Windows. Zero dependencies beyond Node.</p>
-          <div class="mini-code"><span style="color:#3F3F46;"># Install globally</span>
+          <div class="mini-code"><span style="color:#6B7280;"># Install globally</span>
 npm install -g webpeel</div>
         </div>
         <div class="how-step reveal" data-delay="2">
           <div class="how-step-num">02</div>
           <h3>Fetch</h3>
           <p>Send any URL. WebPeel auto-detects what's needed — simple HTTP, browser rendering, or advanced mode.</p>
-          <div class="mini-code"><span style="color:#3F3F46;"># Auto-detects: simple → browser → advanced</span>
+          <div class="mini-code"><span style="color:#6B7280;"># Auto-detects: simple → browser → advanced</span>
 webpeel "https://example.com" --readable</div>
         </div>
         <div class="how-step reveal" data-delay="3">
