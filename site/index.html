@@ -2603,7 +2603,7 @@
     transform: translateY(-2px) !important;
   }
   @media (max-width: 768px) {
-    .hero-ctas { margin-top: 24px !important; }
+    .hero-ctas { margin-top: 28px !important; }
     .hero-ctas .btn-primary { min-width: 0 !important; width: 100% !important; }
   }
 
@@ -2974,6 +2974,22 @@
 
   /* ══ MOTION LAYER — ambient glow, hovers, shimmer ══ */
 
+  /* Terminal card emitting bloom — makes code block feel alive */
+  .hero-card-bloom {
+    position: absolute;
+    top: 32%;
+    right: -8%;
+    width: 560px;
+    height: 380px;
+    background: radial-gradient(ellipse 60% 50% at center, rgba(99,102,241,0.22) 0%, transparent 65%);
+    filter: blur(50px);
+    pointer-events: none;
+    z-index: 1;
+  }
+  @media (max-width: 768px) {
+    .hero-card-bloom { display: none; }
+  }
+
   /* Animated hero ambient orb — slowly breathes/floats */
   .hero-ambient-orb {
     position: absolute;
@@ -3153,6 +3169,8 @@
       <div class="hero-grid" style="position:relative;">
         <!-- Ambient animated glow orb -->
         <div class="hero-ambient-orb" aria-hidden="true"></div>
+        <!-- Terminal card emitting glow bloom -->
+        <div class="hero-card-bloom" aria-hidden="true"></div>
         <!-- Terminal atmospheric glow — explicit element, not pseudo, not box-shadow -->
         <div class="hero-terminal-glow" aria-hidden="true"></div>
         <div class="hero-content">
