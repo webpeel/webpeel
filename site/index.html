@@ -2349,6 +2349,64 @@
     color: rgba(255,255,255,0.85);
   }
 
+  /* ══ LOOP-3 ══ */
+
+  /* 1 — Stats: remove neon green — back to white for a SINGLE accent (indigo) system */
+  .hero-stat-n {
+    color: rgba(255,255,255,0.92) !important;
+  }
+  /* Only uptime gets the semantic green (live = green) */
+  .hero-stats .hero-stat:first-child .hero-stat-n {
+    color: #4ade80 !important;
+  }
+
+  /* 2 — Hero grid: top-align both columns for visual coherence */
+  .hero-grid {
+    align-items: start !important;
+  }
+  .hero-grid .hero-content {
+    justify-content: flex-start !important;
+    padding-top: 24px !important;
+  }
+
+  /* 3 — Mobile hero: reduce dead zone above badge */
+  @media (max-width: 768px) {
+    .hero { padding-top: 64px !important; }
+    .hero-eyebrow { margin-bottom: 16px !important; }
+  }
+
+  /* 4 — Mobile badge: width fit-content to avoid full-width bar appearance */
+  .hero-eyebrow {
+    width: fit-content !important;
+    max-width: 100% !important;
+  }
+
+  /* 5 — Social proof: border-top separation from trust note */
+  .hero-proof {
+    margin-top: 20px !important;
+    padding-top: 16px !important;
+    border-top: 1px solid rgba(255,255,255,0.07) !important;
+  }
+
+  /* 6 — Headlines: text-wrap balance for cleaner line breaks */
+  .hero h1, .hero-sub {
+    text-wrap: balance !important;
+  }
+
+  /* 7 — Mobile: text-align left for all hero content */
+  @media (max-width: 768px) {
+    .hero-content { text-align: left !important; }
+    .hero h1, .hero-sub, .hero-eyebrow { text-align: left !important; }
+    .hero-ctas { align-items: flex-start !important; }
+    .hero-cta-note { text-align: left !important; }
+    .hero-proof { text-align: left !important; }
+  }
+
+  /* 8 — Hamburger: hide at desktop (defensive redundancy) */
+  @media (min-width: 769px) {
+    #hamburger-btn, .nav-hamburger { display: none !important; }
+  }
+
   /* ══ LOOP-2 ══ */
 
   /* 1 — Hamburger: force hidden at desktop (bug fix for display:flex!important override) */
