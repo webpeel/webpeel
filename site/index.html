@@ -2733,18 +2733,20 @@
     }
   }
 
-  /* 3. TERMINAL — maximum depth: visible border glow + layered shadows */
+  /* 3. TERMINAL — maximum depth + inner glow + pulled up */
   #hero-terminal, .hero-terminal {
     background: #0C0C14 !important;
-    border: 1px solid rgba(99,102,241,0.25) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
     border-radius: 14px !important;
+    margin-top: -12px !important;
     box-shadow:
-      0 0 0 1px rgba(99,102,241,0.18),
-      0 0 40px rgba(99,102,241,0.22),
-      0 0 100px rgba(99,102,241,0.10),
-      0 32px 64px rgba(0,0,0,0.70),
-      0 8px 16px rgba(0,0,0,0.50),
-      inset 0 1px 0 rgba(255,255,255,0.10) !important;
+      0 0 0 1px rgba(99,102,241,0.14),
+      0 0 40px rgba(139,92,246,0.18),
+      0 0 90px rgba(99,102,241,0.08),
+      0 28px 56px rgba(0,0,0,0.65),
+      0 8px 16px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      inset 0 0 30px rgba(99,102,241,0.04) !important;
   }
   .terminal-chrome {
     background: rgba(255,255,255,0.04) !important;
@@ -2778,8 +2780,10 @@
     font-family: 'Instrument Serif', Georgia, serif !important;
     font-style: italic !important;
     font-weight: 400 !important;
-    font-size: 0.88em !important;
-    letter-spacing: -0.025em !important;
+    font-size: 0.82em !important;
+    letter-spacing: 0.005em !important;
+    color: var(--accent-pale) !important;
+    opacity: 0.92 !important;
   }
 
   /* 5a. TYPOGRAPHY HIERARCHY — vertical rhythm, clearer subordination */
