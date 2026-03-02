@@ -4098,6 +4098,124 @@
 
   /* O. Dot grid: clip to hero only — hero already overflow:hidden now */
 
+  /* ══ POLISH-15: final polish to 9.5+ — navbar backdrop, button shadows, depth, grid vignette ══ */
+
+  /* 1. Navbar: frosted glass backdrop (Stripe/Linear/Vercel standard) */
+  nav {
+    background: rgba(8,8,15,0.7) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+  }
+
+  /* 2. Primary CTA: layered shadows for premium depth */
+  .btn-primary,
+  .hero-ctas .btn-primary,
+  .mobile-sticky-cta .btn-primary {
+    background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+    box-shadow:
+      0 0 0 1px rgba(99,102,241,0.4) !important,
+      0 4px 24px rgba(99,102,241,0.3) !important,
+      inset 0 1px 0 rgba(255,255,255,0.1) !important;
+  }
+  .btn-primary:hover {
+    box-shadow:
+      0 0 0 1px rgba(99,102,241,0.5) !important,
+      0 8px 32px rgba(99,102,241,0.4) !important,
+      inset 0 1px 0 rgba(255,255,255,0.15) !important;
+  }
+
+  /* 3. Hero dot grid: vignette fade at edges (stops the wall-of-dots feeling) */
+  .hero {
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px),
+      radial-gradient(ellipse 900px 550px at 18% 45%, rgba(99,102,241,0.11) 0%, rgba(99,102,241,0.03) 50%, transparent 72%),
+      radial-gradient(circle at 88% 12%, rgba(139,92,246,0.07) 0%, transparent 42%),
+      #050507 !important;
+    background-size: 20px 20px, 100% 100%, 100% 100%, 100% 100% !important;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 45%, transparent 100%) !important;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 45%, transparent 100%) !important;
+  }
+
+  /* 4. Eyebrow badge: indigo glow treatment */
+  .hero-eyebrow {
+    background: rgba(99,102,241,0.08) !important;
+    border: 1px solid rgba(99,102,241,0.3) !important;
+    border-radius: 6px !important;
+    padding: 4px 12px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.08em !important;
+    color: #818CF8 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05) !important;
+  }
+
+  /* 5. Hero vertical rhythm: tighter, more editorial */
+  @media (min-width: 769px) {
+    .hero h1 { margin-bottom: 28px !important; }
+    .hero-sub {
+      font-size: 17px !important;
+      line-height: 1.65 !important;
+      color: rgba(255,255,255,0.60) !important;
+      margin-bottom: 40px !important;
+    }
+  }
+
+  /* 6. Demo widget: premium depth with glow */
+  .hero-demo-widget {
+    background: rgba(15,15,25,0.9) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.5) !important,
+      0 8px 16px rgba(0,0,0,0.4) !important,
+      0 32px 64px rgba(0,0,0,0.5) !important,
+      0 0 80px rgba(99,102,241,0.08) !important;
+  }
+
+  /* 7. Mobile CTA: larger, more confident */
+  @media (max-width: 768px) {
+    .hero-ctas .btn-primary {
+      padding: 18px 24px !important;
+      font-size: 16px !important;
+      border-radius: 12px !important;
+      min-height: 56px !important;
+    }
+  }
+
+  /* 8. Sign In button: change from solid to ghost/outline */
+  .nav-cta {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: rgba(255,255,255,0.80) !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    transition: background 0.15s ease, border-color 0.15s ease !important;
+  }
+  .nav-cta:hover {
+    background: rgba(255,255,255,0.1) !important;
+    border-color: rgba(255,255,255,0.2) !important;
+    color: rgba(255,255,255,0.95) !important;
+  }
+
+  /* 9. Stats section: border separator already added by POLISH-14 ✓ */
+  /* 10. Mobile social proof: dividers between items (optional refinement) */
+  @media (max-width: 768px) {
+    .hero-trust { display: flex !important; align-items: center !important; justify-content: center !important; gap: 12px !important; }
+    .hero-trust-sep {
+      width: 1px !important;
+      height: 16px !important;
+      background: rgba(255,255,255,0.2) !important;
+      color: transparent !important;
+      display: inline-block !important;
+    }
+  }
+
   /* ══ POLISH-14: unified radius, body weight, stats separator, nav, mobile code fix ══ */
 
   /* 1. Unified border-radius system: 10px for all interactive elements */
