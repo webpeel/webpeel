@@ -2442,6 +2442,82 @@
       color: rgba(255,255,255,0.85);
     }
 
+  /* ══ IMPACT ══ */
+  #hero-terminal, .hero-terminal {
+    background: rgba(8, 8, 16, 0.95) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 14px !important;
+    box-shadow:
+      0 0 0 1px rgba(88,101,242,0.15),
+      0 0 60px rgba(88,101,242,0.22),
+      0 0 120px rgba(88,101,242,0.09),
+      0 32px 64px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  }
+  .terminal-chrome {
+    background: rgba(255,255,255,0.04) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 14px 14px 0 0 !important;
+  }
+  /* Light leak at top edge */
+  #hero-terminal::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(88,101,242,0.5), transparent);
+    pointer-events: none;
+    z-index: 1;
+  }
+  #hero-terminal { position: relative !important; }
+
+  .hero-stats-section { position: relative; padding-top: 16px; }
+  .hero-stats-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+    margin-bottom: 32px;
+  }
+
+  .hero-trust a {
+    color: rgba(255,255,255,0.62) !important;
+    font-size: 13px !important;
+    transition: color 0.15s !important;
+  }
+  .hero-trust a:hover { color: rgba(255,255,255,0.92) !important; }
+  .hero-trust-sep, .hero-trust-dot { color: rgba(255,255,255,0.20) !important; }
+  .hero-eyebrow {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    color: rgba(255,255,255,0.78) !important;
+  }
+
+  .hero {
+    background:
+      radial-gradient(ellipse 55% 45% at 22% 28%, rgba(88,101,242,0.16) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 35% at 78% 15%, rgba(139,92,246,0.10) 0%, transparent 60%),
+      #050507 !important;
+  }
+  @media (max-width: 768px) {
+    .hero {
+      background:
+        radial-gradient(ellipse 90% 35% at 50% 0%, rgba(88,101,242,0.18) 0%, transparent 58%),
+        #050507 !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-mobile-code {
+      display: block !important;
+      margin: 20px 0 24px !important;
+      background: rgba(8,8,16,0.95) !important;
+      border: 1px solid rgba(88,101,242,0.28) !important;
+      border-radius: 10px !important;
+      padding: 16px !important;
+      font-size: 12.5px !important;
+      line-height: 1.65 !important;
+    }
+  }
+  @media (min-width: 769px) { .hero-mobile-code { display: none !important; } }
   </style>
 </head>
 <body>
@@ -2485,6 +2561,15 @@
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
           </h1>
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
+          <div class="hero-mobile-code hero-el" data-delay="400">
+            <div><span class="t-prompt">$</span> <span style="color:#C4B5FD">npx webpeel</span> <span style="color:#E2E8F0">"stripe.com"</span></div>
+            <br>
+            <div><span class="t-dim">{</span></div>
+            <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+            <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+            <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
+            <div><span class="t-dim">}</span></div>
+          </div>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
