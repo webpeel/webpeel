@@ -2164,25 +2164,47 @@
       letter-spacing: -0.03em !important;
     }
 
-    /* ══ 10/10 FINAL ══ */
+    /* ══ POLISH-FINAL ══ */
 
-    /* 1. Mobile code block visibility */
-    @media (min-width: 769px) { .hero-mobile-code { display: none !important; } }
-    @media (max-width: 768px) { .hero-mobile-code { display: block !important; margin: 20px 0 24px !important; } }
-
-    /* 3. Mobile hero — left-align text */
-    @media (max-width: 768px) {
-      .hero-content { text-align: left !important; align-items: flex-start !important; }
-      .hero h1, .hero-sub, .hero-eyebrow { text-align: left !important; }
-      .hero-ctas { justify-content: flex-start !important; }
-      .hero-stats { justify-content: flex-start !important; }
-      .hero-trust { justify-content: flex-start !important; }
-      .hero-stats-note { text-align: left !important; }
-      .hero-proof { justify-content: flex-start !important; flex-wrap: wrap !important; }
+    /* ── Terminal syntax colors ─────────────────────────────── */
+    .terminal-body { font-size: 13.5px !important; line-height: 1.7 !important; }
+    .t-key    { color: #93C5FD !important; }
+    .t-str    { color: #86EFAC !important; }
+    .t-num    { color: #FCD34D !important; }
+    .t-cmd    { color: #C4B5FD !important; }
+    .t-prompt { color: #60A5FA !important; font-weight: 700 !important; }
+    .t-dim    { color: rgba(255,255,255,0.45) !important; }
+    .terminal-cursor {
+      display: inline-block !important;
+      width: 2px !important;
+      height: 14px !important;
+      background: #60A5FA !important;
+      animation: blink 1.2s step-end infinite !important;
+      vertical-align: middle !important;
+      margin-left: 2px !important;
     }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-    /* 4. Background gradient — two focal points + depth */
-    .hero { position: relative; overflow: hidden; }
+    /* ── Background gradient (LOOP-8-FINAL) ─────────────────── */
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background-image:
+        radial-gradient(900px 500px ellipse at 28% 0%, rgba(88,101,242,0.55), transparent 65%),
+        radial-gradient(600px 350px ellipse at 28% 5%, rgba(99,102,241,0.28), transparent 55%),
+        radial-gradient(700px 600px ellipse at 50% 88%, rgba(88,101,242,0.10), transparent 65%),
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) !important;
+      background-size: auto, auto, auto, 64px 64px, 64px 64px !important;
+    }
+    /* Left-column-anchored ::before glow (LOOP-6) */
+    .hero::before {
+      background:
+        radial-gradient(ellipse 70% 65% at 20% 32%, rgba(88,101,242,0.45), transparent 70%),
+        radial-gradient(ellipse 45% 40% at 75% 20%, rgba(88,101,242,0.18), transparent 65%),
+        radial-gradient(ellipse 35% 30% at 50% 70%, rgba(88,101,242,0.08), transparent 60%) !important;
+    }
+    /* Dual-focus ::after overlay (10/10 FINAL) */
     .hero::after {
       content: '';
       position: absolute;
@@ -2194,680 +2216,231 @@
         radial-gradient(ellipse 50% 40% at 80% 20%, rgba(59,130,246,0.08) 0%, transparent 70%);
     }
     .hero-grid, .hero-content { position: relative; z-index: 1; }
-
-    /* 5. Comparison bars — thin modern style */
-    .bar-track { height: 8px !important; border-radius: 4px !important; background: rgba(255,255,255,0.08) !important; }
-    .bar-fill { height: 100% !important; border-radius: 4px !important; }
-    .bar-fill.accent { background: linear-gradient(90deg, #5865F2, #818CF8) !important; }
-    .bar-fill.muted { background: rgba(255,255,255,0.30) !important; }
-    .bar-row { align-items: center !important; gap: 12px !important; margin-bottom: 14px !important; }
-    .bar-val { font-size: 13px !important; font-weight: 600 !important; color: rgba(255,255,255,0.8) !important; min-width: 40px !important; text-align: right !important; }
-    .bar-label { font-size: 13px !important; color: rgba(255,255,255,0.6) !important; }
-    @media (max-width: 480px) {
-      .bar-track { height: 6px !important; }
-      .bar-val { font-size: 11px !important; min-width: 32px !important; }
-      .bar-label { font-size: 11px !important; }
+    @media (max-width: 768px) {
+      .hero::after {
+        background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(107,115,255,0.18) 0%, transparent 70%) !important;
+      }
     }
 
-    /* 6. Social proof — green dot */
+    /* ── Hero grid ───────────────────────────────────────────── */
+    .hero-grid { align-items: start !important; }
+    .hero-grid .hero-content { justify-content: flex-start !important; padding-top: 0 !important; }
+
+    /* ── Badge / eyebrow (LOOP-8-FINAL strongest values) ──────── */
+    .hero-eyebrow {
+      border: 1px solid rgba(255,255,255,0.24) !important;
+      background: rgba(255,255,255,0.09) !important;
+      color: rgba(255,255,255,0.80) !important;
+      width: fit-content !important;
+      max-width: 100% !important;
+      margin-bottom: 24px !important;
+    }
+
+    /* ── Kicker line (LOOP-8-FINAL) ─────────────────────────── */
+    .hero-kicker {
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.12em !important;
+      color: rgba(255,255,255,0.55) !important;
+      margin: 0 0 10px !important;
+    }
+    @media (max-width: 768px) {
+      .hero-kicker { text-align: left !important; }
+    }
+
+    /* ── Headline ────────────────────────────────────────────── */
+    .hero h1 { margin-bottom: 20px !important; text-wrap: balance !important; }
+    @media (max-width: 768px) { .hero h1 { font-size: 40px !important; } }
+    @media (max-width: 480px) { .hero h1 { font-size: 38px !important; } }
+    @media (max-width: 390px) { .hero h1 { font-size: 36px !important; letter-spacing: -0.03em !important; } }
+
+    /* ── Subheadline (LOOP-1 + LOOP-6) ──────────────────────── */
+    .hero-sub {
+      font-size: 20px !important;
+      line-height: 1.7 !important;
+      color: rgba(255,255,255,0.75) !important;
+      margin-bottom: 0 !important;
+      text-wrap: balance !important;
+    }
+    .hero-sub strong { color: rgba(255,255,255,0.92) !important; font-weight: 700 !important; }
+    @media (max-width: 768px) { .hero-sub { font-size: 17px !important; } }
+    @media (max-width: 480px) { .hero-sub { font-size: 16px !important; } }
+
+    /* ── CTA buttons ─────────────────────────────────────────── */
+    .hero-ctas { margin-top: 36px !important; }
+    .btn-primary, .hero-ctas .btn-primary, .nav-cta { border-radius: 8px !important; }
+    @media (max-width: 768px) {
+      .hero-ctas { margin-top: 28px !important; }
+    }
+
+    /* ── CTA micro-copy note ─────────────────────────────────── */
+    .hero-cta-note {
+      margin-top: 12px !important;
+      color: rgba(255,255,255,0.38) !important;
+      font-size: 12px !important;
+      letter-spacing: 0.01em !important;
+    }
+    @media (max-width: 768px) {
+      .hero-cta-note {
+        display: block !important;
+        margin-bottom: 20px !important;
+        font-size: 12px !important;
+        color: rgba(255,255,255,0.45) !important;
+      }
+    }
+
+    /* ── Trust / social proof row ────────────────────────────── */
+    .hero-trust { margin-top: 4px !important; }
+    .hero-trust a, .hero-proof a { opacity: 0.65 !important; font-weight: 500 !important; }
+    .hero-trust a:hover, .hero-proof a:hover { opacity: 1 !important; }
     .hero-trust-live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 500; }
     .hero-trust-dot-live { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.7); animation: pulse-green 2s ease-in-out infinite; flex-shrink: 0; }
     @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 8px rgba(74,222,128,0.7); } 50% { box-shadow: 0 0 14px rgba(74,222,128,1); } }
     .hero-trust-sep { color: rgba(255,255,255,0.2); margin: 0 4px; font-size: 13px; }
 
-    /* 7. Hamburger touch target — MOBILE ONLY */
-    @media (max-width: 768px) {
-      .nav-hamburger { min-width: 44px !important; min-height: 44px !important; padding: 10px !important; margin: -10px -4px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
-      .nav-hamburger:active { opacity: 0.6 !important; }
-    }
-    @media (min-width: 769px) {
-      .nav-hamburger { display: none !important; }
+    /* ── Social proof bar ────────────────────────────────────── */
+    .hero-proof {
+      margin-top: 24px !important;
+      padding-top: 16px !important;
+      border-top: 1px solid rgba(255,255,255,0.07) !important;
     }
 
-    /* 9. Mobile code block — stronger card border */
+    /* ── Stats bar ───────────────────────────────────────────── */
+    .hero-stats {
+      padding-top: 40px !important;
+      margin-top: 40px !important;
+      border-top: 1px solid rgba(255,255,255,0.07) !important;
+      gap: 48px !important;
+    }
+    .hero-stat-n {
+      color: #FFFFFF !important;
+      font-size: 34px !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.04em !important;
+      font-feature-settings: 'tnum' 1 !important;
+      font-variant-numeric: tabular-nums !important;
+    }
+    .hero-stat-l {
+      font-size: 10px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.12em !important;
+      color: rgba(255,255,255,0.35) !important;
+      font-weight: 500 !important;
+      margin-top: 4px !important;
+    }
+    .hero-stats-note {
+      color: rgba(255,255,255,0.30) !important;
+      font-size: 11px !important;
+      letter-spacing: 0.04em !important;
+    }
+    .hero-stats-note a {
+      color: rgba(255,255,255,0.45) !important;
+      text-decoration: underline !important;
+      text-underline-offset: 3px !important;
+    }
+    @media (max-width: 768px) {
+      .hero-stats { gap: 20px !important; }
+      .hero-stat-n { font-size: 26px !important; }
+    }
+
+    /* ── Mobile hero layout ──────────────────────────────────── */
+    @media (max-width: 768px) {
+      .hero { padding-top: 32px !important; }
+      .hero-grid .hero-content { padding-top: 0 !important; }
+      .hero-eyebrow { margin-bottom: 18px !important; }
+      .hero-content { text-align: left !important; align-items: flex-start !important; }
+      .hero h1, .hero-sub, .hero-eyebrow { text-align: left !important; }
+      .hero-ctas { justify-content: flex-start !important; }
+      .hero-stats { justify-content: flex-start !important; }
+      .hero-trust { justify-content: flex-start !important; }
+      .hero-stats-note { text-align: left !important; }
+      .hero-proof { justify-content: flex-start !important; flex-wrap: wrap !important; }
+    }
+
+    /* ── Mobile code snippet ─────────────────────────────────── */
+    @media (min-width: 769px) { .hero-mobile-code { display: none !important; } }
     @media (max-width: 768px) {
       .hero-mobile-code {
-        background: rgba(10,10,20,0.9) !important;
-        border: 1px solid rgba(88,101,242,0.30) !important;
-        border-radius: 10px !important;
-        padding: 16px !important;
-        box-shadow: 0 0 24px rgba(88,101,242,0.10), 0 4px 16px rgba(0,0,0,0.4) !important;
+        display: block !important;
+        margin: 20px 0 24px !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 16px 40px rgba(0,0,0,0.6), 0 0 60px rgba(88,101,242,0.15) !important;
       }
     }
 
-
-  /* ══ R2 POLISH ══ */
-
-  /* CHANGE 1 — Mobile code block: appears just below fold as first scroll reward */
-  @media (max-width: 768px) {
-    .hero-mobile-code {
-      display: block !important;
-      margin: 32px 0 24px !important;
+    /* ── Terminal card ───────────────────────────────────────── */
+    .hero-terminal {
+      border: 1px solid rgba(255,255,255,0.14) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 0 0 1px rgba(88,101,242,0.20),
+        0 24px 72px rgba(0,0,0,0.85),
+        0 0 100px rgba(88,101,242,0.22),
+        0 0 180px rgba(88,101,242,0.10) !important;
     }
-  }
-  @media (min-width: 769px) {
-    .hero-mobile-code { display: none !important; }
-  }
 
-  /* CHANGE 2 — Terminal font size + contrast improvement */
-  .terminal-body {
-    font-size: 13.5px !important;
-    line-height: 1.7 !important;
-  }
-  .t-key { color: #93C5FD !important; }
-  .t-str { color: #86EFAC !important; }
-  .t-num { color: #FCD34D !important; }
-  .t-cmd { color: #C4B5FD !important; }
-  .t-prompt { color: #60A5FA !important; font-weight: 700 !important; }
-  .t-dim { color: rgba(255,255,255,0.45) !important; }
-  .terminal-cursor {
-    display: inline-block !important;
-    width: 2px !important;
-    height: 14px !important;
-    background: #60A5FA !important;
-    animation: blink 1.2s step-end infinite !important;
-    vertical-align: middle !important;
-    margin-left: 2px !important;
-  }
-  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-  /* CHANGE 3 — Button border-radius consistency */
-  .nav-cta, .btn-primary { border-radius: 8px !important; }
-
-  /* CHANGE 4 — Mobile gradient: constrain and focus the glow */
-  @media (max-width: 768px) {
-    .hero::after {
-      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(107,115,255,0.18) 0%, transparent 70%) !important;
+    /* ── Hamburger nav ───────────────────────────────────────── */
+    @media (min-width: 769px) { .nav-hamburger, #hamburger-btn { display: none !important; } }
+    @media (max-width: 768px) {
+      .nav-hamburger {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        padding: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
     }
-  }
 
-  /* CHANGE 5 — Mobile spacing: CTA micro-copy + social proof gap */
-  @media (max-width: 768px) {
-    .hero-cta-note {
-      display: block !important;
-      margin-bottom: 20px !important;
-      font-size: 12px !important;
-      color: rgba(255,255,255,0.45) !important;
+    /* ── Comparison bars ─────────────────────────────────────── */
+    .bar-track { height: 8px !important; border-radius: 4px !important; background: rgba(255,255,255,0.08) !important; }
+    .bar-fill  { height: 100% !important; border-radius: 4px !important; }
+    .bar-fill.accent { background: linear-gradient(90deg, #5865F2, #818CF8) !important; }
+    .bar-fill.muted  { background: rgba(255,255,255,0.30) !important; }
+    .bar-row   { align-items: center !important; gap: 12px !important; margin-bottom: 14px !important; }
+    .bar-val   { font-size: 13px !important; font-weight: 600 !important; color: rgba(255,255,255,0.85) !important; min-width: 40px !important; text-align: right !important; }
+    .bar-label {
+      font-size: 13px !important;
+      color: rgba(255,255,255,0.70) !important;
+      font-weight: 500 !important;
+      min-width: 90px !important;
     }
-    .hero-trust { margin-top: 4px !important; }
-  }
-
-  /* CHANGE 6 — Why/comparison section: bar label readability */
-  .bar-label {
-    font-size: 13px !important;
-    color: rgba(255,255,255,0.70) !important;
-    font-weight: 500 !important;
-    min-width: 90px !important;
-  }
-  .bar-group-title {
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    color: rgba(255,255,255,0.55) !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.08em !important;
-    margin-bottom: 16px !important;
-  }
-  .bar-val {
-    color: rgba(255,255,255,0.85) !important;
-    font-weight: 600 !important;
-    font-size: 13px !important;
-  }
-  .bar-fill.accent + span,
-  .bar-row:has(.bar-fill.accent) .bar-label {
-    color: rgba(255,255,255,0.90) !important;
-    font-weight: 600 !important;
-  }
-
-  /* CHANGE 7 — Demo chips */
-  .demo-chips {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-  .demo-chip-label {
-    font-size: 12px;
-    color: rgba(255,255,255,0.40);
-    font-weight: 500;
-    flex-shrink: 0;
-  }
-  .demo-chip {
-    font-size: 12px;
-    color: rgba(255,255,255,0.55);
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 20px;
-    padding: 4px 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    font-family: inherit;
-  }
-  .demo-chip:hover {
-    background: rgba(88,101,242,0.15);
-    border-color: rgba(88,101,242,0.40);
-    color: rgba(255,255,255,0.85);
-  }
-
-  /* ══ LOOP-5 ══ */
-
-  /* SPACING SYSTEM — strict 8px grid for hero left column */
-  .hero-eyebrow {
-    margin-bottom: 24px !important;
-  }
-  .hero h1 {
-    margin-bottom: 16px !important;
-  }
-  .hero-sub {
-    margin: 0 auto 8px !important;
-    line-height: 1.65 !important;
-  }
-  /* "One API call." display:block is inline so margin applies correctly */
-  .hero-ctas {
-    margin-top: 32px !important;
-  }
-  .hero-cta-note {
-    margin-top: 12px !important;
-  }
-  .hero-proof {
-    margin-top: 24px !important;
-    padding-top: 16px !important;
-    border-top: 1px solid rgba(255,255,255,0.07) !important;
-  }
-
-  /* Stats bar: cleaner section with stronger numbers */
-  .hero-stats {
-    padding-top: 32px !important;
-    margin-top: 32px !important;
-    border-top: 1px solid rgba(255,255,255,0.07) !important;
-  }
-  .hero-stat-n {
-    color: #FFFFFF !important;
-    font-size: 34px !important;
-    font-weight: 800 !important;
-    font-feature-settings: 'tnum' 1 !important;
-    letter-spacing: -0.04em !important;
-  }
-  .hero-stat-l {
-    font-size: 11px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.10em !important;
-    color: rgba(255,255,255,0.38) !important;
-    margin-top: 4px !important;
-  }
-
-  /* Terminal: bright inner top highlight for visible depth */
-  .hero-terminal {
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.15),
-      0 0 0 1px rgba(88,101,242,0.18),
-      0 24px 64px rgba(0,0,0,0.75),
-      0 0 100px rgba(88,101,242,0.18),
-      0 0 200px rgba(88,101,242,0.08) !important;
-  }
-
-  /* ONE API CALL: color accent — same indigo as CTA family, not competing heading */
-
-  /* ══ LOOP-4 ══ */
-
-  /* 1 — Stats: ALL white — no green exceptions — single clean accent system */
-  .hero-stat-n {
-    color: rgba(255,255,255,0.95) !important;
-  }
-
-  /* 2 — Hero grid: top-align both columns */
-  .hero-grid {
-    align-items: start !important;
-  }
-  .hero-grid .hero-content {
-    justify-content: flex-start !important;
-    padding-top: 0 !important;
-  }
-
-  /* 3 — Mobile hero: aggressive dead-zone removal */
-  @media (max-width: 768px) {
-    .hero { padding-top: 32px !important; }
-    .hero-eyebrow { margin-bottom: 16px !important; }
-    /* Also remove any added padding from hero-grid .hero-content */
-    .hero-grid .hero-content { padding-top: 0 !important; }
-  }
-
-  /* 4 — Mobile badge: width fit-content to avoid full-width bar appearance */
-  .hero-eyebrow {
-    width: fit-content !important;
-    max-width: 100% !important;
-  }
-
-  /* 5 — Social proof: border-top separation from trust note */
-  .hero-proof {
-    margin-top: 20px !important;
-    padding-top: 16px !important;
-    border-top: 1px solid rgba(255,255,255,0.07) !important;
-  }
-
-  /* 6 — Headlines: text-wrap balance for cleaner line breaks */
-  .hero h1, .hero-sub {
-    text-wrap: balance !important;
-  }
-
-  /* 7 — Mobile: text-align left for all hero content */
-  @media (max-width: 768px) {
-    .hero-content { text-align: left !important; }
-    .hero h1, .hero-sub, .hero-eyebrow { text-align: left !important; }
-    .hero-ctas { align-items: flex-start !important; }
-    .hero-cta-note { text-align: left !important; }
-    .hero-proof { text-align: left !important; }
-  }
-
-  /* 8 — Hamburger: hide at desktop (defensive redundancy) */
-  @media (min-width: 769px) {
-    #hamburger-btn, .nav-hamburger { display: none !important; }
-  }
-
-  /* 9 — Terminal: visible depth via strong top highlight + border contrast */
-  .hero-terminal {
-    border: 1px solid rgba(255,255,255,0.14) !important;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.12),
-      0 0 0 1px rgba(88,101,242,0.15),
-      0 16px 48px rgba(0,0,0,0.8),
-      0 0 80px rgba(88,101,242,0.25),
-      0 0 160px rgba(88,101,242,0.10) !important;
-  }
-
-  /* 10 — Mobile CTA: 12px radius feels premium vs form-submit 8px */
-  @media (max-width: 768px) {
-    .btn-primary, .hero-ctas .btn-primary {
-      border-radius: 12px !important;
+    .bar-group-title {
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      color: rgba(255,255,255,0.55) !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.08em !important;
+      margin-bottom: 16px !important;
     }
-  }
-
-  /* 11 — Unify "One API call." accent with CTA button exact color */
-  /* Done via HTML inline style — nothing needed here */
-
-  /* 12 — Mobile headline: prevent 4-line wrap */
-  @media (max-width: 480px) {
-    .hero h1 {
-      font-size: 34px !important;
-      line-height: 1.14 !important;
-      letter-spacing: -0.03em !important;
+    @media (max-width: 480px) {
+      .bar-track { height: 6px !important; }
+      .bar-val   { font-size: 11px !important; min-width: 32px !important; }
+      .bar-label { font-size: 11px !important; }
     }
-  }
-  @media (max-width: 390px) {
-    .hero h1 {
-      font-size: 32px !important;
-      letter-spacing: -0.035em !important;
+
+    /* ── Demo chips ──────────────────────────────────────────── */
+    .demo-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .demo-chip-label { font-size: 12px; color: rgba(255,255,255,0.40); font-weight: 500; flex-shrink: 0; }
+    .demo-chip {
+      font-size: 12px;
+      color: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 20px;
+      padding: 4px 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
     }
-  }
-
-  /* ══ LOOP-2 ══ */
-
-  /* 1 — Hamburger: force hidden at desktop (bug fix for display:flex!important override) */
-  @media (min-width: 769px) {
-    .nav-hamburger { display: none !important; }
-  }
-
-  /* 2 — Stats: ALL white — no green, single accent system (indigo for interactive only) */
-  .hero-stat-n {
-    color: rgba(255,255,255,0.95) !important;
-  }
-
-  /* 3 — CTA button border-radius: exact 8px system-wide */
-  .btn-primary,
-  .hero-ctas .btn-primary {
-    border-radius: 8px !important;
-  }
-
-  /* 4 — Mobile headline: proper cascade — larger max-width first, smaller last */
-  @media (max-width: 768px) {
-    .hero h1 { font-size: 40px !important; }
-  }
-  @media (max-width: 480px) {
-    .hero h1 { font-size: 38px !important; }
-  }
-  @media (max-width: 390px) {
-    .hero h1 { font-size: 36px !important; letter-spacing: -0.03em !important; }
-  }
-
-  /* 5 — Trust pill badge: more visible border and background */
-  .hero-eyebrow {
-    border: 1px solid rgba(255,255,255,0.18) !important;
-    background: rgba(255,255,255,0.07) !important;
-    color: rgba(255,255,255,0.75) !important;
-  }
-
-  /* 6 — Terminal card: stronger layered shadow for depth */
-  .hero-terminal {
-    box-shadow:
-      0 0 0 1px rgba(255,255,255,0.08),
-      0 4px 8px rgba(0,0,0,0.4),
-      0 20px 60px rgba(0,0,0,0.7),
-      0 0 80px rgba(88,101,242,0.15),
-      inset 0 1px 0 rgba(255,255,255,0.06) !important;
-  }
-
-  /* 7 — Mobile hero: add breathing room above badge pill */
-  @media (max-width: 768px) {
-    .hero { padding-top: 88px !important; }
-    .hero-eyebrow { margin-bottom: 20px !important; }
-  }
-
-  /* ══ LOOP-1 ══ */
-
-  /* 1 — Hero subheadline: bump to 20px for 1440px readability */
-  .hero-sub {
-    font-size: 20px !important;
-    line-height: 1.65 !important;
-    color: rgba(255,255,255,0.75) !important;
-  }
-  @media (max-width: 768px) {
-    .hero-sub { font-size: 17px !important; }
-  }
-  @media (max-width: 480px) {
-    .hero-sub { font-size: 16px !important; }
-  }
-
-  /* 2 — Stat labels: proper all-caps tracking */
-  .hero-stat-l {
-    font-size: 11px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.10em !important;
-    color: rgba(255,255,255,0.40) !important;
-    font-weight: 500 !important;
-  }
-
-  /* 3 — Stat numbers: tabular figures + tighter letter-spacing */
-  .hero-stat-n {
-    letter-spacing: -0.04em !important;
-    font-feature-settings: 'tnum' 1 !important;
-    font-variant-numeric: tabular-nums !important;
-  }
-
-  /* 4 — Hero eyebrow badge: left-align on mobile to match heading */
-  @media (max-width: 768px) {
-    .hero-eyebrow {
-      display: inline-block !important;
-      text-align: left !important;
-      /* Badge stays inline-block so it doesn't stretch full-width */
+    .demo-chip:hover {
+      background: rgba(88,101,242,0.15);
+      border-color: rgba(88,101,242,0.40);
+      color: rgba(255,255,255,0.85);
     }
-    .hero-content { align-items: flex-start !important; }
-  }
-
-  /* 5 — Social proof row: more breathing room after trust line */
-  .hero-proof {
-    margin-top: 20px !important;
-  }
-
-  /* 6 — CTA note: more separation from button */
-  .hero-cta-note {
-    margin-top: 14px !important;
-    color: rgba(255,255,255,0.38) !important;
-    font-size: 12px !important;
-    letter-spacing: 0.01em !important;
-  }
-
-  /* 7 — Terminal card: richer depth shadow + right-side ambient glow */
-  .hero-terminal {
-    box-shadow:
-      0 0 0 1px rgba(255,255,255,0.08),
-      0 40px 80px -20px rgba(0,0,0,0.9),
-      0 0 120px rgba(88,101,242,0.20),
-      0 0 40px rgba(88,101,242,0.12),
-      inset 0 1px 0 rgba(255,255,255,0.08) !important;
-  }
-
-  /* 8 — hero::before: add right-side ambient glow to unify with terminal card */
-  .hero::before {
-    background:
-      radial-gradient(ellipse 65% 60% at 22% 28%, rgba(88,101,242,0.40), transparent 70%),
-      radial-gradient(ellipse 55% 50% at 78% 25%, rgba(88,101,242,0.28), transparent 65%),
-      radial-gradient(ellipse 40% 35% at 52% 68%, rgba(88,101,242,0.10), transparent 60%) !important;
-  }
-
-  /* 9 — Stats-note visibility: boost the methodology link */
-  .hero-stats-note {
-    color: rgba(255,255,255,0.30) !important;
-    font-size: 11px !important;
-    letter-spacing: 0.04em !important;
-  }
-  .hero-stats-note a {
-    color: rgba(255,255,255,0.45) !important;
-    text-decoration: underline !important;
-    text-underline-offset: 3px !important;
-  }
-
-  /* 10 — Stats border-dividers: make them more subtle */
-  .hero-stats {
-    border-top: 1px solid rgba(255,255,255,0.06) !important;
-    gap: 48px !important;
-  }
-  @media (max-width: 768px) {
-    .hero-stats { gap: 24px !important; }
-  }
-
-  /* ══ LOOP-8 — ABSOLUTE FINAL ══ */
-
-  /* Kicker line: higher contrast, proper size */
-  .hero-kicker {
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.12em !important;
-    color: rgba(255,255,255,0.55) !important;
-    margin: 0 0 10px !important;
-    text-align: inherit !important;
-  }
-
-  /* Nav CTA: match hero button border-radius exactly */
-  .nav-cta {
-    border-radius: 8px !important;
-  }
-
-  /* Mobile terminal: remove padding so chrome spans full width */
-  .hero-mobile-code {
-    padding: 0 !important;
-    overflow: hidden !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.12),
-      0 16px 40px rgba(0,0,0,0.6),
-      0 0 60px rgba(88,101,242,0.15) !important;
-  }
-
-  /* Gradient seam fix: extend purple glow to cover stats section (bottom of hero) */
-  .hero {
-    background-image:
-      radial-gradient(900px 500px ellipse at 30% 0%, rgba(88,101,242,0.55), transparent 65%),
-      radial-gradient(600px 350px ellipse at 30% 0%, rgba(99,102,241,0.35), transparent 55%),
-      radial-gradient(700px 600px ellipse at 50% 85%, rgba(88,101,242,0.12), transparent 60%),
-      radial-gradient(900px 500px ellipse at 50% 30%, rgba(88,101,242,0.04), transparent 55%),
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) !important;
-    background-size: auto, auto, auto, auto, 64px 64px, 64px 64px !important;
-  }
-
-  /* Badge: stronger border for better visibility against gradient */
-  .hero-eyebrow {
-    border: 1px solid rgba(255,255,255,0.22) !important;
-    background: rgba(255,255,255,0.08) !important;
-    color: rgba(255,255,255,0.75) !important;
-  }
-
-  /* "One API call." — bold white, no competing blue color */
-  .hero-sub strong {
-    color: rgba(255,255,255,0.90) !important;
-    font-weight: 700 !important;
-  }
-
-  /* Mobile: kicker left-align */
-  @media (max-width: 768px) {
-    .hero-kicker { text-align: left !important; }
-  }
-
-  /* ══ LOOP-7 ══ */
-
-  /* Nav CTA: match hero button border-radius exactly */
-
-  /* ══ LOOP-6 — FINAL AUTHORITY (placed last, overrides all) ══ */
-
-  /* 1 — Stats: white numbers, no color exceptions */
-  .hero-stat-n {
-    color: #FFFFFF !important;
-    font-size: 34px !important;
-    font-weight: 800 !important;
-  }
-
-  /* 2 — Terminal: maximum visible depth (inner top highlight key on dark bg) */
-  .hero-terminal {
-    border: 1px solid rgba(255,255,255,0.14) !important;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.18),
-      0 0 0 1px rgba(88,101,242,0.20),
-      0 24px 72px rgba(0,0,0,0.85),
-      0 0 100px rgba(88,101,242,0.22),
-      0 0 180px rgba(88,101,242,0.10) !important;
-  }
-
-  /* 3 — Hero gradient: anchor to LEFT column, not full viewport center */
-  .hero::before {
-    background:
-      radial-gradient(ellipse 70% 65% at 20% 32%, rgba(88,101,242,0.45), transparent 70%),
-      radial-gradient(ellipse 45% 40% at 75% 20%, rgba(88,101,242,0.18), transparent 65%),
-      radial-gradient(ellipse 35% 30% at 50% 70%, rgba(88,101,242,0.08), transparent 60%) !important;
-  }
-
-  /* 4 — Spacing: strict 8px grid for hero left column */
-  .hero-eyebrow {
-    margin-bottom: 24px !important;
-  }
-  .hero h1 {
-    margin-bottom: 20px !important;
-  }
-  .hero-sub {
-    margin-bottom: 0 !important;
-    line-height: 1.7 !important;
-  }
-  .hero-ctas {
-    margin-top: 36px !important;
-  }
-  .hero-cta-note {
-    margin-top: 12px !important;
-  }
-  .hero-proof {
-    margin-top: 24px !important;
-    padding-top: 16px !important;
-    border-top: 1px solid rgba(255,255,255,0.07) !important;
-  }
-  .hero-stats {
-    padding-top: 40px !important;
-    margin-top: 40px !important;
-    border-top: 1px solid rgba(255,255,255,0.07) !important;
-    gap: 48px !important;
-  }
-
-  /* 5 — "One API call." — inline with paragraph, no orphan heading */
-  /* Handled in HTML — ensure the strong tag flows with the paragraph text */
-
-  /* 6 — CTA button: exact 8px radius matching nav button */
-  .btn-primary { border-radius: 8px !important; }
-  .hero-ctas .btn-primary { border-radius: 8px !important; }
-
-  /* 7 — Mobile: reduced dead zone */
-  @media (max-width: 768px) {
-    .hero { padding-top: 32px !important; }
-    .hero-grid .hero-content { padding-top: 0 !important; }
-    .hero-eyebrow { margin-bottom: 18px !important; }
-    .hero-ctas { margin-top: 28px !important; }
-    .hero-stat-n { font-size: 26px !important; }
-    .hero-stats { gap: 20px !important; }
-  }
-
-  /* 8 — Social proof links: readable contrast */
-  .hero-trust a, .hero-proof a {
-    opacity: 0.65 !important;
-    font-weight: 500 !important;
-  }
-  .hero-trust a:hover, .hero-proof a:hover {
-    opacity: 1 !important;
-  }
-
-  /* 9 — Stats labels: proper uppercase tracking */
-  .hero-stat-l {
-    font-size: 10px !important;
-    letter-spacing: 0.12em !important;
-    text-transform: uppercase !important;
-    color: rgba(255,255,255,0.35) !important;
-  }
-
-  /* 10 — Badge: clean pill with proper contrast */
-  .hero-eyebrow {
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    background: rgba(255,255,255,0.06) !important;
-    color: rgba(255,255,255,0.70) !important;
-    padding: 6px 14px !important;
-    font-size: 12px !important;
-    letter-spacing: 0.02em !important;
-  }
-
-  /* ══ LOOP-8 FINAL ══ (placed LAST — wins all conflicts) */
-
-  /* Kicker line: properly visible */
-  .hero-kicker {
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.12em !important;
-    color: rgba(255,255,255,0.55) !important;
-    margin: 0 0 10px !important;
-  }
-
-  /* "One API call." — white bold, no competing hue, no blue link appearance */
-  .hero-sub strong {
-    color: rgba(255,255,255,0.92) !important;
-    font-weight: 700 !important;
-  }
-
-  /* Badge: stronger border visibility on gradient background */
-  .hero-eyebrow {
-    border: 1px solid rgba(255,255,255,0.24) !important;
-    background: rgba(255,255,255,0.09) !important;
-    color: rgba(255,255,255,0.80) !important;
-  }
-
-  /* Nav CTA: match hero button border-radius */
-  .nav-cta { border-radius: 8px !important; }
-
-  /* Gradient: extend purple to cover full hero height including stats */
-  .hero {
-    background-image:
-      radial-gradient(900px 500px ellipse at 28% 0%, rgba(88,101,242,0.55), transparent 65%),
-      radial-gradient(600px 350px ellipse at 28% 5%, rgba(99,102,241,0.28), transparent 55%),
-      radial-gradient(700px 600px ellipse at 50% 88%, rgba(88,101,242,0.10), transparent 65%),
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) !important;
-    background-size: auto, auto, auto, 64px 64px, 64px 64px !important;
-  }
-
-  /* Mobile terminal chrome: full width with proper overflow */
-  .hero-mobile-code {
-    padding: 0 !important;
-    overflow: hidden !important;
-  }
-
-  /* Mobile: left-align kicker */
-  @media (max-width: 768px) {
-    .hero-kicker { text-align: left !important; }
-  }
-
-  /* Stats: pure white, guaranteed by last rule */
-  .hero-stat-n { color: #FFFFFF !important; }
-
-  /* Social proof links: readable */
-  .hero-trust a, .hero-proof a {
-    opacity: 0.65 !important;
-    font-weight: 500 !important;
-  }
 
   </style>
 </head>
