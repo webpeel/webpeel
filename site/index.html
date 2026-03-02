@@ -2593,18 +2593,19 @@
   .hero-trust-live { color: rgba(255,255,255,0.82) !important; font-weight: 600 !important; }
   .hero-trust-sep { color: rgba(255,255,255,0.18) !important; margin: 0 6px !important; }
 
-  /* ══ HTML GLOW ELEMENT (most reliable — not pseudo, not shadow) ══ */
+  /* ══ HTML GLOW ELEMENT ══ */
   .hero-terminal-glow {
     position: absolute;
-    top: -20%;
-    right: -10%;
-    width: 55%;
-    height: 140%;
-    background: radial-gradient(ellipse 60% 55% at 55% 45%,
-      rgba(88,101,242,0.42) 0%,
-      rgba(99,102,241,0.22) 30%,
-      rgba(88,101,242,0.08) 60%,
-      transparent 80%);
+    top: -30%;
+    right: -15%;
+    width: 65%;
+    height: 160%;
+    background: radial-gradient(ellipse 55% 50% at 52% 45%,
+      rgba(99,102,241,0.75) 0%,
+      rgba(88,101,242,0.45) 25%,
+      rgba(88,101,242,0.18) 55%,
+      transparent 75%);
+    mix-blend-mode: screen;
     pointer-events: none;
     z-index: 0;
   }
