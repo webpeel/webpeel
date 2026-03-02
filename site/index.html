@@ -3383,6 +3383,67 @@
 
   /* ══ QUALITY-PASS-3 — terminal truncation, desktop spacing, terminal depth ══ */
 
+  /* FIX TYPOGRAPHY FIRST — h1 sizing + line breaks + CTA button size */
+
+  /* Mobile h1 was 36-40px, too small. Bump to 48px min for mobile impact. */
+  @media (max-width: 768px) {
+    .hero h1 {
+      font-size: 48px !important;
+      line-height: 1.1 !important;
+      margin-bottom: 16px !important;
+    }
+  }
+  @media (max-width: 480px) {
+    .hero h1 {
+      font-size: 42px !important;
+      line-height: 1.15 !important;
+    }
+  }
+
+  /* Desktop h1 line break fix: constrain width so "Your AI agent just" doesn't break at "AI" */
+  @media (min-width: 769px) {
+    .hero-grid .hero-content h1 {
+      max-width: 540px !important;
+      line-height: 1.12 !important;
+    }
+  }
+
+  /* Desktop CTA: 280px feels weak under a giant headline. Expand to 340px min. */
+  @media (min-width: 769px) {
+    .hero-ctas .btn-primary {
+      min-width: 340px !important;
+      max-width: 400px !important;
+      padding: 18px 40px !important;
+    }
+  }
+
+  /* Mobile CTA: remove excessive horizontal margin. Center within column, not shrunk. */
+  @media (max-width: 768px) {
+    .hero-ctas {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+    .hero-ctas .btn-primary {
+      width: 90vw !important;
+      max-width: 360px !important;
+      padding: 18px 36px !important;
+    }
+  }
+
+  /* Terminal card: real depth. Border + shadow + inner glow */
+  #hero-terminal, .hero-terminal {
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    box-shadow:
+      0 0 0 1px rgba(99,102,241,0.08),
+      0 0 60px -12px rgba(99,102,241,0.20),
+      0 24px 64px -12px rgba(0,0,0,0.65),
+      inset 0 1px 2px rgba(255,255,255,0.08),
+      inset 0 -1px 3px rgba(0,0,0,0.5) !important;
+  }
+
+  /* Remove old terminal CSS from earlier passes to avoid conflicts */
+  
+
   /* 14. Mobile terminal: "Infrastructure" breaks mid-word. Shrink font + no word-break. */
   @media (max-width: 480px) {
     .hero-mobile-code .mobile-terminal-body {
