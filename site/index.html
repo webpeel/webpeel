@@ -3441,6 +3441,42 @@
       inset 0 -1px 3px rgba(0,0,0,0.5) !important;
   }
 
+  /* CTA button: add radial glow to make it feel pressable, not flat */
+  .hero-ctas .btn-primary {
+    position: relative !important;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.14),
+      0 0 40px 0px rgba(99,102,241,0.50),
+      0 0 80px 8px rgba(99,102,241,0.20),
+      0 8px 24px -4px rgba(0,0,0,0.40),
+      inset 0 1px 0 rgba(255,255,255,0.16) !important;
+  }
+  .hero-ctas .btn-primary:hover {
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.18),
+      0 0 50px 4px rgba(99,102,241,0.65),
+      0 0 100px 12px rgba(99,102,241,0.30),
+      0 12px 32px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.18) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  /* Desktop hero vertical alignment: center the two columns on their midpoint */
+  @media (min-width: 769px) {
+    .hero-grid {
+      align-items: center !important;
+    }
+  }
+
+  /* Mobile subhead: increase breathing room + adjust size */
+  @media (max-width: 768px) {
+    .hero-sub {
+      font-size: 17px !important;
+      line-height: 1.6 !important;
+      margin-bottom: 24px !important;
+    }
+  }
+
   /* Remove old terminal CSS from earlier passes to avoid conflicts */
   
 
