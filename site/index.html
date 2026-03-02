@@ -287,17 +287,7 @@
       position: relative;
       border-bottom: none;
     }
-    .hero::after {
-      content: '';
-      position: absolute;
-      bottom: -120px;
-      left: 20%;
-      right: 20%;
-      height: 200px;
-      background: radial-gradient(ellipse 100% 100% at 50% 0%, rgba(88,101,242,0.12), transparent 70%);
-      pointer-events: none;
-      z-index: 1;
-    }
+    /* hero::after glow removed — was creating a visible horizontal band over the stats row */
     .hero-content { max-width: 820px; margin: 0 auto; padding-bottom: 24px; }
     .hero-eyebrow {
       display: inline-block;
