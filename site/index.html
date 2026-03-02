@@ -2349,30 +2349,28 @@
     color: rgba(255,255,255,0.85);
   }
 
-  /* ══ LOOP-3 ══ */
+  /* ══ LOOP-4 ══ */
 
-  /* 1 — Stats: remove neon green — back to white for a SINGLE accent (indigo) system */
+  /* 1 — Stats: ALL white — no green exceptions — single clean accent system */
   .hero-stat-n {
-    color: rgba(255,255,255,0.92) !important;
-  }
-  /* Only uptime gets the semantic green (live = green) */
-  .hero-stats .hero-stat:first-child .hero-stat-n {
-    color: #4ade80 !important;
+    color: rgba(255,255,255,0.95) !important;
   }
 
-  /* 2 — Hero grid: top-align both columns for visual coherence */
+  /* 2 — Hero grid: top-align both columns */
   .hero-grid {
     align-items: start !important;
   }
   .hero-grid .hero-content {
     justify-content: flex-start !important;
-    padding-top: 24px !important;
+    padding-top: 0 !important;
   }
 
-  /* 3 — Mobile hero: reduce dead zone above badge */
+  /* 3 — Mobile hero: aggressive dead-zone removal */
   @media (max-width: 768px) {
-    .hero { padding-top: 64px !important; }
+    .hero { padding-top: 32px !important; }
     .hero-eyebrow { margin-bottom: 16px !important; }
+    /* Also remove any added padding from hero-grid .hero-content */
+    .hero-grid .hero-content { padding-top: 0 !important; }
   }
 
   /* 4 — Mobile badge: width fit-content to avoid full-width bar appearance */
@@ -2405,6 +2403,42 @@
   /* 8 — Hamburger: hide at desktop (defensive redundancy) */
   @media (min-width: 769px) {
     #hamburger-btn, .nav-hamburger { display: none !important; }
+  }
+
+  /* 9 — Terminal: visible depth via strong top highlight + border contrast */
+  .hero-terminal {
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      0 0 0 1px rgba(88,101,242,0.15),
+      0 16px 48px rgba(0,0,0,0.8),
+      0 0 80px rgba(88,101,242,0.25),
+      0 0 160px rgba(88,101,242,0.10) !important;
+  }
+
+  /* 10 — Mobile CTA: 12px radius feels premium vs form-submit 8px */
+  @media (max-width: 768px) {
+    .btn-primary, .hero-ctas .btn-primary {
+      border-radius: 12px !important;
+    }
+  }
+
+  /* 11 — Unify "One API call." accent with CTA button exact color */
+  /* Done via HTML inline style — nothing needed here */
+
+  /* 12 — Mobile headline: prevent 4-line wrap */
+  @media (max-width: 480px) {
+    .hero h1 {
+      font-size: 34px !important;
+      line-height: 1.14 !important;
+      letter-spacing: -0.03em !important;
+    }
+  }
+  @media (max-width: 390px) {
+    .hero h1 {
+      font-size: 32px !important;
+      letter-spacing: -0.035em !important;
+    }
   }
 
   /* ══ LOOP-2 ══ */
