@@ -2750,11 +2750,22 @@
     letter-spacing: -0.045em !important;
   }
 
-  /* 5a. TYPOGRAPHY HIERARCHY — subhead clearly subordinate */
+  /* 5a. TYPOGRAPHY HIERARCHY — vertical rhythm, clearer subordination */
+  .hero-eyebrow {
+    margin-bottom: 10px !important;
+  }
+  .hero-kicker {
+    margin-bottom: 14px !important;
+  }
+  .hero h1 {
+    line-height: 1.0 !important;
+    margin-bottom: 20px !important;
+  }
   .hero-sub {
     color: rgba(255,255,255,0.55) !important;
     max-width: 38ch !important;
     line-height: 1.6 !important;
+    margin-bottom: 28px !important;
   }
   .hero-sub strong {
     color: rgba(255,255,255,0.90) !important;
@@ -2764,9 +2775,11 @@
     color: rgba(255,255,255,0.32) !important;
     font-size: 13px !important;
   }
-  .hero h1 {
-    line-height: 1.0 !important;
-    margin-bottom: 24px !important;
+  .hero-ctas {
+    margin-bottom: 20px !important;
+  }
+  .hero-trust {
+    margin-bottom: 0 !important;
   }
 
   /* 5. STATS — stronger vertical dividers between items */
@@ -2779,6 +2792,29 @@
       border-left: none !important;
       padding-left: 0 !important;
     }
+  }
+
+  /* 5b. HOW-IT-WORKS — step numbers as accent circles */
+  .how-step-num {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: rgba(99,102,241,0.12) !important;
+    border: 1px solid rgba(99,102,241,0.35) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #818CF8 !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 20px !important;
+    border-bottom: none !important;
+  }
+
+  /* 5c. HOW-IT-WORKS cards — subtle left accent border on hover */
+  .how-step:hover {
+    border-left: 2px solid rgba(99,102,241,0.50) !important;
   }
 
   /* 6. MOBILE CODE BLOCK — deeper shadow + border definition */
