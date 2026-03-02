@@ -2188,7 +2188,7 @@
     /* ── Background gradient (LOOP-8-FINAL) ─────────────────── */
     .hero {
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       background-image:
         radial-gradient(900px 500px ellipse at 28% 0%, rgba(88,101,242,0.55), transparent 65%),
         radial-gradient(600px 350px ellipse at 28% 5%, rgba(99,102,241,0.28), transparent 55%),
@@ -2562,11 +2562,12 @@
           </h1>
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
           <div class="hero-mobile-code hero-el" data-delay="400">
-            <div><span class="t-prompt">$</span> <span style="color:#C4B5FD">npx webpeel</span> <span style="color:#E2E8F0">"stripe.com"</span></div>
+            <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
             <br>
             <div><span class="t-dim">{</span></div>
             <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
             <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+            <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"cloudflare-bypass"</span><span class="t-dim">,</span></div>
             <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
             <div><span class="t-dim">}</span></div>
           </div>
