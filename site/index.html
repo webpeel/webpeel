@@ -2349,6 +2349,66 @@
     color: rgba(255,255,255,0.85);
   }
 
+  /* ══ LOOP-5 ══ */
+
+  /* SPACING SYSTEM — strict 8px grid for hero left column */
+  .hero-eyebrow {
+    margin-bottom: 24px !important;
+  }
+  .hero h1 {
+    margin-bottom: 16px !important;
+  }
+  .hero-sub {
+    margin: 0 auto 8px !important;
+    line-height: 1.65 !important;
+  }
+  /* "One API call." display:block is inline so margin applies correctly */
+  .hero-ctas {
+    margin-top: 32px !important;
+  }
+  .hero-cta-note {
+    margin-top: 12px !important;
+  }
+  .hero-proof {
+    margin-top: 24px !important;
+    padding-top: 16px !important;
+    border-top: 1px solid rgba(255,255,255,0.07) !important;
+  }
+
+  /* Stats bar: cleaner section with stronger numbers */
+  .hero-stats {
+    padding-top: 32px !important;
+    margin-top: 32px !important;
+    border-top: 1px solid rgba(255,255,255,0.07) !important;
+  }
+  .hero-stat-n {
+    color: #FFFFFF !important;
+    font-size: 34px !important;
+    font-weight: 800 !important;
+    font-feature-settings: 'tnum' 1 !important;
+    letter-spacing: -0.04em !important;
+  }
+  .hero-stat-l {
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.10em !important;
+    color: rgba(255,255,255,0.38) !important;
+    margin-top: 4px !important;
+  }
+
+  /* Terminal: bright inner top highlight for visible depth */
+  .hero-terminal {
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      0 0 0 1px rgba(88,101,242,0.18),
+      0 24px 64px rgba(0,0,0,0.75),
+      0 0 100px rgba(88,101,242,0.18),
+      0 0 200px rgba(88,101,242,0.08) !important;
+  }
+
+  /* ONE API CALL: color accent — same indigo as CTA family, not competing heading */
+
   /* ══ LOOP-4 ══ */
 
   /* 1 — Stats: ALL white — no green exceptions — single clean accent system */
@@ -2448,9 +2508,9 @@
     .nav-hamburger { display: none !important; }
   }
 
-  /* 2 — Stats: unified color palette — all green signals "all healthy" */
+  /* 2 — Stats: ALL white — no green, single accent system (indigo for interactive only) */
   .hero-stat-n {
-    color: #4ade80 !important;
+    color: rgba(255,255,255,0.95) !important;
   }
 
   /* 3 — CTA button border-radius: exact 8px system-wide */
