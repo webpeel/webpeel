@@ -153,8 +153,7 @@
     }
     .final-cta {
       background-image:
-        radial-gradient(600px 400px ellipse at 50% 85%, rgba(99,102,241,0.45), transparent 65%),
-        radial-gradient(500px circle at 25% 20%, rgba(88,101,242,0.12), transparent 55%) !important;
+        radial-gradient(ellipse 80% 60% at 50% 60%, rgba(88,101,242,0.28), transparent 70%) !important;
     }
 
     html { scroll-behavior: smooth; overflow-x: hidden; }
@@ -901,7 +900,7 @@
     /* ── FINAL CTA ──────────────────────────────────── */
     .final-cta {
       background-color: #050507;
-      background-image: radial-gradient(ellipse 60% 50% at 50% 90%, rgba(88,101,242,0.30), transparent 70%), radial-gradient(600px circle at 25% 20%, rgba(88,101,242,0.06), transparent 55%);
+      background-image: radial-gradient(ellipse 80% 60% at 50% 60%, rgba(88,101,242,0.22), transparent 70%);
       text-align: center;
       padding: var(--space-section) 0;
     }
@@ -1394,19 +1393,7 @@
     }
 
     /* 15. Final CTA section glow enhancement */
-    .final-cta::before {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      height: 300px;
-      background: radial-gradient(ellipse 100% 100% at 50% 100%, rgba(88,101,242,0.28), transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-    .final-cta { position: relative; }
+    .final-cta { position: relative; overflow: hidden; }
     .final-cta > .container { position: relative; z-index: 1; }
 
     /* 16. Unify card hover state — consistent across all cards */
