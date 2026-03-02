@@ -2682,16 +2682,20 @@
   /* 1. HERO BACKGROUND — asymmetric directional light (top-left source) */
   .hero {
     background:
-      radial-gradient(ellipse 45% 35% at 15% 0%, rgba(99,102,241,0.28) 0%, transparent 65%),
-      radial-gradient(ellipse 25% 30% at 72% 35%, rgba(79,70,229,0.10) 0%, transparent 55%),
-      radial-gradient(ellipse 80% 50% at 50% 100%, rgba(15,15,30,0.50) 0%, transparent 60%),
+      /* Primary light source — tight, bright, clearly directional */
+      radial-gradient(ellipse 38% 28% at 12% -1%, rgba(139,92,246,0.32) 0%, transparent 55%),
+      radial-gradient(ellipse 52% 42% at 16% 2%, rgba(99,102,241,0.18) 0%, transparent 68%),
+      /* Secondary warm accent on terminal side */
+      radial-gradient(ellipse 24% 26% at 72% 28%, rgba(79,70,229,0.09) 0%, transparent 52%),
+      /* Corner vignette — creates depth, makes center feel lifted */
+      radial-gradient(ellipse 120% 120% at 50% 50%, transparent 38%, rgba(0,0,12,0.65) 100%),
       #09090B !important;
   }
   @media (max-width: 768px) {
     .hero {
       background:
-        radial-gradient(ellipse 90% 35% at 25% 0%, rgba(99,102,241,0.25) 0%, transparent 60%),
-        radial-gradient(ellipse 80% 40% at 50% 100%, rgba(15,15,30,0.40) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 32% at 22% -2%, rgba(139,92,246,0.28) 0%, transparent 58%),
+        radial-gradient(ellipse 120% 120% at 50% 50%, transparent 42%, rgba(0,0,12,0.55) 100%),
         #09090B !important;
     }
   }
@@ -2763,10 +2767,19 @@
     margin-bottom: 10px !important;
   }
 
-  /* 5z. ITALIC HEADLINE — slightly smaller for tension-then-release rhythm */
+  /* 5z. TYPOGRAPHY — bold sans upright + elegant serif italic (40% weight contrast) */
+  .hero h1 > span:not(.accent) {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
+    color: rgba(255,255,255,0.97) !important;
+  }
   .hero h1 .accent {
-    font-size: 0.92em !important;
-    letter-spacing: -0.045em !important;
+    font-family: 'Instrument Serif', Georgia, serif !important;
+    font-style: italic !important;
+    font-weight: 400 !important;
+    font-size: 0.88em !important;
+    letter-spacing: -0.025em !important;
   }
 
   /* 5a. TYPOGRAPHY HIERARCHY — vertical rhythm, clearer subordination */
@@ -3063,14 +3076,22 @@
     font-weight: 500 !important;
   }
 
-  /* STATS SECTION — breathing room */
+  /* STATS SECTION — compact to fit in 900px viewport */
   .hero-stats-section, .hero-stats {
-    margin-top: 12px !important;
+    margin-top: 8px !important;
   }
   .hero-stats-note {
-    font-size: 12px !important;
-    opacity: 0.38 !important;
-    margin-top: 10px !important;
+    font-size: 11px !important;
+    opacity: 0.35 !important;
+    margin-top: 8px !important;
+    margin-bottom: 0 !important;
+  }
+  /* Hero top padding — tight enough to show stats above fold at 900px */
+  @media (min-width: 1024px) {
+    .hero {
+      padding-top: 56px !important;
+      padding-bottom: 32px !important;
+    }
   }
 
   </style>
