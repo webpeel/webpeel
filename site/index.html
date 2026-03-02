@@ -3661,11 +3661,13 @@
     border-color: rgba(99,102,241,0.60);
   }
 
-  /* Ghost CTA "View Docs" */
+  /* Ghost CTA "View Docs" — visible border, readable text */
   .hero-doc-btn {
-    background: transparent !important;
-    border: 1px solid rgba(255,255,255,0.18) !important;
-    color: rgba(255,255,255,0.70) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.22) !important;
+    color: rgba(255,255,255,0.80) !important;
     font-size: 15px !important;
     padding: 14px 24px !important;
     border-radius: 8px !important;
@@ -3673,15 +3675,19 @@
     font-weight: 500 !important;
     transition: all 150ms ease;
     white-space: nowrap;
+    min-height: 50px !important;
   }
   .hero-doc-btn:hover {
-    background: rgba(255,255,255,0.06) !important;
-    color: rgba(255,255,255,0.95) !important;
-    border-color: rgba(255,255,255,0.32) !important;
+    background: rgba(255,255,255,0.10) !important;
+    color: #fff !important;
+    border-color: rgba(255,255,255,0.40) !important;
   }
   @media (max-width: 768px) {
     .hero-doc-btn { display: none !important; }
   }
+
+  /* Hide old mobile terminal — fully replaced by hero-demo-widget */
+  .hero-mobile-code { display: none !important; }
 
   /* "Works with" compat strip */
   .hero-compat {
@@ -3864,7 +3870,7 @@
             </div>
           </div>
           <div class="hdw-input-row">
-            <input type="text" class="hdw-url-input" id="hdw-url-input" placeholder="https://your-url.com" autocomplete="off" spellcheck="false">
+            <input type="text" class="hdw-url-input" id="hdw-url-input" placeholder="Enter any URL to extract..." autocomplete="off" spellcheck="false">
             <button class="hdw-run-btn" id="hdw-run-btn">Extract →</button>
           </div>
           <div class="hdw-body">
