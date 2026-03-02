@@ -2518,6 +2518,46 @@
     }
   }
   @media (min-width: 769px) { .hero-mobile-code { display: none !important; } }
+  /* ══ GLOW-FIX ══ */
+
+  /* Terminal: dedicated radial glow element behind the card (box-shadow washed by hero bg) */
+  .hero-grid .hero-terminal {
+    position: relative !important;
+    isolation: isolate !important;
+  }
+  .hero-grid .hero-terminal::before {
+    content: '';
+    position: absolute;
+    inset: -70px;
+    background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(88,101,242,0.28) 0%, rgba(88,101,242,0.12) 35%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+    border-radius: 50%;
+  }
+
+  /* CTA button: pressable glow + confident width */
+  .hero-ctas .btn-primary {
+    min-width: 300px !important;
+    box-shadow:
+      0 0 28px 8px rgba(88,101,242,0.38),
+      0 4px 16px rgba(0,0,0,0.3),
+      inset 0 1px 0 rgba(255,255,255,0.18) !important;
+  }
+  .hero-ctas .btn-primary:hover {
+    box-shadow:
+      0 0 40px 12px rgba(88,101,242,0.50),
+      0 8px 24px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.20) !important;
+    transform: translateY(-2px) !important;
+  }
+  @media (max-width: 768px) {
+    .hero-ctas .btn-primary { min-width: 0 !important; width: 100% !important; }
+  }
+
+  /* Trust row: give claim distinct weight from nav links */
+  .hero-trust-live { color: rgba(255,255,255,0.80) !important; font-weight: 600 !important; }
+  .hero-trust-sep { color: rgba(255,255,255,0.18) !important; margin: 0 6px !important; }
+
   </style>
 </head>
 <body>
