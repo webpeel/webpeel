@@ -2630,18 +2630,18 @@
 
   /* ══ FINAL-OVERRIDE — Single authoritative block, overrides all previous ══ */
 
-  /* 1. HERO BACKGROUND — strong dual-source radial glow */
+  /* 1. HERO BACKGROUND — asymmetric directional light (top-left source) */
   .hero {
     background:
-      radial-gradient(ellipse 80% 60% at 28% 38%, rgba(99,102,241,0.22) 0%, transparent 65%),
-      radial-gradient(ellipse 55% 45% at 75% 52%, rgba(59,130,246,0.14) 0%, transparent 60%),
-      #050507 !important;
+      radial-gradient(ellipse 60% 40% at 18% 0%, rgba(99,102,241,0.22) 0%, transparent 70%),
+      radial-gradient(ellipse 35% 50% at 75% 48%, rgba(67,56,202,0.10) 0%, transparent 60%),
+      #09090B !important;
   }
   @media (max-width: 768px) {
     .hero {
       background:
-        radial-gradient(ellipse 120% 45% at 50% 22%, rgba(99,102,241,0.24) 0%, transparent 65%),
-        #050507 !important;
+        radial-gradient(ellipse 100% 40% at 30% 0%, rgba(99,102,241,0.22) 0%, transparent 65%),
+        #09090B !important;
     }
   }
 
@@ -2678,17 +2678,22 @@
     }
   }
 
-  /* 3. TERMINAL — strong border + layered shadow + ambient glow */
+  /* 3. TERMINAL — glass depth system (layered shadows + inset highlight) */
   #hero-terminal, .hero-terminal {
     background: #0D0D14 !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
     border-radius: 14px !important;
     box-shadow:
-      0 0 0 1px rgba(99,102,241,0.15),
-      0 0 80px rgba(99,102,241,0.18),
-      0 24px 64px rgba(0,0,0,0.60),
-      0 8px 24px rgba(0,0,0,0.40),
+      0 0 0 1px rgba(99,102,241,0.14),
+      0 32px 64px rgba(0,0,0,0.65),
+      0 8px 16px rgba(0,0,0,0.45),
+      0 0 80px rgba(99,102,241,0.16),
       inset 0 1px 0 rgba(255,255,255,0.08) !important;
+    backdrop-filter: blur(2px) !important;
+  }
+  .terminal-chrome {
+    background: rgba(255,255,255,0.03) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
   }
 
   /* 4. BADGE — more breathing room below */
@@ -2706,6 +2711,25 @@
     margin-bottom: 10px !important;
   }
 
+  /* 5a. TYPOGRAPHY HIERARCHY — subhead clearly subordinate */
+  .hero-sub {
+    color: rgba(255,255,255,0.55) !important;
+    max-width: 38ch !important;
+    line-height: 1.6 !important;
+  }
+  .hero-sub strong {
+    color: rgba(255,255,255,0.90) !important;
+    font-weight: 600 !important;
+  }
+  .hero-cta-note {
+    color: rgba(255,255,255,0.32) !important;
+    font-size: 13px !important;
+  }
+  .hero h1 {
+    line-height: 1.0 !important;
+    margin-bottom: 24px !important;
+  }
+
   /* 5. STATS — stronger vertical dividers between items */
   .hero-stats .hero-stat + .hero-stat {
     border-left: 1px solid rgba(255,255,255,0.14) !important;
@@ -2715,6 +2739,32 @@
     .hero-stats .hero-stat + .hero-stat {
       border-left: none !important;
       padding-left: 0 !important;
+    }
+  }
+
+  /* 6. MOBILE CODE BLOCK — deeper shadow + border definition */
+  @media (max-width: 768px) {
+    .hero-mobile-code {
+      border: 1px solid rgba(255,255,255,0.09) !important;
+      border-radius: 10px !important;
+      box-shadow:
+        0 20px 40px rgba(0,0,0,0.50),
+        inset 0 1px 0 rgba(255,255,255,0.06) !important;
+      margin: 24px 0 !important;
+      overflow: hidden !important;
+    }
+  }
+
+  /* 7. MOBILE NAV — sticky with blur */
+  @media (max-width: 768px) {
+    nav, .nav {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 100 !important;
+      background: rgba(9,9,11,0.85) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border-bottom: 1px solid rgba(255,255,255,0.06) !important;
     }
   }
 
