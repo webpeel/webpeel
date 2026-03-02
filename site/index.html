@@ -2486,9 +2486,10 @@
   .hero-trust a:hover { color: rgba(255,255,255,0.92) !important; }
   .hero-trust-sep, .hero-trust-dot { color: rgba(255,255,255,0.20) !important; }
   .hero-eyebrow {
-    background: rgba(255,255,255,0.06) !important;
-    border: 1px solid rgba(255,255,255,0.14) !important;
-    color: rgba(255,255,255,0.78) !important;
+    background: rgba(99,102,241,0.08) !important;
+    border: 1px solid rgba(99,102,241,0.22) !important;
+    color: rgba(199,210,254,0.90) !important;
+    letter-spacing: 0.04em !important;
   }
 
   .hero {
@@ -2666,14 +2667,16 @@
   /* 1. HERO BACKGROUND — asymmetric directional light (top-left source) */
   .hero {
     background:
-      radial-gradient(ellipse 60% 40% at 18% 0%, rgba(99,102,241,0.22) 0%, transparent 70%),
-      radial-gradient(ellipse 35% 50% at 75% 48%, rgba(67,56,202,0.10) 0%, transparent 60%),
+      radial-gradient(ellipse 45% 35% at 15% 0%, rgba(99,102,241,0.28) 0%, transparent 65%),
+      radial-gradient(ellipse 25% 30% at 72% 35%, rgba(79,70,229,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse 80% 50% at 50% 100%, rgba(15,15,30,0.50) 0%, transparent 60%),
       #09090B !important;
   }
   @media (max-width: 768px) {
     .hero {
       background:
-        radial-gradient(ellipse 100% 40% at 30% 0%, rgba(99,102,241,0.22) 0%, transparent 65%),
+        radial-gradient(ellipse 90% 35% at 25% 0%, rgba(99,102,241,0.25) 0%, transparent 60%),
+        radial-gradient(ellipse 80% 40% at 50% 100%, rgba(15,15,30,0.40) 0%, transparent 55%),
         #09090B !important;
     }
   }
@@ -2738,9 +2741,10 @@
     backdrop-filter: blur(8px) !important;
   }
   .hero-kicker {
-    color: rgba(255,255,255,0.32) !important;
+    color: rgba(165,180,252,0.55) !important;
     font-size: 11px !important;
-    letter-spacing: 0.12em !important;
+    letter-spacing: 0.14em !important;
+    font-weight: 500 !important;
     margin-bottom: 10px !important;
   }
 
@@ -3018,19 +3022,19 @@
         <div class="hero-stats-divider"></div>
       <div class="hero-stats hero-el" data-delay="600">
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="99.9" data-count-suffix="%" data-count-decimals="1" style="color: #4ade80">99.9%</span>
+          <span class="hero-stat-n" data-count-to="99.9" data-count-suffix="%" data-count-decimals="1" style="color: #E0E7FF">99.9%</span>
           <span class="hero-stat-l">uptime SLA</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="97.6" data-count-suffix="%" data-count-decimals="1" style="color: #60a5fa">97.6%</span>
+          <span class="hero-stat-n" data-count-to="97.6" data-count-suffix="%" data-count-decimals="1" style="color: #C7D2FE">97.6%</span>
           <span class="hero-stat-l">success rate</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="650" data-count-prefix="<" data-count-suffix="ms" style="color: #818cf8">&#60;650ms</span>
+          <span class="hero-stat-n" data-count-to="650" data-count-prefix="<" data-count-suffix="ms" style="color: #A5B4FC">&#60;650ms</span>
           <span class="hero-stat-l">avg latency</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="18" style="color: #A78BFA">18</span>
+          <span class="hero-stat-n" data-count-to="18" style="color: #818CF8">18</span>
           <span class="hero-stat-l">MCP tools built-in</span>
         </div>
       </div>
