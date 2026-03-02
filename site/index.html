@@ -3307,6 +3307,80 @@
     font-size: 11px !important;
   }
 
+  /* ══ QUALITY-PASS-2 — desktop whitespace, column alignment, section sep ══ */
+
+  /* 7. Desktop: reduce dead whitespace between hero grid and stats.
+        hero-stats-section had padding-top:16px + stats had margin-top:40px + padding-top:24px = 80px gap.
+        Tighten to just 24px total. */
+  .hero-stats-section {
+    padding-top: 8px !important;
+  }
+  .hero-stats {
+    margin-top: 16px !important;
+    padding-top: 16px !important;
+    padding-bottom: 24px !important;
+  }
+  .hero-stats-divider {
+    margin-bottom: 16px !important;
+  }
+
+  /* 8. Desktop: hero content left column — align-items:start so terminal top
+        edge aligns with first text element. flex on .hero-grid already set via
+        .hero-grid .hero-content { justify-content: center } — override to flex-start */
+  @media (min-width: 769px) {
+    .hero-grid .hero-content {
+      justify-content: flex-start !important;
+      padding-top: 24px !important;
+    }
+  }
+
+  /* 9. Desktop: CTA button was 260-280px max (felt small under big headline).
+        Widen to 320px min on desktop. Keep mobile constrained. */
+  @media (min-width: 769px) {
+    .hero-ctas .btn-primary {
+      min-width: 280px !important;
+      max-width: 360px !important;
+      padding: 18px 36px !important;
+      font-size: 17px !important;
+    }
+  }
+
+  /* 10. Section separators — add subtle top border to major sections
+         to create visual rhythm instead of everything bleeding together */
+  .demo-section,
+  .how-section,
+  .pricing-section,
+  .faq-section {
+    border-top: 1px solid rgba(255,255,255,0.06) !important;
+  }
+
+  /* 11. Mobile terminal: shorter curl URL to prevent awkward wrapping */
+  @media (max-width: 480px) {
+    .hero-mobile-code .mobile-terminal-body {
+      font-size: 12px !important;
+      word-break: break-all !important;
+    }
+  }
+
+  /* 12. Hero social proof on mobile: centered, bigger gap, readable */
+  @media (max-width: 768px) {
+    .hero-proof {
+      align-items: center !important;
+      text-align: center !important;
+      font-size: 12px !important;
+      gap: 2px !important;
+      margin-top: 16px !important;
+      color: rgba(255,255,255,0.50) !important;
+    }
+  }
+
+  /* 13. Desktop stats: add very subtle card bg to ground the numbers */
+  @media (min-width: 769px) {
+    .hero-stat {
+      padding: 0 24px !important;
+    }
+  }
+
   </style>
 </head>
 <body>
