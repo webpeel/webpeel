@@ -3559,21 +3559,21 @@
   .hdw-dot.g { background: #28C840; }
   .hdw-tabs { display: flex; gap: 4px; margin-left: 8px; }
   .hdw-tab {
-    font-size: 12px;
+    font-size: 13px;
     font-family: var(--font-mono);
-    padding: 4px 10px;
-    border-radius: 5px;
-    border: 1px solid transparent;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
     background: transparent;
-    color: rgba(255,255,255,0.40);
+    color: rgba(255,255,255,0.55);
     cursor: pointer;
     transition: all 150ms ease;
   }
-  .hdw-tab:hover { color: rgba(255,255,255,0.70); }
+  .hdw-tab:hover { color: rgba(255,255,255,0.80); background: rgba(255,255,255,0.04); }
   .hdw-tab.active {
-    background: rgba(99,102,241,0.15);
-    border-color: rgba(99,102,241,0.35);
-    color: #A5B4FC;
+    background: rgba(99,102,241,0.18);
+    border-color: rgba(99,102,241,0.40);
+    color: #C7D2FE;
   }
   .hdw-body {
     padding: 18px 20px;
@@ -3600,6 +3600,14 @@
   }
   .hdw-try-link:hover { color: #A5B4FC; }
   @media (max-width: 768px) { .hero-demo-widget { display: none; } }
+
+  /* Grid placement for the demo widget — same rules the old .hero-terminal had */
+  .hero-grid .hero-demo-widget {
+    max-width: 100% !important;
+    margin: 0 !important;
+    position: relative;
+    z-index: 1;
+  }
 
   /* Color discipline — kill purple blobs from non-hero sections */
   .how-section { background: #050507 !important; }
