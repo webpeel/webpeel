@@ -2486,9 +2486,9 @@
   .hero-trust a:hover { color: rgba(255,255,255,0.92) !important; }
   .hero-trust-sep, .hero-trust-dot { color: rgba(255,255,255,0.20) !important; }
   .hero-eyebrow {
-    background: rgba(99,102,241,0.08) !important;
-    border: 1px solid rgba(99,102,241,0.22) !important;
-    color: rgba(199,210,254,0.90) !important;
+    background: rgba(99,102,241,0.12) !important;
+    border: 1px solid rgba(139,117,255,0.36) !important;
+    color: rgba(199,210,254,0.95) !important;
     letter-spacing: 0.04em !important;
   }
 
@@ -2713,10 +2713,11 @@
       0 0 100px 16px rgba(99,102,241,0.16),
       0 8px 24px rgba(0,0,0,0.40),
       inset 0 1px 0 rgba(255,255,255,0.22) !important;
-    min-width: 340px !important;
-    padding: 18px 40px !important;
-    font-size: 17px !important;
-    font-weight: 600 !important;
+    min-width: 260px !important;
+    max-width: 280px !important;
+    padding: 16px 32px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
     letter-spacing: -0.01em !important;
   }
   .hero-ctas .btn-primary:hover {
@@ -2812,7 +2813,7 @@
     margin-bottom: 20px !important;
   }
   .hero-sub {
-    color: rgba(255,255,255,0.55) !important;
+    color: rgba(255,255,255,0.70) !important;
     max-width: 38ch !important;
     line-height: 1.6 !important;
     margin-bottom: 28px !important;
@@ -2870,13 +2871,15 @@
   /* 6. MOBILE CODE BLOCK — deeper shadow + border definition */
   @media (max-width: 768px) {
     .hero-mobile-code {
-      border: 1px solid rgba(255,255,255,0.09) !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
       border-radius: 10px !important;
       box-shadow:
-        0 20px 40px rgba(0,0,0,0.50),
-        inset 0 1px 0 rgba(255,255,255,0.06) !important;
-      margin: 24px 0 !important;
+        0 12px 28px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.05) !important;
+      margin: 20px 0 28px !important;
       overflow: hidden !important;
+      transform: scale(0.98);
+      transform-origin: top center;
     }
   }
 
