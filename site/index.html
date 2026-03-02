@@ -284,7 +284,7 @@
         linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
       background-size: auto, auto, auto, 64px 64px, 64px 64px;
-      padding: 36px 0 0;
+      padding: 48px 0 0;
       text-align: center;
       position: relative;
       border-bottom: none;
@@ -1434,7 +1434,7 @@
       background: rgba(255,255,255,0.03) !important;
     }
     /* More breathing room between headline and CTA */
-    .hero-sub { margin: 12px auto 20px !important; }
+    .hero-sub { margin: 16px auto 24px !important; }
     .hero-ctas { margin-top: 28px !important; }
     /* Tertiary hierarchy for trust row */
     .hero-trust { color: rgba(255,255,255,0.35) !important; }
@@ -1864,6 +1864,54 @@
       .hero-stat-l { font-size: 10px !important; }
     }
 
+    /* ══ HERO TWO-COLUMN GRID ═══════════════════════════ */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .hero-grid .hero-content {
+      text-align: left !important;
+      padding-bottom: 0 !important;
+      max-width: none !important;
+    }
+    .hero-grid .hero-content h1 {
+      text-align: left;
+    }
+    .hero-grid .hero-ctas {
+      justify-content: flex-start !important;
+    }
+    .hero-grid .hero-cta-note {
+      text-align: left !important;
+    }
+    .hero-grid .hero-trust {
+      justify-content: flex-start !important;
+    }
+    .hero-grid .hero-terminal {
+      max-width: 100% !important;
+      margin: 0 !important;
+    }
+    @media (max-width: 768px) {
+      .hero-grid {
+        display: block !important;
+      }
+      .hero-grid .hero-content {
+        text-align: center !important;
+      }
+      .hero-grid .hero-content h1 {
+        text-align: center;
+      }
+      .hero-grid .hero-ctas {
+        justify-content: center !important;
+      }
+      .hero-grid .hero-trust {
+        justify-content: center !important;
+      }
+    }
+
     /* ══ HERO PRODUCT CARD ══════════════════════════════ */
     .hero-product {
       max-width: 680px;
@@ -2046,28 +2094,28 @@
   <!-- HERO -->
   <section class="hero" id="hero-section">
     <div class="container">
-      <div class="hero-content">
-        <div class="hero-eyebrow hero-el" data-delay="0">Open Source · 99.9% Uptime · Free Forever</div>
-        <h1>
-          <span class="hero-el" style="display:block;" data-delay="120">Your AI agent just</span>
-          <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
-        </h1>
-        <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:rgba(255,255,255,0.95);">One API call.</strong></p>
-        <div class="hero-ctas hero-el" data-delay="420">
-          <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
-          <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
+      <div class="hero-grid">
+        <div class="hero-content">
+          <div class="hero-eyebrow hero-el" data-delay="0">Open Source · 99.9% Uptime · Free Forever</div>
+          <h1>
+            <span class="hero-el" style="display:block;" data-delay="120">Your AI agent just</span>
+            <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
+          </h1>
+          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:rgba(255,255,255,0.95);">One API call.</strong></p>
+          <div class="hero-ctas hero-el" data-delay="420">
+            <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
+            <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
+          </div>
+          <div class="hero-trust hero-el" data-delay="500">
+            <a href="https://www.npmjs.com/package/webpeel" target="_blank" rel="noopener">2k+ weekly downloads</a>
+            <span class="hero-trust-dot">·</span>
+            <a href="/docs/">Docs</a>
+            <span class="hero-trust-dot">·</span>
+            <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">GitHub</a>
+          </div>
         </div>
-        <div class="hero-trust hero-el" data-delay="500">
-          <a href="https://www.npmjs.com/package/webpeel" target="_blank" rel="noopener">2k+ weekly downloads</a>
-          <span class="hero-trust-dot">·</span>
-          <a href="/docs/">Docs</a>
-          <span class="hero-trust-dot">·</span>
-          <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">GitHub</a>
-        </div>
-        <!-- Trusted-by logos inline in hero -->
-      </div>
 
-      <div class="hero-terminal hero-terminal-el" id="hero-terminal">
+        <div class="hero-terminal hero-terminal-el" id="hero-terminal">
         <div class="terminal-chrome">
           <div class="terminal-dot r"></div>
           <div class="terminal-dot y"></div>
@@ -2092,6 +2140,7 @@
           <div style="display:none" id="terminal-dynamic"></div>
         </div>
       </div>
+      </div><!-- /hero-grid -->
 
       <!-- Mobile: compact code snippet (replaces terminal on small screens) -->
       <div class="hero-mobile-code hero-el" data-delay="500">
