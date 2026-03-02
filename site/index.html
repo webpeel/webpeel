@@ -1085,8 +1085,8 @@
 
     /* ── FOOTER DEPTH ────────────────────────────────── */
     .footer {
-      background: linear-gradient(to bottom, #0c0c12 0px, #09090B 80px) !important;
-      border-top: 1px solid rgba(255,255,255,0.09) !important;
+      background: #050507 !important;
+      border-top: 1px solid rgba(255,255,255,0.06) !important;
       position: relative;
     }
     .footer-brand {
@@ -1534,7 +1534,7 @@
     .bar-label.hl { text-shadow: 0 0 12px rgba(88,101,242,0.3) !important; }
 
     /* 10. Footer refinement */
-    .footer-brand { font-size: 16px !important; }
+    .footer-brand { font-size: 18px !important; font-weight: 700 !important; letter-spacing: -0.01em !important; }
     .footer-tagline { max-width: 280px !important; }
     .footer-col h3 { color: rgba(255,255,255,0.55) !important; font-size: 12px !important; }
     .footer-bottom { margin-top: 48px !important; padding-top: 36px !important; }
@@ -1831,7 +1831,21 @@
       background: linear-gradient(90deg, transparent, rgba(88,101,242,0.25), transparent) !important;
     }
     .pricing-section::after {
-      background: linear-gradient(90deg, transparent, rgba(88,101,242,0.20), transparent) !important;
+      background: linear-gradient(90deg, transparent, rgba(88,101,242,0.22), transparent) !important;
+      left: 10% !important;
+      right: 10% !important;
+    }
+
+    /* Y-a. Focus ring styling — polished, not browser default */
+    :focus-visible {
+      outline: 2px solid rgba(88,101,242,0.6);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    button:focus-visible, a:focus-visible { outline-offset: 3px; }
+    .btn-primary:focus-visible, .price-btn:focus-visible, .final-cta-btn:focus-visible {
+      outline: 2px solid rgba(255,255,255,0.5);
+      outline-offset: 3px;
     }
 
     /* Y. Hero stats 2x2 at all mobile sizes */
@@ -2055,7 +2069,7 @@ webpeel "https://example.com" --readable</div>
         <!-- Left -->
         <div class="reveal">
           <div class="section-eyebrow">WHY WEBPEEL</div>
-          <h2 class="section-h2 section-h2-dark">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
+          <h2 class="section-h2 section-h2-dark">Other tools fetch pages.<br><span class="accent" style="white-space:nowrap;">WebPeel reads them.</span></h2>
           <p class="why-body">Any page. Any protection. Auto-handled — so your agent always gets through.</p>
           <ul class="why-checks">
             <li><i class="why-check-icon">✓</i> Handles JS rendering, SPAs, Cloudflare</li>
@@ -2243,7 +2257,7 @@ Ready for your AI agent.</div>
   <!-- FINAL CTA -->
   <section class="final-cta">
     <div class="container" style="max-width:600px;">
-      <h2 class="reveal">Your AI is one API call away<br>from <span class="accent">the entire web.</span></h2>
+      <h2 class="reveal" style="text-wrap:balance;">Your AI is one API call away from <span class="accent">the&nbsp;entire&nbsp;web.</span></h2>
       <p class="sub reveal" data-delay="1">Free forever. 500 fetches/week. No credit card needed.</p>
       <div class="install-card reveal" data-delay="2">
         <code id="install-cmd">curl -fsSL https://webpeel.dev/install.sh | bash</code>
