@@ -175,6 +175,8 @@
 
     @media (prefers-reduced-motion: reduce) {
       .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .hero-terminal-el { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .hero-el { opacity: 1 !important; transform: none !important; transition: none !important; }
       .hero-el { opacity: 1 !important; transform: none !important; transition: none !important; }
       .bar-fill { transition: none !important; }
       .terminal-cursor { animation: none !important; opacity: 1 !important; }
@@ -393,8 +395,8 @@
       max-width: 880px; margin: 32px auto 0;
       background: #0C0C0E; border-radius: 16px; overflow: hidden;
       text-align: left; position: relative;
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 40px 80px -20px rgba(0,0,0,0.5), 0 0 120px rgba(88,101,242,0.1);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 40px 80px -20px rgba(0,0,0,0.6), 0 0 160px rgba(88,101,242,0.20), 0 0 40px rgba(88,101,242,0.12), inset 0 1px 0 rgba(255,255,255,0.08);
     }
     .terminal-chrome {
       height: 48px; background: #1A1A1F;
@@ -2117,26 +2119,6 @@
         <div><span class="t-dim">}</span></div>
       </div>
 
-      <div class="hero-product reveal" data-delay="550">
-        <div class="hp-bar">
-          <span class="hp-dot" style="background:#ff5f57"></span>
-          <span class="hp-dot" style="background:#febc2e"></span>
-          <span class="hp-dot" style="background:#28c840"></span>
-          <span class="hp-url">webpeel fetch "https://techcrunch.com/ai-agents-2026"</span>
-          <span class="hp-badge">✓ 47ms</span>
-        </div>
-        <div class="hp-body">
-          <div class="hp-row"><span class="hp-check">✓</span><span class="hp-label">Fetched</span><span class="hp-meta">cloudflare bypass · 47ms</span></div>
-          <div class="hp-row"><span class="hp-check">✓</span><span class="hp-label">Extracted</span><span class="hp-meta">article · 1,247 tokens · structured</span></div>
-          <div class="hp-divider"></div>
-          <div class="hp-content">
-            <div class="hp-md-h1"># Apple Unveils AI-Powered Web Agents</div>
-            <div class="hp-md-meta">March 2, 2026 · 4 min read · techcrunch.com</div>
-            <div class="hp-md-body">Apple today announced a new suite of AI features for Safari, including an intelligent extraction layer that allows agents to browse, read, and summarize any web page without being blocked by paywalls or Cloudflare...</div>
-          </div>
-        </div>
-      </div>
-
       <div class="hero-stats hero-el" data-delay="600">
         <div class="hero-stat">
           <span class="hero-stat-n" data-count-to="99.9" data-count-suffix="%" data-count-decimals="1" style="color: #4ade80">99.9%</span>
@@ -2707,7 +2689,7 @@ Ready for your AI agent.</div>
       const delay = parseInt(el.dataset.delay) || 0;
       setTimeout(() => { el.classList.remove('pending'); el.classList.add('visible'); }, delay);
     });
-    if (termEl) setTimeout(() => { termEl.classList.remove('pending'); termEl.classList.add('visible'); }, 600);
+    if (termEl) setTimeout(() => { termEl.classList.remove('pending'); termEl.classList.add('visible'); }, 100);
 
     /* ── Scroll reveal (progressive enhancement) ──── */
     /* Progressive enhancement: only animate for real users who scroll */
