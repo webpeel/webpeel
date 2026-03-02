@@ -2609,6 +2609,10 @@
 
   /* ══ MOBILE DEMO SECTION FIXES ══ */
   @media (max-width: 768px) {
+    /* Override line-1155 overflow:hidden to allow pill scroll */
+    .demo-card-wrap {
+      overflow: visible !important;
+    }
     /* Scrollable pill row — no clipping */
     .demo-pills {
       flex-wrap: nowrap !important;
