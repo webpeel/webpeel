@@ -1869,7 +1869,6 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 48px;
-      align-items: center;
       max-width: 1200px;
       margin: 0 auto;
     }
@@ -1877,6 +1876,9 @@
       text-align: left !important;
       padding-bottom: 0 !important;
       max-width: none !important;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .hero-grid .hero-sub {
       max-width: 480px !important;
@@ -2108,7 +2110,7 @@
             <span class="hero-el" style="display:block;" data-delay="120">Your AI agent just</span>
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
           </h1>
-          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL.<br><strong style="color:rgba(255,255,255,0.95);font-size:1.15em;letter-spacing:-0.01em;">One API call.</strong></p>
+          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL.<br><strong style="color:#6B73FF;font-size:20px;font-weight:700;letter-spacing:-0.01em;display:block;margin-top:12px;">One API call.</strong></p>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
