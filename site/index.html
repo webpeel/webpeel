@@ -81,7 +81,7 @@
       --text-lg: 24px;    /* card titles, section intros */
 
       /* Sizes — aggressive scale like Linear/Resend */
-      --text-hero: clamp(52px, 7vw, 80px);
+      --text-hero: clamp(44px, 7vw, 82px);
       --text-h2: clamp(48px, 7vw, 72px);
       --text-h3: clamp(20px, 2.5vw, 28px);
       --text-stat: clamp(48px, 6vw, 80px);
@@ -307,7 +307,7 @@
     .hero h1 .accent { color: var(--accent-pale); }
     .hero-sub {
       font-size: 18px; font-weight: 400;
-      color: rgba(255,255,255,0.78);
+      color: rgba(255,255,255,0.72);
       line-height: 1.7; max-width: 560px; margin: 16px auto 28px;
       letter-spacing: -0.005em;
     }
@@ -1861,6 +1861,154 @@
       .hero-stat-l { font-size: 10px !important; }
     }
 
+    /* ══ HERO PRODUCT CARD ══════════════════════════════ */
+    .hero-product {
+      max-width: 680px;
+      margin: 36px auto 0;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 0 60px rgba(88,101,242,0.18), 0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+      overflow: hidden;
+      text-align: left;
+      animation: heroFloat 7s ease-in-out infinite;
+    }
+    @keyframes heroFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .hp-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: rgba(0,0,0,0.35);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .hp-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .hp-url {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-left: 8px;
+    }
+    .hp-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: #4ade80;
+      background: rgba(74,222,128,0.12);
+      border: 1px solid rgba(74,222,128,0.25);
+      border-radius: 4px;
+      padding: 2px 7px;
+      white-space: nowrap;
+    }
+    .hp-body {
+      padding: 16px 20px 18px;
+    }
+    .hp-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .hp-check {
+      color: #4ade80;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .hp-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,0.75);
+      font-weight: 600;
+    }
+    .hp-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(255,255,255,0.30);
+    }
+    .hp-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.07);
+      margin: 12px 0;
+    }
+    .hp-md-h1 {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.90);
+      margin-bottom: 4px;
+    }
+    .hp-md-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(88,101,242,0.8);
+      margin-bottom: 8px;
+    }
+    .hp-md-body {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(255,255,255,0.40);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    @media (max-width: 768px) {
+      .hero-product { display: none; }
+    }
+
+    /* ══ CARD ELEVATION ════════════════════════════════ */
+    .how-step {
+      box-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.2) !important;
+    }
+    .how-step:hover {
+      box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(88,101,242,0.25), 0 0 20px rgba(88,101,242,0.12) !important;
+    }
+    .price-card {
+      box-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.2) !important;
+    }
+    .price-card.featured {
+      box-shadow: 0 0 80px rgba(88,101,242,0.22), 0 8px 32px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.2) !important;
+    }
+    .faq-item {
+      box-shadow: 0 1px 6px rgba(0,0,0,0.25) !important;
+    }
+    .stat-card {
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+    }
+
+    /* ══ HOW SECTION BACKGROUND ════════════════════════ */
+    .how-section { background: #07070f !important; }
+
+    /* ══ SECTION INTRO PULL QUOTE ═══════════════════════ */
+    .section-sub, .why-body {
+      font-size: 18px !important;
+      line-height: 1.7 !important;
+      color: rgba(255,255,255,0.65) !important;
+      max-width: 520px;
+    }
+
+    /* ══ STAGGERED SCROLL ANIMATIONS ════════════════════ */
+    @keyframes revealIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .reveal.visible {
+      animation: revealIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
   </style>
 </head>
 <body>
@@ -1969,17 +2117,37 @@
         <div><span class="t-dim">}</span></div>
       </div>
 
+      <div class="hero-product reveal" data-delay="550">
+        <div class="hp-bar">
+          <span class="hp-dot" style="background:#ff5f57"></span>
+          <span class="hp-dot" style="background:#febc2e"></span>
+          <span class="hp-dot" style="background:#28c840"></span>
+          <span class="hp-url">webpeel fetch "https://techcrunch.com/ai-agents-2026"</span>
+          <span class="hp-badge">✓ 47ms</span>
+        </div>
+        <div class="hp-body">
+          <div class="hp-row"><span class="hp-check">✓</span><span class="hp-label">Fetched</span><span class="hp-meta">cloudflare bypass · 47ms</span></div>
+          <div class="hp-row"><span class="hp-check">✓</span><span class="hp-label">Extracted</span><span class="hp-meta">article · 1,247 tokens · structured</span></div>
+          <div class="hp-divider"></div>
+          <div class="hp-content">
+            <div class="hp-md-h1"># Apple Unveils AI-Powered Web Agents</div>
+            <div class="hp-md-meta">March 2, 2026 · 4 min read · techcrunch.com</div>
+            <div class="hp-md-body">Apple today announced a new suite of AI features for Safari, including an intelligent extraction layer that allows agents to browse, read, and summarize any web page without being blocked by paywalls or Cloudflare...</div>
+          </div>
+        </div>
+      </div>
+
       <div class="hero-stats hero-el" data-delay="600">
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="99.9" data-count-suffix="%" data-count-decimals="1">99.9%</span>
+          <span class="hero-stat-n" data-count-to="99.9" data-count-suffix="%" data-count-decimals="1" style="color: #4ade80">99.9%</span>
           <span class="hero-stat-l">uptime SLA</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="97.6" data-count-suffix="%" data-count-decimals="1">97.6%</span>
+          <span class="hero-stat-n" data-count-to="97.6" data-count-suffix="%" data-count-decimals="1" style="color: #60a5fa">97.6%</span>
           <span class="hero-stat-l">success rate</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="650" data-count-prefix="<" data-count-suffix="ms">&#60;650ms</span>
+          <span class="hero-stat-n" data-count-to="650" data-count-prefix="<" data-count-suffix="ms" style="color: #818cf8">&#60;650ms</span>
           <span class="hero-stat-l">avg latency</span>
         </div>
         <div class="hero-stat">
@@ -2046,14 +2214,14 @@
           <div class="mini-code"><span style="color:#6B7280;"># Install globally</span>
 npm install -g webpeel</div>
         </div>
-        <div class="how-step reveal" data-delay="2">
+        <div class="how-step reveal" data-delay="2" style="animation-delay: 80ms">
           <div class="how-step-num">02</div>
           <h3>Fetch</h3>
           <p>Send any URL. WebPeel auto-detects what's needed — simple HTTP, browser rendering, or advanced mode.</p>
           <div class="mini-code"><span style="color:#6B7280;"># Auto-detects: simple → browser → advanced</span>
 webpeel "https://example.com" --readable</div>
         </div>
-        <div class="how-step reveal" data-delay="3">
+        <div class="how-step reveal" data-delay="3" style="animation-delay: 160ms">
           <div class="how-step-num">03</div>
           <h3>Integrate</h3>
           <p>Clean markdown, metadata, structured data — ready for your agent in milliseconds.</p>
