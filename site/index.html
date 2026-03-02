@@ -3599,14 +3599,153 @@
     transition: color 150ms ease;
   }
   .hdw-try-link:hover { color: #A5B4FC; }
-  @media (max-width: 768px) { .hero-demo-widget { display: none; } }
-
-  /* Grid placement for the demo widget — same rules the old .hero-terminal had */
+  /* Grid placement for the demo widget */
   .hero-grid .hero-demo-widget {
     max-width: 100% !important;
     margin: 0 !important;
     position: relative;
     z-index: 1;
+  }
+
+  /* Mobile: show demo widget below hero content, full width */
+  @media (max-width: 768px) {
+    .hero-demo-widget {
+      margin-top: 24px !important;
+      border-radius: 12px !important;
+    }
+    .hdw-tabs { display: none !important; }
+    .hdw-body { min-height: 160px !important; font-size: 12px !important; padding: 14px 16px !important; }
+    .hdw-input-row { padding: 10px 14px !important; }
+  }
+
+  /* URL input row inside demo widget */
+  .hdw-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
+  .hdw-url-input {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: rgba(255,255,255,0.85);
+    outline: none;
+    transition: border-color 150ms ease;
+    min-width: 0;
+  }
+  .hdw-url-input::placeholder { color: rgba(255,255,255,0.28); }
+  .hdw-url-input:focus { border-color: rgba(99,102,241,0.55); }
+  .hdw-run-btn {
+    background: rgba(99,102,241,0.20);
+    border: 1px solid rgba(99,102,241,0.40);
+    border-radius: 6px;
+    color: #A5B4FC;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 150ms ease;
+    font-family: var(--font-sans);
+  }
+  .hdw-run-btn:hover {
+    background: rgba(99,102,241,0.35);
+    color: #C7D2FE;
+    border-color: rgba(99,102,241,0.60);
+  }
+
+  /* Ghost CTA "View Docs" */
+  .hero-doc-btn {
+    background: transparent !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    color: rgba(255,255,255,0.70) !important;
+    font-size: 15px !important;
+    padding: 14px 24px !important;
+    border-radius: 8px !important;
+    text-decoration: none;
+    font-weight: 500 !important;
+    transition: all 150ms ease;
+    white-space: nowrap;
+  }
+  .hero-doc-btn:hover {
+    background: rgba(255,255,255,0.06) !important;
+    color: rgba(255,255,255,0.95) !important;
+    border-color: rgba(255,255,255,0.32) !important;
+  }
+  @media (max-width: 768px) {
+    .hero-doc-btn { display: none !important; }
+  }
+
+  /* "Works with" compat strip */
+  .hero-compat {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 16px 0 8px;
+    margin-top: 8px;
+  }
+  .hero-compat-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: rgba(255,255,255,0.30);
+  }
+  .hero-compat-list {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hero-compat-item {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.50);
+    padding: 3px 10px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.03);
+    transition: all 150ms ease;
+  }
+  .hero-compat-item:hover {
+    color: rgba(255,255,255,0.80);
+    border-color: rgba(255,255,255,0.20);
+    background: rgba(255,255,255,0.06);
+  }
+
+  /* hero-ctas: two buttons side by side on desktop */
+  @media (min-width: 769px) {
+    .hero-ctas {
+      flex-direction: row !important;
+      align-items: center !important;
+      flex-wrap: wrap !important;
+      gap: 12px !important;
+    }
+    .hero-ctas .btn-primary {
+      min-width: 240px !important;
+      max-width: 300px !important;
+      width: auto !important;
+    }
+  }
+  .hero-cta-note {
+    width: 100%;
+    margin-top: 6px !important;
+    font-size: 12px !important;
+    color: rgba(255,255,255,0.40) !important;
+    text-align: left !important;
+  }
+  @media (max-width: 768px) {
+    .hero-cta-note { text-align: center !important; }
   }
 
   /* Color discipline — kill purple blobs from non-hero sections */
@@ -3683,8 +3822,9 @@
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
-            <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
+            <a href="/docs/" class="btn-ghost hero-doc-btn">View Docs</a>
           </div>
+          <p class="hero-cta-note hero-el" data-delay="460">No credit card · 500 fetches/week free · Cancel anytime</p>
           <div class="hero-trust hero-el" data-delay="500">
   <span class="hero-trust-live"><span class="hero-trust-dot-live"></span>2k+ weekly downloads</span>
   <span class="hero-trust-sep">·</span>
@@ -3723,12 +3863,13 @@
               <button class="hdw-tab" data-idx="2">hackernews</button>
             </div>
           </div>
+          <div class="hdw-input-row">
+            <input type="text" class="hdw-url-input" id="hdw-url-input" placeholder="https://your-url.com" autocomplete="off" spellcheck="false">
+            <button class="hdw-run-btn" id="hdw-run-btn">Extract →</button>
+          </div>
           <div class="hdw-body">
             <div id="hdw-cmd" class="hdw-cmd-line"></div>
             <div id="hdw-output" class="hdw-output"></div>
-          </div>
-          <div class="hdw-footer">
-            <a href="#demo" class="hdw-try-link" onclick="event.preventDefault();document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try your own URL →</a>
           </div>
         </div>
       </div><!-- /hero-grid -->
@@ -3755,12 +3896,16 @@
       </div>
       <p class="hero-stats-note hero-el" data-delay="700">30-day rolling averages · Tested across 500+ domains · <a href="/docs/" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">methodology</a></p>
       </div><!-- /hero-stats-section -->
-      <div class="hero-proof">
-        <span>Used by <strong>500+</strong> AI teams</span>
-        <span class="hero-proof-sep">·</span>
-        <span><strong>2M+</strong> pages extracted/month</span>
-        <span class="hero-proof-sep">·</span>
-        <span>Compatible with Claude, GPT-4o, Cursor</span>
+      <div class="hero-compat hero-el" data-delay="800">
+        <span class="hero-compat-label">Works with</span>
+        <div class="hero-compat-list">
+          <span class="hero-compat-item">Claude</span>
+          <span class="hero-compat-item">GPT-4o</span>
+          <span class="hero-compat-item">Cursor</span>
+          <span class="hero-compat-item">LangChain</span>
+          <span class="hero-compat-item">Python</span>
+          <span class="hero-compat-item">Node.js</span>
+        </div>
       </div>
       <div class="hero-scroll-cue" aria-hidden="true">
         <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4675,6 +4820,32 @@ Ready for your AI agent.</div>
       });
       runDemo(0);
       scheduleCycle();
+
+      // URL input: submit → scroll to live demo section + pre-fill URL
+      var urlInput = document.getElementById('hdw-url-input');
+      var runBtn = document.getElementById('hdw-run-btn');
+      if (urlInput && runBtn) {
+        function submitHeroUrl() {
+          var url = urlInput.value.trim();
+          if (!url) return;
+          if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+          // Pre-fill the demo section URL display
+          var demoDisplay = document.getElementById('demo-url-display');
+          if (demoDisplay) demoDisplay.textContent = url;
+          // Scroll to demo section
+          var demoSection = document.getElementById('demo');
+          if (demoSection) demoSection.scrollIntoView({ behavior: 'smooth' });
+          // Click extract after a short delay to let scroll start
+          setTimeout(function() {
+            var extractBtn = document.getElementById('demo-extract-btn');
+            if (extractBtn) extractBtn.click();
+          }, 400);
+        }
+        runBtn.addEventListener('click', submitHeroUrl);
+        urlInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') submitHeroUrl();
+        });
+      }
     });
   })();
 
