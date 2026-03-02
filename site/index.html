@@ -2518,44 +2518,66 @@
     }
   }
   @media (min-width: 769px) { .hero-mobile-code { display: none !important; } }
-  /* ══ GLOW-FIX ══ */
+  /* ══ GLOW-FIX-2 ══ */
 
-  /* Terminal: dedicated radial glow element behind the card (box-shadow washed by hero bg) */
+  /* Terminal: glow via mix-blend-mode screen — sits ON TOP of background, visible regardless of z-index */
   .hero-grid .hero-terminal {
     position: relative !important;
-    isolation: isolate !important;
   }
   .hero-grid .hero-terminal::before {
     content: '';
     position: absolute;
-    inset: -70px;
-    background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(88,101,242,0.28) 0%, rgba(88,101,242,0.12) 35%, transparent 70%);
-    z-index: -1;
+    top: -80px; left: -80px; right: -80px; bottom: -80px;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%,
+      rgba(88,101,242,0.45) 0%,
+      rgba(88,101,242,0.20) 35%,
+      transparent 70%);
+    mix-blend-mode: screen;
     pointer-events: none;
-    border-radius: 50%;
+    z-index: 0;
+  }
+  /* Ensure terminal content sits above glow */
+  .hero-grid .hero-terminal .terminal-chrome,
+  .hero-grid .hero-terminal .terminal-body { position: relative; z-index: 1; }
+
+  /* Also strengthen the hero background behind the terminal (right side) */
+  .hero {
+    background:
+      radial-gradient(ellipse 55% 50% at 22% 35%, rgba(88,101,242,0.20) 0%, transparent 65%),
+      radial-gradient(ellipse 55% 65% at 72% 42%, rgba(88,101,242,0.32) 0%, rgba(88,101,242,0.14) 40%, transparent 70%),
+      #050507 !important;
+  }
+  @media (max-width: 768px) {
+    .hero {
+      background:
+        radial-gradient(ellipse 90% 40% at 50% 0%, rgba(88,101,242,0.22) 0%, transparent 60%),
+        #050507 !important;
+    }
   }
 
-  /* CTA button: pressable glow + confident width */
+  /* CTA button: keep min-width but restore the STRONGER original glow (GLOW-FIX was weaker) */
   .hero-ctas .btn-primary {
     min-width: 300px !important;
     box-shadow:
-      0 0 28px 8px rgba(88,101,242,0.38),
-      0 4px 16px rgba(0,0,0,0.3),
+      0 0 60px rgba(88,101,242,0.60),
+      0 0 110px rgba(88,101,242,0.20),
+      0 4px 24px rgba(88,101,242,0.50),
       inset 0 1px 0 rgba(255,255,255,0.18) !important;
   }
   .hero-ctas .btn-primary:hover {
     box-shadow:
-      0 0 40px 12px rgba(88,101,242,0.50),
-      0 8px 24px rgba(0,0,0,0.4),
-      inset 0 1px 0 rgba(255,255,255,0.20) !important;
+      0 0 70px rgba(88,101,242,0.70),
+      0 0 130px rgba(88,101,242,0.25),
+      0 8px 30px rgba(88,101,242,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.22) !important;
     transform: translateY(-2px) !important;
   }
   @media (max-width: 768px) {
     .hero-ctas .btn-primary { min-width: 0 !important; width: 100% !important; }
   }
 
-  /* Trust row: give claim distinct weight from nav links */
-  .hero-trust-live { color: rgba(255,255,255,0.80) !important; font-weight: 600 !important; }
+  /* Trust row */
+  .hero-trust-live { color: rgba(255,255,255,0.82) !important; font-weight: 600 !important; }
   .hero-trust-sep { color: rgba(255,255,255,0.18) !important; margin: 0 6px !important; }
 
   </style>
