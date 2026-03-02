@@ -3908,6 +3908,63 @@
   /* Boost noise texture opacity */
   body::after { opacity: 0.032 !important; }
 
+  /* URL input — prominent focus state invites interaction (Norman: affordance) */
+  .hdw-url-input:focus {
+    border-color: rgba(99,102,241,0.70) !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.18), 0 0 16px rgba(99,102,241,0.15) !important;
+    background: rgba(255,255,255,0.09) !important;
+  }
+
+  /* Subtle entry shimmer on the input to invite first interaction */
+  @keyframes hdw-invite {
+    0%, 100% { border-color: rgba(255,255,255,0.10); }
+    50% { border-color: rgba(99,102,241,0.45); box-shadow: 0 0 12px rgba(99,102,241,0.18); }
+  }
+  .hdw-url-input {
+    animation: hdw-invite 3s ease-in-out 2s 1;
+  }
+
+  /* Extract button — stronger call to action feel */
+  .hdw-run-btn {
+    background: rgba(99,102,241,0.25) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+  }
+  .hdw-run-btn:hover {
+    background: rgba(99,102,241,0.45) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.25) !important;
+  }
+  .hdw-run-btn:active {
+    transform: translateY(0) !important;
+  }
+
+  /* Single primary CTA on desktop — no visual competition */
+  @media (min-width: 769px) {
+    .hero-ctas { gap: 0 !important; }
+    .hero-ctas .btn-primary {
+      min-width: 260px !important;
+      max-width: 320px !important;
+    }
+  }
+
+  /* Hero kicker — make it feel like a live badge */
+  .hero-kicker {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  .hero-kicker::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ADE80;
+    box-shadow: 0 0 6px rgba(74,222,128,0.7);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
   </style>
 </head>
 <body>
@@ -3959,9 +4016,8 @@
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
-            <a href="/docs/" class="btn-ghost hero-doc-btn">View Docs</a>
           </div>
-          <p class="hero-cta-note hero-el" data-delay="460">No credit card · 500 fetches/week free · Cancel anytime</p>
+          <p class="hero-cta-note hero-el" data-delay="460">No credit card · 500 fetches/week free · <a href="/docs/" style="color:rgba(165,180,252,0.75);text-decoration:underline;text-underline-offset:3px;">View Docs</a></p>
           <div class="hero-trust hero-el" data-delay="500">
   <span class="hero-trust-live"><span class="hero-trust-dot-live"></span>4,409 weekly npm installs</span>
   <span class="hero-trust-sep">·</span>
@@ -4001,7 +4057,7 @@
             </div>
           </div>
           <div class="hdw-input-row">
-            <input type="text" class="hdw-url-input" id="hdw-url-input" placeholder="Enter any URL to extract..." autocomplete="off" spellcheck="false">
+            <input type="text" class="hdw-url-input" id="hdw-url-input" placeholder="https://stripe.com" autocomplete="off" spellcheck="false">
             <button class="hdw-run-btn" id="hdw-run-btn">Extract →</button>
           </div>
           <div class="hdw-body">
@@ -4957,6 +5013,14 @@ Ready for your AI agent.</div>
       });
       runDemo(0);
       scheduleCycle();
+
+      // Auto-focus URL input on desktop (Norman: affordance — cursor blinks here = "start here")
+      if (window.innerWidth >= 769) {
+        setTimeout(function() {
+          var inp = document.getElementById('hdw-url-input');
+          if (inp) inp.focus();
+        }, 1800); // after initial animation plays
+      }
 
       // URL input: submit → scroll to live demo section + pre-fill URL
       var urlInput = document.getElementById('hdw-url-input');
