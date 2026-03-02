@@ -4098,84 +4098,113 @@
 
   /* O. Dot grid: clip to hero only — hero already overflow:hidden now */
 
-  /* ══ POLISH-12: pill CTA, mobile code block restore, social proof upgrade ══ */
+  /* ══ POLISH-14: unified radius, body weight, stats separator, nav, mobile code fix ══ */
 
-  /* 1. Primary CTA: full pill — confident, modern (Vercel/Railway/Resend pattern) */
+  /* 1. Unified border-radius system: 10px for all interactive elements */
   .btn-primary,
   .hero-ctas .btn-primary,
   .mobile-sticky-cta .btn-primary {
-    border-radius: 9999px !important;
+    border-radius: 10px !important;
   }
+  .nav-cta { border-radius: 8px !important; }
+  .hero-eyebrow { border-radius: 9999px !important; }
 
-  /* 2. Mobile: restore the static terminal code block (was hidden by REDESIGN-10)
-        hero-demo-widget is hidden on mobile, so no more double-dots issue.
-        Inside display:contents hero-content → becomes direct flex child of hero-grid. */
+  /* 2. Mobile: code block at order 6 (RIGHT AFTER CTA, before cta-note) — MUST come last to win cascade */
   @media (max-width: 768px) {
     .hero-mobile-code {
       display: block !important;
-      order: 9 !important;
-      margin: 20px 0 0 !important;
+      order: 6 !important;
       width: 100% !important;
+      margin: 16px 0 0 !important;
+      max-height: 160px !important;
+      overflow: hidden !important;
+      position: relative !important;
+      border-radius: 10px !important;
+      background: rgba(8,8,16,0.95) !important;
+      border: 1px solid rgba(255,255,255,0.10) !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.40) !important;
     }
+    .hero-mobile-code::after {
+      content: '' !important;
+      display: block !important;
+      position: absolute !important;
+      bottom: 0 !important; left: 0 !important; right: 0 !important;
+      height: 28px !important;
+      background: linear-gradient(to bottom, transparent, rgba(8,8,16,0.98)) !important;
+      pointer-events: none !important;
+    }
+    .hero-cta-note { order: 7 !important; margin: 10px 0 0 !important; }
+    .hero-trust { order: 8 !important; margin: 12px 0 0 !important; gap: 8px !important; }
   }
 
-  /* 3. Social proof: bold the number for instant credibility scan */
+  /* 3. Body copy: heavier weight + tighter letter-spacing for legibility on dark bg */
+  .hero-sub {
+    font-weight: 450 !important;
+    letter-spacing: -0.01em !important;
+    color: rgba(255,255,255,0.72) !important;
+  }
+  @media (min-width: 769px) {
+    .hero-sub { max-width: 38ch !important; }
+  }
+  @media (max-width: 768px) {
+    .hero-sub { max-width: 34ch !important; margin-left: auto !important; margin-right: auto !important; }
+  }
+
+  /* 4. Stats section: visual separator from hero */
+  .hero-stats-section {
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    margin-top: 48px !important;
+    padding-top: 32px !important;
+  }
+
+  /* 5. Social proof: bold number, brighter dot */
   .hero-trust-live {
     font-weight: 600 !important;
     font-size: 13px !important;
     color: rgba(255,255,255,0.85) !important;
   }
-
-  /* 4. Social proof dot — brighter green pulse */
   .hero-trust-dot-live {
     background: #22C55E !important;
     box-shadow: 0 0 8px rgba(34,197,94,0.9), 0 0 16px rgba(34,197,94,0.4) !important;
-    width: 7px !important;
-    height: 7px !important;
+    width: 7px !important; height: 7px !important;
   }
-
-  /* 5. Trust bar overall opacity fix — was 0.6, needs to be visible */
   .hero-grid .hero-trust { opacity: 1 !important; }
 
-  /* 6. Desktop: ensure demo widget is vertically centered with left column */
+  /* 6. Desktop: widget vertically centered */
   @media (min-width: 769px) {
     .hero-grid { align-items: center !important; }
     .hero-demo-widget { align-self: center !important; }
-  }
-
-  /* 7. Mobile eyebrow: explicitly centered (matches h1, sub) */
-  @media (max-width: 768px) {
-    .hero-kicker {
-      text-align: center !important;
-      width: 100% !important;
-    }
-    .hero-eyebrow {
-      text-align: center !important;
-      align-self: center !important;
-    }
-    /* Reduce gap between trust bar and npm number */
-    .hero-trust { margin-top: 16px !important; gap: 8px !important; }
-    /* Tighten CTA note */
-    .hero-cta-note { margin-top: 8px !important; font-size: 11.5px !important; }
-  }
-
-  /* 8. Desktop: social proof bar more prominent */
-  @media (min-width: 769px) {
     .hero-trust {
       gap: 14px !important;
-      margin-top: 16px !important;
-      padding: 6px 0 !important;
+      margin-top: 12px !important;
     }
-    .hero-trust a {
-      font-weight: 500 !important;
-      color: rgba(255,255,255,0.70) !important;
-    }
+    .hero-trust a { font-weight: 500 !important; color: rgba(255,255,255,0.70) !important; }
     .hero-trust a:hover { color: rgba(255,255,255,0.92) !important; }
   }
 
-  /* 9. Pill badge (eyebrow) border-radius consistency */
-  .hero-eyebrow {
-    border-radius: 9999px !important;
+  /* 7. Nav: tighten link spacing */
+  .nav-links { gap: 28px !important; }
+  .nav-links a {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: rgba(255,255,255,0.72) !important;
+    letter-spacing: -0.01em !important;
+  }
+  .nav-links a:hover { color: rgba(255,255,255,1) !important; }
+
+  /* 8. Desktop hero spacing: tighter vertical rhythm */
+  @media (min-width: 769px) {
+    .hero-kicker { margin-bottom: 8px !important; }
+    .hero-eyebrow { margin-bottom: 16px !important; }
+    .hero h1 { margin-bottom: 0 !important; }
+    .hero-sub { margin-top: 20px !important; margin-bottom: 28px !important; }
+    .hero-cta-note { margin-top: 10px !important; }
+  }
+
+  /* 9. Mobile eyebrow centering */
+  @media (max-width: 768px) {
+    .hero-kicker { text-align: center !important; width: 100% !important; }
+    .hero-eyebrow { text-align: center !important; align-self: center !important; }
   }
 
   /* ══ POLISH-11: comprehensive design lift — typography, mobile, spacing ══ */
