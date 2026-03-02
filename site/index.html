@@ -2215,9 +2215,14 @@
     @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 8px rgba(74,222,128,0.7); } 50% { box-shadow: 0 0 14px rgba(74,222,128,1); } }
     .hero-trust-sep { color: rgba(255,255,255,0.2); margin: 0 4px; font-size: 13px; }
 
-    /* 7. Hamburger touch target */
-    .nav-hamburger { min-width: 44px !important; min-height: 44px !important; padding: 10px !important; margin: -10px -4px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
-    .nav-hamburger:active { opacity: 0.6 !important; }
+    /* 7. Hamburger touch target — MOBILE ONLY */
+    @media (max-width: 768px) {
+      .nav-hamburger { min-width: 44px !important; min-height: 44px !important; padding: 10px !important; margin: -10px -4px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+      .nav-hamburger:active { opacity: 0.6 !important; }
+    }
+    @media (min-width: 769px) {
+      .nav-hamburger { display: none !important; }
+    }
 
     /* 9. Mobile code block — stronger card border */
     @media (max-width: 768px) {
@@ -2342,6 +2347,58 @@
     background: rgba(88,101,242,0.15);
     border-color: rgba(88,101,242,0.40);
     color: rgba(255,255,255,0.85);
+  }
+
+  /* ══ LOOP-2 ══ */
+
+  /* 1 — Hamburger: force hidden at desktop (bug fix for display:flex!important override) */
+  @media (min-width: 769px) {
+    .nav-hamburger { display: none !important; }
+  }
+
+  /* 2 — Stats: unified color palette — all green signals "all healthy" */
+  .hero-stat-n {
+    color: #4ade80 !important;
+  }
+
+  /* 3 — CTA button border-radius: exact 8px system-wide */
+  .btn-primary,
+  .hero-ctas .btn-primary {
+    border-radius: 8px !important;
+  }
+
+  /* 4 — Mobile headline: proper cascade — larger max-width first, smaller last */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 40px !important; }
+  }
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 38px !important; }
+  }
+  @media (max-width: 390px) {
+    .hero h1 { font-size: 36px !important; letter-spacing: -0.03em !important; }
+  }
+
+  /* 5 — Trust pill badge: more visible border and background */
+  .hero-eyebrow {
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    background: rgba(255,255,255,0.07) !important;
+    color: rgba(255,255,255,0.75) !important;
+  }
+
+  /* 6 — Terminal card: stronger layered shadow for depth */
+  .hero-terminal {
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.08),
+      0 4px 8px rgba(0,0,0,0.4),
+      0 20px 60px rgba(0,0,0,0.7),
+      0 0 80px rgba(88,101,242,0.15),
+      inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  }
+
+  /* 7 — Mobile hero: add breathing room above badge pill */
+  @media (max-width: 768px) {
+    .hero { padding-top: 88px !important; }
+    .hero-eyebrow { margin-bottom: 20px !important; }
   }
 
   /* ══ LOOP-1 ══ */
