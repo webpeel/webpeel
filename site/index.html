@@ -3991,6 +3991,178 @@
     animation: pulse-dot 2s ease-in-out infinite;
   }
 
+  /* ══ POLISH-11: comprehensive design lift — typography, mobile, spacing ══ */
+
+  /* 1. Hero body copy: 16px → 19px — removes dead zone between H1 and CTA */
+  @media (min-width: 769px) {
+    .hero-grid .hero-sub {
+      font-size: 19px !important;
+      line-height: 1.62 !important;
+      color: rgba(255,255,255,0.70) !important;
+      margin: 20px 0 32px !important;
+      max-width: 460px !important;
+    }
+  }
+
+  /* 2. Mobile hero: HIDE the demo widget — it renders cut-off/broken on small screens.
+        The dedicated #demo section below handles interactive demo on all viewports. */
+  @media (max-width: 768px) {
+    .hero .hero-demo-widget { display: none !important; }
+
+    /* Tighten mobile hero flow — reclaim the space the widget occupied */
+    .hero { padding-top: 20px !important; padding-bottom: 52px !important; }
+    .hero-sub {
+      font-size: 16px !important;
+      line-height: 1.55 !important;
+      color: rgba(255,255,255,0.68) !important;
+      margin-bottom: 6px !important;
+    }
+    .hero-ctas { margin-top: 22px !important; }
+    .hero-cta-note { margin-top: 10px !important; font-size: 12px !important; }
+    /* Trust bar visible on mobile — key social proof */
+    .hero-trust {
+      display: flex !important;
+      margin-top: 18px !important;
+      justify-content: center !important;
+      opacity: 1 !important;
+    }
+    /* Mobile: kicker breathing room */
+    .hero-kicker { margin-bottom: 10px !important; }
+    .hero-eyebrow { margin-bottom: 12px !important; }
+    .hero h1 { margin-bottom: 10px !important; }
+    /* Ambient orb/bloom not needed on mobile — remove visual noise */
+    .hero-ambient-orb, .hero-card-bloom, .hero-terminal-glow { display: none !important; }
+  }
+
+  /* 3. Desktop: widget slightly deeper bg to pop from page glow */
+  @media (min-width: 769px) {
+    .hero-demo-widget {
+      background: #0C0C1A !important;
+      border: 1px solid rgba(255,255,255,0.16) !important;
+    }
+    /* Kicker & eyebrow breathing room on desktop */
+    .hero-kicker { margin-bottom: 10px !important; }
+    .hero-eyebrow { margin-bottom: 18px !important; }
+    /* Reduce excess space below hero stats */
+    .hero-stats-section { padding-bottom: 8px !important; }
+  }
+
+  /* 4. Trust bar: hero opacity was 0.6 — override to full legibility */
+  .hero-grid .hero-trust { opacity: 1 !important; }
+  .hero-trust-live {
+    color: rgba(255,255,255,0.82) !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+  }
+  .hero-trust-dot-live {
+    width: 7px !important;
+    height: 7px !important;
+    background: #4ADE80 !important;
+    box-shadow: 0 0 10px rgba(74,222,128,0.95) !important;
+  }
+  .hero-trust a { color: rgba(255,255,255,0.72) !important; font-weight: 500 !important; }
+
+  /* 5. Stats labels — stronger contrast (answer "X% of what?" immediately) */
+  .hero-stat-l {
+    color: rgba(255,255,255,0.65) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    margin-top: 4px !important;
+    letter-spacing: 0.005em !important;
+  }
+
+  /* 6. Stats separators — slightly more visible */
+  @media (min-width: 769px) {
+    .hero-stat + .hero-stat {
+      border-left: 1px solid rgba(255,255,255,0.10) !important;
+    }
+  }
+
+  /* 7. Stats fine print — subtle but legible */
+  .hero-stats-note {
+    font-size: 11px !important;
+    color: rgba(255,255,255,0.28) !important;
+    margin-top: 10px !important;
+  }
+
+  /* 8. Nav: breathing room before Sign In CTA button */
+  .nav-cta { margin-left: 14px !important; }
+
+  /* 9. Works-with strip: more premium feel */
+  .hero-compat { margin-top: 28px !important; margin-bottom: 0 !important; }
+  .hero-compat-item {
+    color: rgba(255,255,255,0.65) !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    background: rgba(255,255,255,0.04) !important;
+    padding: 4px 11px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    letter-spacing: 0.01em !important;
+    transition: all 0.15s ease !important;
+  }
+  .hero-compat-item:hover {
+    color: rgba(255,255,255,0.92) !important;
+    border-color: rgba(255,255,255,0.28) !important;
+    background: rgba(255,255,255,0.08) !important;
+  }
+  .hero-compat-label {
+    color: rgba(255,255,255,0.32) !important;
+    font-size: 10px !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+  }
+
+  /* 10. Hero CTA note — "View Docs" link more prominent */
+  .hero-cta-note a {
+    color: rgba(165,180,252,0.88) !important;
+    font-weight: 500 !important;
+    text-underline-offset: 3px !important;
+  }
+  .hero-cta-note a:hover { color: #A5B4FC !important; }
+
+  /* 11. Desktop hero CTA: slightly larger for confidence */
+  @media (min-width: 769px) {
+    .hero-ctas .btn-primary {
+      font-size: 16px !important;
+      padding: 14px 32px !important;
+      min-width: 240px !important;
+    }
+  }
+
+  /* 12. Demo section pills: fix "YouTub" clipping — overflow on card-wrap must allow pills to scroll */
+  @media (max-width: 768px) {
+    .demo-card-wrap { overflow: visible !important; }
+    .demo-pills {
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none !important;
+      padding-bottom: 2px !important;
+    }
+    .demo-pills::-webkit-scrollbar { display: none !important; }
+    /* Contain overflow only in the result area, not the pills */
+    .demo-result { overflow: hidden !important; }
+  }
+
+  /* 13. Mobile CTA pair: both visible, full-width stacked */
+  @media (max-width: 768px) {
+    .hero-ctas {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 10px !important;
+      width: 100% !important;
+    }
+    .hero-ctas .btn-primary,
+    .hero-ctas .hero-doc-btn {
+      width: 100% !important;
+      text-align: center !important;
+      justify-content: center !important;
+      min-height: 52px !important;
+      font-size: 16px !important;
+    }
+    .hero-doc-btn { display: flex !important; }
+  }
+
   </style>
 </head>
 <body>
