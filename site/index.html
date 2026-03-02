@@ -2518,58 +2518,71 @@
     }
   }
   @media (min-width: 769px) { .hero-mobile-code { display: none !important; } }
-  /* ══ GLOW-FIX-2 ══ */
+  /* ══ GLOW-FIX-3 ══ */
 
-  /* Terminal: glow via mix-blend-mode screen — sits ON TOP of background, visible regardless of z-index */
-  .hero-grid .hero-terminal {
+  /* Terminal glow: placed on hero-grid::after so it's NOT clipped by terminal's overflow:hidden */
+  .hero-grid {
     position: relative !important;
   }
-  .hero-grid .hero-terminal::before {
+  .hero-grid::after {
     content: '';
     position: absolute;
-    top: -80px; left: -80px; right: -80px; bottom: -80px;
-    background: radial-gradient(ellipse 70% 60% at 50% 50%,
-      rgba(88,101,242,0.45) 0%,
-      rgba(88,101,242,0.20) 35%,
+    top: -15%; right: -8%;
+    width: 60%; height: 130%;
+    background: radial-gradient(ellipse 65% 60% at 55% 45%,
+      rgba(88,101,242,0.40) 0%,
+      rgba(99,102,241,0.18) 35%,
       transparent 70%);
-    mix-blend-mode: screen;
     pointer-events: none;
     z-index: 0;
   }
-  /* Ensure terminal content sits above glow */
-  .hero-grid .hero-terminal .terminal-chrome,
-  .hero-grid .hero-terminal .terminal-body { position: relative; z-index: 1; }
+  /* Make sure terminal sits above the glow */
+  .hero-grid .hero-terminal { z-index: 1 !important; }
+  .hero-grid .hero-content { z-index: 1 !important; }
 
-  /* Also strengthen the hero background behind the terminal (right side) */
+  /* Terminal box-shadow: maximize the radiated glow (overrides weaker IMPACT block) */
+  #hero-terminal, .hero-terminal {
+    box-shadow:
+      0 0 0 1px rgba(88,101,242,0.25),
+      0 0 50px rgba(88,101,242,0.55),
+      0 0 120px rgba(88,101,242,0.30),
+      0 0 240px rgba(88,101,242,0.14),
+      0 32px 64px rgba(0,0,0,0.70),
+      inset 0 1px 0 rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(88,101,242,0.40) !important;
+  }
+
+  /* Hero background: stronger right-column bloom, left headline bloom */
   .hero {
     background:
-      radial-gradient(ellipse 55% 50% at 22% 35%, rgba(88,101,242,0.20) 0%, transparent 65%),
-      radial-gradient(ellipse 55% 65% at 72% 42%, rgba(88,101,242,0.32) 0%, rgba(88,101,242,0.14) 40%, transparent 70%),
+      radial-gradient(ellipse 50% 55% at 20% 32%, rgba(88,101,242,0.18) 0%, transparent 65%),
+      radial-gradient(ellipse 60% 70% at 74% 40%, rgba(88,101,242,0.38) 0%, rgba(99,102,241,0.16) 40%, transparent 70%),
       #050507 !important;
   }
   @media (max-width: 768px) {
+    .hero-grid::after { display: none; }
     .hero {
       background:
-        radial-gradient(ellipse 90% 40% at 50% 0%, rgba(88,101,242,0.22) 0%, transparent 60%),
+        radial-gradient(ellipse 90% 45% at 50% 0%, rgba(88,101,242,0.24) 0%, transparent 58%),
         #050507 !important;
     }
   }
 
-  /* CTA button: keep min-width but restore the STRONGER original glow (GLOW-FIX was weaker) */
+  /* CTA button: strong luminous glow */
   .hero-ctas .btn-primary {
     min-width: 300px !important;
     box-shadow:
-      0 0 60px rgba(88,101,242,0.60),
-      0 0 110px rgba(88,101,242,0.20),
-      0 4px 24px rgba(88,101,242,0.50),
-      inset 0 1px 0 rgba(255,255,255,0.18) !important;
+      0 0 60px rgba(88,101,242,0.65),
+      0 0 120px rgba(88,101,242,0.25),
+      0 4px 24px rgba(88,101,242,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.20) !important;
   }
   .hero-ctas .btn-primary:hover {
     box-shadow:
-      0 0 70px rgba(88,101,242,0.70),
-      0 0 130px rgba(88,101,242,0.25),
-      0 8px 30px rgba(88,101,242,0.55),
-      inset 0 1px 0 rgba(255,255,255,0.22) !important;
+      0 0 75px rgba(88,101,242,0.75),
+      0 0 150px rgba(88,101,242,0.30),
+      0 8px 32px rgba(88,101,242,0.60),
+      inset 0 1px 0 rgba(255,255,255,0.24) !important;
     transform: translateY(-2px) !important;
   }
   @media (max-width: 768px) {
