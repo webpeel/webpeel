@@ -2800,10 +2800,86 @@
       position: sticky !important;
       top: 0 !important;
       z-index: 100 !important;
-      background: rgba(9,9,11,0.85) !important;
+      background: rgba(9,9,11,0.88) !important;
       backdrop-filter: blur(12px) !important;
       -webkit-backdrop-filter: blur(12px) !important;
-      border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+      border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+    }
+  }
+
+  /* 8. HAMBURGER — visible container with border */
+  @media (max-width: 768px) {
+    .nav-hamburger {
+      background: rgba(255,255,255,0.06) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      border-radius: 8px !important;
+      width: 40px !important;
+      height: 40px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .nav-hamburger:active { opacity: 0.7 !important; }
+  }
+
+  /* 9. MOBILE HERO — code block after CTA */
+  @media (max-width: 768px) {
+    .hero-mobile-code {
+      margin-top: 28px !important;
+      margin-bottom: 0 !important;
+    }
+  }
+
+  /* 10. SCROLL CUE — fade chevron at bottom of hero */
+  .hero-scroll-cue {
+    display: none;
+  }
+  @media (min-width: 769px) {
+    .hero-scroll-cue {
+      display: flex;
+      justify-content: center;
+      padding: 24px 0 32px;
+      opacity: 0.35;
+      animation: scrollBounce 2s ease-in-out infinite;
+    }
+    .hero-scroll-cue svg {
+      width: 20px;
+      height: 20px;
+      stroke: rgba(255,255,255,0.7);
+      stroke-width: 2;
+      fill: none;
+    }
+    @keyframes scrollBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+    }
+  }
+
+  /* 11. STATS — mobile 2×2 grid with micro-stats */
+  @media (max-width: 768px) {
+    .hero-stats {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 1px !important;
+      background: rgba(255,255,255,0.07) !important;
+      border-radius: 10px !important;
+      overflow: hidden !important;
+      margin-top: 28px !important;
+    }
+    .hero-stat {
+      background: #09090B !important;
+      padding: 16px 12px !important;
+      text-align: center !important;
+    }
+    .hero-stats .hero-stat + .hero-stat {
+      border-left: none !important;
+      padding-left: 12px !important;
+    }
+    .hero-stat-n {
+      font-size: 24px !important;
+    }
+    .hero-stat-l {
+      font-size: 9px !important;
     }
   }
 
@@ -2852,16 +2928,6 @@
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
           </h1>
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
-          <div class="hero-mobile-code hero-el" data-delay="400">
-            <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
-            <br>
-            <div><span class="t-dim">{</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"cloudflare-bypass"</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
-            <div><span class="t-dim">}</span></div>
-          </div>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
@@ -2873,6 +2939,16 @@
   <span class="hero-trust-sep">·</span>
   <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.72);font-size:13px;font-weight:500;">GitHub ↗</a>
 </div>
+          <div class="hero-mobile-code hero-el" data-delay="600">
+            <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
+            <br>
+            <div><span class="t-dim">{</span></div>
+            <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+            <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+            <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"cloudflare-bypass"</span><span class="t-dim">,</span></div>
+            <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
+            <div><span class="t-dim">}</span></div>
+          </div>
         </div>
 
         <div class="hero-terminal hero-terminal-el" id="hero-terminal">
@@ -2918,7 +2994,7 @@
           <span class="hero-stat-l">avg latency</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="18" style="color: #F59E0B">18</span>
+          <span class="hero-stat-n" data-count-to="18" style="color: #A78BFA">18</span>
           <span class="hero-stat-l">MCP tools built-in</span>
         </div>
       </div>
@@ -2930,6 +3006,9 @@
         <span><strong>2M+</strong> pages extracted/month</span>
         <span class="hero-proof-sep">·</span>
         <span>Compatible with Claude, GPT-4o, Cursor</span>
+      </div>
+      <div class="hero-scroll-cue" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
     </div>
   </section>
