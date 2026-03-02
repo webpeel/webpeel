@@ -1645,6 +1645,96 @@
     .bar-val,
     .hero-stat-n { font-feature-settings: 'tnum' 1; font-variant-numeric: tabular-nums; }
 
+    /* ══ FINAL PUSH 9.1 → 9.5+ ═════════════════════════ */
+
+    /* I. Hero subhead — stronger presence on mobile, not gray whisper */
+    @media (max-width: 768px) {
+      .hero-sub { color: rgba(255,255,255,0.80) !important; font-size: 17px !important; }
+    }
+    @media (max-width: 480px) {
+      .hero-sub { font-size: 16px !important; }
+      /* Hero CTA fills full width on smallest screens */
+      .hero-ctas { padding: 0 !important; }
+      .hero-ctas .btn-primary { font-size: 16px !important; min-height: 54px !important; }
+    }
+
+    /* J. Mobile pricing — horizontal snap scroll (biggest mobile UX fix) */
+    @media (max-width: 768px) {
+      /* Override the overflow:hidden on pricing-grid from animation layer */
+      .pricing-section .pricing-grid,
+      .pricing-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        scroll-snap-type: x mandatory !important;
+        -webkit-overflow-scrolling: touch !important;
+        gap: 16px !important;
+        max-width: none !important;
+        width: calc(100% + calc(var(--gutter) * 2)) !important;
+        margin-left: calc(var(--gutter) * -1) !important;
+        padding: 8px var(--gutter) 24px !important;
+        scroll-padding-left: var(--gutter) !important;
+        /* hide scrollbar visually */
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+      }
+      .pricing-grid::-webkit-scrollbar { display: none !important; }
+      .price-card {
+        scroll-snap-align: start !important;
+        min-width: min(82vw, 320px) !important;
+        flex-shrink: 0 !important;
+        /* don't constrain to full width */
+        width: auto !important;
+      }
+      .price-card.featured {
+        order: -1 !important;
+        transform: none !important;
+        /* extra visual weight so user knows to start here */
+        border: 2px solid rgba(88,101,242,0.60) !important;
+        box-shadow: 0 0 40px rgba(88,101,242,0.18), 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+      }
+      /* Pricing section needs overflow visible for snap scroll to work */
+      .pricing-section { overflow: visible !important; }
+      /* Scroll hint indicator */
+      .pricing-grid::after {
+        content: '';
+        min-width: calc(var(--gutter) - 16px);
+        flex-shrink: 0;
+      }
+    }
+
+    /* K. Why section mobile — visual structure */
+    @media (max-width: 768px) {
+      .bar-group-title { font-size: 14px !important; }
+      /* Add section label above the chart on mobile */
+      .why-inner > div:last-child::before {
+        content: 'Performance benchmarks';
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255,255,255,0.4);
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+      }
+    }
+
+    /* L. Sticky CTA — hide when near footer/FAQ to avoid blocking content */
+    .mobile-sticky-cta.near-end { display: none !important; }
+
+    /* M. How-steps code block line height */
+    .how-step .mini-code { line-height: 1.7 !important; }
+
+    /* N. Demo section — contained surface ground plane */
+    .demo-card-wrap {
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06),
+                  0 32px 80px rgba(0,0,0,0.5),
+                  0 0 80px rgba(88,101,242,0.06) !important;
+    }
+
   </style>
 </head>
 <body>
@@ -1856,7 +1946,7 @@ webpeel "https://example.com" --readable</div>
         <div class="reveal">
           <div class="section-eyebrow">WHY WEBPEEL</div>
           <h2 class="section-h2 section-h2-dark">Other tools fetch pages.<br><span class="accent">WebPeel reads them.</span></h2>
-          <p class="why-body">JavaScript&#8209;heavy SPAs, dynamic content, authenticated pages — handled automatically. WebPeel escalates from simple HTTP to full browser rendering as needed, so your agent always gets through.</p>
+          <p class="why-body">Any page. Any protection. Auto-handled — so your agent always gets through.</p>
           <ul class="why-checks">
             <li><i class="why-check-icon">✓</i> Handles JS rendering, SPAs, Cloudflare</li>
             <li><i class="why-check-icon">✓</i> 31 domain extractors for structured data</li>
@@ -2456,12 +2546,14 @@ Ready for your AI agent.</div>
       var stickyCta = document.getElementById('mobile-sticky-cta');
       if (!stickyCta) return;
       var heroSection = document.getElementById('hero-section');
+      var footer = document.querySelector('.footer');
       if (!heroSection) return;
       var shown = false;
       var ticking = false;
       function checkSticky() {
         var heroBottom = heroSection.getBoundingClientRect().bottom;
-        var shouldShow = heroBottom < 0;
+        var nearEnd = footer ? footer.getBoundingClientRect().top < window.innerHeight + 100 : false;
+        var shouldShow = heroBottom < 0 && !nearEnd;
         if (shouldShow !== shown) {
           shown = shouldShow;
           stickyCta.classList.toggle('visible', shown);
