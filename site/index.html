@@ -2512,10 +2512,25 @@
       margin: 20px 0 24px !important;
       background: rgba(8,8,16,0.95) !important;
       border: 1px solid rgba(88,101,242,0.28) !important;
-      border-radius: 10px !important;
-      padding: 16px !important;
+      border-radius: 12px !important;
+      padding: 0 !important;
       font-size: 12.5px !important;
       line-height: 1.65 !important;
+      overflow: hidden !important;
+      box-shadow:
+        0 0 30px rgba(99,102,241,0.12),
+        0 16px 32px rgba(0,0,0,0.50) !important;
+    }
+    .mobile-terminal-chrome {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .mobile-terminal-body {
+      padding: 14px 16px;
     }
   }
   @media (min-width: 769px) { .hero-mobile-code { display: none !important; } }
@@ -2788,7 +2803,7 @@
 
   /* 5. STATS — stronger vertical dividers between items */
   .hero-stats .hero-stat + .hero-stat {
-    border-left: 1px solid rgba(255,255,255,0.14) !important;
+    border-left: 1px solid rgba(255,255,255,0.08) !important;
     padding-left: 32px !important;
   }
   @media (max-width: 768px) {
@@ -2980,14 +2995,22 @@
   <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.72);font-size:13px;font-weight:500;">GitHub ↗</a>
 </div>
           <div class="hero-mobile-code hero-el" data-delay="600">
-            <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
-            <br>
-            <div><span class="t-dim">{</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"cloudflare-bypass"</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
-            <div><span class="t-dim">}</span></div>
+            <div class="mobile-terminal-chrome">
+              <div class="terminal-dot r"></div>
+              <div class="terminal-dot y"></div>
+              <div class="terminal-dot g"></div>
+              <span style="font-size:11px;color:rgba(255,255,255,0.35);margin-left:auto;font-family:var(--font-mono);">Terminal</span>
+            </div>
+            <div class="mobile-terminal-body">
+              <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
+              <br>
+              <div><span class="t-dim">{</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"cloudflare-bypass"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
+              <div><span class="t-dim">}</span></div>
+            </div>
           </div>
         </div>
 
@@ -3034,7 +3057,7 @@
           <span class="hero-stat-l">avg latency</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="18" style="color: #818CF8">18</span>
+          <span class="hero-stat-n" data-count-to="18" style="color: #A5B4FC">18</span>
           <span class="hero-stat-l">MCP tools built-in</span>
         </div>
       </div>
