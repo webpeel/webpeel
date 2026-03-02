@@ -2344,6 +2344,99 @@
     color: rgba(255,255,255,0.85);
   }
 
+  /* ══ LOOP-1 ══ */
+
+  /* 1 — Hero subheadline: bump to 20px for 1440px readability */
+  .hero-sub {
+    font-size: 20px !important;
+    line-height: 1.65 !important;
+    color: rgba(255,255,255,0.75) !important;
+  }
+  @media (max-width: 768px) {
+    .hero-sub { font-size: 17px !important; }
+  }
+  @media (max-width: 480px) {
+    .hero-sub { font-size: 16px !important; }
+  }
+
+  /* 2 — Stat labels: proper all-caps tracking */
+  .hero-stat-l {
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.10em !important;
+    color: rgba(255,255,255,0.40) !important;
+    font-weight: 500 !important;
+  }
+
+  /* 3 — Stat numbers: tabular figures + tighter letter-spacing */
+  .hero-stat-n {
+    letter-spacing: -0.04em !important;
+    font-feature-settings: 'tnum' 1 !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+
+  /* 4 — Hero eyebrow badge: left-align on mobile to match heading */
+  @media (max-width: 768px) {
+    .hero-eyebrow {
+      display: inline-block !important;
+      text-align: left !important;
+      /* Badge stays inline-block so it doesn't stretch full-width */
+    }
+    .hero-content { align-items: flex-start !important; }
+  }
+
+  /* 5 — Social proof row: more breathing room after trust line */
+  .hero-proof {
+    margin-top: 20px !important;
+  }
+
+  /* 6 — CTA note: more separation from button */
+  .hero-cta-note {
+    margin-top: 14px !important;
+    color: rgba(255,255,255,0.38) !important;
+    font-size: 12px !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  /* 7 — Terminal card: richer depth shadow + right-side ambient glow */
+  .hero-terminal {
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.08),
+      0 40px 80px -20px rgba(0,0,0,0.9),
+      0 0 120px rgba(88,101,242,0.20),
+      0 0 40px rgba(88,101,242,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  }
+
+  /* 8 — hero::before: add right-side ambient glow to unify with terminal card */
+  .hero::before {
+    background:
+      radial-gradient(ellipse 65% 60% at 22% 28%, rgba(88,101,242,0.40), transparent 70%),
+      radial-gradient(ellipse 55% 50% at 78% 25%, rgba(88,101,242,0.28), transparent 65%),
+      radial-gradient(ellipse 40% 35% at 52% 68%, rgba(88,101,242,0.10), transparent 60%) !important;
+  }
+
+  /* 9 — Stats-note visibility: boost the methodology link */
+  .hero-stats-note {
+    color: rgba(255,255,255,0.30) !important;
+    font-size: 11px !important;
+    letter-spacing: 0.04em !important;
+  }
+  .hero-stats-note a {
+    color: rgba(255,255,255,0.45) !important;
+    text-decoration: underline !important;
+    text-underline-offset: 3px !important;
+  }
+
+  /* 10 — Stats border-dividers: make them more subtle */
+  .hero-stats {
+    border-top: 1px solid rgba(255,255,255,0.06) !important;
+    gap: 48px !important;
+  }
+  @media (max-width: 768px) {
+    .hero-stats { gap: 24px !important; }
+  }
+
   </style>
 </head>
 <body>
@@ -2385,7 +2478,7 @@
             <span class="hero-el" style="display:block;" data-delay="120">Your AI agent just</span>
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
           </h1>
-          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL.<br><strong style="color:#6B73FF;font-size:26px;font-weight:700;letter-spacing:-0.02em;display:block;margin-top:8px;text-shadow:0 0 40px rgba(107,115,255,0.6);">One API call.</strong></p>
+          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL.<br><strong style="color:#818CF8;font-size:20px;font-weight:600;letter-spacing:-0.01em;display:block;margin-top:6px;text-shadow:none;">One API call.</strong></p>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
@@ -2442,15 +2535,15 @@
           <span class="hero-stat-l">uptime SLA</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="97.6" data-count-suffix="%" data-count-decimals="1" style="color: #60a5fa">97.6%</span>
+          <span class="hero-stat-n" data-count-to="97.6" data-count-suffix="%" data-count-decimals="1" style="color: rgba(255,255,255,0.92)">97.6%</span>
           <span class="hero-stat-l">success rate</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="650" data-count-prefix="<" data-count-suffix="ms" style="color: #818cf8">&#60;650ms</span>
+          <span class="hero-stat-n" data-count-to="650" data-count-prefix="<" data-count-suffix="ms" style="color: rgba(255,255,255,0.92)">&#60;650ms</span>
           <span class="hero-stat-l">avg latency</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="18" style="color: #F59E0B">18</span>
+          <span class="hero-stat-n" data-count-to="18" style="color: rgba(255,255,255,0.92)">18</span>
           <span class="hero-stat-l">MCP tools built-in</span>
         </div>
       </div>
