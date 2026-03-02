@@ -2164,6 +2164,72 @@
       letter-spacing: -0.03em !important;
     }
 
+    /* ══ 10/10 FINAL ══ */
+
+    /* 1. Mobile code block visibility */
+    @media (min-width: 769px) { .hero-mobile-code { display: none !important; } }
+    @media (max-width: 768px) { .hero-mobile-code { display: block !important; margin: 20px 0 24px !important; } }
+
+    /* 3. Mobile hero — left-align text */
+    @media (max-width: 768px) {
+      .hero-content { text-align: left !important; align-items: flex-start !important; }
+      .hero h1, .hero-sub, .hero-eyebrow { text-align: left !important; }
+      .hero-ctas { justify-content: flex-start !important; }
+      .hero-stats { justify-content: flex-start !important; }
+      .hero-trust { justify-content: flex-start !important; }
+      .hero-stats-note { text-align: left !important; }
+      .hero-proof { justify-content: flex-start !important; flex-wrap: wrap !important; }
+    }
+
+    /* 4. Background gradient — two focal points + depth */
+    .hero { position: relative; overflow: hidden; }
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 35%, rgba(139,92,246,0.14) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 20%, rgba(59,130,246,0.08) 0%, transparent 70%);
+    }
+    .hero-grid, .hero-content { position: relative; z-index: 1; }
+
+    /* 5. Comparison bars — thin modern style */
+    .bar-track { height: 8px !important; border-radius: 4px !important; background: rgba(255,255,255,0.08) !important; }
+    .bar-fill { height: 100% !important; border-radius: 4px !important; }
+    .bar-fill.accent { background: linear-gradient(90deg, #5865F2, #818CF8) !important; }
+    .bar-fill.muted { background: rgba(255,255,255,0.30) !important; }
+    .bar-row { align-items: center !important; gap: 12px !important; margin-bottom: 14px !important; }
+    .bar-val { font-size: 13px !important; font-weight: 600 !important; color: rgba(255,255,255,0.8) !important; min-width: 40px !important; text-align: right !important; }
+    .bar-label { font-size: 13px !important; color: rgba(255,255,255,0.6) !important; }
+    @media (max-width: 480px) {
+      .bar-track { height: 6px !important; }
+      .bar-val { font-size: 11px !important; min-width: 32px !important; }
+      .bar-label { font-size: 11px !important; }
+    }
+
+    /* 6. Social proof — green dot */
+    .hero-trust-live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 500; }
+    .hero-trust-dot-live { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.7); animation: pulse-green 2s ease-in-out infinite; flex-shrink: 0; }
+    @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 8px rgba(74,222,128,0.7); } 50% { box-shadow: 0 0 14px rgba(74,222,128,1); } }
+    .hero-trust-sep { color: rgba(255,255,255,0.2); margin: 0 4px; font-size: 13px; }
+
+    /* 7. Hamburger touch target */
+    .nav-hamburger { min-width: 44px !important; min-height: 44px !important; padding: 10px !important; margin: -10px -4px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+    .nav-hamburger:active { opacity: 0.6 !important; }
+
+    /* 9. Mobile code block — stronger card border */
+    @media (max-width: 768px) {
+      .hero-mobile-code {
+        background: rgba(10,10,20,0.9) !important;
+        border: 1px solid rgba(88,101,242,0.30) !important;
+        border-radius: 10px !important;
+        padding: 16px !important;
+        box-shadow: 0 0 24px rgba(88,101,242,0.10), 0 4px 16px rgba(0,0,0,0.4) !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -2205,18 +2271,27 @@
             <span class="hero-el" style="display:block;" data-delay="120">Your AI agent just</span>
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
           </h1>
-          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL.<br><strong style="color:#6B73FF;font-size:36px;font-weight:800;letter-spacing:-0.03em;display:block;margin-top:10px;text-shadow:0 0 60px rgba(107,115,255,0.8),0 0 120px rgba(107,115,255,0.4);">One API call.</strong></p>
+          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL.<br><strong style="color:#6B73FF;font-size:26px;font-weight:700;letter-spacing:-0.02em;display:block;margin-top:8px;text-shadow:0 0 40px rgba(107,115,255,0.6);">One API call.</strong></p>
+          <div class="hero-mobile-code hero-el" data-delay="500">
+        <div><span class="t-prompt">$</span> <span style="color:#E2E8F0">npx webpeel "https://stripe.com"</span></div>
+        <br>
+        <div><span class="t-dim">{</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"words"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
+        <div><span class="t-dim">}</span></div>
+      </div>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
           </div>
           <div class="hero-trust hero-el" data-delay="500">
-            <a href="https://www.npmjs.com/package/webpeel" target="_blank" rel="noopener">2k+ weekly downloads</a>
-            <span class="hero-trust-dot">·</span>
-            <a href="/docs/">Docs</a>
-            <span class="hero-trust-dot">·</span>
-            <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">GitHub</a>
-          </div>
+  <span class="hero-trust-live"><span class="hero-trust-dot-live"></span>2k+ weekly downloads</span>
+  <span class="hero-trust-sep">·</span>
+  <a href="/docs/" style="color:rgba(255,255,255,0.55);font-size:13px;">Docs</a>
+  <span class="hero-trust-sep">·</span>
+  <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.55);font-size:13px;">GitHub ↗</a>
+</div>
         </div>
 
         <div class="hero-terminal hero-terminal-el" id="hero-terminal">
@@ -2246,17 +2321,6 @@
       </div>
       </div><!-- /hero-grid -->
 
-      <!-- Mobile: compact code snippet (replaces terminal on small screens) -->
-      <div class="hero-mobile-code hero-el" data-delay="500">
-        <div><span class="t-prompt">$</span> <span style="color:#E2E8F0">npx webpeel "https://stripe.com"</span></div>
-        <br>
-        <div><span class="t-dim">{</span></div>
-        <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
-        <div>&nbsp;&nbsp;<span class="t-key">"words"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
-        <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
-        <div><span class="t-dim">}</span></div>
-      </div>
-
       <div class="hero-stats hero-el" data-delay="600">
         <div class="hero-stat">
           <span class="hero-stat-n" data-count-to="99.9" data-count-suffix="%" data-count-decimals="1" style="color: #4ade80">99.9%</span>
@@ -2271,7 +2335,7 @@
           <span class="hero-stat-l">avg latency</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="18">18</span>
+          <span class="hero-stat-n" data-count-to="18" style="color: #F59E0B">18</span>
           <span class="hero-stat-l">MCP tools built-in</span>
         </div>
       </div>
@@ -2365,8 +2429,8 @@ webpeel "https://example.com" --readable</div>
       <div class="why-inner">
         <!-- Left -->
         <div class="reveal">
-          <div class="section-eyebrow">WHY WEBPEEL</div>
-          <h2 class="section-h2 section-h2-dark">Other tools fetch pages.<br><span class="accent" style="white-space:nowrap;">WebPeel reads them.</span></h2>
+          <div class="section-eyebrow reveal">WHY WEBPEEL</div>
+          <h2 class="section-h2 section-h2-dark reveal">Other tools fetch pages.<br><span class="accent" style="white-space:nowrap;">WebPeel reads them.</span></h2>
           <p class="why-body">Any page. Any protection. Auto-handled — so your agent always gets through.</p>
           <ul class="why-checks">
             <li><i class="why-check-icon">✓</i> Handles JS rendering, SPAs, Cloudflare</li>
@@ -2452,8 +2516,8 @@ Ready for your AI agent.</div>
   <section class="pricing-section" id="pricing">
     <div class="container">
       <div class="pricing-header reveal">
-        <div class="section-eyebrow" style="text-align:center;">PRICING</div>
-        <h2 class="section-h2" style="text-align:center;">Start free. Scale when ready.</h2>
+        <div class="section-eyebrow reveal" style="text-align:center;">PRICING</div>
+        <h2 class="section-h2 reveal" style="text-align:center;">Start free. Scale when ready.</h2>
         <p class="pricing-sub">Every plan includes MCP tools, extraction &amp; search. Scale up when your agent needs more.</p>
       </div>
       <div class="pricing-grid">
@@ -2515,8 +2579,8 @@ Ready for your AI agent.</div>
   <section class="faq-section">
     <div class="container-narrow">
       <div class="reveal" style="text-align:center;">
-        <div class="section-eyebrow" style="margin-bottom:16px;">FAQ</div>
-        <h2 class="section-h2">Common <span class="accent">questions.</span></h2>
+        <div class="section-eyebrow reveal" style="margin-bottom:16px;">FAQ</div>
+        <h2 class="section-h2 reveal">Common <span class="accent">questions.</span></h2>
       </div>
       <div class="faq-list reveal">
         <div class="faq-item">
