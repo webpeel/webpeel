@@ -2938,6 +2938,122 @@
     }
   }
 
+  /* ══ MOTION LAYER — ambient glow, hovers, shimmer ══ */
+
+  /* Animated hero ambient orb — slowly breathes/floats */
+  .hero-ambient-orb {
+    position: absolute;
+    top: -15%;
+    left: -8%;
+    width: 60%;
+    height: 80%;
+    background: radial-gradient(ellipse, rgba(99,102,241,0.13) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+    animation: heroOrbFloat 10s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+  @keyframes heroOrbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+    33%       { transform: translate(2%, 3%) scale(1.06); opacity: 1; }
+    66%       { transform: translate(-1%, 1%) scale(0.96); opacity: 0.8; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-ambient-orb { animation: none !important; }
+  }
+
+  /* CTA button shimmer on hover */
+  .hero-ctas .btn-primary {
+    overflow: hidden !important;
+  }
+  .hero-ctas .btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -120%;
+    width: 55%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.13), transparent);
+    transform: skewX(-15deg);
+    transition: left 0s;
+    pointer-events: none;
+  }
+  .hero-ctas .btn-primary:hover::before {
+    left: 160%;
+    transition: left 0.55s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-ctas .btn-primary::before { display: none !important; }
+  }
+
+  /* Card hover lifts */
+  .how-step {
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease !important;
+  }
+  .how-step:hover {
+    transform: translateY(-5px) !important;
+    box-shadow:
+      0 20px 40px rgba(0,0,0,0.30),
+      0 0 0 1px rgba(99,102,241,0.22),
+      inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    border-color: rgba(99,102,241,0.22) !important;
+  }
+  .price-card {
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out !important;
+  }
+  .price-card:hover {
+    transform: translateY(-5px) !important;
+  }
+  .price-card.featured:hover {
+    box-shadow:
+      0 0 60px rgba(99,102,241,0.28),
+      0 24px 40px rgba(0,0,0,0.40) !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .how-step, .price-card { transition: none !important; }
+    .how-step:hover, .price-card:hover { transform: none !important; }
+  }
+
+  /* Mobile terminal peek — between subhead and CTA */
+  .hero-mobile-peek { display: none; }
+  @media (max-width: 768px) {
+    .hero-mobile-peek {
+      display: block;
+      background: #0C0C14;
+      border: 1px solid rgba(99,102,241,0.22);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      margin: 16px 0 20px;
+      box-shadow: 0 0 24px rgba(99,102,241,0.10), 0 12px 24px rgba(0,0,0,0.40);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hmp-chrome {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.025);
+      border-bottom: 1px solid rgba(255,255,255,0.055);
+    }
+    .hmp-title {
+      font-size: 11px;
+      color: rgba(255,255,255,0.28);
+      margin-left: auto;
+    }
+    .hmp-lines {
+      padding: 10px 14px 28px;
+      line-height: 1.7;
+    }
+    .hmp-fade {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 32px;
+      background: linear-gradient(to bottom, transparent, #0C0C14);
+      pointer-events: none;
+    }
+  }
+
   /* STAT LABELS — legible at all sizes */
   .hero-stat-l {
     font-size: 11px !important;
@@ -2992,6 +3108,8 @@
   <section class="hero" id="hero-section">
     <div class="container">
       <div class="hero-grid" style="position:relative;">
+        <!-- Ambient animated glow orb -->
+        <div class="hero-ambient-orb" aria-hidden="true"></div>
         <!-- Terminal atmospheric glow — explicit element, not pseudo, not box-shadow -->
         <div class="hero-terminal-glow" aria-hidden="true"></div>
         <div class="hero-content">
@@ -3002,6 +3120,19 @@
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
           </h1>
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
+          <!-- Mobile terminal preview — shows product proof before CTA -->
+          <div class="hero-mobile-peek hero-el" data-delay="360" aria-hidden="true">
+            <div class="hmp-chrome">
+              <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+              <span class="hmp-title">Terminal</span>
+            </div>
+            <div class="hmp-lines">
+              <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
+              <div><span class="t-dim">{</span> <span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span> <span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms </span><span class="t-dim">}</span></div>
+            </div>
+            <div class="hmp-fade"></div>
+          </div>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
