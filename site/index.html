@@ -3531,6 +3531,99 @@
       inset 0 1px 0 rgba(255,255,255,0.06) !important;
   }
 
+
+  /* ══ REDESIGN-10: animated hero demo widget + color discipline ══ */
+  .hero-demo-widget {
+    background: #0C0C14;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(99,102,241,0.12),
+      0 0 60px -8px rgba(99,102,241,0.22),
+      0 24px 64px -12px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+  .hdw-chrome {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.03);
+  }
+  .hdw-dots { display: flex; gap: 6px; }
+  .hdw-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .hdw-dot.r { background: #FF5F57; }
+  .hdw-dot.y { background: #FEBC2E; }
+  .hdw-dot.g { background: #28C840; }
+  .hdw-tabs { display: flex; gap: 4px; margin-left: 8px; }
+  .hdw-tab {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: rgba(255,255,255,0.40);
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .hdw-tab:hover { color: rgba(255,255,255,0.70); }
+  .hdw-tab.active {
+    background: rgba(99,102,241,0.15);
+    border-color: rgba(99,102,241,0.35);
+    color: #A5B4FC;
+  }
+  .hdw-body {
+    padding: 18px 20px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.65;
+    min-height: 240px;
+    color: #E2E8F0;
+  }
+  .hdw-cmd-line { margin-bottom: 12px; min-height: 1.5em; color: rgba(255,255,255,0.85); white-space: pre; }
+  .hdw-output .t-key { color: #7DD3FC; }
+  .hdw-output .t-str { color: #86EFAC; }
+  .hdw-output .t-num { color: #FCA5A5; }
+  .hdw-output .t-dim { color: rgba(255,255,255,0.35); }
+  .hdw-footer {
+    padding: 10px 20px 14px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .hdw-try-link {
+    font-size: 12px;
+    color: rgba(165,180,252,0.70);
+    text-decoration: none;
+    transition: color 150ms ease;
+  }
+  .hdw-try-link:hover { color: #A5B4FC; }
+  @media (max-width: 768px) { .hero-demo-widget { display: none; } }
+
+  /* Color discipline — kill purple blobs from non-hero sections */
+  .how-section { background: #050507 !important; }
+  .why-section { background: #070709 !important; }
+  .pricing-section { background: #050507 !important; }
+  .faq-section { background: #070709 !important; }
+  .demo-section { background: #050507 !important; }
+
+  /* Section borders for visual rhythm */
+  .demo-section,
+  .how-section,
+  .why-section,
+  .pricing-section,
+  .faq-section {
+    border-top: 1px solid rgba(255,255,255,0.06) !important;
+  }
+
+  /* Desktop: bigger headline for drama */
+  @media (min-width: 1024px) {
+    .hero h1 { font-size: 72px !important; line-height: 1.06 !important; }
+    .hero-grid { align-items: center !important; gap: 60px !important; }
+    .hero-grid .hero-content { max-width: 520px !important; }
+  }
+
   </style>
 </head>
 <body>
@@ -3611,31 +3704,25 @@
           </div>
         </div>
 
-        <div class="hero-terminal hero-terminal-el" id="hero-terminal">
-        <div class="terminal-chrome">
-          <div class="terminal-dot r"></div>
-          <div class="terminal-dot y"></div>
-          <div class="terminal-dot g"></div>
-          <span class="terminal-tab">Terminal</span>
-        </div>
-        <div class="terminal-body" id="terminal-body">
-          <div id="terminal-static">
-            <div><span class="t-prompt">$</span> <span class="t-cmd">curl "https://api.webpeel.dev/v1/fetch?url=stripe.com" \</span></div>
-            <div style="padding-left:16px"><span class="t-cmd">&nbsp;&nbsp;&nbsp;&nbsp;-H "Authorization: Bearer wp_live_..."</span></div>
-            <br>
-            <div><span class="t-dim">{</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"url"</span><span class="t-dim">:</span> <span class="t-str">"https://stripe.com"</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"cloudflare-bypass"</span><span class="t-dim">,</span></div>
-            <div>&nbsp;&nbsp;<span class="t-key">"content"</span><span class="t-dim">:</span> <span class="t-str">"# Stripe | Financial Infrastructure\n\nStripe is a technology..."</span></div>
-            <div><span class="t-dim">}</span></div>
-            <div><span class="terminal-cursor">|</span></div>
+        <div class="hero-demo-widget" id="hero-demo-widget">
+          <div class="hdw-chrome">
+            <div class="hdw-dots">
+              <span class="hdw-dot r"></span><span class="hdw-dot y"></span><span class="hdw-dot g"></span>
+            </div>
+            <div class="hdw-tabs">
+              <button class="hdw-tab active" data-idx="0">stripe.com</button>
+              <button class="hdw-tab" data-idx="1">wikipedia</button>
+              <button class="hdw-tab" data-idx="2">hackernews</button>
+            </div>
           </div>
-          <div style="display:none" id="terminal-dynamic"></div>
+          <div class="hdw-body">
+            <div id="hdw-cmd" class="hdw-cmd-line"></div>
+            <div id="hdw-output" class="hdw-output"></div>
+          </div>
+          <div class="hdw-footer">
+            <a href="#demo" class="hdw-try-link" onclick="event.preventDefault();document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try your own URL →</a>
+          </div>
         </div>
-      </div>
       </div><!-- /hero-grid -->
 
       <div class="hero-stats-section">
@@ -4453,6 +4540,136 @@ Ready for your AI agent.</div>
     })();
 
   })();
+
+  // ══ HERO DEMO WIDGET ANIMATION ══
+  (function() {
+    var DEMOS = [
+      {
+        cmd: '$ curl "api.webpeel.dev/v1/fetch?url=stripe.com"',
+        lines: [
+          '{',
+          '  "url": "https://stripe.com",',
+          '  "title": "Stripe | Financial Infrastructure",',
+          '  "tokens": 2847,',
+          '  "elapsed": 412,',
+          '  "method": "cloudflare-bypass",',
+          '  "content": "# Stripe | Financial Infrastructure..."',
+          '}'
+        ]
+      },
+      {
+        cmd: '$ curl "api.webpeel.dev/v1/fetch?url=en.wikipedia.org/wiki/AI"',
+        lines: [
+          '{',
+          '  "url": "https://en.wikipedia.org/wiki/AI",',
+          '  "title": "Artificial intelligence - Wikipedia",',
+          '  "tokens": 18420,',
+          '  "elapsed": 380,',
+          '  "method": "fetch",',
+          '  "content": "# Artificial Intelligence..."',
+          '}'
+        ]
+      },
+      {
+        cmd: '$ curl "api.webpeel.dev/v1/fetch?url=news.ycombinator.com"',
+        lines: [
+          '{',
+          '  "url": "https://news.ycombinator.com",',
+          '  "title": "Hacker News",',
+          '  "tokens": 1204,',
+          '  "elapsed": 198,',
+          '  "method": "fetch",',
+          '  "content": "# Hacker News\\n1. Show HN: I built..."',
+          '}'
+        ]
+      }
+    ];
+
+    var currentIdx = 0, cycleTimer = null, hovered = false, animTimer = null;
+
+    function colorLine(raw) {
+      var s = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      s = s.replace(/(&quot;(?:[^&]|&(?!quot;))*&quot;)(?=\s*:)/g, '<span class="t-key">$1</span>');
+      s = s.replace(/:\s*(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, ': <span class="t-str">$1</span>');
+      s = s.replace(/:\s*(\d+)/g, ': <span class="t-num">$1</span>');
+      s = s.replace(/^(\s*[{}]\s*)$/, '<span class="t-dim">$1</span>');
+      return s;
+    }
+
+    function escapeForDisplay(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function runDemo(i) {
+      var w = document.getElementById('hero-demo-widget');
+      if (!w) return;
+      var cmdEl = document.getElementById('hdw-cmd');
+      var outEl = document.getElementById('hdw-output');
+      if (!cmdEl || !outEl) return;
+
+      document.querySelectorAll('.hdw-tab').forEach(function(t, j) {
+        t.classList.toggle('active', j === i);
+      });
+
+      cmdEl.innerHTML = '';
+      outEl.innerHTML = '';
+      if (animTimer) clearTimeout(animTimer);
+
+      var demo = DEMOS[i], charIdx = 0;
+
+      function typeChar() {
+        if (charIdx < demo.cmd.length) {
+          cmdEl.textContent = demo.cmd.substring(0, charIdx + 1) + '\u2588';
+          charIdx++;
+          animTimer = setTimeout(typeChar, 22);
+        } else {
+          cmdEl.textContent = demo.cmd;
+          animTimer = setTimeout(function() { showLine(0); }, 200);
+        }
+      }
+
+      function showLine(j) {
+        if (j >= demo.lines.length) return;
+        var el = document.createElement('div');
+        var escaped = escapeForDisplay(demo.lines[j]);
+        // Re-apply colors after escaping
+        escaped = escaped
+          .replace(/(&quot;[^&]+&quot;)(?=\s*:)/g, '<span class="t-key">$1</span>')
+          .replace(/:\s*(&quot;[^&]+&quot;)/g, ': <span class="t-str">$1</span>')
+          .replace(/:\s*(\d+)/g, ': <span class="t-num">$1</span>')
+          .replace(/^(&amp;|\s*)([\{\}])(\s*)$/g, '$1<span class="t-dim">$2</span>$3');
+        el.innerHTML = escaped;
+        outEl.appendChild(el);
+        animTimer = setTimeout(function() { showLine(j + 1); }, 90);
+      }
+
+      typeChar();
+    }
+
+    function scheduleCycle() {
+      clearTimeout(cycleTimer);
+      cycleTimer = setTimeout(function() {
+        if (!hovered) {
+          currentIdx = (currentIdx + 1) % DEMOS.length;
+          runDemo(currentIdx);
+        }
+        scheduleCycle();
+      }, 8000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var w = document.getElementById('hero-demo-widget');
+      if (!w) return;
+      w.addEventListener('mouseenter', function() { hovered = true; });
+      w.addEventListener('mouseleave', function() { hovered = false; });
+      document.querySelectorAll('.hdw-tab').forEach(function(tab, i) {
+        tab.addEventListener('click', function() { currentIdx = i; runDemo(i); });
+      });
+      runDemo(0);
+      scheduleCycle();
+    });
+  })();
+
   </script>
 </body>
 </html>
