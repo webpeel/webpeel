@@ -2646,6 +2646,35 @@
     .hero-stats { gap: 24px !important; }
   }
 
+  /* ══ LOOP-7 ══ */
+
+  /* Kicker line above badge */
+  .hero-kicker {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.10em !important;
+    color: rgba(255,255,255,0.45) !important;
+    margin: 0 0 12px !important;
+    text-align: inherit !important;
+  }
+
+  /* Nav CTA: match hero button border-radius exactly */
+  .nav-cta {
+    border-radius: 8px !important;
+  }
+
+  /* Mobile terminal: remove padding so chrome spans full width */
+  .hero-mobile-code {
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Mobile: center-align hero for single column */
+  @media (max-width: 768px) {
+    .hero-kicker { text-align: left !important; }
+  }
+
   /* ══ LOOP-6 — FINAL AUTHORITY (placed last, overrides all) ══ */
 
   /* 1 — Stats: white numbers, no color exceptions */
@@ -2783,7 +2812,8 @@
     <div class="container">
       <div class="hero-grid">
         <div class="hero-content">
-          <div class="hero-eyebrow hero-el" data-delay="0">Open Source · 99.9% Uptime · Free Forever</div>
+          <p class="hero-kicker hero-el" data-delay="0">Web Extraction API for AI Agents</p>
+          <div class="hero-eyebrow hero-el" data-delay="60">Open Source · 99.9% Uptime · Free Forever</div>
           <h1>
             <span class="hero-el" style="display:block;" data-delay="120">Your AI agent just</span>
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
@@ -2830,13 +2860,21 @@
       </div><!-- /hero-grid -->
 
       <div class="hero-mobile-code hero-el" data-delay="500">
-        <div><span class="t-prompt">$</span> <span style="color:#E2E8F0">npx webpeel "https://stripe.com"</span></div>
+        <div class="terminal-chrome" style="height:40px;background:#1A1A1F;display:flex;align-items:center;padding:0 14px;gap:7px;margin:-0px;border-radius:12px 12px 0 0;">
+          <div class="terminal-dot r"></div>
+          <div class="terminal-dot y"></div>
+          <div class="terminal-dot g"></div>
+          <span style="font-size:11px;color:rgba(255,255,255,0.35);margin-left:10px;font-family:var(--font-mono);">Terminal</span>
+        </div>
+        <div style="padding:14px 14px 14px;">
+        <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"https://api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
         <br>
         <div><span class="t-dim">{</span></div>
         <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
-        <div>&nbsp;&nbsp;<span class="t-key">"words"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"markdown"</span><span class="t-dim">:</span> <span class="t-str">"# Stripe\nFinancial infrastructure..."</span><span class="t-dim">,</span></div>
         <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
         <div><span class="t-dim">}</span></div>
+        </div>
       </div>
 
       <div class="hero-stats hero-el" data-delay="600">
