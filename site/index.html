@@ -3619,19 +3619,19 @@
       display: contents !important;
     }
     /* Order: kicker(1) eyebrow(2) h1(3) sub(4) WIDGET(5) ctas(6) note(7) trust(8) */
-    .hero-kicker { order: 1 !important; text-align: center !important; width: 100% !important; }
-    .hero-eyebrow { order: 2 !important; align-self: center !important; }
-    .hero h1 { order: 3 !important; text-align: center !important; width: 100% !important; }
-    .hero-sub { order: 4 !important; text-align: center !important; width: 100% !important; }
+    .hero-kicker { order: 1 !important; text-align: center !important; width: 100% !important; margin-bottom: 6px !important; }
+    .hero-eyebrow { order: 2 !important; align-self: center !important; margin-bottom: 10px !important; }
+    .hero h1 { order: 3 !important; text-align: center !important; width: 100% !important; font-size: 38px !important; line-height: 1.12 !important; margin-bottom: 8px !important; }
+    .hero-sub { order: 4 !important; text-align: center !important; width: 100% !important; font-size: 15px !important; margin-bottom: 0 !important; }
     .hero-demo-widget {
       order: 5 !important;
-      margin: 16px 0 20px !important;
+      margin: 14px 0 16px !important;
       border-radius: 12px !important;
       width: 100% !important;
     }
-    .hero-ctas { order: 6 !important; }
-    .hero-cta-note { order: 7 !important; }
-    .hero-trust { order: 8 !important; }
+    .hero-ctas { order: 6 !important; width: 100% !important; margin-top: 0 !important; }
+    .hero-cta-note { order: 7 !important; width: 100% !important; text-align: center !important; margin-top: 6px !important; }
+    .hero-trust { order: 8 !important; width: 100% !important; justify-content: center !important; margin-top: 10px !important; }
 
     .hdw-tabs { font-size: 11px !important; gap: 3px !important; }
     .hdw-tab { padding: 3px 8px !important; font-size: 11px !important; }
@@ -3641,6 +3641,9 @@
     .hdw-run-btn { font-size: 11px !important; padding: 6px 12px !important; }
     .hdw-chrome { padding: 8px 12px !important; gap: 8px !important; }
     .hdw-dot { width: 10px !important; height: 10px !important; }
+
+    /* Tighten mobile hero top padding */
+    .hero { padding-top: 16px !important; }
   }
 
   /* URL input row inside demo widget */
