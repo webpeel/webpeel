@@ -2230,6 +2230,120 @@
       }
     }
 
+
+  /* ══ R2 POLISH ══ */
+
+  /* CHANGE 1 — Mobile code block: appears just below fold as first scroll reward */
+  @media (max-width: 768px) {
+    .hero-mobile-code {
+      display: block !important;
+      margin: 32px 0 24px !important;
+    }
+  }
+  @media (min-width: 769px) {
+    .hero-mobile-code { display: none !important; }
+  }
+
+  /* CHANGE 2 — Terminal font size + contrast improvement */
+  .terminal-body {
+    font-size: 13.5px !important;
+    line-height: 1.7 !important;
+  }
+  .t-key { color: #93C5FD !important; }
+  .t-str { color: #86EFAC !important; }
+  .t-num { color: #FCD34D !important; }
+  .t-cmd { color: #C4B5FD !important; }
+  .t-prompt { color: #60A5FA !important; font-weight: 700 !important; }
+  .t-dim { color: rgba(255,255,255,0.45) !important; }
+  .terminal-cursor {
+    display: inline-block !important;
+    width: 2px !important;
+    height: 14px !important;
+    background: #60A5FA !important;
+    animation: blink 1.2s step-end infinite !important;
+    vertical-align: middle !important;
+    margin-left: 2px !important;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* CHANGE 3 — Button border-radius consistency */
+  .nav-cta, .btn-primary { border-radius: 8px !important; }
+
+  /* CHANGE 4 — Mobile gradient: constrain and focus the glow */
+  @media (max-width: 768px) {
+    .hero::after {
+      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(107,115,255,0.18) 0%, transparent 70%) !important;
+    }
+  }
+
+  /* CHANGE 5 — Mobile spacing: CTA micro-copy + social proof gap */
+  @media (max-width: 768px) {
+    .hero-cta-note {
+      display: block !important;
+      margin-bottom: 20px !important;
+      font-size: 12px !important;
+      color: rgba(255,255,255,0.45) !important;
+    }
+    .hero-trust { margin-top: 4px !important; }
+  }
+
+  /* CHANGE 6 — Why/comparison section: bar label readability */
+  .bar-label {
+    font-size: 13px !important;
+    color: rgba(255,255,255,0.70) !important;
+    font-weight: 500 !important;
+    min-width: 90px !important;
+  }
+  .bar-group-title {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: rgba(255,255,255,0.55) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    margin-bottom: 16px !important;
+  }
+  .bar-val {
+    color: rgba(255,255,255,0.85) !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+  }
+  .bar-fill.accent + span,
+  .bar-row:has(.bar-fill.accent) .bar-label {
+    color: rgba(255,255,255,0.90) !important;
+    font-weight: 600 !important;
+  }
+
+  /* CHANGE 7 — Demo chips */
+  .demo-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .demo-chip-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.40);
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .demo-chip {
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+  .demo-chip:hover {
+    background: rgba(88,101,242,0.15);
+    border-color: rgba(88,101,242,0.40);
+    color: rgba(255,255,255,0.85);
+  }
+
   </style>
 </head>
 <body>
@@ -2272,15 +2386,6 @@
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
           </h1>
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL.<br><strong style="color:#6B73FF;font-size:26px;font-weight:700;letter-spacing:-0.02em;display:block;margin-top:8px;text-shadow:0 0 40px rgba(107,115,255,0.6);">One API call.</strong></p>
-          <div class="hero-mobile-code hero-el" data-delay="500">
-        <div><span class="t-prompt">$</span> <span style="color:#E2E8F0">npx webpeel "https://stripe.com"</span></div>
-        <br>
-        <div><span class="t-dim">{</span></div>
-        <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
-        <div>&nbsp;&nbsp;<span class="t-key">"words"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
-        <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
-        <div><span class="t-dim">}</span></div>
-      </div>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <span class="hero-cta-note">No credit card · 500 fetches/week free · Cancel anytime</span>
@@ -2320,6 +2425,16 @@
         </div>
       </div>
       </div><!-- /hero-grid -->
+
+      <div class="hero-mobile-code hero-el" data-delay="500">
+        <div><span class="t-prompt">$</span> <span style="color:#E2E8F0">npx webpeel "https://stripe.com"</span></div>
+        <br>
+        <div><span class="t-dim">{</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"words"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
+        <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
+        <div><span class="t-dim">}</span></div>
+      </div>
 
       <div class="hero-stats hero-el" data-delay="600">
         <div class="hero-stat">
@@ -2373,6 +2488,13 @@
               <span class="demo-btn-text">Extract ↗</span>
               <span class="demo-spinner" style="display:none;">⟳</span>
             </button>
+          </div>
+          <div class="demo-chips">
+            <span class="demo-chip-label">Try:</span>
+            <button class="demo-chip" data-url="https://stripe.com" type="button">Stripe</button>
+            <button class="demo-chip" data-url="https://openai.com" type="button">OpenAI</button>
+            <button class="demo-chip" data-url="https://github.com/microsoft/vscode" type="button">GitHub README</button>
+            <button class="demo-chip" data-url="https://en.wikipedia.org/wiki/Artificial_intelligence" type="button">Wikipedia</button>
           </div>
         </div>
         <div class="demo-result" id="demo-result">
@@ -2793,6 +2915,17 @@ Ready for your AI agent.</div>
     }
 
     extractBtn.addEventListener('click', runExtract);
+
+    // Demo chips — click to prefill URL and run
+    document.querySelectorAll('.demo-chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        if (urlDisplay) {
+          urlDisplay.textContent = chip.dataset.url;
+          runExtract();
+        }
+      });
+    });
+
     setTimeout(runExtract, 600);
   })();
   </script>
