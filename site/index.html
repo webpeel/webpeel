@@ -3222,6 +3222,91 @@
     }
   }
 
+
+  /* ══ QUALITY-PASS — stats bg, CTA width, badge, contrasts ══ */
+
+  /* 1. Stats: remove grayish card container bg — was rgba(255,255,255,0.07) creating a
+        visibly lighter card against #050507 page bg. Use transparent container + individual
+        cell cards instead for a cleaner, consistent dark look. */
+  @media (max-width: 768px) {
+    .hero-stats {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      overflow: visible !important;
+      gap: 10px !important;
+    }
+    .hero-stat {
+      background: rgba(255,255,255,0.04) !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      border-radius: 10px !important;
+      padding: 18px 14px !important;
+      text-align: left !important;
+    }
+    .hero-stats .hero-stat + .hero-stat {
+      border-left: 1px solid rgba(255,255,255,0.08) !important;
+      padding-left: 14px !important;
+    }
+    /* Stat labels: 10px was unreadable — bump to 12px */
+    .hero-stat-l {
+      font-size: 12px !important;
+      color: rgba(255,255,255,0.55) !important;
+      letter-spacing: 0.02em !important;
+    }
+  }
+
+  /* 2. CTA button on mobile: was align-items:stretch + width:100% → full bleed edge-to-edge.
+        Center it with a max-width so it reads as a button not a form input. */
+  @media (max-width: 768px) {
+    .hero-ctas {
+      align-items: center !important;
+    }
+    .hero-ctas .btn-primary {
+      width: auto !important;
+      min-width: 270px !important;
+      max-width: 340px !important;
+    }
+  }
+
+  /* 3. Kicker/overline: rgba(165,180,252,0.55) was too dim — bump to 0.80 */
+  .hero-kicker {
+    color: rgba(165,180,252,0.80) !important;
+  }
+
+  /* 4. Badge/eyebrow: near-invisible with 4% bg and 10% border — strengthen both */
+  .hero-eyebrow {
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    color: rgba(255,255,255,0.82) !important;
+  }
+
+  /* 5. Social proof "Used by..." — was 12px + rgba(255,255,255,0.38), footnote-tiny */
+  .hero-proof {
+    font-size: 13px !important;
+    color: rgba(255,255,255,0.55) !important;
+    margin-top: 20px !important;
+    gap: 6px !important;
+  }
+  .hero-proof strong {
+    color: rgba(255,255,255,0.82) !important;
+  }
+  @media (max-width: 768px) {
+    .hero-proof {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 4px !important;
+    }
+    .hero-proof-sep {
+      display: none !important;
+    }
+  }
+
+  /* 6. Stats note: slightly more visible */
+  .hero-stats-note {
+    opacity: 0.50 !important;
+    font-size: 11px !important;
+  }
+
   </style>
 </head>
 <body>
