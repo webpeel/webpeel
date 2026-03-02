@@ -2645,25 +2645,27 @@
     }
   }
 
-  /* 2. CTA BUTTON — gradient + pressable depth + glow cast */
+  /* 2. CTA BUTTON — gradient + pressable depth + strong glow cast */
   .hero-ctas .btn-primary {
-    background: linear-gradient(180deg, #7C7FF5 0%, #5B5BD6 100%) !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: linear-gradient(180deg, #8B8EF7 0%, #6B6FF5 40%, #5558E8 100%) !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
     border-radius: 10px !important;
     box-shadow:
       0 0 0 1px rgba(99,102,241,0.40),
-      0 1px 2px rgba(0,0,0,0.40),
-      0 8px 24px rgba(99,102,241,0.38),
-      inset 0 1px 0 rgba(255,255,255,0.20) !important;
+      0 0 50px rgba(99,102,241,0.55),
+      0 0 100px rgba(99,102,241,0.18),
+      0 8px 24px rgba(0,0,0,0.40),
+      inset 0 1px 0 rgba(255,255,255,0.22) !important;
     min-width: 280px !important;
   }
   .hero-ctas .btn-primary:hover {
-    background: linear-gradient(180deg, #8B8EF7 0%, #6466E8 100%) !important;
+    background: linear-gradient(180deg, #9B9EF9 0%, #7B7EF7 40%, #6568F0 100%) !important;
     box-shadow:
-      0 0 0 1px rgba(99,102,241,0.50),
-      0 1px 2px rgba(0,0,0,0.40),
-      0 14px 36px rgba(99,102,241,0.48),
-      inset 0 1px 0 rgba(255,255,255,0.24) !important;
+      0 0 0 1px rgba(99,102,241,0.55),
+      0 0 65px rgba(99,102,241,0.65),
+      0 0 120px rgba(99,102,241,0.25),
+      0 12px 32px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.28) !important;
     transform: translateY(-1px) !important;
   }
   @media (max-width: 768px) {
@@ -2704,9 +2706,9 @@
     margin-bottom: 10px !important;
   }
 
-  /* 5. STATS — vertical dividers between items */
+  /* 5. STATS — stronger vertical dividers between items */
   .hero-stats .hero-stat + .hero-stat {
-    border-left: 1px solid rgba(255,255,255,0.08) !important;
+    border-left: 1px solid rgba(255,255,255,0.14) !important;
     padding-left: 32px !important;
   }
   @media (max-width: 768px) {
