@@ -2589,9 +2589,42 @@
     .hero-ctas .btn-primary { min-width: 0 !important; width: 100% !important; }
   }
 
-  /* Trust row */
-  .hero-trust-live { color: rgba(255,255,255,0.82) !important; font-weight: 600 !important; }
-  .hero-trust-sep { color: rgba(255,255,255,0.18) !important; margin: 0 6px !important; }
+  /* Trust row — unified proof statement */
+  .hero-trust {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .hero-trust-live {
+    color: rgba(255,255,255,0.75) !important;
+    font-weight: 500 !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hero-trust-dot-live {
+    width: 6px;
+    height: 6px;
+    background: #4ade80;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .hero-trust-sep {
+    color: rgba(255,255,255,0.28) !important;
+    margin: 0 4px !important;
+    font-weight: 300;
+  }
+  .hero-trust a {
+    color: rgba(255,255,255,0.68) !important;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .hero-trust a:hover {
+    color: rgba(255,255,255,0.90) !important;
+  }
 
   /* ══ GLOBAL NOISE TEXTURE — adds premium tactile depth ══ */
   body::after {
@@ -2678,23 +2711,22 @@
     }
   }
 
-  /* 3. TERMINAL — glass depth system (layered shadows + inset highlight) */
+  /* 3. TERMINAL — maximum depth: visible border glow + layered shadows */
   #hero-terminal, .hero-terminal {
-    background: #0D0D14 !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
+    background: #0C0C14 !important;
+    border: 1px solid rgba(99,102,241,0.25) !important;
     border-radius: 14px !important;
     box-shadow:
-      0 0 0 1px rgba(99,102,241,0.14),
-      0 32px 64px rgba(0,0,0,0.65),
-      0 8px 16px rgba(0,0,0,0.45),
-      0 0 60px rgba(99,102,241,0.14),
-      0 0 120px rgba(99,102,241,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.08) !important;
-    backdrop-filter: blur(2px) !important;
+      0 0 0 1px rgba(99,102,241,0.18),
+      0 0 40px rgba(99,102,241,0.22),
+      0 0 100px rgba(99,102,241,0.10),
+      0 32px 64px rgba(0,0,0,0.70),
+      0 8px 16px rgba(0,0,0,0.50),
+      inset 0 1px 0 rgba(255,255,255,0.10) !important;
   }
   .terminal-chrome {
-    background: rgba(255,255,255,0.03) !important;
-    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+    background: rgba(255,255,255,0.04) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.07) !important;
   }
 
   /* 4. BADGE — more breathing room below */
