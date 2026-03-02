@@ -4098,109 +4098,90 @@
 
   /* O. Dot grid: clip to hero only — hero already overflow:hidden now */
 
-  /* ══ POLISH-15: simplify, focus on spacing and clarity ══ */
+  /* ══ POLISH-16: RADICAL simplification — pure dark, minimal decoration ══ */
 
-  /* 1. Navbar: simple dark background with subtle border (no excessive blur) */
-  nav {
-    background: rgba(5,5,7,0.95) !important;
-    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 100 !important;
+  /* 1. Kill ALL decorative background elements */
+  .hero { background: #080810 !important; }
+  section.hero { background: #080810 !important; }
+
+  /* 2. Kill noise texture completely */
+  body::after { opacity: 0 !important; display: none !important; }
+
+  /* 3. Kill ambient glow orbs */
+  .hero-ambient-orb { display: none !important; }
+  .hero-card-bloom { display: none !important; }
+  .hero-terminal-glow { display: none !important; }
+
+  /* 4. Kill blue glow blobs from hero background */
+  .hero::before,
+  .hero::after,
+  .hero-grid::before,
+  .hero-grid::after {
+    display: none !important;
+    background: none !important;
   }
 
-  /* 2. CTA: clean shadow, no excessive layering */
-  .btn-primary,
-  .hero-ctas .btn-primary,
-  .mobile-sticky-cta .btn-primary {
-    background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
-    box-shadow: 0 8px 16px rgba(99,102,241,0.25) !important;
-  }
-  .btn-primary:hover {
-    box-shadow: 0 12px 24px rgba(99,102,241,0.35) !important;
-  }
+  /* 5. Nav: solid dark, minimal */
+  nav { background: #080810 !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
 
-  /* 3. Hero background: clean, no vignette mask (keep it simple) */
-  .hero {
-    background:
-      radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px),
-      radial-gradient(ellipse 900px 550px at 18% 45%, rgba(99,102,241,0.11) 0%, rgba(99,102,241,0.03) 50%, transparent 72%),
-      radial-gradient(circle at 88% 12%, rgba(139,92,246,0.07) 0%, transparent 42%),
-      #050507 !important;
-    background-size: 24px 24px, 100% 100%, 100% 100%, 100% 100% !important;
+  /* 6. CTA: flat color, no gradient, clean */
+  .btn-primary, .hero-ctas .btn-primary, .mobile-sticky-cta .btn-primary {
+    background: #5865F2 !important;
+    box-shadow: 0 4px 12px rgba(88,101,242,0.25) !important;
+    border: none !important;
   }
+  .btn-primary:hover { box-shadow: 0 8px 20px rgba(88,101,242,0.35) !important; }
 
-  /* 4. Eyebrow: simple pill styling (no indigo glow competing) */
-  .hero-eyebrow {
-    background: transparent !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-    border-radius: 9999px !important;
-    padding: 6px 14px !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.05em !important;
-    color: rgba(255,255,255,0.65) !important;
-  }
-
-  /* 5. Hero typography: increase spacing between elements */
+  /* 7. Hero layout and typography — clean spacing */
   @media (min-width: 769px) {
-    .hero-kicker { margin-bottom: 14px !important; }
-    .hero-eyebrow { margin-bottom: 20px !important; }
-    .hero h1 { margin-bottom: 32px !important; font-size: 76px !important; }
+    .hero h1 { margin-bottom: 28px !important; font-size: 72px !important; line-height: 1.08 !important; }
     .hero-sub {
-      font-size: 18px !important;
-      line-height: 1.6 !important;
+      font-size: 17px !important;
+      line-height: 1.62 !important;
       color: rgba(255,255,255,0.65) !important;
-      margin-bottom: 40px !important;
-      max-width: 36ch !important;
+      margin-bottom: 36px !important;
+      max-width: 35ch !important;
     }
+    .hero-eyebrow { margin-bottom: 18px !important; }
+    .hero-kicker { margin-bottom: 10px !important; }
   }
 
-  /* 6. Demo widget: subtle depth (no excessive shadows) */
+  /* 8. Demo widget: clean, minimal design */
   .hero-demo-widget {
-    background: rgba(12,12,22,0.95) !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    border-radius: 14px !important;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.30) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
+    background: rgba(15,15,27,0.8) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.40) !important;
   }
 
-  /* 7. Mobile: proper spacing and sizing */
-  @media (max-width: 768px) {
-    .hero-kicker { margin-bottom: 12px !important; }
-    .hero-eyebrow { margin-bottom: 16px !important; }
-    .hero h1 { margin-bottom: 16px !important; font-size: 44px !important; }
-    .hero-sub { margin-bottom: 24px !important; max-width: 32ch !important; }
-    .hero-ctas { margin-top: 28px !important; }
-    .hero-ctas .btn-primary {
-      padding: 16px 28px !important;
-      font-size: 15px !important;
-      border-radius: 10px !important;
-      min-height: 54px !important;
-    }
-  }
-
-  /* 8. Sign In: ghost style (secondary) */
-  .nav-cta {
+  /* 9. Sign In button: secondary, minimal */
+  .nav-cta { 
     background: transparent !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    color: rgba(255,255,255,0.75) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: rgba(255,255,255,0.70) !important;
     font-weight: 500 !important;
-    border-radius: 8px !important;
   }
-  .nav-cta:hover {
-    background: rgba(255,255,255,0.08) !important;
-    border-color: rgba(255,255,255,0.25) !important;
-    color: rgba(255,255,255,0.92) !important;
+  .nav-cta:hover { background: rgba(255,255,255,0.06) !important; }
+
+  /* 10. Mobile: proper spacing, hide decorative glow */
+  @media (max-width: 768px) {
+    .hero { background: #080810 !important; }
+    .hero h1 { margin-bottom: 14px !important; font-size: 42px !important; }
+    .hero-sub { margin-bottom: 20px !important; }
+    .hero-ctas .btn-primary { padding: 16px 24px !important; min-height: 52px !important; }
+    /* Hide the truncated mobile terminal — Stripe would hide it entirely on mobile */
+    .hero-mobile-code { display: none !important; }
   }
 
-  /* 9. Stats: clear separator and better spacing */
-  .hero-stats-section {
-    border-top: 1px solid rgba(255,255,255,0.08) !important;
-    margin-top: 56px !important;
-    padding-top: 40px !important;
-  }
+  /* 11. Stats section: clear separator */
+  .hero-stats-section { border-top: 1px solid rgba(255,255,255,0.08) !important; margin-top: 48px !important; padding-top: 32px !important; }
+
+  /* 12. Eyebrow: minimal design */
+  .hero-eyebrow { background: transparent !important; border: 1px solid rgba(255,255,255,0.10) !important; }
+
+  /* 13. Reduce overall visual noise — remove all decorative gradients from non-product elements */
+  .hero-stat { background: transparent !important; }
+  .hero-compat { background: transparent !important; }
 
   /* ══ POLISH-14: unified radius, body weight, stats separator, nav, mobile code fix ══ */
 
