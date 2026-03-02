@@ -3905,6 +3905,32 @@
   .hero-trust a { color: rgba(255,255,255,0.68) !important; font-size: 13px !important; }
   .hero-trust-sep { color: rgba(255,255,255,0.20) !important; }
 
+  /* Stats bar: labels same weight as numbers — answer "X% of WHAT?" immediately */
+  .hero-stat-l {
+    font-size: 13px !important;
+    color: rgba(255,255,255,0.60) !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.01em !important;
+    margin-top: 4px !important;
+  }
+  /* Kicker: this is orienting text, not decoration — needs to be readable */
+  .hero-kicker {
+    font-size: 12px !important;
+    letter-spacing: 0.10em !important;
+    color: rgba(165,180,252,0.85) !important;
+    font-weight: 600 !important;
+  }
+
+  /* Label demo widget so there's no false affordance ambiguity */
+  .hdw-chrome::after {
+    content: 'Live Demo ↓';
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: rgba(165,180,252,0.50);
+    margin-left: auto;
+    letter-spacing: 0.05em;
+  }
+
   /* Boost noise texture opacity */
   body::after { opacity: 0.032 !important; }
 
@@ -3981,7 +4007,7 @@
         <a href="/docs/">Docs</a>
         <a href="/pricing">Pricing</a>
         <a href="https://github.com/webpeel/webpeel" class="ext" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://app.webpeel.dev/signup" class="nav-cta">Start Free →</a>
+        <a href="https://app.webpeel.dev/login" class="nav-cta">Sign In</a>
       </div>
       <button class="nav-hamburger" id="hamburger-btn" aria-label="Toggle menu">
         <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
