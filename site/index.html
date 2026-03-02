@@ -3381,6 +3381,59 @@
     }
   }
 
+  /* ══ QUALITY-PASS-3 — terminal truncation, desktop spacing, terminal depth ══ */
+
+  /* 14. Mobile terminal: "Infrastructure" breaks mid-word. Shrink font + no word-break. */
+  @media (max-width: 480px) {
+    .hero-mobile-code .mobile-terminal-body {
+      font-size: 11px !important;
+      word-break: normal !important;
+      overflow-wrap: break-word !important;
+    }
+    .hero-mobile-code .mobile-terminal-body .t-str {
+      font-size: 10.5px !important;
+    }
+  }
+
+  /* 15. Desktop: tighten hero vertical rhythm.
+        CTA margin, trust bar margin, stats section all compacted. */
+  @media (min-width: 769px) {
+    .hero-ctas {
+      margin-top: 20px !important;
+    }
+    .hero-cta-note {
+      margin-top: 10px !important;
+    }
+    .hero-trust {
+      margin-top: 8px !important;
+    }
+    .hero-stats-section {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
+    .hero-stats-divider {
+      margin-bottom: 12px !important;
+    }
+    .hero-stats {
+      margin-top: 8px !important;
+      padding-top: 12px !important;
+      padding-bottom: 16px !important;
+    }
+    .hero-proof {
+      margin-top: 12px !important;
+      margin-bottom: 0 !important;
+    }
+  }
+
+  /* 16. Terminal card: add grounding border + subtle inner glow so it lifts off bg */
+  #hero-terminal, .hero-terminal {
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.04),
+      0 16px 48px -8px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  }
+
   </style>
 </head>
 <body>
@@ -3452,7 +3505,7 @@
               <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
               <br>
               <div><span class="t-dim">{</span></div>
-              <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infra…"</span><span class="t-dim">,</span></div>
               <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
               <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"cloudflare-bypass"</span><span class="t-dim">,</span></div>
               <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
