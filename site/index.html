@@ -5634,7 +5634,7 @@
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
-            <a href="#features" class="btn-ghost">How It Works ↓</a>
+            <a href="#features" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.20);color:rgba(255,255,255,0.85);border-radius:8px;text-decoration:none;font-weight:500;transition:all 150ms ease;">How It Works ↓</a>
           </div>
           <p class="hero-cta-note hero-el" data-delay="460">No credit card · 500 fetches/week free</p>
           <div class="hero-trust hero-el" data-delay="500">
@@ -5800,9 +5800,10 @@
           </div>
         </div>
         </div><!-- /demo-card-wrap -->
-        <div class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:40px;">
-          <a href="https://app.webpeel.dev/signup" style="display:inline-flex;align-items:center;gap:8px;padding:14px 36px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(180deg,#6B73FF 0%,#5865F2 50%,#4752C4 100%);border-radius:8px;text-decoration:none;box-shadow:0 0 0 1px rgba(99,102,241,0.4),0 8px 24px rgba(99,102,241,0.5);transition:transform 150ms ease,box-shadow 150ms ease;">Get Your Free API Key →</a>
-          <p style="color:rgba(255,255,255,0.40);font-size:13px;margin-top:12px;">No credit card required · 500 fetches/week free</p>
+        <div class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:56px;padding:48px 0 24px;">
+          <p style="color:rgba(255,255,255,0.65);font-size:15px;margin-bottom:28px;max-width:500px;margin-left:auto;margin-right:auto;">Ready to extract any URL? Start free in seconds. No credit card, no limits on the free tier.</p>
+          <a href="https://app.webpeel.dev/signup" style="display:inline-flex;align-items:center;gap:8px;padding:16px 48px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(180deg,#6B73FF 0%,#5865F2 50%,#4752C4 100%);border-radius:8px;text-decoration:none;box-shadow:0 0 0 1px rgba(99,102,241,0.4),0 8px 24px rgba(99,102,241,0.5);transition:transform 150ms ease,box-shadow 150ms ease;">Get Your Free API Key →</a>
+          <p style="color:rgba(255,255,255,0.35);font-size:12px;margin-top:16px;">500 fetches/week · Full feature access</p>
         </div>
       </div>
     </div>
@@ -5835,7 +5836,7 @@ webpeel "https://example.com" --readable</div>
           <h3>Integrate</h3>
           <p>Clean markdown, metadata, structured data — ready for your agent in milliseconds.</p>
           <div class="mini-code"><span style="color:#818CF8;">import</span> { peel } <span style="color:#818CF8;">from</span> <span style="color:#86EFAC;">'webpeel'</span>
-<span style="color:#818CF8;">const</span> page = <span style="color:#818CF8;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
+<span style="color:#818CF8;">const</span> page = <span style="color:#818CF8;">await</span> peel(<span style="color:#86EFAC;">'stripe.com'</span>)</div>
         </div>
       </div>
     </div>
@@ -5847,7 +5848,7 @@ webpeel "https://example.com" --readable</div>
       <div class="reveal" style="text-align:center;">
         <div class="section-eyebrow">FEATURES</div>
         <h2 class="section-h2">Everything your AI agent <span class="accent">needs to browse.</span></h2>
-        <p style="color:rgba(255,255,255,0.45);font-size:15px;max-width:520px;margin:16px auto 0;">One API. Six superpowers. Built from the ground up for AI workflows and agents.</p>
+        <p style="color:rgba(255,255,255,0.45);font-size:15px;max-width:520px;margin:16px auto 0;">Extract structured content from anywhere. Built by developers, for developers. Everything you need for production AI agents.</p>
       </div>
 
       <div class="feat-cards-grid">
@@ -5868,22 +5869,18 @@ webpeel "https://example.com" --readable</div>
           <div class="feat-card-desc">JS rendering, Cloudflare bypass, paywall handling — all automatic. Just pass the URL.</div>
         </div>
 
-        <!-- Card 2: Design Analysis -->
+        <!-- Card 2: Deep Research Agent -->
         <div class="feat-card reveal" data-delay="2">
-          <div class="feat-card-mock">
-            <div class="fc2-swatches">
-              <div class="fc2-dot"></div>
-              <div class="fc2-dot"></div>
-              <div class="fc2-dot"></div>
-              <div class="fc2-dot"></div>
-            </div>
-            <div class="fc2-font-row">
-              <span class="fc2-font-name">Inter</span>
-              <span class="fc2-font-weight">weight: 800 · primary</span>
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">$ research "AI trends 2025"</div>
+            <div style="color:rgba(255,255,255,0.50);">Searching 47 sources...</div>
+            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
+              <div style="color:#A5B4FC;margin-bottom:4px;">→ 3 synthesis reports</div>
+              <div style="color:#A5B4FC;">→ Key facts extracted</div>
             </div>
           </div>
-          <div class="feat-card-title">Design Analysis</div>
-          <div class="feat-card-desc">Extract color palettes, typography, and design tokens — ready for design systems.</div>
+          <div class="feat-card-title">Research Agent</div>
+          <div class="feat-card-desc">Built-in deep research agent synthesizes info from 40+ sources into actionable insights for your AI.</div>
         </div>
 
         <!-- Card 3: AI-Ready Markdown -->
