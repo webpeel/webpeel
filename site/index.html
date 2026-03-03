@@ -4493,6 +4493,64 @@
   .hdw-view-link:hover { text-decoration: underline; }
   .hdw-view-link.visible { opacity: 1; }
 
+  /* ══ FINAL-OVERRIDES: highest specificity — always wins cascade ══════ */
+
+  /* Ghost step numbers: MUST be last to override TOP-POLISH 56px */
+  .how-step { position: relative !important; overflow: hidden !important; }
+  .how-step-num {
+    font-size: 130px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    opacity: 0.07 !important;
+    position: absolute !important;
+    top: 0px !important;
+    right: 8px !important;
+    bottom: auto !important;
+    left: auto !important;
+    color: #ffffff !important;
+    letter-spacing: -0.06em !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-bottom: none !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+    user-select: none !important;
+    width: auto !important;
+    display: block !important;
+  }
+  .how-step h3,
+  .how-step p,
+  .how-step .mini-code { position: relative !important; z-index: 1 !important; }
+
+  /* Final CTA: radial glow — MUST be last to override BOTTOM-POLISH */
+  .final-cta {
+    background:
+      radial-gradient(ellipse 900px 450px at 50% 0%, rgba(88,101,242,0.22) 0%, transparent 60%),
+      #09090d !important;
+    border-top: 1px solid rgba(88,101,242,0.20) !important;
+  }
+
+  /* Comparison bars: 12px — MUST be last */
+  .bar-track { height: 12px !important; border-radius: 999px !important; background: rgba(255,255,255,0.07) !important; }
+  .bar-fill { height: 12px !important; border-radius: 999px !important; }
+  .bar-fill.accent { background: linear-gradient(90deg, #5865F2, #818CF8) !important; box-shadow: 0 0 14px rgba(88,101,242,0.50) !important; }
+  .bar-fill.muted { background: rgba(255,255,255,0.18) !important; }
+  .bar-val { font-weight: 800 !important; font-size: 15px !important; color: rgba(255,255,255,0.90) !important; }
+
+  /* Stats dividers: visible */
+  .hero-stat + .hero-stat::before { background: rgba(255,255,255,0.14) !important; }
+
+  /* Feature card accent strips: 3px visible */
+  .feat-card::before { height: 3px !important; z-index: 2 !important; }
+
+  /* AI ecosystem edge fades */
+  .ai-ecosystem-inner {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+    mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────── */
+
   /* ── DESIGN-V2: hero refinements — typography, color discipline, CTAs ── */
   /* pulse-dot keyframe — accent-colored, used by hero-kicker::before */
   @keyframes pulse-dot {
@@ -5266,6 +5324,85 @@
   font-weight: 600 !important;
   padding: 20px 0 !important;
   color: rgba(255,255,255,0.85) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ABSOLUTE-FINAL: Last CSS in file — definitively wins all cascade
+   ════════════════════════════════════════════════════════════════ */
+
+/* 1. Ghost step numbers — 130px watermark behind card content */
+.how-step { position: relative !important; overflow: hidden !important; }
+.how-step-num {
+  position: absolute !important;
+  top: 0 !important; right: 12px !important;
+  bottom: auto !important; left: auto !important;
+  font-size: 130px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  opacity: 0.07 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.06em !important;
+  padding: 0 !important; margin: 0 !important;
+  border-bottom: none !important;
+  pointer-events: none !important; user-select: none !important;
+  z-index: 0 !important; width: auto !important;
+}
+.how-step h3,
+.how-step p,
+.how-step .mini-code { position: relative !important; z-index: 1 !important; }
+
+/* 2. Final CTA: radial glow from top */
+.final-cta {
+  background:
+    radial-gradient(ellipse 900px 420px at 50% 0%, rgba(88,101,242,0.22) 0%, transparent 62%),
+    #09090d !important;
+  border-top: 1px solid rgba(88,101,242,0.20) !important;
+}
+
+/* 3. Comparison bars: 12px with glow */
+.bar-track { height: 12px !important; border-radius: 999px !important; background: rgba(255,255,255,0.07) !important; }
+.bar-fill { height: 12px !important; border-radius: 999px !important; }
+.bar-fill.accent { background: linear-gradient(90deg, #5865F2, #818CF8) !important; box-shadow: 0 0 14px rgba(88,101,242,0.50) !important; }
+.bar-fill.muted { background: rgba(255,255,255,0.18) !important; }
+.bar-val { font-size: 15px !important; font-weight: 800 !important; color: rgba(255,255,255,0.90) !important; }
+.bar-label { font-size: 14px !important; }
+.bar-label.hl { color: #fff !important; font-weight: 700 !important; }
+
+/* 4. Feature card rainbow accent strips: 3px */
+.feat-card::before { height: 3px !important; }
+.feat-card:nth-child(1)::before { background: linear-gradient(90deg, #818CF8, #60A5FA) !important; }
+.feat-card:nth-child(2)::before { background: linear-gradient(90deg, #F472B6, #A78BFA) !important; }
+.feat-card:nth-child(3)::before { background: linear-gradient(90deg, #34D399, #60A5FA) !important; }
+.feat-card:nth-child(4)::before { background: linear-gradient(90deg, #FBBF24, #F87171) !important; }
+.feat-card:nth-child(5)::before { background: linear-gradient(90deg, #A78BFA, #818CF8) !important; }
+.feat-card:nth-child(6)::before { background: linear-gradient(90deg, #60A5FA, #34D399) !important; }
+
+/* 5. Stats: visible dividers */
+.hero-stat + .hero-stat::before { background: rgba(255,255,255,0.14) !important; }
+
+/* 6. Nav ghost button: visible border */
+.nav-cta { border-color: rgba(255,255,255,0.28) !important; }
+
+/* 7. AI ecosystem edge fades */
+.ai-ecosystem-inner {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+}
+
+/* 8. Demo card premium border */
+.demo-card-wrap { border: 1px solid rgba(255,255,255,0.10) !important; box-shadow: 0 32px 80px rgba(0,0,0,0.40) !important; }
+
+/* 9. Hero CTA: blue gradient (prevent white override) */
+.hero-ctas .btn-primary {
+  background: linear-gradient(180deg, #7C83FF 0%, #6B73FF 40%, #5865F2 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 28px rgba(88,101,242,0.45), 0 0 60px rgba(88,101,242,0.15) !important;
+}
+.hero-ctas .btn-primary:hover {
+  background: linear-gradient(180deg, #8890FF 0%, #7880FF 40%, #6472F9 100%) !important;
+  box-shadow: 0 6px 36px rgba(88,101,242,0.60), 0 0 80px rgba(88,101,242,0.20) !important;
+  transform: translateY(-2px) !important;
 }
 
   </style>
