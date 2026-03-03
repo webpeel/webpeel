@@ -2296,7 +2296,7 @@
     .hero-trust a:hover, .hero-proof a:hover { opacity: 1 !important; }
     .hero-trust-live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 500; }
     .hero-trust-dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(88,101,242,0.6); animation: pulse-green 2s ease-in-out infinite; flex-shrink: 0; }
-    @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 8px rgba(74,222,128,0.7); } 50% { box-shadow: 0 0 14px rgba(74,222,128,1); } }
+    @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 8px rgba(88,101,242,0.6); } 50% { box-shadow: 0 0 14px rgba(88,101,242,0.9); } }
     .hero-trust-sep { color: rgba(255,255,255,0.2); margin: 0 4px; font-size: 13px; }
 
     /* ── Social proof bar ────────────────────────────────────── */
@@ -3978,8 +3978,8 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #4ADE80;
-    box-shadow: 0 0 6px rgba(74,222,128,0.7);
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(88,101,242,0.7);
     animation: pulse-dot 2s ease-in-out infinite;
   }
 
@@ -4494,24 +4494,52 @@
   .hdw-view-link.visible { opacity: 1; }
 
   /* ── DESIGN-V2: hero refinements — typography, color discipline, CTAs ── */
-  /* 1. Hide redundant pill badge on mobile to reduce pre-headline clutter */
+  /* pulse-dot keyframe — accent-colored, used by hero-kicker::before */
+  @keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 6px rgba(88,101,242,0.6); }
+    50%       { box-shadow: 0 0 12px rgba(88,101,242,0.9); }
+  }
+
+  /* 1. Hide redundant pill badge on mobile + secondary CTA as text link on mobile */
   @media (max-width: 768px) {
     .hero-eyebrow { display: none !important; }
     .hero-kicker { margin-bottom: 16px !important; }
-    /* Secondary CTA ghost button: full-width on mobile */
-    .hero-ctas .btn-ghost { width: 100% !important; justify-content: center !important; min-height: 52px !important; font-size: 15px !important; }
+    /* On mobile: ghost button becomes a text link (no border, no bg) */
+    .hero-ctas .btn-ghost {
+      width: auto !important;
+      align-self: center !important;
+      border: none !important;
+      background: transparent !important;
+      padding: 8px 0 !important;
+      min-height: unset !important;
+      font-size: 14px !important;
+      color: rgba(165,180,252,0.80) !important;
+      text-decoration: underline !important;
+      text-underline-offset: 3px !important;
+    }
+    .hero-ctas .btn-ghost:hover {
+      background: transparent !important;
+      color: rgba(165,180,252,1) !important;
+    }
   }
-  /* 2. Hero secondary CTA — visual weight slightly below primary */
+
+  /* 3. Eliminate ALL green from hero — accent only (#5865F2) */
+  .hero-trust-dot-live { background: var(--accent) !important; box-shadow: 0 0 8px rgba(88,101,242,0.6) !important; }
+  .hero-kicker::before { background: var(--accent) !important; box-shadow: 0 0 6px rgba(88,101,242,0.7) !important; }
+  /* hp-badge: change from green to accent */
+  .hp-badge { color: var(--accent) !important; background: rgba(88,101,242,0.10) !important; border-color: rgba(88,101,242,0.25) !important; }
+
+  /* 2. Hero secondary CTA — visual weight clearly below primary on desktop */
   .hero-ctas .btn-ghost {
-    border-color: rgba(255,255,255,0.20) !important;
-    color: rgba(255,255,255,0.72) !important;
+    border-color: rgba(255,255,255,0.18) !important;
+    color: rgba(255,255,255,0.70) !important;
     background: transparent !important;
     font-weight: 500 !important;
   }
   .hero-ctas .btn-ghost:hover {
-    border-color: rgba(255,255,255,0.45) !important;
+    border-color: rgba(255,255,255,0.40) !important;
     color: rgba(255,255,255,0.95) !important;
-    background: rgba(255,255,255,0.05) !important;
+    background: rgba(255,255,255,0.04) !important;
   }
   </style>
 </head>
