@@ -974,11 +974,8 @@
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background:
-        radial-gradient(ellipse 75% 65% at 22% 28%, rgba(88,101,242,0.45), transparent 70%),
-        radial-gradient(ellipse 65% 55% at 80% 22%, rgba(88,101,242,0.45), transparent 65%),
-        radial-gradient(ellipse 50% 40% at 52% 68%, rgba(88,101,242,0.12), transparent 60%);
-      animation: aurora-pulse 8s ease-in-out infinite alternate;
+      background: transparent;
+      animation: none;
       z-index: 0;
       pointer-events: none;
     }
@@ -2189,36 +2186,25 @@
     .hero {
       position: relative;
       overflow: visible;
-      background-image:
-        radial-gradient(900px 500px ellipse at 28% 0%, rgba(88,101,242,0.55), transparent 65%),
-        radial-gradient(600px 350px ellipse at 28% 5%, rgba(99,102,241,0.28), transparent 55%),
-        radial-gradient(700px 600px ellipse at 50% 88%, rgba(88,101,242,0.10), transparent 65%),
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) !important;
-      background-size: auto, auto, auto, 64px 64px, 64px 64px !important;
+      background: #050507 !important;
     }
-    /* Left-column-anchored ::before glow (LOOP-6) */
+    /* Left-column-anchored ::before glow (LOOP-6) — zeroed */
     .hero::before {
-      background:
-        radial-gradient(ellipse 70% 65% at 20% 32%, rgba(88,101,242,0.45), transparent 70%),
-        radial-gradient(ellipse 45% 40% at 75% 20%, rgba(88,101,242,0.18), transparent 65%),
-        radial-gradient(ellipse 35% 30% at 50% 70%, rgba(88,101,242,0.08), transparent 60%) !important;
+      background: transparent !important;
     }
-    /* Dual-focus ::after overlay (10/10 FINAL) */
+    /* Dual-focus ::after overlay (zeroed) */
     .hero::after {
       content: '';
       position: absolute;
       inset: 0;
       pointer-events: none;
       z-index: 0;
-      background:
-        radial-gradient(ellipse 60% 50% at 20% 35%, rgba(139,92,246,0.14) 0%, transparent 70%),
-        radial-gradient(ellipse 50% 40% at 80% 20%, rgba(59,130,246,0.08) 0%, transparent 70%);
+      background: transparent;
     }
     .hero-grid, .hero-content { position: relative; z-index: 1; }
     @media (max-width: 768px) {
       .hero::after {
-        background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(107,115,255,0.18) 0%, transparent 70%) !important;
+        background: transparent !important;
       }
     }
 
@@ -2500,9 +2486,7 @@
   }
   @media (max-width: 768px) {
     .hero {
-      background:
-        radial-gradient(ellipse 90% 35% at 50% 0%, rgba(88,101,242,0.18) 0%, transparent 58%),
-        #050507 !important;
+      background: #050507 !important;
     }
   }
 
@@ -5400,12 +5384,9 @@
 .feat-card:nth-child(5):hover { box-shadow: inset 0 1px 0 0 rgba(167,139,250,0.8), inset 0 2px 32px 0 rgba(167,139,250,0.20), 0 0 0 1px rgba(167,139,250,0.30), 0 16px 40px rgba(167,139,250,0.15) !important; transform: translateY(-4px) !important; }
 .feat-card:nth-child(6):hover { box-shadow: inset 0 1px 0 0 rgba(96,165,250,0.8), inset 0 2px 32px 0 rgba(96,165,250,0.20), 0 0 0 1px rgba(96,165,250,0.30), 0 16px 40px rgba(96,165,250,0.15) !important; transform: translateY(-4px) !important; }
 
-/* 4b. Subtle atmospheric hero background glow */
+/* 4b. Hero bg: match page body color — no extra gradients here (glow via ::before only) */
 .hero, section.hero {
-  background:
-    radial-gradient(ellipse 90% 55% at 25% 40%, rgba(88,101,242,0.13) 0%, transparent 65%),
-    radial-gradient(ellipse 60% 40% at 75% 60%, rgba(129,140,248,0.07) 0%, transparent 55%),
-    #0d0d10 !important;
+  background: #050507 !important;
 }
 
 /* 5. Stats: visible dividers */
@@ -5440,43 +5421,42 @@
   transform: translateY(-2px) !important;
 }
 
-/* 10. Hero: dot grid + FOCAL POINT glow + atmospheric spread — merged ::before */
+/* 10. Hero ::before — subtle centered glow, no dot grid, no animation, no top-left ball */
 .hero::before {
   content: '' !important;
   position: absolute !important;
   inset: 0 !important;
   background:
-    radial-gradient(circle, rgba(148,163,184,0.15) 1px, transparent 1px),
-    radial-gradient(circle 300px at 50% 18%, rgba(99,102,241,0.50) 0%, transparent 100%),
-    radial-gradient(ellipse 700px 500px at 50% 30%, rgba(99,102,241,0.20) 0%, transparent 70%),
-    radial-gradient(ellipse 400px 350px at 75% 55%, rgba(59,130,246,0.08) 0%, transparent 60%) !important;
-  background-size: 28px 28px, cover, cover, cover !important;
+    radial-gradient(ellipse 80% 60% at 55% 45%, rgba(88,101,242,0.10) 0%, transparent 70%) !important;
   pointer-events: none !important;
   z-index: 0 !important;
-  animation: aurora-pulse 8s ease-in-out infinite alternate !important;
+  animation: none !important;
 }
 .hero > * { position: relative !important; z-index: 1 !important; }
 
-/* 10b. Demo widget: glowing border + lift + 3D tilt (6deg for visible depth) */
+/* 10b. Demo widget: flat, bigger, subtle border glow — NO tilt */
 .hero-demo-widget {
-  border: 1px solid rgba(99,102,241,0.45) !important;
+  border: 1px solid rgba(99,102,241,0.35) !important;
   box-shadow:
-    0 0 0 1px rgba(99,102,241,0.25),
-    0 0 60px rgba(99,102,241,0.22),
-    0 30px 90px rgba(0,0,0,0.60),
-    inset 0 1px 0 rgba(255,255,255,0.10) !important;
-  transform: perspective(900px) rotateY(-6deg) rotateX(3deg) !important;
-  transform-origin: center center !important;
-  transition: transform 0.5s cubic-bezier(0.16,1,0.3,1), box-shadow 0.5s ease !important;
+    0 0 0 1px rgba(99,102,241,0.15),
+    0 0 40px rgba(99,102,241,0.12),
+    0 24px 60px rgba(0,0,0,0.50),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  transform: none !important;
+  transition: box-shadow 0.4s ease !important;
+  min-width: 480px !important;
 }
 .hero-demo-widget:hover {
-  transform: perspective(900px) rotateY(0deg) rotateX(0deg) !important;
+  transform: none !important;
   box-shadow:
-    0 0 0 1px rgba(99,102,241,0.35),
-    0 0 80px rgba(99,102,241,0.30),
-    0 40px 100px rgba(0,0,0,0.65),
-    inset 0 1px 0 rgba(255,255,255,0.12) !important;
+    0 0 0 1px rgba(99,102,241,0.25),
+    0 0 60px rgba(99,102,241,0.18),
+    0 30px 70px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.10) !important;
 }
+/* Widget body: taller + more readable */
+.hdw-body { min-height: 260px !important; font-size: 13px !important; line-height: 1.65 !important; padding: 18px 20px !important; }
+.hdw-cmd-line { font-size: 13px !important; }
 
 /* 11. Global section subtext: readable contrast + size */
 .section-sub { font-size: 17px !important; color: rgba(255,255,255,0.68) !important; line-height: 1.7 !important; }
