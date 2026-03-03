@@ -4541,6 +4541,112 @@
     color: rgba(255,255,255,0.95) !important;
     background: rgba(255,255,255,0.04) !important;
   }
+
+  /* ── SECTION-POLISH: spacing + transitions ── */
+
+  /* Uniform padding for all major sections */
+  .demo-section,
+  .how-section,
+  .feat-cards-section,
+  .why-section,
+  .pricing-section,
+  .faq-section,
+  .final-cta {
+    padding: 100px 0 !important;
+  }
+
+  /* Alternate section backgrounds for depth */
+  .demo-section        { background: #0a0a0e !important; }
+  .how-section         { background: #0d0d10 !important; }
+  .feat-cards-section  { background: #0a0a0e !important; }
+  .why-section         { background: #0d0d10 !important; }
+  .pricing-section     { background: #0a0a0e !important; }
+  .faq-section         { background: #0d0d10 !important; }
+  .final-cta           { background: #0a0a0e !important; }
+
+  /* Subtle gradient border lines between darker sections */
+  .demo-section,
+  .feat-cards-section,
+  .pricing-section {
+    position: relative !important;
+  }
+  .demo-section::before,
+  .feat-cards-section::before,
+  .pricing-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(88,101,242,0.15), transparent) !important;
+  }
+
+  /* ── STATS BAR ENHANCEMENT ── */
+  .hero-stats {
+    gap: 48px !important;
+    justify-content: center !important;
+    padding: 32px 0 !important;
+  }
+  .hero-stat-n {
+    font-size: clamp(36px, 4vw, 52px) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+  }
+  .hero-stats-section {
+    border-top: 1px solid rgba(255,255,255,0.06) !important;
+    margin-top: 64px !important;
+    padding: 48px 0 32px !important;
+  }
+  @media (max-width: 768px) {
+    .hero-stat-n { font-size: 32px !important; }
+    .hero-stats  { gap: 24px !important; }
+  }
+
+  /* ── FEATURE CARD VISUAL POLISH ── */
+  .feat-card {
+    border: 1px solid rgba(255,255,255,0.06) !important;
+    border-radius: 16px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    transition: border-color 0.3s ease, transform 0.3s ease !important;
+  }
+  .feat-card:hover {
+    border-color: rgba(88,101,242,0.25) !important;
+    transform: translateY(-4px) !important;
+  }
+  .feat-card-mock {
+    min-height: 160px !important;
+  }
+  .feat-card-title {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  /* ── COLOR THROUGH-LINE: section eyebrows ── */
+  .section-eyebrow {
+    color: var(--accent) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.10em !important;
+    text-transform: uppercase !important;
+  }
+
+  /* ── AI ECOSYSTEM STRIP CLEANUP ── */
+  .ai-ecosystem-strip {
+    background: #08080c !important;
+    border-top: 1px solid rgba(255,255,255,0.04) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+    padding: 20px 0 !important;
+  }
+
+  /* ── WHY WEBPEEL: visual weight ── */
+  .why-section .section-h2 {
+    font-size: clamp(36px, 4.5vw, 56px) !important;
+    line-height: 1.15 !important;
+  }
+
   </style>
 </head>
 <body>
@@ -4823,8 +4929,8 @@ webpeel "https://example.com" --readable</div>
               <span class="fc1-result-text">2,847 tokens extracted</span>
             </div>
           </div>
-          <div class="feat-card-title">Extract Any Website</div>
-          <div class="feat-card-desc">Handles JS, SPAs, Cloudflare, and paywalls. Get clean content from virtually any URL.</div>
+          <div class="feat-card-title">Zero-Config Extraction</div>
+          <div class="feat-card-desc">JS rendering, Cloudflare bypass, paywall handling — all automatic. Just pass the URL.</div>
         </div>
 
         <!-- Card 2: Design Analysis -->
@@ -4856,8 +4962,8 @@ webpeel "https://example.com" --readable</div>
               <div class="fc3-line">Payments · Billing · Connect<span class="fc3-cursor"></span></div>
             </div>
           </div>
-          <div class="feat-card-title">AI-Ready Markdown</div>
-          <div class="feat-card-desc">Content arrives as clean markdown — zero boilerplate, structured for LLM context windows.</div>
+          <div class="feat-card-title">LLM-Optimized Output</div>
+          <div class="feat-card-desc">Clean markdown optimized for token efficiency. Zero boilerplate, maximum context density.</div>
         </div>
 
         <!-- Card 4: Screenshot API -->
@@ -4920,8 +5026,8 @@ webpeel "https://example.com" --readable</div>
               <div class="fc6-pill">AutoGen</div>
             </div>
           </div>
-          <div class="feat-card-title">Works with Any AI</div>
-          <div class="feat-card-desc">Drop-in compatible with every major AI framework. Use the MCP server or REST API — your choice.</div>
+          <div class="feat-card-title">Every AI Framework</div>
+          <div class="feat-card-desc">Drop-in REST API + MCP server. Works with Claude, GPT, LangChain, LlamaIndex — all of them.</div>
         </div>
 
       </div><!-- /feat-cards-grid -->
