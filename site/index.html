@@ -3837,8 +3837,16 @@
      One font family (Inter 800), differentiated by cyan→blue→purple gradient on accent line.
      Brightness hierarchy: gradient accent > dim white setup line > subtext. */
 
+  /* FIX ROOT CAUSE: .hero h1 inherits --font-display (Instrument Serif) from line 304.
+     Override the h1 and ALL its spans to Inter. The .accent gradient handles differentiation. */
+  .hero h1,
+  .hero h1 span,
+  .hero h1 a {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  }
+
   /* Headline brightness hierarchy:
-     Setup line dimmed to 50% so gradient accent is a visual "shock" */
+     Setup line dimmed so gradient accent is a visual "shock" */
   .hero h1 span:not(.accent) {
     color: rgba(255,255,255,0.38) !important;
     -webkit-text-fill-color: rgba(255,255,255,0.38) !important;
