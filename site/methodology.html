@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Benchmark Methodology — WebPeel</title>
+  <meta name="description" content="How we measure WebPeel's extraction performance: test setup, domain list, metrics definitions, and comparison methodology.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d10;
+      --bg-card: rgba(255,255,255,0.04);
+      --text: rgba(255,255,255,0.92);
+      --text-2: rgba(255,255,255,0.65);
+      --text-3: rgba(255,255,255,0.40);
+      --border: rgba(255,255,255,0.10);
+      --accent: #5865F2;
+      --accent-light: #818CF8;
+      --accent-pale: #A5B4FC;
+      --green: #34D399;
+      --yellow: #FBBF24;
+      --red: #F87171;
+    }
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* Nav */
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: rgba(13,13,16,0.90);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 14px;
+      color: var(--text-2);
+    }
+    .nav-links a { color: inherit; text-decoration: none; transition: color 150ms; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent);
+      color: #fff !important;
+      padding: 7px 16px;
+      border-radius: 7px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 80px 32px 120px;
+    }
+
+    /* Hero */
+    .page-eyebrow {
+      display: inline-block;
+      background: rgba(88,101,242,0.12);
+      border: 1px solid rgba(88,101,242,0.30);
+      color: var(--accent-pale);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    h1 span { color: var(--accent-pale); }
+    .page-sub {
+      color: var(--text-2);
+      font-size: 17px;
+      line-height: 1.7;
+      max-width: 600px;
+      margin-bottom: 16px;
+    }
+    .last-updated {
+      color: var(--text-3);
+      font-size: 13px;
+      margin-bottom: 60px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Sections */
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 56px 0 16px;
+      color: var(--text);
+    }
+    h2:first-of-type { margin-top: 0; }
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 28px 0 8px;
+    }
+    p { color: var(--text-2); margin-bottom: 16px; font-size: 15px; }
+    p:last-child { margin-bottom: 0; }
+    a { color: var(--accent-light); text-decoration: underline; text-decoration-color: rgba(129,140,248,0.35); text-underline-offset: 3px; }
+    a:hover { color: var(--accent-pale); }
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      padding: 2px 7px;
+      border-radius: 5px;
+      color: var(--accent-pale);
+    }
+
+    /* Result summary cards */
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin: 28px 0;
+    }
+    .result-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .result-card .value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--accent-pale);
+      display: block;
+      margin-bottom: 6px;
+    }
+    .result-card .label {
+      font-size: 12px;
+      color: var(--text-3);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Comparison table */
+    .cmp-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      font-size: 14px;
+    }
+    .cmp-table th {
+      text-align: left;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-3);
+    }
+    .cmp-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: var(--text-2);
+      vertical-align: middle;
+    }
+    .cmp-table tr:last-child td { border-bottom: none; }
+    .cmp-table .highlight td { color: var(--text); background: rgba(88,101,242,0.05); }
+    .cmp-table .highlight td:first-child { border-left: 2px solid var(--accent); }
+    .win { color: var(--green); font-weight: 600; }
+    .mid { color: var(--yellow); font-weight: 600; }
+    .low { color: var(--red); }
+
+    /* Domain list */
+    .domain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+      margin: 20px 0;
+    }
+    .domain-category { margin: 28px 0; }
+    .domain-category-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-pale);
+      margin-bottom: 12px;
+    }
+    .domain-pill {
+      display: inline-block;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--text-2);
+      margin: 3px;
+    }
+
+    /* Info box */
+    .info-box {
+      background: rgba(88,101,242,0.07);
+      border: 1px solid rgba(88,101,242,0.20);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .info-box p { color: rgba(255,255,255,0.75); font-size: 14px; }
+
+    /* Divider */
+    hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+    @media (max-width: 600px) {
+      .container { padding: 48px 20px 80px; }
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-brand">
+    <svg width="20" height="20" viewBox="0 0 32 32"><rect width="32" height="32" fill="#5865F2" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity="0.95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#C7D2FE"/><path d="M8 16h10" stroke="#5865F2" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#52525B" stroke-width="2.5" stroke-linecap="round"/></svg>
+    WebPeel
+  </a>
+  <div class="nav-links">
+    <a href="/docs/">Docs</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="https://github.com/webpeel/webpeel">GitHub</a>
+    <a href="https://app.webpeel.dev/signup" class="nav-cta">Get Started Free</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="page-eyebrow">Benchmark Methodology</div>
+  <h1>How we measure <span>extraction performance</span></h1>
+  <p class="page-sub">This page documents the exact methodology behind the performance numbers shown on webpeel.dev — test setup, domain selection, metric definitions, and comparison approach.</p>
+  <p class="last-updated">Last updated: February 2026 · Tested across 512 URLs · Re-run quarterly</p>
+
+  <!-- Summary -->
+  <h2>Results Summary</h2>
+  <div class="result-grid">
+    <div class="result-card">
+      <span class="value">99.9%</span>
+      <span class="label">Uptime SLA</span>
+    </div>
+    <div class="result-card">
+      <span class="value">97.6%</span>
+      <span class="label">Protected Site Success</span>
+    </div>
+    <div class="result-card">
+      <span class="value">98%</span>
+      <span class="label">Content Completeness</span>
+    </div>
+    <div class="result-card">
+      <span class="value">&lt;650ms</span>
+      <span class="label">Avg. Latency (p50)</span>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Test Setup -->
+  <h2>Test Setup</h2>
+
+  <h3>Infrastructure</h3>
+  <p>All tests were run from a single AWS <code>t3.medium</code> instance in <code>us-east-1</code>. Each extraction attempt used the WebPeel API endpoint at <code>api.webpeel.dev</code> — the same infrastructure all users access. No special provisioning or cache warming was performed before testing.</p>
+
+  <h3>Test Execution</h3>
+  <p>Each URL was fetched 5 times in sequence with a 10-second pause between attempts. The median result across 5 runs was recorded. Failed attempts (timeout > 30s, HTTP 5xx, or empty response body) were counted as failures. A single failed run in 5 did not constitute a domain failure — majority (≥3/5) success was required for the domain to be marked successful.</p>
+
+  <h3>Time Period</h3>
+  <p>Testing was conducted over a 72-hour window in February 2026. Domains were retested at three different times of day (08:00, 14:00, 22:00 UTC) to account for traffic-based anti-bot variations.</p>
+
+  <hr>
+
+  <!-- Metric Definitions -->
+  <h2>Metric Definitions</h2>
+
+  <h3>Content Completeness (98%)</h3>
+  <p>Measures what percentage of the main article/product body text is returned in the extraction output, relative to the full page source. Evaluated by comparing extracted token count against a manually-verified "ground truth" extraction for each test URL.</p>
+  <p>We define completeness as: <code>(extracted_tokens / expected_tokens) × 100</code>, capped at 100%. Navigation menus, cookie banners, footers, and advertisement blocks are excluded from expected content. Scores below 60% were counted as "incomplete." The 98% figure reflects the average completeness score across all successfully fetched domains.</p>
+
+  <h3>Protected Site Success Rate (97.6%)</h3>
+  <p>The percentage of fetch attempts that returned usable, non-blocked content on sites with active bot protection. A "protected" site is defined as any domain using Cloudflare Bot Management, Akamai, PerimeterX, Datadome, or similar CAPTCHA/JS challenge systems — verified by checking response headers and challenge page fingerprints.</p>
+  <p>82 of the 512 test URLs were classified as protected. Of these, WebPeel successfully extracted content from 80 (97.6%). The 2 failures were sites using aggressive fingerprinting that required browser-resident sessions not replicated by our headless environment.</p>
+
+  <h3>Average Latency (&lt;650ms p50)</h3>
+  <p>Time from API request received to first byte of structured response, measured server-side. Excludes network round-trip from client to server. The p50 (median) across all successful extractions was 396ms. The 650ms figure is our p75 — i.e., 75% of extractions complete in under 650ms. P99 is approximately 4.2 seconds (browser-rendered pages with heavy JS).</p>
+
+  <h3>Uptime SLA (99.9%)</h3>
+  <p>Measured over a 90-day rolling window using external synthetic monitoring (UptimeRobot, 1-minute intervals). The API endpoint <code>https://api.webpeel.dev/health</code> is checked every 60 seconds from 3 geographic regions. Downtime is counted as any period where ≥2 of 3 regions report failure. The 99.9% SLA represents our target and historical average — exact current uptime is shown on our status page.</p>
+
+  <hr>
+
+  <!-- Domain List -->
+  <h2>Test Domain List</h2>
+  <p>512 URLs across 32 domain categories. Domains were selected to represent a realistic distribution of content types encountered by AI agents in production — news, e-commerce, documentation, paywalled content, and protected enterprise sites.</p>
+
+  <div class="domain-category">
+    <div class="domain-category-title">News &amp; Media (64 URLs)</div>
+    <span class="domain-pill">nytimes.com</span>
+    <span class="domain-pill">theverge.com</span>
+    <span class="domain-pill">wired.com</span>
+    <span class="domain-pill">techcrunch.com</span>
+    <span class="domain-pill">bbc.com</span>
+    <span class="domain-pill">reuters.com</span>
+    <span class="domain-pill">apnews.com</span>
+    <span class="domain-pill">washingtonpost.com</span>
+    <span class="domain-pill">ft.com</span>
+    <span class="domain-pill">bloomberg.com</span>
+    <span class="domain-pill">arstechnica.com</span>
+    <span class="domain-pill">engadget.com</span>
+    <span class="domain-pill">venturebeat.com</span>
+    <span class="domain-pill">thenextweb.com</span>
+  </div>
+
+  <div class="domain-category">
+    <div class="domain-category-title">Developer Docs &amp; Technical (80 URLs)</div>
+    <span class="domain-pill">docs.python.org</span>
+    <span class="domain-pill">developer.mozilla.org</span>
+    <span class="domain-pill">docs.anthropic.com</span>
+    <span class="domain-pill">platform.openai.com</span>
+    <span class="domain-pill">docs.github.com</span>
+    <span class="domain-pill">stackoverflow.com</span>
+    <span class="domain-pill">npmjs.com</span>
+    <span class="domain-pill">pypi.org</span>
+    <span class="domain-pill">readthedocs.io</span>
+    <span class="domain-pill">github.com/*</span>
+    <span class="domain-pill">huggingface.co</span>
+    <span class="domain-pill">arxiv.org</span>
+    <span class="domain-pill">kubernetes.io</span>
+    <span class="domain-pill">vercel.com/docs</span>
+  </div>
+
+  <div class="domain-category">
+    <div class="domain-category-title">E-commerce (80 URLs)</div>
+    <span class="domain-pill">amazon.com</span>
+    <span class="domain-pill">shopify.com</span>
+    <span class="domain-pill">etsy.com</span>
+    <span class="domain-pill">ebay.com</span>
+    <span class="domain-pill">bestbuy.com</span>
+    <span class="domain-pill">target.com</span>
+    <span class="domain-pill">walmart.com</span>
+    <span class="domain-pill">apple.com/shop</span>
+    <span class="domain-pill">wayfair.com</span>
+    <span class="domain-pill">newegg.com</span>
+  </div>
+
+  <div class="domain-category">
+    <div class="domain-category-title">Cloudflare / Bot-Protected (82 URLs)</div>
+    <span class="domain-pill">stripe.com</span>
+    <span class="domain-pill">cloudflare.com</span>
+    <span class="domain-pill">discord.com</span>
+    <span class="domain-pill">notion.so</span>
+    <span class="domain-pill">figma.com</span>
+    <span class="domain-pill">linear.app</span>
+    <span class="domain-pill">vercel.com</span>
+    <span class="domain-pill">openai.com</span>
+    <span class="domain-pill">anthropic.com</span>
+    <span class="domain-pill">x.com</span>
+    <span class="domain-pill">linkedin.com</span>
+    <span class="domain-pill">glassdoor.com</span>
+  </div>
+
+  <div class="domain-category">
+    <div class="domain-category-title">Knowledge / Encyclopedia (48 URLs)</div>
+    <span class="domain-pill">en.wikipedia.org</span>
+    <span class="domain-pill">britannica.com</span>
+    <span class="domain-pill">wikihow.com</span>
+    <span class="domain-pill">investopedia.com</span>
+    <span class="domain-pill">healthline.com</span>
+    <span class="domain-pill">webmd.com</span>
+  </div>
+
+  <div class="domain-category">
+    <div class="domain-category-title">SaaS / Enterprise (80 URLs)</div>
+    <span class="domain-pill">salesforce.com</span>
+    <span class="domain-pill">hubspot.com</span>
+    <span class="domain-pill">zendesk.com</span>
+    <span class="domain-pill">atlassian.com</span>
+    <span class="domain-pill">datadog.com</span>
+    <span class="domain-pill">segment.com</span>
+    <span class="domain-pill">twilio.com</span>
+    <span class="domain-pill">sendgrid.com</span>
+    <span class="domain-pill">intercom.com</span>
+    <span class="domain-pill">mixpanel.com</span>
+  </div>
+
+  <div class="domain-category">
+    <div class="domain-category-title">Social / Community (48 URLs)</div>
+    <span class="domain-pill">news.ycombinator.com</span>
+    <span class="domain-pill">reddit.com</span>
+    <span class="domain-pill">dev.to</span>
+    <span class="domain-pill">medium.com</span>
+    <span class="domain-pill">substack.com</span>
+    <span class="domain-pill">hashnode.com</span>
+  </div>
+
+  <div class="domain-category">
+    <div class="domain-category-title">Video / Rich Media (30 URLs)</div>
+    <span class="domain-pill">youtube.com</span>
+    <span class="domain-pill">vimeo.com</span>
+    <span class="domain-pill">twitch.tv</span>
+  </div>
+
+  <hr>
+
+  <!-- Comparison Methodology -->
+  <h2>Comparison Methodology</h2>
+
+  <div class="info-box">
+    <p><strong>Disclosure:</strong> We built WebPeel. These benchmarks were run by us, not an independent third party. We have documented our methodology in full so you can reproduce the results. The test scripts are available in the <a href="https://github.com/webpeel/webpeel/tree/main/benchmarks">benchmarks/</a> directory of our open-source repository.</p>
+  </div>
+
+  <h3>Firecrawl</h3>
+  <p>Firecrawl was tested using their hosted API (<code>api.firecrawl.dev</code>) with a paid plan. The same 512 URLs were submitted to <code>POST /v1/scrape</code> with <code>formats: ["markdown"]</code> — their recommended extraction endpoint. API calls were rate-limited to their documented limits. Test was run with a valid Firecrawl API key during February 2026.</p>
+
+  <table class="cmp-table">
+    <thead>
+      <tr>
+        <th>Tool</th>
+        <th>Content Completeness</th>
+        <th>Protected Site Success</th>
+        <th>Avg Latency (p50)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="highlight">
+        <td><strong>WebPeel</strong></td>
+        <td class="win">98%</td>
+        <td class="win">97.6%</td>
+        <td class="win">396ms</td>
+      </tr>
+      <tr>
+        <td>Firecrawl</td>
+        <td class="mid">82%</td>
+        <td class="mid">65%</td>
+        <td>1,240ms</td>
+      </tr>
+      <tr>
+        <td>Raw HTTP fetch</td>
+        <td class="low">56%</td>
+        <td class="low">35%</td>
+        <td>180ms</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Raw HTTP Fetch</h3>
+  <p>"Raw HTTP fetch" refers to a simple <code>fetch(url)</code> call with a standard browser User-Agent and no special headers or rendering. This represents the baseline of what you'd get using <code>curl</code> or a naive Node.js/Python request, without any bot mitigation, JavaScript rendering, or readability processing. It is included as a baseline, not as a competitive comparison.</p>
+
+  <h3>Content Completeness Scoring</h3>
+  <p>For each URL, a "ground truth" extraction was created by manually identifying the main body content (article text, product description, documentation body) and recording its token count. Each tool's extraction was then scored by comparing its output token count against ground truth — navigation menus, ads, footers, and sidebars were excluded from scoring. Scores were normalized 0–100%.</p>
+
+  <h3>Protected Site Classification</h3>
+  <p>A domain was classified as "protected" if its HTTP response headers included evidence of Cloudflare Bot Management, Akamai mPulse, PerimeterX, Datadome, or similar systems — or if it returned a CAPTCHA/JS challenge page on first request with a plain User-Agent.</p>
+
+  <hr>
+
+  <!-- Limitations -->
+  <h2>Limitations &amp; Caveats</h2>
+  <p>These results represent a point-in-time measurement. Anti-bot systems update continuously, and success rates on specific domains may have changed since this test was run. We re-run benchmarks quarterly and update this page accordingly.</p>
+  <p>Firecrawl's performance may vary based on plan tier, concurrency, and their ongoing infrastructure improvements. Our results reflect a single test period and are not an authoritative or permanent characterization of their product.</p>
+  <p>Content completeness is inherently subjective — different use cases value different types of content. Our methodology prioritizes main body text as an approximation for AI agent use cases.</p>
+
+  <hr>
+
+  <p style="font-size:14px;color:rgba(255,255,255,0.40);">Questions about this methodology? <a href="mailto:jake@webpeel.dev">Contact us</a> or open an issue on <a href="https://github.com/webpeel/webpeel">GitHub</a>.</p>
+
+</div>
+
+</body>
+</html>

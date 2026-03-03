@@ -5754,7 +5754,7 @@
           <span class="hero-stat-l">MCP tools (Claude/Cursor)</span>
         </div>
       </div>
-      <p class="hero-stats-note hero-el" data-delay="700">30-day rolling averages · Tested across 500+ domains · <a href="/docs/" style="color:#818CF8;text-decoration:underline;text-decoration-color:rgba(129,140,248,0.4);text-underline-offset:3px;">methodology</a></p>
+      <p class="hero-stats-note hero-el" data-delay="700">30-day rolling averages · Tested across 500+ domains · <a href="/methodology" style="color:#818CF8;text-decoration:underline;text-decoration-color:rgba(129,140,248,0.4);text-underline-offset:3px;">methodology ↗</a></p>
       </div><!-- /hero-stats-section -->
       <div class="hero-compat hero-el" data-delay="800">
         <span class="hero-compat-label">Works with</span>
@@ -6570,18 +6570,8 @@ traffic. Advertisers are watching closely.
           var decimals = parseInt(el.dataset.countDecimals || '0');
           var prefix = el.dataset.countPrefix || '';
           var suffix = el.dataset.countSuffix || '';
-          var duration = 1200; // ms
-          var start = performance.now();
-          function ease(t) { return 1 - Math.pow(1 - t, 3); } // easeOutCubic
-          function tick(now) {
-            var elapsed = now - start;
-            var progress = Math.min(elapsed / duration, 1);
-            var val = target * ease(progress);
-            el.textContent = prefix + val.toFixed(decimals) + suffix;
-            if (progress < 1) requestAnimationFrame(tick);
-          }
-          // Small delay for visual effect
-          setTimeout(function() { requestAnimationFrame(tick); }, 200);
+          // Set final value immediately — no animation delay/mid-count trust issues
+          el.textContent = prefix + target.toFixed(decimals) + suffix;
         });
       }, { threshold: 0.3 });
       counters.forEach(function(el) { countObs.observe(el); });
