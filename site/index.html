@@ -4026,16 +4026,18 @@
     .hero-ctas     { order: 5 !important; width: 100% !important; margin-top: 24px !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
     .hero-ctas .btn-primary { width: 100% !important; padding: 16px 24px !important; min-height: 52px !important; font-size: 15px !important; border-radius: 10px !important; }
 
-    /* Mobile code block: visible, clean, after CTA */
+    /* Mobile widget: visible, same visual identity as desktop hero-demo-widget */
     .hero-mobile-code {
       display: block !important;
       order: 6 !important;
       width: 100% !important;
-      margin-top: 18px !important;
-      border-radius: 10px !important;
-      background: rgba(8,8,16,0.95) !important;
+      margin-top: 20px !important;
+      border-radius: 12px !important;
+      background: rgba(12,12,22,0.95) !important;
       border: 1px solid rgba(255,255,255,0.10) !important;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.40) !important;
+      box-shadow:
+        0 0 0 1px rgba(99,102,241,0.10),
+        0 12px 32px rgba(0,0,0,0.50) !important;
       overflow: hidden !important;
     }
 
@@ -4126,20 +4128,27 @@
   <span class="hero-trust-sep">·</span>
   <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.72);font-size:13px;font-weight:500;">GitHub ↗</a>
 </div>
+          <!-- Mobile widget: same visual identity as desktop hero-demo-widget -->
           <div class="hero-mobile-code hero-el" data-delay="600">
-            <div class="mobile-terminal-chrome">
-              <div class="terminal-dot r"></div>
-              <div class="terminal-dot y"></div>
-              <div class="terminal-dot g"></div>
-              <span style="font-size:11px;color:rgba(255,255,255,0.35);margin-left:auto;font-family:var(--font-mono);">Terminal</span>
+            <div class="hdw-chrome">
+              <div class="hdw-dots">
+                <span class="hdw-dot r"></span>
+                <span class="hdw-dot y"></span>
+                <span class="hdw-dot g"></span>
+              </div>
+              <div class="hdw-tabs" style="pointer-events:none;">
+                <span class="hdw-tab active">stripe.com</span>
+                <span class="hdw-tab" style="opacity:0.40;">wikipedia</span>
+                <span class="hdw-tab" style="opacity:0.40;">hackernews</span>
+              </div>
             </div>
-            <div class="mobile-terminal-body">
-              <div><span class="t-prompt">$</span> <span class="t-cmd">curl</span> <span class="t-str">"api.webpeel.dev/v1/fetch?url=stripe.com"</span></div>
-              <br>
+            <div class="hdw-body">
+              <div class="hdw-cmd-line">$ curl "api.webpeel.dev/v1/fetch?url=stripe.com"</div>
               <div><span class="t-dim">{</span></div>
-              <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infra…"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infrastructure"</span><span class="t-dim">,</span></div>
               <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
               <div>&nbsp;&nbsp;<span class="t-key">"method"</span><span class="t-dim">:</span> <span class="t-str">"cloudflare-bypass"</span><span class="t-dim">,</span></div>
+              <div>&nbsp;&nbsp;<span class="t-key">"markdown"</span><span class="t-dim">:</span> <span class="t-str">"# Stripe\nPayments infrastructure..."</span><span class="t-dim">,</span></div>
               <div>&nbsp;&nbsp;<span class="t-key">"elapsed"</span><span class="t-dim">:</span> <span class="t-num">412</span><span class="t-dim">ms</span></div>
               <div><span class="t-dim">}</span></div>
             </div>
