@@ -4676,6 +4676,516 @@
     box-shadow: 0 0 20px rgba(88,101,242,0.15), 0 8px 24px rgba(0,0,0,0.25) !important;
   }
 
+/* ── TOP-POLISH: Nav, Hero, Stats, How It Works ── */
+
+/* 1. Nav Sign In — ghost button */
+.nav-cta {
+  border: 1px solid rgba(255,255,255,0.22) !important;
+  border-radius: 7px !important;
+  padding: 6px 18px !important;
+  background: transparent !important;
+  color: rgba(255,255,255,0.85) !important;
+  font-weight: 500 !important;
+  transition: border-color 200ms ease, color 200ms ease !important;
+}
+.nav-cta:hover {
+  border-color: rgba(255,255,255,0.50) !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* 2. Hero sub-headline: bigger, more readable */
+.hero-sub {
+  font-size: 18px !important;
+  color: rgba(255,255,255,0.60) !important;
+  line-height: 1.65 !important;
+  max-width: 460px !important;
+}
+@media (max-width: 768px) {
+  .hero-sub { font-size: 16px !important; max-width: 100% !important; }
+}
+
+/* 3. Hide redundant hero compat strip (duplicated by AI ecosystem strip below) */
+.hero-compat { display: none !important; }
+
+/* 4. Stats: container treatment + vertical dividers */
+.hero-stats-section {
+  border-top: none !important;
+}
+.hero-stats {
+  background: rgba(255,255,255,0.025) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 20px !important;
+  padding: 36px 48px !important;
+  gap: 0 !important;
+}
+.hero-stat {
+  flex: 1 !important;
+  padding: 0 40px !important;
+  position: relative !important;
+}
+.hero-stat:first-child { padding-left: 0 !important; }
+.hero-stat:last-child { padding-right: 0 !important; }
+.hero-stat + .hero-stat::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 10% !important;
+  height: 80% !important;
+  width: 1px !important;
+  background: rgba(255,255,255,0.07) !important;
+}
+.hero-stat-n {
+  font-size: clamp(36px, 3.5vw, 48px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1 !important;
+  display: block !important;
+  margin-bottom: 8px !important;
+}
+.hero-stat-l {
+  font-size: 13px !important;
+  color: rgba(255,255,255,0.50) !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+}
+.hero-stats-note {
+  font-size: 12px !important;
+  color: rgba(255,255,255,0.30) !important;
+  margin-top: 16px !important;
+}
+@media (max-width: 768px) {
+  .hero-stats {
+    padding: 24px 20px !important;
+    border-radius: 14px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+  }
+  .hero-stat { padding: 0 !important; }
+  .hero-stat + .hero-stat::before { display: none !important; }
+  .hero-stat-n { font-size: 32px !important; }
+}
+
+/* 5. How It Works: make step numbers LARGE and impactful */
+.how-step-num {
+  font-size: 56px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1 !important;
+  color: rgba(88,101,242,0.20) !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 20px !important;
+  border-bottom: none !important;
+  width: auto !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+}
+
+/* 6. How It Works: polished step cards */
+.how-step {
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,0.025) !important;
+  padding: 40px 36px !important;
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+.how-step:hover {
+  border-color: rgba(88,101,242,0.30) !important;
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.20) !important;
+}
+.how-step h3 {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  margin-bottom: 12px !important;
+}
+.how-step p {
+  font-size: 15px !important;
+  color: rgba(255,255,255,0.55) !important;
+  line-height: 1.7 !important;
+  margin-bottom: 24px !important;
+}
+
+/* 7. Code blocks: bigger, more legible */
+.mini-code {
+  font-size: 13px !important;
+  padding: 18px 20px !important;
+  line-height: 1.75 !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+}
+@media (max-width: 768px) {
+  .mini-code { font-size: 12px !important; }
+}
+
+/* 8. How It Works section heading */
+.how-section .section-h2 {
+  font-size: clamp(36px, 4.5vw, 56px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+}
+
+/* 9. Section dividers — ALL sections get gradient borders */
+.demo-section::before,
+.how-section::before,
+.feat-cards-section::before,
+.why-section::before,
+.pricing-section::before,
+.faq-section::before,
+.final-cta::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.07) 30%, rgba(255,255,255,0.07) 70%, transparent 100%) !important;
+  pointer-events: none !important;
+}
+.demo-section,
+.how-section,
+.feat-cards-section,
+.why-section,
+.pricing-section,
+.faq-section,
+.final-cta {
+  position: relative !important;
+}
+
+
+/* ── BOTTOM-POLISH: Features, Demo, Why, Final CTA ── */
+
+/* 1. Feature cards: unique top accent per card, better structure */
+.feat-card {
+  background: rgba(255,255,255,0.025) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: relative !important;
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+.feat-card:hover {
+  border-color: rgba(88,101,242,0.28) !important;
+  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.25), 0 0 20px rgba(88,101,242,0.10) !important;
+}
+/* Unique top accent strip for each card */
+.feat-card::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 2px !important;
+  z-index: 1 !important;
+}
+.feat-card:nth-child(1)::before { background: linear-gradient(90deg, #818CF8, #60A5FA) !important; }
+.feat-card:nth-child(2)::before { background: linear-gradient(90deg, #F472B6, #A78BFA) !important; }
+.feat-card:nth-child(3)::before { background: linear-gradient(90deg, #34D399, #60A5FA) !important; }
+.feat-card:nth-child(4)::before { background: linear-gradient(90deg, #FBBF24, #F87171) !important; }
+.feat-card:nth-child(5)::before { background: linear-gradient(90deg, #A78BFA, #818CF8) !important; }
+.feat-card:nth-child(6)::before { background: linear-gradient(90deg, #60A5FA, #34D399) !important; }
+
+/* Feature card interior */
+.feat-card-mock {
+  background: rgba(0,0,0,0.30) !important;
+  border-radius: 12px !important;
+  margin: 20px 20px 0 !important;
+  padding: 20px !important;
+  min-height: 140px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+.feat-card-title {
+  padding: 16px 20px 6px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: rgba(255,255,255,0.95) !important;
+}
+.feat-card-desc {
+  padding: 0 20px 24px !important;
+  font-size: 14px !important;
+  color: rgba(255,255,255,0.50) !important;
+  line-height: 1.65 !important;
+}
+/* Feature section heading */
+.feat-cards-section .section-h2 {
+  font-size: clamp(36px, 4.5vw, 56px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  margin-bottom: 8px !important;
+}
+.feat-cards-grid {
+  margin-top: 60px !important;
+  gap: 20px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+}
+@media (max-width: 1024px) {
+  .feat-cards-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 640px) {
+  .feat-cards-grid { grid-template-columns: 1fr !important; }
+}
+
+/* 2. Why WebPeel: make comparison bars much more impactful */
+.why-inner {
+  gap: 80px !important;
+  align-items: start !important;
+}
+.bar-group {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 16px !important;
+  padding: 28px 32px !important;
+  margin-bottom: 20px !important;
+}
+.bar-group-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.45) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+  margin-bottom: 24px !important;
+}
+.bar-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin-bottom: 16px !important;
+}
+.bar-row:last-child { margin-bottom: 0 !important; }
+.bar-label {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  min-width: 90px !important;
+  color: rgba(255,255,255,0.65) !important;
+}
+.bar-label.hl {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+.bar-track {
+  flex: 1 !important;
+  height: 10px !important;
+  background: rgba(255,255,255,0.06) !important;
+  border-radius: 99px !important;
+  overflow: hidden !important;
+}
+.bar-fill {
+  height: 100% !important;
+  border-radius: 99px !important;
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.bar-fill.accent {
+  background: linear-gradient(90deg, #5865F2, #818CF8) !important;
+}
+.bar-fill.muted {
+  background: rgba(255,255,255,0.15) !important;
+}
+.bar-val {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.80) !important;
+  min-width: 44px !important;
+  text-align: right !important;
+}
+.bar-label.hl + .bar-track .bar-fill,
+.bar-fill.accent { opacity: 1 !important; }
+
+/* Before/After code blocks in Why section */
+.before-after {
+  margin-top: 32px !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+.ba-label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.10em !important;
+  padding: 10px 16px !important;
+  background: rgba(255,255,255,0.03) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.45) !important;
+}
+.ba-code {
+  font-size: 13px !important;
+  padding: 16px 20px !important;
+  line-height: 1.7 !important;
+}
+.ba-arrow {
+  font-size: 13px !important;
+  padding: 12px 20px !important;
+  border-top: 1px solid rgba(255,255,255,0.05) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* Why section checks */
+.why-checks {
+  margin: 24px 0 32px !important;
+}
+.why-checks li {
+  font-size: 15px !important;
+  padding: 8px 0 !important;
+  color: rgba(255,255,255,0.70) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+.why-checks li:last-child { border-bottom: none !important; }
+.why-check-icon {
+  color: var(--accent) !important;
+  margin-right: 10px !important;
+  font-weight: 700 !important;
+}
+
+/* 3. Demo section: bigger output font */
+.demo-content-box {
+  font-size: 13px !important;
+  line-height: 1.75 !important;
+}
+.demo-result-box {
+  font-size: 13px !important;
+  line-height: 1.75 !important;
+}
+.demo-key {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+.demo-value {
+  font-size: 13px !important;
+}
+.demo-card-wrap {
+  border: 1px solid rgba(255,255,255,0.09) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05) inset !important;
+}
+
+/* 4. Final CTA: full redesign — gradient section */
+.final-cta {
+  background: radial-gradient(ellipse 100% 100% at 50% 0%, rgba(88,101,242,0.18) 0%, transparent 60%),
+              linear-gradient(180deg, #0d0d10 0%, #08080c 100%) !important;
+  border-top: 1px solid rgba(88,101,242,0.15) !important;
+  padding: 120px 0 120px !important;
+  text-align: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.final-cta::after {
+  content: '' !important;
+  position: absolute !important;
+  top: -200px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 700px !important;
+  height: 700px !important;
+  background: radial-gradient(circle, rgba(88,101,242,0.10) 0%, transparent 65%) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+.final-cta .container { position: relative !important; z-index: 1 !important; }
+.final-cta h2 {
+  font-size: clamp(36px, 5vw, 68px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.08 !important;
+  margin-bottom: 20px !important;
+  max-width: 760px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+.final-cta .sub {
+  font-size: 18px !important;
+  color: rgba(255,255,255,0.52) !important;
+  margin-bottom: 48px !important;
+  max-width: 400px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  line-height: 1.6 !important;
+}
+.final-cta .install-card {
+  background: rgba(0,0,0,0.45) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 12px !important;
+  padding: 16px 28px !important;
+  font-size: 14px !important;
+  max-width: 520px !important;
+  margin: 0 auto 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+}
+.final-cta code {
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  color: rgba(255,255,255,0.80) !important;
+}
+.install-copy-btn {
+  font-size: 12px !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  background: transparent !important;
+  color: rgba(255,255,255,0.65) !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: border-color 150ms ease, color 150ms ease !important;
+}
+.install-copy-btn:hover {
+  border-color: rgba(255,255,255,0.40) !important;
+  color: #fff !important;
+}
+.final-cta-btn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  padding: 16px 44px !important;
+  border-radius: 10px !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  box-shadow: 0 4px 24px rgba(88,101,242,0.40), 0 0 60px rgba(88,101,242,0.15) !important;
+  transition: transform 200ms ease, box-shadow 200ms ease !important;
+  display: inline-block !important;
+}
+.final-cta-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 32px rgba(88,101,242,0.55), 0 0 80px rgba(88,101,242,0.20) !important;
+}
+@media (max-width: 768px) {
+  .final-cta { padding: 80px 0 !important; }
+  .final-cta h2 { font-size: clamp(32px, 8vw, 48px) !important; }
+  .final-cta .sub { font-size: 16px !important; }
+  .final-cta .install-card { flex-direction: column !important; text-align: center !important; }
+  .final-cta-btn { width: 100% !important; text-align: center !important; }
+}
+
+/* 5. Pricing cards: polish */
+.price-card {
+  border-radius: 20px !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+}
+.price-card.featured {
+  border-color: rgba(88,101,242,0.40) !important;
+  box-shadow: 0 0 40px rgba(88,101,242,0.12) !important;
+}
+
+/* 6. FAQ section polish */
+.faq-item {
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+.faq-question {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  padding: 20px 0 !important;
+  color: rgba(255,255,255,0.85) !important;
+}
+
   </style>
 </head>
 <body>
@@ -4822,9 +5332,6 @@
           <span class="hero-compat-item">Node.js</span>
         </div>
       </div>
-      <div class="hero-scroll-cue" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
     </div>
   </section>
 
@@ -4941,7 +5448,7 @@ webpeel "https://example.com" --readable</div>
       <div class="reveal" style="text-align:center;">
         <div class="section-eyebrow">FEATURES</div>
         <h2 class="section-h2">Everything your AI agent <span class="accent">needs to browse.</span></h2>
-        <p style="color:rgba(255,255,255,0.45);font-size:15px;max-width:520px;margin:16px auto 0;">Six capabilities. One API. Built from the ground up for AI workflows.</p>
+        <p style="color:rgba(255,255,255,0.45);font-size:15px;max-width:520px;margin:16px auto 0;">One API. Six superpowers. Built from the ground up for AI workflows and agents.</p>
       </div>
 
       <div class="feat-cards-grid">
