@@ -168,6 +168,8 @@ export async function takeScreenshotDiff(
 import { browserAudit, browserAnimationCapture, browserViewports, browserDesignAudit, browserDesignAnalysis } from './fetcher.js';
 export type { DesignAuditResult, DesignAnalysis, EffectInstance } from './fetcher.js';
 import type { DesignAnalysis } from './fetcher.js';
+import { buildDesignComparison, type DesignComparison } from './design-compare.js';
+export type { DesignComparison, DesignGap } from './design-compare.js';
 
 export interface AuditOptions {
   width?: number;
@@ -435,4 +437,58 @@ export async function takeDesignAnalysis(url: string, options: DesignAnalysisOpt
   });
 
   return { url: finalUrl, analysis };
+}
+
+// ── Design Compare ─────────────────────────────────────────────────────────────
+
+export interface DesignCompareOptions {
+  width?: number;
+  height?: number;
+  waitFor?: number;
+  timeout?: number;
+  stealth?: boolean;
+}
+
+export interface DesignComparisonResult {
+  subjectUrl: string;
+  referenceUrl: string;
+  comparison: DesignComparison;
+}
+
+/**
+ * Compare the design of two URLs by extracting design tokens from each in
+ * parallel and diffing the result into a structured DesignComparison.
+ */
+export async function takeDesignComparison(
+  subjectUrl: string,
+  referenceUrl: string,
+  options: DesignCompareOptions = {},
+): Promise<DesignComparisonResult> {
+  const {
+    width = 1440,
+    height = 900,
+    waitFor,
+    timeout = 60000,
+    stealth,
+  } = options;
+
+  const browserOpts = { width, height, waitMs: waitFor, timeoutMs: timeout, stealth };
+
+  const [subjectResult, referenceResult] = await Promise.all([
+    browserDesignAnalysis(subjectUrl, browserOpts),
+    browserDesignAnalysis(referenceUrl, browserOpts),
+  ]);
+
+  const comparison = buildDesignComparison(
+    subjectResult.finalUrl,
+    referenceResult.finalUrl,
+    subjectResult.analysis,
+    referenceResult.analysis,
+  );
+
+  return {
+    subjectUrl: subjectResult.finalUrl,
+    referenceUrl: referenceResult.finalUrl,
+    comparison,
+  };
 }
