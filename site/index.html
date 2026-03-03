@@ -3837,38 +3837,40 @@
      One font family (Inter 800), differentiated by cyan→blue→purple gradient on accent line.
      Brightness hierarchy: gradient accent > dim white setup line > subtext. */
 
-  /* Setup line slightly dimmed so the gradient line *glows* by comparison */
+  /* Headline brightness hierarchy:
+     Setup line = slightly softer so gradient "shocks" by comparison */
   .hero h1 span:not(.accent) {
-    color: rgba(255,255,255,0.82) !important;
-    -webkit-text-fill-color: rgba(255,255,255,0.82) !important;
+    color: rgba(255,255,255,0.72) !important;
+    -webkit-text-fill-color: rgba(255,255,255,0.72) !important;
   }
 
-  /* Gradient accent — the payoff line, full luminosity */
+  /* Gradient accent — lit from within using filter:drop-shadow glow
+     Note: webkit-text-fill-color:transparent means text-shadow won't work,
+     but filter:drop-shadow applies to rendered pixels (the gradient fill) */
   .hero h1 .accent {
     font-family: 'Inter', -apple-system, sans-serif !important;
     font-style: normal !important;
     font-weight: 800 !important;
     font-size: 1em !important;
     letter-spacing: -0.025em !important;
-    background: linear-gradient(90deg, #E0E7FF 0%, #7DD3FC 25%, #60A5FA 50%, #818CF8 75%, #C4B5FD 100%) !important;
+    background: linear-gradient(90deg, #FFFFFF 0%, #7DD3FC 20%, #60A5FA 45%, #818CF8 70%, #C4B5FD 100%) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
     background-clip: text !important;
     color: transparent !important;
+    filter: drop-shadow(0 0 18px rgba(96,165,250,0.55)) drop-shadow(0 0 36px rgba(88,101,242,0.30)) !important;
   }
 
-  /* Edge vignette — adds premium depth without glow blobs (Awwwards technique)
-     Must override mix-blend-mode:screen from line 2135 or black becomes transparent */
+  /* Kill hero::after purple glows from earlier blocks — neutral dark */
   .hero::after {
     content: '' !important;
     position: absolute !important;
     inset: 0 !important;
-    background: radial-gradient(ellipse 110% 70% at 50% 50%, transparent 55%, rgba(0,0,0,0.28) 100%) !important;
+    background: none !important;
     mix-blend-mode: normal !important;
-    opacity: 1 !important;
+    opacity: 0 !important;
     pointer-events: none !important;
     z-index: 0 !important;
-    border-radius: 0 !important;
   }
 
   /* === GLOBAL === */
