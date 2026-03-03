@@ -5588,9 +5588,9 @@
   border: none !important;
   padding-top: 24px !important;
   padding-bottom: 24px !important;
-  /* Edge fade belongs on the CONTAINER, not the scrolling inner */
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
-  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+  /* Edge fade on container — pills fade at viewport edges */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%) !important;
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%) !important;
 }
 /* Remove mask from scrolling element — it was clipping during scroll */
 .ai-ecosystem-inner {
