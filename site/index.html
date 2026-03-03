@@ -5612,6 +5612,15 @@
 /* 34. Nav spacing — tighten gap between GitHub and Sign In */
 .nav-links { gap: 28px !important; }
 
+/* 35. Ticker overflow — prevent clip at edges */
+.ai-ecosystem-strip { overflow: hidden !important; }
+
+/* 36. How It Works step description: tighter copy */
+.how-step p { font-size: 14px !important; line-height: 1.6 !important; color: rgba(255,255,255,0.65) !important; }
+
+/* 37. mini-code: slightly tighter bottom padding so cards feel balanced */
+.mini-code { padding-bottom: 16px !important; }
+
   </style>
 </head>
 <body>
@@ -5665,7 +5674,7 @@
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <a href="#features" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.20);color:rgba(255,255,255,0.85);border-radius:8px;text-decoration:none;font-weight:500;transition:all 150ms ease;">How It Works ↓</a>
           </div>
-          <p class="hero-cta-note hero-el" data-delay="460">No credit card · 500 fetches/week free</p>
+          <p class="hero-cta-note hero-el" data-delay="460">No credit card · ~2,000 fetches/month free</p>
           <div class="hero-trust hero-el" data-delay="500">
   <span class="hero-trust-live"><span class="hero-trust-dot-live"></span>API live · 99.9% uptime</span>
   <span class="hero-trust-sep">·</span>
@@ -5742,7 +5751,7 @@
         </div>
         <div class="hero-stat">
           <span class="hero-stat-n" data-count-to="18" style="color: #A5B4FC">18</span>
-          <span class="hero-stat-l">MCP tools built-in</span>
+          <span class="hero-stat-l">MCP tools (Claude/Cursor)</span>
         </div>
       </div>
       <p class="hero-stats-note hero-el" data-delay="700">30-day rolling averages · Tested across 500+ domains · <a href="/docs/" style="color:#818CF8;text-decoration:underline;text-decoration-color:rgba(129,140,248,0.4);text-underline-offset:3px;">methodology</a></p>
@@ -5830,7 +5839,7 @@
         </div>
         </div><!-- /demo-card-wrap -->
         <div class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:32px;padding:36px 0 16px;border-top:1px solid rgba(255,255,255,0.07);">
-          <p style="color:rgba(255,255,255,0.60);font-size:15px;margin-bottom:28px;max-width:420px;margin-left:auto;margin-right:auto;">That's the product. 500 free fetches/week — no credit card, no setup. Takes 30 seconds.</p>
+          <p style="color:rgba(255,255,255,0.60);font-size:15px;margin-bottom:28px;max-width:420px;margin-left:auto;margin-right:auto;">That's the product. ~2,000 free fetches/month — no credit card, no setup. Takes 30 seconds.</p>
           <a href="https://app.webpeel.dev/signup" style="display:inline-flex;align-items:center;gap:8px;padding:16px 48px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(180deg,#6B73FF 0%,#5865F2 50%,#4752C4 100%);border-radius:8px;text-decoration:none;box-shadow:0 0 0 1px rgba(99,102,241,0.4),0 8px 24px rgba(99,102,241,0.5);transition:transform 150ms ease,box-shadow 150ms ease;">Start Extracting Free →</a>
         </div>
       </div>
@@ -5848,22 +5857,28 @@
         <div class="how-step reveal" data-delay="1">
           <div class="how-step-num">01</div>
           <h3>Install</h3>
-          <p>One command. Works everywhere — macOS, Linux, Windows. Zero dependencies beyond Node.</p>
-          <div class="mini-code"><span style="color:#6B7280;"># Install globally</span>
-npm install -g webpeel</div>
+          <p>One command. Works everywhere — Node.js or Python. No dependencies to configure.</p>
+          <div class="mini-code"><span style="color:#6B7280;"># Node.js</span>
+npm install -g webpeel
+<span style="color:#6B7280;"># Python</span>
+pip install webpeel</div>
         </div>
         <div class="how-step reveal" data-delay="2" style="animation-delay: 80ms">
           <div class="how-step-num">02</div>
           <h3>Fetch</h3>
-          <p>Send any URL. WebPeel auto-detects what's needed — simple HTTP, browser rendering, or advanced mode.</p>
-          <div class="mini-code"><span style="color:#6B7280;"># Auto-detects: simple → browser → advanced</span>
-webpeel "https://example.com" --readable</div>
+          <p>Pass any URL. WebPeel auto-detects what's needed — HTTP, headless browser, or stealth mode.</p>
+          <div class="mini-code"><span style="color:#6B7280;"># CLI</span>
+webpeel "https://stripe.com" --readable
+<span style="color:#6B7280;"># API</span>
+curl api.webpeel.dev/v1/fetch?url=stripe.com</div>
         </div>
         <div class="how-step reveal" data-delay="3" style="animation-delay: 160ms">
           <div class="how-step-num">03</div>
           <h3>Integrate</h3>
           <p>Clean markdown, metadata, structured data — ready for your agent in milliseconds.</p>
-          <div class="mini-code"><span style="color:#818CF8;">import</span> { peel } <span style="color:#818CF8;">from</span> <span style="color:#86EFAC;">'webpeel'</span>
+          <div class="mini-code"><span style="color:#818CF8;">from</span> webpeel <span style="color:#818CF8;">import</span> peel  <span style="color:#6B7280;"># Python</span>
+page = peel(<span style="color:#86EFAC;">'stripe.com'</span>)
+<span style="color:#6B7280;">// or Node.js:</span>
 <span style="color:#818CF8;">const</span> page = <span style="color:#818CF8;">await</span> peel(<span style="color:#86EFAC;">'stripe.com'</span>)</div>
         </div>
       </div>
@@ -5908,7 +5923,7 @@ webpeel "https://example.com" --readable</div>
             </div>
           </div>
           <div class="feat-card-title">Research Agent</div>
-          <div class="feat-card-desc">Built-in deep research agent synthesizes info from 40+ sources into actionable insights for your AI.</div>
+          <div class="feat-card-desc">Built-in deep research agent synthesizes info from 47+ sources into structured insights your AI can use directly.</div>
         </div>
 
         <!-- Card 3: AI-Ready Markdown -->
@@ -6101,7 +6116,7 @@ traffic. Advertisers are watching closely.
         <div class="price-card reveal" data-delay="1">
           <div class="price-plan">Free</div>
           <div class="price-amount">$0<span class="per">/month</span></div>
-          <div class="price-desc">~2,000 fetches/month</div>
+          <div class="price-desc">500 fetches/week (~2,000/month)</div>
           <hr class="price-divider">
           <ul class="price-features">
             <li>All 18 MCP tools</li>
@@ -6136,9 +6151,9 @@ traffic. Advertisers are watching closely.
           <hr class="price-divider">
           <ul class="price-features">
             <li>Everything in Pro</li>
-            <li>500/hr burst limit</li>
+            <li>500 req/hr burst rate</li>
             <li>Priority queue processing</li>
-            <li>Higher spending caps</li>
+            <li>No daily spending limits</li>
             <li>Dedicated support channel</li>
             <li>Custom domain allowlist</li>
           </ul>
@@ -6167,8 +6182,8 @@ traffic. Advertisers are watching closely.
           <div class="faq-answer" style="max-height:560px;"><div class="faq-answer-inner">WebPeel extracts more content (98% vs 82% completeness), has better protected site success (97.6% vs 65%), includes 18 MCP tools vs ~6, and has a built-in deep research agent. It's also fully open source and offers a Firecrawl-compatible API for easy migration.</div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-q"><span>What is WebPeel?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel is a web content extraction API built for AI agents. It turns any URL into clean, structured content — markdown, metadata, and structured data — ready for your AI in milliseconds. It handles JavaScript rendering, dynamic content, and protected pages automatically.</div></div>
+          <button class="faq-q"><span>What happens when I hit the rate limit?</span><span class="faq-icon">+</span></button>
+          <div class="faq-answer"><div class="faq-answer-inner">Free tier: requests return a 429 status with a <code>Retry-After</code> header. No charges, no service interruption — limits reset every Monday at 00:00 UTC. Pro and Max plans have higher limits and you can upgrade instantly from the dashboard. We never charge overages without explicit opt-in.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-q"><span>How does it handle JavaScript-heavy or dynamic pages?</span><span class="faq-icon">+</span></button>
@@ -6198,7 +6213,7 @@ traffic. Advertisers are watching closely.
   <section class="final-cta">
     <div class="container" style="max-width:600px;">
       <h2 class="reveal" style="text-wrap:balance;">Your AI is one API call away from <span class="accent">the&nbsp;entire&nbsp;web.</span></h2>
-      <p class="sub reveal" data-delay="1">Free tier: 500 fetches/week, full feature access. No credit card required.</p>
+      <p class="sub reveal" data-delay="1">Free tier: ~2,000 fetches/month, full feature access. No credit card required.</p>
       <div class="install-card reveal" data-delay="2">
         <code id="install-cmd">npm install -g webpeel</code>
         <button class="install-copy-btn" id="install-copy">Copy</button>
