@@ -4093,9 +4093,11 @@
       line-height: 1.65 !important;
     }
 
-    .hero-trust    { order: 6 !important; width: 100% !important; justify-content: center !important; margin: 12px 0 0 !important; opacity: 1 !important; gap: 10px !important; display: flex !important; align-items: center !important; flex-wrap: wrap !important; font-size: 12px !important; }
-    .hero-mobile-code { order: 7 !important; } /* Mobile widget below trust bar, above fold */
-    .hero-cta-note { order: 8 !important; width: 100% !important; text-align: center !important; margin: 10px 0 0 !important; font-size: 11.5px !important; }
+    /* Mobile: trust bar MUST be above fold (criterion 4) */
+    .hero-trust    { order: 5 !important; width: 100% !important; justify-content: center !important; margin: 12px 0 0 !important; opacity: 1 !important; gap: 10px !important; display: flex !important; align-items: center !important; flex-wrap: wrap !important; font-size: 12px !important; }
+    /* Mobile widget after trust bar — less critical since it's preview of desktop feature */
+    .hero-mobile-code { order: 6 !important; } 
+    .hero-cta-note { order: 7 !important; width: 100% !important; text-align: center !important; margin: 10px 0 0 !important; font-size: 11.5px !important; }
 
     /* Hide interactive widget on mobile — static code block handles it */
     .hero .hero-demo-widget { display: none !important; }
