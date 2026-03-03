@@ -3878,19 +3878,23 @@
   /* === HERO BACKGROUND === */
   .hero, section.hero { background: #0d0d10 !important; }
 
-  /* === CTA BUTTON === */
+  /* === CTA BUTTON — white on dark, maximum contrast (Vercel pattern) === */
   .btn-primary,
   .hero-ctas .btn-primary,
   .mobile-sticky-cta .btn-primary {
-    background: #5865F2 !important;
-    border-radius: 10px !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
     border: none !important;
-    box-shadow: 0 4px 14px rgba(88,101,242,0.30) !important;
-    color: #fff !important;
-    font-weight: 600 !important;
-    letter-spacing: -0.01em !important;
+    box-shadow: 0 4px 20px rgba(255,255,255,0.12) !important;
+    color: #0d0d10 !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
   }
-  .btn-primary:hover { box-shadow: 0 8px 24px rgba(88,101,242,0.40) !important; }
+  .btn-primary:hover {
+    background: rgba(255,255,255,0.92) !important;
+    box-shadow: 0 8px 28px rgba(255,255,255,0.18) !important;
+    transform: translateY(-1px) !important;
+  }
 
   /* === HERO KICKER === */
   .hero-kicker {
