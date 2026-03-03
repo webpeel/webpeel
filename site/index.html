@@ -5583,6 +5583,35 @@
 .hdw-cmd-line { overflow: hidden !important; text-overflow: ellipsis !important; }
 .hdw-body { overflow: hidden !important; }
 
+/* 26. Hero badge border — more visible (was 0.12, barely visible on dark bg) */
+.hero-eyebrow { border-color: rgba(255,255,255,0.28) !important; background: rgba(255,255,255,0.08) !important; }
+
+/* 27. How It Works — reduce section-top void, boost card borders + ghost numbers */
+.how-section { padding-top: 80px !important; }
+.how-step { border-color: rgba(255,255,255,0.12) !important; }
+.how-step-num, .step-num, .how-step-number { opacity: 0.14 !important; }
+
+/* 28. Features — LLM card desc was too dark, all feat-card-desc normalize */
+.feat-card-desc { color: rgba(255,255,255,0.70) !important; }
+
+/* 29. Demo section — reduce gap between demo bottom and next section */
+.demo-section { padding-bottom: 60px !important; }
+
+/* 30. Features H2 accent — only "browse." should be accent, not entire phrase */
+.feat-cards-section .section-h2 .accent { color: #A5B4FC !important; font-style: normal !important; }
+
+/* 31. Section eyebrow pills — consistent spacing to h2 */
+.section-eyebrow + .section-h2, .section-eyebrow + h2 { margin-top: 12px !important; }
+
+/* 32. How It Works background — smooth gradient transition from demo to how */
+.how-section { background: linear-gradient(to bottom, #080810 0%, #0d0d14 100%) !important; }
+
+/* 33. Comparison bar label alignment — consistent distance from bar end */
+.bar-val { min-width: 44px !important; text-align: right !important; }
+
+/* 34. Nav spacing — tighten gap between GitHub and Sign In */
+.nav-links { gap: 28px !important; }
+
   </style>
 </head>
 <body>
@@ -5716,7 +5745,7 @@
           <span class="hero-stat-l">MCP tools built-in</span>
         </div>
       </div>
-      <p class="hero-stats-note hero-el" data-delay="700">30-day rolling averages · Tested across 500+ domains · <a href="/docs/" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">methodology</a></p>
+      <p class="hero-stats-note hero-el" data-delay="700">30-day rolling averages · Tested across 500+ domains · <a href="/docs/" style="color:#818CF8;text-decoration:underline;text-decoration-color:rgba(129,140,248,0.4);text-underline-offset:3px;">methodology</a></p>
       </div><!-- /hero-stats-section -->
       <div class="hero-compat hero-el" data-delay="800">
         <span class="hero-compat-label">Works with</span>
@@ -5800,10 +5829,9 @@
           </div>
         </div>
         </div><!-- /demo-card-wrap -->
-        <div class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:56px;padding:48px 0 24px;">
-          <p style="color:rgba(255,255,255,0.65);font-size:15px;margin-bottom:28px;max-width:500px;margin-left:auto;margin-right:auto;">Convinced? Get started free in seconds — 500 extracts/week, full feature access. No credit card required.</p>
-          <a href="https://app.webpeel.dev/signup" style="display:inline-flex;align-items:center;gap:8px;padding:16px 48px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(180deg,#6B73FF 0%,#5865F2 50%,#4752C4 100%);border-radius:8px;text-decoration:none;box-shadow:0 0 0 1px rgba(99,102,241,0.4),0 8px 24px rgba(99,102,241,0.5);transition:transform 150ms ease,box-shadow 150ms ease;">Get Your Free API Key →</a>
-          <p style="color:rgba(255,255,255,0.35);font-size:12px;margin-top:16px;">500 fetches/week · Full feature access</p>
+        <div class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:32px;padding:36px 0 16px;border-top:1px solid rgba(255,255,255,0.07);">
+          <p style="color:rgba(255,255,255,0.60);font-size:15px;margin-bottom:28px;max-width:420px;margin-left:auto;margin-right:auto;">That's the product. 500 free fetches/week — no credit card, no setup. Takes 30 seconds.</p>
+          <a href="https://app.webpeel.dev/signup" style="display:inline-flex;align-items:center;gap:8px;padding:16px 48px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(180deg,#6B73FF 0%,#5865F2 50%,#4752C4 100%);border-radius:8px;text-decoration:none;box-shadow:0 0 0 1px rgba(99,102,241,0.4),0 8px 24px rgba(99,102,241,0.5);transition:transform 150ms ease,box-shadow 150ms ease;">Start Extracting Free →</a>
         </div>
       </div>
     </div>
@@ -5847,7 +5875,7 @@ webpeel "https://example.com" --readable</div>
     <div class="container">
       <div class="reveal" style="text-align:center;">
         <div class="section-eyebrow">FEATURES</div>
-        <h2 class="section-h2">Everything your AI agent <span class="accent">needs to browse.</span></h2>
+        <h2 class="section-h2">Everything your AI agent needs to <span class="accent">browse.</span></h2>
         <p style="color:rgba(255,255,255,0.45);font-size:15px;max-width:520px;margin:16px auto 0;">Extract structured content from anywhere. Built by developers, for developers. Everything you need for production AI agents.</p>
       </div>
 
