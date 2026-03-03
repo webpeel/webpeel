@@ -3833,6 +3833,23 @@
 
   /* ══ DESIGN-FINAL: single authoritative block — clean slate ══ */
 
+  /* === TYPEFACE FIX: replace Instrument Serif with Inter + gradient ===
+     Reviewers consistently flagged serif italic + bold sans = two design systems fighting.
+     Fix: one font family (Inter 800), differentiated by indigo gradient on accent line.
+     This is exactly how Linear/Stripe/Vercel handle headline callouts. */
+  .hero h1 .accent {
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-style: normal !important;
+    font-weight: 800 !important;
+    font-size: 1em !important;
+    letter-spacing: -0.025em !important;
+    background: linear-gradient(135deg, #E0E7FF 0%, #A5B4FC 45%, #818CF8 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    color: transparent !important;
+  }
+
   /* === GLOBAL === */
   body::after { display: none !important; }
   .hero-ambient-orb, .hero-card-bloom, .hero-terminal-glow { display: none !important; }
