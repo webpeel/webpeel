@@ -3836,6 +3836,23 @@
   /* === GLOBAL === */
   body::after { display: none !important; }
   .hero-ambient-orb, .hero-card-bloom, .hero-terminal-glow { display: none !important; }
+  /* Kill the purple glow pseudo-element on hero-grid (was rgba(88,101,242,0.40)) */
+  .hero-grid::after { background: none !important; box-shadow: none !important; }
+  .hero-grid::before { background: none !important; }
+  /* Add a SINGLE subtle directional glow behind the demo widget only */
+  @media (min-width: 769px) {
+    .hero-grid::after {
+      content: '' !important;
+      position: absolute !important;
+      top: 10% !important; right: -5% !important;
+      width: 50% !important; height: 80% !important;
+      background: radial-gradient(ellipse 60% 55% at 60% 45%,
+        rgba(88,101,242,0.10) 0%,
+        transparent 70%) !important;
+      pointer-events: none !important;
+      z-index: 0 !important;
+    }
+  }
 
   /* === NAV === */
   nav {
