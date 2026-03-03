@@ -4647,6 +4647,35 @@
     line-height: 1.15 !important;
   }
 
+  /* ── HERO BUTTON FIX: restore blue gradient (was overridden to white) ── */
+  .hero-ctas .btn-primary {
+    background: linear-gradient(180deg, #7C83FF 0%, #6B73FF 40%, #5865F2 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 50px rgba(88,101,242,0.55), 0 4px 24px rgba(88,101,242,0.5), 0 0 100px rgba(88,101,242,0.15) !important;
+  }
+  .hero-ctas .btn-primary:hover {
+    box-shadow: 0 0 50px rgba(88,101,242,0.6), 0 8px 30px rgba(88,101,242,0.5), 0 0 100px rgba(88,101,242,0.18) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  /* ── STATS BAR LABEL VISIBILITY ── */
+  .hero-stat-l {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: rgba(255,255,255,0.65) !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  /* ── FEATURE CARDS: unified shadow system ── */
+  .feat-card {
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow: 0 0 0 1px rgba(88,101,242,0.0), 0 4px 16px rgba(0,0,0,0.20) !important;
+  }
+  .feat-card:hover {
+    border-color: rgba(88,101,242,0.30) !important;
+    box-shadow: 0 0 20px rgba(88,101,242,0.15), 0 8px 24px rgba(0,0,0,0.25) !important;
+  }
+
   </style>
 </head>
 <body>
