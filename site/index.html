@@ -2295,7 +2295,7 @@
     .hero-trust a, .hero-proof a { opacity: 0.65 !important; font-weight: 500 !important; }
     .hero-trust a:hover, .hero-proof a:hover { opacity: 1 !important; }
     .hero-trust-live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 500; }
-    .hero-trust-dot-live { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.7); animation: pulse-green 2s ease-in-out infinite; flex-shrink: 0; }
+    .hero-trust-dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(88,101,242,0.6); animation: pulse-green 2s ease-in-out infinite; flex-shrink: 0; }
     @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 8px rgba(74,222,128,0.7); } 50% { box-shadow: 0 0 14px rgba(74,222,128,1); } }
     .hero-trust-sep { color: rgba(255,255,255,0.2); margin: 0 4px; font-size: 13px; }
 
@@ -3846,10 +3846,11 @@
   }
 
   /* Headline brightness hierarchy:
-     Setup line dimmed so gradient accent is a visual "shock" */
+     Setup line at high opacity so both lines are readable;
+     gradient on .accent provides the visual differentiation */
   .hero h1 span:not(.accent) {
-    color: rgba(255,255,255,0.38) !important;
-    -webkit-text-fill-color: rgba(255,255,255,0.38) !important;
+    color: rgba(255,255,255,0.82) !important;
+    -webkit-text-fill-color: rgba(255,255,255,0.82) !important;
   }
 
   /* Gradient accent — peaks bright on "internet" (end of phrase)
@@ -4492,6 +4493,26 @@
   .hdw-view-link:hover { text-decoration: underline; }
   .hdw-view-link.visible { opacity: 1; }
 
+  /* ── DESIGN-V2: hero refinements — typography, color discipline, CTAs ── */
+  /* 1. Hide redundant pill badge on mobile to reduce pre-headline clutter */
+  @media (max-width: 768px) {
+    .hero-eyebrow { display: none !important; }
+    .hero-kicker { margin-bottom: 16px !important; }
+    /* Secondary CTA ghost button: full-width on mobile */
+    .hero-ctas .btn-ghost { width: 100% !important; justify-content: center !important; min-height: 52px !important; font-size: 15px !important; }
+  }
+  /* 2. Hero secondary CTA — visual weight slightly below primary */
+  .hero-ctas .btn-ghost {
+    border-color: rgba(255,255,255,0.20) !important;
+    color: rgba(255,255,255,0.72) !important;
+    background: transparent !important;
+    font-weight: 500 !important;
+  }
+  .hero-ctas .btn-ghost:hover {
+    border-color: rgba(255,255,255,0.45) !important;
+    color: rgba(255,255,255,0.95) !important;
+    background: rgba(255,255,255,0.05) !important;
+  }
   </style>
 </head>
 <body>
@@ -4543,12 +4564,13 @@
           <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
+            <a href="/docs/" class="btn-ghost">View Docs</a>
           </div>
-          <p class="hero-cta-note hero-el" data-delay="460">No credit card · 500 fetches/week free · <a href="/docs/" style="color:rgba(165,180,252,0.75);text-decoration:underline;text-underline-offset:3px;">View Docs</a></p>
+          <p class="hero-cta-note hero-el" data-delay="460">No credit card · 500 fetches/week free</p>
           <div class="hero-trust hero-el" data-delay="500">
-  <span class="hero-trust-live"><span class="hero-trust-dot-live"></span>4,409 weekly npm installs</span>
+  <span class="hero-trust-live"><span class="hero-trust-dot-live"></span>API live · 99.9% uptime</span>
   <span class="hero-trust-sep">·</span>
-  <a href="/docs/" style="color:rgba(255,255,255,0.72);font-size:13px;font-weight:500;">Docs</a>
+  <a href="https://www.npmjs.com/package/webpeel" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.72);font-size:13px;font-weight:500;">npm ↗</a>
   <span class="hero-trust-sep">·</span>
   <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.72);font-size:13px;font-weight:500;">GitHub ↗</a>
 </div>
