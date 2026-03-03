@@ -5437,17 +5437,20 @@
   transform: translateY(-2px) !important;
 }
 
-/* 10. Hero subtle dot grid for depth */
+/* 10. Hero: dot grid + atmospheric gradient merged into ::before */
 .hero::before {
   content: '' !important;
   position: absolute !important;
   inset: 0 !important;
-  background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px) !important;
-  background-size: 36px 36px !important;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px),
+    radial-gradient(ellipse 70% 65% at 20% 32%, rgba(88,101,242,0.38), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 75% 20%, rgba(88,101,242,0.14), transparent 65%),
+    radial-gradient(ellipse 35% 30% at 50% 70%, rgba(88,101,242,0.07), transparent 60%) !important;
+  background-size: 28px 28px, cover, cover, cover !important;
   pointer-events: none !important;
   z-index: 0 !important;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%) !important;
-  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%) !important;
+  animation: aurora-pulse 8s ease-in-out infinite alternate !important;
 }
 .hero > * { position: relative !important; z-index: 1 !important; }
 
