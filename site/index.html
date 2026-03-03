@@ -4123,6 +4123,375 @@
     .demo-result { overflow: hidden !important; }
   }
 
+  /* ============================================================
+     AI ECOSYSTEM STRIP
+     ============================================================ */
+  .ai-ecosystem-strip {
+    background: rgba(0,0,0,0.45);
+    border-top: 1px solid rgba(255,255,255,0.055);
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+    padding: 14px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 80px, black calc(100% - 80px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 80px, black calc(100% - 80px), transparent 100%);
+  }
+  .ai-ecosystem-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0 20px;
+    animation: aiesScroll 28s linear infinite;
+  }
+  .ai-ecosystem-inner:hover { animation-play-state: paused; }
+  .ai-strip-label {
+    color: rgba(255,255,255,0.28);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    padding-right: 4px;
+  }
+  .ai-strip-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 13px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+    cursor: default;
+    letter-spacing: -0.01em;
+  }
+  .ai-strip-pill:hover { transform: scale(1.06); }
+  .ai-strip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .ai-pill-claude { background: rgba(216,114,26,0.1); border-color: rgba(216,114,26,0.25); color: #f97316; }
+  .ai-pill-claude .ai-strip-dot { background: #f97316; }
+  .ai-pill-gpt { background: rgba(16,163,127,0.1); border-color: rgba(16,163,127,0.25); color: #10A37F; }
+  .ai-pill-gpt .ai-strip-dot { background: #10A37F; }
+  .ai-pill-langchain { background: rgba(110,168,254,0.1); border-color: rgba(110,168,254,0.25); color: #6EA8FE; }
+  .ai-pill-langchain .ai-strip-dot { background: #6EA8FE; }
+  .ai-pill-llama { background: rgba(147,51,234,0.1); border-color: rgba(147,51,234,0.25); color: #A855F7; }
+  .ai-pill-llama .ai-strip-dot { background: #A855F7; }
+  .ai-pill-crewai { background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.25); color: #F43F5E; }
+  .ai-pill-crewai .ai-strip-dot { background: #F43F5E; }
+  .ai-pill-autogen { background: rgba(88,101,242,0.1); border-color: rgba(88,101,242,0.25); color: #818CF8; }
+  .ai-pill-autogen .ai-strip-dot { background: #818CF8; }
+  .ai-pill-cursor { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: rgba(255,255,255,0.72); }
+  .ai-pill-cursor .ai-strip-dot { background: rgba(255,255,255,0.5); }
+  .ai-pill-python { background: rgba(55,119,171,0.1); border-color: rgba(55,119,171,0.25); color: #60A5FA; }
+  .ai-pill-python .ai-strip-dot { background: #60A5FA; }
+  .ai-pill-windsurf { background: rgba(14,165,233,0.1); border-color: rgba(14,165,233,0.25); color: #38BDF8; }
+  .ai-pill-windsurf .ai-strip-dot { background: #38BDF8; }
+  @keyframes aiesScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ============================================================
+     FEATURE ILLUSTRATION CARDS
+     ============================================================ */
+  .feat-cards-section {
+    padding: var(--space-section) 0;
+    background: #09090c;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .feat-cards-section .section-eyebrow {
+    color: var(--accent-light);
+    background: rgba(88,101,242,0.12);
+    border-color: rgba(88,101,242,0.25);
+  }
+  .feat-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 56px;
+  }
+  @media (max-width: 900px) {
+    .feat-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  }
+  @media (max-width: 560px) {
+    .feat-cards-grid { grid-template-columns: 1fr; }
+  }
+  .feat-card {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    padding: 24px;
+    transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+    position: relative;
+  }
+  .feat-card:hover {
+    border-color: rgba(88,101,242,0.38);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(88,101,242,0.12), 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .feat-card-mock {
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 16px;
+    height: 118px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .feat-card-title {
+    color: #e0e7ff;
+    font-size: 15.5px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+  }
+  .feat-card-desc {
+    color: rgba(255,255,255,0.42);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  /* ------ Card 1: Extract Any Website (URL typewriter) ------ */
+  .fc1-urlbar {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px;
+    padding: 6px 11px;
+    gap: 7px;
+    margin-bottom: 10px;
+    font-size: 11.5px;
+    font-family: 'SF Mono','Fira Code',monospace;
+  }
+  .fc1-urlbar-icon { color: rgba(255,255,255,0.22); font-size: 9px; flex-shrink: 0; }
+  .fc1-url-text {
+    color: rgba(255,255,255,0.7);
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 160px;
+    animation: fc1TypeUrl 5.5s cubic-bezier(0.4,0,0.2,1) infinite;
+  }
+  @keyframes fc1TypeUrl {
+    0%     { width: 0; opacity: 0.6; }
+    4%     { opacity: 1; }
+    38%    { width: 160px; }
+    72%    { width: 160px; }
+    82%    { width: 0; opacity: 0; }
+    100%   { width: 0; opacity: 0; }
+  }
+  .fc1-result {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: rgba(16,185,129,0.08);
+    border: 1px solid rgba(16,185,129,0.22);
+    border-radius: 8px;
+    font-size: 12px;
+    animation: fc1Result 5.5s cubic-bezier(0.4,0,0.2,1) infinite;
+    opacity: 0;
+  }
+  .fc1-check { color: #10b981; font-weight: 700; font-size: 13px; }
+  .fc1-result-text { color: rgba(255,255,255,0.65); font-family: 'SF Mono','Fira Code',monospace; }
+  @keyframes fc1Result {
+    0%, 40%  { opacity: 0; transform: translateY(5px); }
+    52%, 72% { opacity: 1; transform: translateY(0); }
+    80%      { opacity: 0; transform: translateY(5px); }
+    100%     { opacity: 0; transform: translateY(5px); }
+  }
+
+  /* ------ Card 2: Design Analysis (colour swatches + font) ------ */
+  .fc2-swatches { display: flex; gap: 8px; margin-bottom: 12px; }
+  .fc2-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    opacity: 0; transform: scale(0.4);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .fc2-dot:nth-child(1) { background: #5865F2; animation: fc2Pop 4.5s ease infinite; animation-delay: 0s; }
+  .fc2-dot:nth-child(2) { background: #10B981; animation: fc2Pop 4.5s ease infinite; animation-delay: 0.22s; }
+  .fc2-dot:nth-child(3) { background: #F59E0B; animation: fc2Pop 4.5s ease infinite; animation-delay: 0.44s; }
+  .fc2-dot:nth-child(4) { background: #EF4444; animation: fc2Pop 4.5s ease infinite; animation-delay: 0.66s; }
+  @keyframes fc2Pop {
+    0%     { opacity: 0; transform: scale(0.4); }
+    14%    { opacity: 1; transform: scale(1.12); }
+    22%    { opacity: 1; transform: scale(1); }
+    65%    { opacity: 1; transform: scale(1); }
+    78%    { opacity: 0; transform: scale(0.4); }
+    100%   { opacity: 0; transform: scale(0.4); }
+  }
+  .fc2-font-row {
+    display: flex; align-items: baseline; gap: 8px;
+    opacity: 0; transform: translateY(5px);
+    animation: fc2FontFade 4.5s ease infinite; animation-delay: 0.9s;
+  }
+  .fc2-font-name { color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 800; letter-spacing: -0.03em; }
+  .fc2-font-weight { color: var(--accent-light); font-size: 11px; font-weight: 500; font-family: monospace; }
+  @keyframes fc2FontFade {
+    0%, 18%  { opacity: 0; transform: translateY(5px); }
+    30%, 65% { opacity: 1; transform: translateY(0); }
+    78%      { opacity: 0; transform: translateY(5px); }
+    100%     { opacity: 0; transform: translateY(5px); }
+  }
+
+  /* ------ Card 3: AI-Ready Markdown (streaming text) ------ */
+  .fc3-lines { font-family: 'SF Mono','Fira Code',monospace; font-size: 11px; line-height: 1.7; }
+  .fc3-line { opacity: 0; transform: translateX(-5px); white-space: nowrap; overflow: hidden; }
+  .fc3-line:nth-child(1) { color: #818CF8; animation: fc3Line 5.5s ease infinite; animation-delay: 0s; }
+  .fc3-line:nth-child(2) { color: rgba(255,255,255,0.68); animation: fc3Line 5.5s ease infinite; animation-delay: 0.28s; }
+  .fc3-line:nth-child(3) { color: rgba(255,255,255,0.68); animation: fc3Line 5.5s ease infinite; animation-delay: 0.56s; }
+  .fc3-line:nth-child(4) { color: #86EFAC; animation: fc3Line 5.5s ease infinite; animation-delay: 0.84s; }
+  .fc3-line:nth-child(5) { color: rgba(255,255,255,0.42); animation: fc3Line 5.5s ease infinite; animation-delay: 1.1s; }
+  @keyframes fc3Line {
+    0%     { opacity: 0; transform: translateX(-5px); }
+    8%     { opacity: 1; transform: translateX(0); }
+    65%    { opacity: 1; }
+    76%    { opacity: 0; }
+    100%   { opacity: 0; }
+  }
+  .fc3-cursor {
+    display: inline-block; width: 6px; height: 12px;
+    background: #5865F2; vertical-align: middle; margin-left: 2px;
+    animation: fc3Blink 0.9s step-end infinite;
+  }
+  @keyframes fc3Blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ------ Card 4: Screenshot API (browser skeleton → content) ------ */
+  .fc4-browser {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    height: 86px;
+    display: flex;
+    flex-direction: column;
+  }
+  .fc4-chrome {
+    background: rgba(255,255,255,0.055);
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+  .fc4-chrome-dots { display: flex; gap: 4px; }
+  .fc4-chrome-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .fc4-chrome-dot.r { background: #FF5F57; }
+  .fc4-chrome-dot.y { background: #FEBC2E; }
+  .fc4-chrome-dot.g { background: #28C840; }
+  .fc4-chrome-url {
+    flex: 1; background: rgba(255,255,255,0.06); border-radius: 4px;
+    padding: 2px 7px; font-size: 9.5px; color: rgba(255,255,255,0.45);
+    font-family: monospace; white-space: nowrap; overflow: hidden;
+  }
+  .fc4-page { flex: 1; position: relative; overflow: hidden; background: rgba(255,255,255,0.02); }
+  .fc4-skels {
+    position: absolute; inset: 0; padding: 8px;
+    display: flex; flex-direction: column; gap: 5px;
+    animation: fc4SkelFade 5s ease infinite;
+  }
+  .fc4-skel {
+    border-radius: 3px;
+    animation: fc4SkelPulse 1.4s ease-in-out infinite;
+  }
+  .fc4-skel-h  { height: 8px; background: rgba(255,255,255,0.1); width: 55%; }
+  .fc4-skel-p1 { height: 5px; background: rgba(255,255,255,0.06); width: 92%; }
+  .fc4-skel-p2 { height: 5px; background: rgba(255,255,255,0.06); width: 78%; }
+  .fc4-skel-p3 { height: 5px; background: rgba(255,255,255,0.04); width: 65%; }
+  @keyframes fc4SkelPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+  @keyframes fc4SkelFade {
+    0%, 45% { opacity: 1; }
+    58%, 100% { opacity: 0; }
+  }
+  .fc4-content {
+    position: absolute; inset: 0; padding: 8px;
+    display: flex; flex-direction: column; gap: 4px;
+    animation: fc4ContentIn 5s ease infinite;
+    opacity: 0;
+  }
+  .fc4-content-h { font-size: 8.5px; font-weight: 700; color: rgba(255,255,255,0.85); }
+  .fc4-content-p { font-size: 7.5px; color: rgba(255,255,255,0.38); line-height: 1.55; }
+  .fc4-content-tag {
+    display: inline-block; margin-top: 3px;
+    padding: 1.5px 6px; border-radius: 3px; font-size: 7px;
+    background: rgba(88,101,242,0.2); color: #818CF8; font-weight: 600;
+  }
+  @keyframes fc4ContentIn {
+    0%, 48%  { opacity: 0; transform: translateY(4px); }
+    60%, 82% { opacity: 1; transform: translateY(0); }
+    92%      { opacity: 0; }
+    100%     { opacity: 0; }
+  }
+
+  /* ------ Card 5: Structured JSON (lines stagger in) ------ */
+  .fc5-json { font-family: 'SF Mono','Fira Code',monospace; font-size: 10.5px; line-height: 1.65; }
+  .fc5-line { opacity: 0; transform: translateX(-6px); white-space: nowrap; }
+  .fc5-brace { color: rgba(255,255,255,0.3); }
+  .fc5-key  { color: #818CF8; }
+  .fc5-str  { color: #86EFAC; }
+  .fc5-num  { color: #FCD34D; }
+  .fc5-bool { color: #FB923C; }
+  .fc5-line:nth-child(1) { animation: fc5Line 6s ease infinite; animation-delay: 0s; }
+  .fc5-line:nth-child(2) { animation: fc5Line 6s ease infinite; animation-delay: 0.18s; }
+  .fc5-line:nth-child(3) { animation: fc5Line 6s ease infinite; animation-delay: 0.36s; }
+  .fc5-line:nth-child(4) { animation: fc5Line 6s ease infinite; animation-delay: 0.54s; }
+  .fc5-line:nth-child(5) { animation: fc5Line 6s ease infinite; animation-delay: 0.72s; }
+  .fc5-line:nth-child(6) { animation: fc5Line 6s ease infinite; animation-delay: 0.90s; }
+  .fc5-line:nth-child(7) { animation: fc5Line 6s ease infinite; animation-delay: 1.08s; }
+  @keyframes fc5Line {
+    0%     { opacity: 0; transform: translateX(-6px); }
+    10%    { opacity: 1; transform: translateX(0); }
+    65%    { opacity: 1; }
+    76%    { opacity: 0; }
+    100%   { opacity: 0; }
+  }
+
+  /* ------ Card 6: Works with Any AI (logo pills fade in) ------ */
+  .fc6-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .fc6-pill {
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    opacity: 0;
+    transform: scale(0.88);
+    border: 1px solid transparent;
+    letter-spacing: -0.01em;
+  }
+  .fc6-pill:nth-child(1) { background: rgba(216,114,26,0.12); border-color: rgba(216,114,26,0.28); color: #f97316; animation: fc6Pill 5.5s ease infinite; animation-delay: 0s; }
+  .fc6-pill:nth-child(2) { background: rgba(16,163,127,0.12); border-color: rgba(16,163,127,0.28); color: #10A37F; animation: fc6Pill 5.5s ease infinite; animation-delay: 0.18s; }
+  .fc6-pill:nth-child(3) { background: rgba(110,168,254,0.12); border-color: rgba(110,168,254,0.28); color: #6EA8FE; animation: fc6Pill 5.5s ease infinite; animation-delay: 0.36s; }
+  .fc6-pill:nth-child(4) { background: rgba(147,51,234,0.12); border-color: rgba(147,51,234,0.28); color: #A855F7; animation: fc6Pill 5.5s ease infinite; animation-delay: 0.54s; }
+  .fc6-pill:nth-child(5) { background: rgba(88,101,242,0.12); border-color: rgba(88,101,242,0.28); color: #818CF8; animation: fc6Pill 5.5s ease infinite; animation-delay: 0.72s; }
+  .fc6-pill:nth-child(6) { background: rgba(234,179,8,0.12); border-color: rgba(234,179,8,0.28); color: #EAB308; animation: fc6Pill 5.5s ease infinite; animation-delay: 0.90s; }
+  @keyframes fc6Pill {
+    0%     { opacity: 0; transform: scale(0.88); }
+    14%    { opacity: 1; transform: scale(1.04); }
+    20%    { opacity: 1; transform: scale(1); }
+    65%    { opacity: 1; transform: scale(1); }
+    76%    { opacity: 0; transform: scale(0.88); }
+    100%   { opacity: 0; transform: scale(0.88); }
+  }
+  /* Hero demo widget improved: View full response link */
+  .hdw-view-link {
+    display: block; text-align: right;
+    font-size: 11px; color: var(--accent-light);
+    margin-top: 8px; text-decoration: none;
+    opacity: 0; transition: opacity 0.4s ease;
+    font-weight: 500;
+  }
+  .hdw-view-link:hover { text-decoration: underline; }
+  .hdw-view-link.visible { opacity: 1; }
+
   </style>
 </head>
 <body>
@@ -4274,6 +4643,33 @@
     </div>
   </section>
 
+  <!-- AI ECOSYSTEM STRIP -->
+  <div class="ai-ecosystem-strip" aria-label="Works with">
+    <div class="ai-ecosystem-inner">
+      <span class="ai-strip-label">Works with</span>
+      <span class="ai-strip-pill ai-pill-claude"><span class="ai-strip-dot"></span>Claude</span>
+      <span class="ai-strip-pill ai-pill-gpt"><span class="ai-strip-dot"></span>GPT-4o</span>
+      <span class="ai-strip-pill ai-pill-cursor"><span class="ai-strip-dot"></span>Cursor</span>
+      <span class="ai-strip-pill ai-pill-langchain"><span class="ai-strip-dot"></span>LangChain</span>
+      <span class="ai-strip-pill ai-pill-llama"><span class="ai-strip-dot"></span>LlamaIndex</span>
+      <span class="ai-strip-pill ai-pill-crewai"><span class="ai-strip-dot"></span>CrewAI</span>
+      <span class="ai-strip-pill ai-pill-autogen"><span class="ai-strip-dot"></span>AutoGen</span>
+      <span class="ai-strip-pill ai-pill-python"><span class="ai-strip-dot"></span>Python</span>
+      <span class="ai-strip-pill ai-pill-windsurf"><span class="ai-strip-dot"></span>Windsurf</span>
+      <!-- Duplicate for seamless infinite scroll -->
+      <span class="ai-strip-label" aria-hidden="true">Works with</span>
+      <span class="ai-strip-pill ai-pill-claude" aria-hidden="true"><span class="ai-strip-dot"></span>Claude</span>
+      <span class="ai-strip-pill ai-pill-gpt" aria-hidden="true"><span class="ai-strip-dot"></span>GPT-4o</span>
+      <span class="ai-strip-pill ai-pill-cursor" aria-hidden="true"><span class="ai-strip-dot"></span>Cursor</span>
+      <span class="ai-strip-pill ai-pill-langchain" aria-hidden="true"><span class="ai-strip-dot"></span>LangChain</span>
+      <span class="ai-strip-pill ai-pill-llama" aria-hidden="true"><span class="ai-strip-dot"></span>LlamaIndex</span>
+      <span class="ai-strip-pill ai-pill-crewai" aria-hidden="true"><span class="ai-strip-dot"></span>CrewAI</span>
+      <span class="ai-strip-pill ai-pill-autogen" aria-hidden="true"><span class="ai-strip-dot"></span>AutoGen</span>
+      <span class="ai-strip-pill ai-pill-python" aria-hidden="true"><span class="ai-strip-dot"></span>Python</span>
+      <span class="ai-strip-pill ai-pill-windsurf" aria-hidden="true"><span class="ai-strip-dot"></span>Windsurf</span>
+    </div>
+  </div>
+
   <!-- DEMO -->
   <section class="demo-section" id="demo">
     <div class="container">
@@ -4351,6 +4747,134 @@ webpeel "https://example.com" --readable</div>
 <span style="color:#818CF8;">const</span> page = <span style="color:#818CF8;">await</span> peel(<span style="color:#86EFAC;">'https://...'</span>)</div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- FEATURE ILLUSTRATION CARDS -->
+  <section class="feat-cards-section">
+    <div class="container">
+      <div class="reveal" style="text-align:center;">
+        <div class="section-eyebrow">FEATURES</div>
+        <h2 class="section-h2">Everything your AI agent <span class="accent">needs to browse.</span></h2>
+        <p style="color:rgba(255,255,255,0.45);font-size:15px;max-width:520px;margin:16px auto 0;">Six capabilities. One API. Built from the ground up for AI workflows.</p>
+      </div>
+
+      <div class="feat-cards-grid">
+
+        <!-- Card 1: Extract Any Website -->
+        <div class="feat-card reveal" data-delay="1">
+          <div class="feat-card-mock">
+            <div class="fc1-urlbar">
+              <span class="fc1-urlbar-icon">🔒</span>
+              <span class="fc1-url-text">stripe.com</span>
+            </div>
+            <div class="fc1-result">
+              <span class="fc1-check">✓</span>
+              <span class="fc1-result-text">2,847 tokens extracted</span>
+            </div>
+          </div>
+          <div class="feat-card-title">Extract Any Website</div>
+          <div class="feat-card-desc">Handles JS, SPAs, Cloudflare, and paywalls. Get clean content from virtually any URL.</div>
+        </div>
+
+        <!-- Card 2: Design Analysis -->
+        <div class="feat-card reveal" data-delay="2">
+          <div class="feat-card-mock">
+            <div class="fc2-swatches">
+              <div class="fc2-dot"></div>
+              <div class="fc2-dot"></div>
+              <div class="fc2-dot"></div>
+              <div class="fc2-dot"></div>
+            </div>
+            <div class="fc2-font-row">
+              <span class="fc2-font-name">Inter</span>
+              <span class="fc2-font-weight">weight: 800 · primary</span>
+            </div>
+          </div>
+          <div class="feat-card-title">Design Analysis</div>
+          <div class="feat-card-desc">Extract color palettes, typography, and design tokens — ready for design systems.</div>
+        </div>
+
+        <!-- Card 3: AI-Ready Markdown -->
+        <div class="feat-card reveal" data-delay="3">
+          <div class="feat-card-mock">
+            <div class="fc3-lines">
+              <div class="fc3-line"># Stripe | Financial Infrastructure</div>
+              <div class="fc3-line">Accept payments anywhere worldwide</div>
+              <div class="fc3-line">with a single integration…</div>
+              <div class="fc3-line">## Products</div>
+              <div class="fc3-line">Payments · Billing · Connect<span class="fc3-cursor"></span></div>
+            </div>
+          </div>
+          <div class="feat-card-title">AI-Ready Markdown</div>
+          <div class="feat-card-desc">Content arrives as clean markdown — zero boilerplate, structured for LLM context windows.</div>
+        </div>
+
+        <!-- Card 4: Screenshot API -->
+        <div class="feat-card reveal" data-delay="1">
+          <div class="feat-card-mock" style="padding:12px;">
+            <div class="fc4-browser">
+              <div class="fc4-chrome">
+                <div class="fc4-chrome-dots">
+                  <div class="fc4-chrome-dot r"></div>
+                  <div class="fc4-chrome-dot y"></div>
+                  <div class="fc4-chrome-dot g"></div>
+                </div>
+                <div class="fc4-chrome-url">vercel.com</div>
+              </div>
+              <div class="fc4-page">
+                <div class="fc4-skels">
+                  <div class="fc4-skel fc4-skel-h"></div>
+                  <div class="fc4-skel fc4-skel-p1"></div>
+                  <div class="fc4-skel fc4-skel-p2"></div>
+                  <div class="fc4-skel fc4-skel-p3"></div>
+                </div>
+                <div class="fc4-content">
+                  <div class="fc4-content-h">Develop. Preview. Ship.</div>
+                  <div class="fc4-content-p">Vercel provides the developer tools and cloud infrastructure to build, scale, and secure a faster, more personalized web.</div>
+                  <span class="fc4-content-tag">▶ screenshot captured</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="feat-card-title">Screenshot API</div>
+          <div class="feat-card-desc">Full-page screenshots with device emulation. Capture what users actually see, pixel perfect.</div>
+        </div>
+
+        <!-- Card 5: Structured JSON -->
+        <div class="feat-card reveal" data-delay="2">
+          <div class="feat-card-mock">
+            <div class="fc5-json">
+              <div class="fc5-line"><span class="fc5-brace">{</span></div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"title"</span>: <span class="fc5-str">"Stripe | Financial…"</span>,</div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"tokens"</span>: <span class="fc5-num">2847</span>,</div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"method"</span>: <span class="fc5-str">"cloudflare-bypass"</span>,</div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"elapsed"</span>: <span class="fc5-num">412</span>,</div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"cached"</span>: <span class="fc5-bool">false</span></div>
+              <div class="fc5-line"><span class="fc5-brace">}</span></div>
+            </div>
+          </div>
+          <div class="feat-card-title">Structured JSON</div>
+          <div class="feat-card-desc">Every response includes metadata, timing, method used, and token counts alongside content.</div>
+        </div>
+
+        <!-- Card 6: Works with Any AI -->
+        <div class="feat-card reveal" data-delay="3">
+          <div class="feat-card-mock">
+            <div class="fc6-grid">
+              <div class="fc6-pill">Claude</div>
+              <div class="fc6-pill">GPT-4o</div>
+              <div class="fc6-pill">LangChain</div>
+              <div class="fc6-pill">LlamaIndex</div>
+              <div class="fc6-pill">CrewAI</div>
+              <div class="fc6-pill">AutoGen</div>
+            </div>
+          </div>
+          <div class="feat-card-title">Works with Any AI</div>
+          <div class="feat-card-desc">Drop-in compatible with every major AI framework. Use the MCP server or REST API — your choice.</div>
+        </div>
+
+      </div><!-- /feat-cards-grid -->
     </div>
   </section>
 
@@ -5143,7 +5667,16 @@ Ready for your AI agent.</div>
       }
 
       function showLine(j) {
-        if (j >= demo.lines.length) return;
+        if (j >= demo.lines.length) {
+          // All lines shown — add "View full response →" link
+          var linkEl = document.createElement('a');
+          linkEl.className = 'hdw-view-link';
+          linkEl.href = '#demo';
+          linkEl.textContent = 'View full response →';
+          outEl.appendChild(linkEl);
+          animTimer = setTimeout(function() { linkEl.classList.add('visible'); }, 200);
+          return;
+        }
         var el = document.createElement('div');
         var escaped = escapeForDisplay(demo.lines[j]);
         // Re-apply colors after escaping
@@ -5154,7 +5687,7 @@ Ready for your AI agent.</div>
           .replace(/^(&amp;|\s*)([\{\}])(\s*)$/g, '$1<span class="t-dim">$2</span>$3');
         el.innerHTML = escaped;
         outEl.appendChild(el);
-        animTimer = setTimeout(function() { showLine(j + 1); }, 90);
+        animTimer = setTimeout(function() { showLine(j + 1); }, 85);
       }
 
       typeChar();
