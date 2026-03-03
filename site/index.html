@@ -5489,6 +5489,21 @@
 /* 13. Feature card body text: legible */
 .feat-card-desc { font-size: 14px !important; color: rgba(255,255,255,0.68) !important; line-height: 1.65 !important; }
 
+/* 18. CRITICAL: Features section headline — text was invisible (--text = #09090B on dark bg) */
+.feat-cards-section .section-h2 { color: rgba(255,255,255,0.88) !important; }
+.feat-cards-section .section-h2 .accent { color: #A5B4FC !important; }
+.feat-cards-section p { color: rgba(255,255,255,0.55) !important; }
+
+/* 19. Demo pills — prevent orphan tab on own row */
+.demo-pills { flex-wrap: wrap !important; justify-content: center !important; gap: 8px !important; }
+
+/* 20. MCP label — prevent text wrap */
+.hero-stat-l { white-space: nowrap !important; }
+
+/* 21. Why-section headline — ensure visible on dark bg */
+.why-section .section-h2 { color: rgba(255,255,255,0.88) !important; }
+.why-section .section-h2 .accent { color: #A5B4FC !important; }
+
 /* 14. Final CTA: more padding, bigger headline, larger button */
 .final-cta { padding: 140px 0 !important; }
 .final-cta h2 { font-size: clamp(40px, 6vw, 68px) !important; font-family: 'Inter', sans-serif !important; font-weight: 800 !important; letter-spacing: -0.03em !important; }
@@ -5670,7 +5685,6 @@
       <span class="ai-strip-pill ai-pill-llama"><span class="ai-strip-dot"></span>LlamaIndex</span>
       <span class="ai-strip-pill ai-pill-crewai"><span class="ai-strip-dot"></span>CrewAI</span>
       <span class="ai-strip-pill ai-pill-autogen"><span class="ai-strip-dot"></span>AutoGen</span>
-      <span class="ai-strip-pill ai-pill-python"><span class="ai-strip-dot"></span>Python</span>
       <span class="ai-strip-pill ai-pill-windsurf"><span class="ai-strip-dot"></span>Windsurf</span>
       <!-- Duplicate for seamless infinite scroll -->
       <span class="ai-strip-label" aria-hidden="true">Works with</span>
@@ -5681,7 +5695,6 @@
       <span class="ai-strip-pill ai-pill-llama" aria-hidden="true"><span class="ai-strip-dot"></span>LlamaIndex</span>
       <span class="ai-strip-pill ai-pill-crewai" aria-hidden="true"><span class="ai-strip-dot"></span>CrewAI</span>
       <span class="ai-strip-pill ai-pill-autogen" aria-hidden="true"><span class="ai-strip-dot"></span>AutoGen</span>
-      <span class="ai-strip-pill ai-pill-python" aria-hidden="true"><span class="ai-strip-dot"></span>Python</span>
       <span class="ai-strip-pill ai-pill-windsurf" aria-hidden="true"><span class="ai-strip-dot"></span>Windsurf</span>
     </div>
   </div>
@@ -5699,8 +5712,8 @@
           <button class="demo-pill" data-demo="wiki">Wikipedia</button>
           <button class="demo-pill" data-demo="yt">YouTube</button>
           <button class="demo-pill" data-demo="example">example.com</button>
-          <button class="demo-pill" data-demo="screenshot">📸 Screenshot</button>
-          <button class="demo-pill" data-demo="search">🔍 Search</button>
+          <button class="demo-pill" data-demo="screenshot">Screenshot</button>
+          <button class="demo-pill" data-demo="search">Search</button>
         </div>
         <div class="demo-widget">
           <div class="demo-input-row">
