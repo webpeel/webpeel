@@ -5437,6 +5437,52 @@
   transform: translateY(-2px) !important;
 }
 
+/* 10. Hero subtle dot grid for depth */
+.hero::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px) !important;
+  background-size: 36px 36px !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%) !important;
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%) !important;
+}
+.hero > * { position: relative !important; z-index: 1 !important; }
+
+/* 11. Global section subtext: readable contrast + size */
+.section-sub { font-size: 17px !important; color: rgba(255,255,255,0.68) !important; line-height: 1.7 !important; }
+.hero-sub { font-size: 18px !important; color: rgba(255,255,255,0.78) !important; line-height: 1.65 !important; }
+
+/* 12. Stats bar: bigger labels */
+.hero-stat-l { font-size: 13px !important; color: rgba(255,255,255,0.65) !important; letter-spacing: 0.04em !important; text-transform: uppercase !important; }
+.hero-stat-n { font-size: clamp(28px, 3.5vw, 42px) !important; }
+
+/* 13. Feature card body text: legible */
+.feat-card-desc { font-size: 14px !important; color: rgba(255,255,255,0.68) !important; line-height: 1.65 !important; }
+
+/* 14. Final CTA: more padding, bigger headline, larger button */
+.final-cta { padding: 140px 0 !important; }
+.final-cta h2 { font-size: clamp(40px, 6vw, 68px) !important; font-family: 'Inter', sans-serif !important; font-weight: 800 !important; letter-spacing: -0.03em !important; }
+.final-cta-btn { padding: 18px 48px !important; font-size: 18px !important; font-weight: 700 !important; }
+.final-cta .sub { font-size: 17px !important; color: rgba(255,255,255,0.65) !important; margin-bottom: 48px !important; }
+
+/* 15. Pricing featured card: lock in strong glow (prevent override) */
+.price-card.featured {
+  border: 2px solid rgba(88,101,242,0.65) !important;
+  background: rgba(88,101,242,0.09) !important;
+  box-shadow: 0 0 0 1px rgba(88,101,242,0.25), 0 0 60px rgba(88,101,242,0.25), 0 0 120px rgba(88,101,242,0.10), 0 12px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.22) !important;
+}
+
+/* 16. How It Works step card equal height */
+.how-steps { align-items: stretch !important; }
+.how-step { display: flex !important; flex-direction: column !important; }
+
+/* 17. "No credit card" under final CTA - add via ::after for quick win */
+/* Already present in HTML - just ensure it's readable */
+.hero-cta-note { font-size: 13px !important; color: rgba(255,255,255,0.48) !important; margin-top: 14px !important; }
+
   </style>
 </head>
 <body>
@@ -5485,7 +5531,7 @@
             <span class="hero-el" style="display:block;" data-delay="120">Your AI agent just</span>
             <span class="accent hero-el" style="display:block;" data-delay="200">unlocked the internet.</span>
           </h1>
-          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from virtually any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
+          <p class="hero-sub hero-el" data-delay="320">Structured, AI&#8209;ready content from any URL. <strong style="color:#818CF8;font-weight:600;font-style:normal;">One API call.</strong></p>
           <div class="hero-ctas hero-el" data-delay="420">
             <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
             <a href="/docs/" class="btn-ghost">View Docs</a>
