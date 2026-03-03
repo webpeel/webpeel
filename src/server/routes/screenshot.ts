@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { takeScreenshot, takeFilmstrip, takeAuditScreenshots, takeAnimationCapture, takeViewportsBatch, takeDesignAudit, takeScreenshotDiff, takeDesignAnalysis } from '../../core/screenshot.js';
+import { takeScreenshot, takeFilmstrip, takeAuditScreenshots, takeAnimationCapture, takeViewportsBatch, takeDesignAudit, takeScreenshotDiff, takeDesignAnalysis, takeDesignComparison } from '../../core/screenshot.js';
 import type { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
 import { normalizeActions } from '../../core/actions.js';
@@ -918,6 +918,86 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         res.status(500).json({ error: 'review_error', message: error.message.replace(/[<>"']/g, '') });
       } else {
         res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during review' });
+      }
+    }
+  });
+
+  // ── GET /v1/design-compare ────────────────────────────────────────────────
+  router.get('/v1/design-compare', async (req: Request, res: Response) => {
+    try {
+      const userId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'unauthorized', message: 'API key required. Get one free at https://app.webpeel.dev/keys' });
+        return;
+      }
+
+      const { url, ref, width: widthParam, height: heightParam } = req.query;
+
+      // --- Validate subject URL -------------------------------------------
+      if (!url || typeof url !== 'string') {
+        res.status(400).json({ error: 'invalid_request', message: 'Missing required query parameter "url"' });
+        return;
+      }
+      if (!validateRequestUrl(url, res)) return;
+
+      // --- Validate reference URL -----------------------------------------
+      if (!ref || typeof ref !== 'string') {
+        res.status(400).json({ error: 'invalid_request', message: 'Missing required query parameter "ref"' });
+        return;
+      }
+      if (!validateRequestUrl(ref, res)) return;
+
+      if (url === ref) {
+        res.status(400).json({ error: 'invalid_request', message: '"url" and "ref" must be different URLs' });
+        return;
+      }
+
+      // --- Parse optional dimensions ------------------------------------
+      const width = widthParam !== undefined ? parseInt(widthParam as string, 10) : undefined;
+      const height = heightParam !== undefined ? parseInt(heightParam as string, 10) : undefined;
+
+      if (width !== undefined && (isNaN(width) || width < 100 || width > 5000)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid width: must be between 100 and 5000' });
+        return;
+      }
+      if (height !== undefined && (isNaN(height) || height < 100 || height > 5000)) {
+        res.status(400).json({ error: 'invalid_request', message: 'Invalid height: must be between 100 and 5000' });
+        return;
+      }
+
+      // --- Run comparison -----------------------------------------------
+      const startTime = Date.now();
+
+      const result = await takeDesignComparison(url, ref, { width, height });
+
+      const elapsed = Date.now() - startTime;
+
+      // --- Track usage --------------------------------------------------
+      trackUsageAndLog(req, res, authStore, 'design_compare', url, elapsed);
+
+      res.setHeader('X-Credits-Used', '2');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.setHeader('X-Fetch-Type', 'design-compare');
+
+      res.json({
+        success: true,
+        data: {
+          subjectUrl: result.subjectUrl,
+          referenceUrl: result.referenceUrl,
+          score: result.comparison.score,
+          summary: result.comparison.summary,
+          gaps: result.comparison.gaps,
+          subjectAnalysis: result.comparison.subjectAnalysis,
+          referenceAnalysis: result.comparison.referenceAnalysis,
+        },
+      });
+    } catch (error: unknown) {
+      const err = error as Error & { code?: string };
+      console.error('Design compare error:', err);
+      if (err.code) {
+        res.status(500).json({ error: 'design_compare_error', message: err.message.replace(/[<>"']/g, '') });
+      } else {
+        res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during design comparison' });
       }
     }
   });

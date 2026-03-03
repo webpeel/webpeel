@@ -4138,6 +4138,111 @@ program
     console.log('       webpeel "https://example.com" --schema \'{"field":"description"}\'');
   });
 
+// ── design-compare command ─────────────────────────────────────────────────────
+//
+// webpeel design-compare "https://subject.com" --ref "https://reference.com"
+
+program
+  .command('design-compare <url>')
+  .description('Compare the design of a subject URL against a reference URL')
+  .option('--ref <url>', 'Reference URL to compare against (required)')
+  .option('--width <px>', 'Viewport width in pixels (default: 1440)', parseInt)
+  .option('--height <px>', 'Viewport height in pixels (default: 900)', parseInt)
+  .option('-o, --output <path>', 'Save comparison report to a JSON file')
+  .option('-s, --silent', 'Silent mode (no spinner)')
+  .option('--json', 'Output comparison as JSON to stdout')
+  .action(async (url: string, options) => {
+    // Validate subject URL
+    try {
+      const parsed = new URL(url);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        console.error('Error: Only HTTP and HTTPS protocols are allowed');
+        process.exit(1);
+      }
+    } catch {
+      console.error(`Error: Invalid URL format: ${url}`);
+      process.exit(1);
+    }
+
+    // Validate --ref
+    if (!options.ref) {
+      console.error('Error: --ref <url> is required');
+      process.exit(1);
+    }
+    try {
+      const parsedRef = new URL(options.ref as string);
+      if (!['http:', 'https:'].includes(parsedRef.protocol)) {
+        console.error('Error: --ref must be an HTTP or HTTPS URL');
+        process.exit(1);
+      }
+    } catch {
+      console.error(`Error: Invalid --ref URL format: ${options.ref}`);
+      process.exit(1);
+    }
+
+    const ora = (await import('ora')).default;
+    const spinner = options.silent ? null : ora(`Comparing designs: ${url} vs ${options.ref as string}...`).start();
+
+    try {
+      const { takeDesignComparison } = await import('./core/screenshot.js');
+
+      const result = await takeDesignComparison(url, options.ref as string, {
+        width: options.width,
+        height: options.height,
+      });
+
+      if (spinner) spinner.succeed('Design comparison complete');
+
+      const { comparison } = result;
+      const output = {
+        subjectUrl: result.subjectUrl,
+        referenceUrl: result.referenceUrl,
+        score: comparison.score,
+        summary: comparison.summary,
+        gaps: comparison.gaps,
+        subjectAnalysis: comparison.subjectAnalysis,
+        referenceAnalysis: comparison.referenceAnalysis,
+      };
+
+      if (options.output) {
+        const { writeFileSync } = await import('fs');
+        writeFileSync(options.output as string, JSON.stringify(output, null, 2));
+        if (!options.silent) console.error(`Report saved to: ${options.output}`);
+      }
+
+      if (options.json || !options.output) {
+        const jsonStr = JSON.stringify(output, null, 2);
+        await new Promise<void>((resolve, reject) => {
+          process.stdout.write(jsonStr + '\n', (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      } else if (!options.silent) {
+        // Human-readable summary
+        console.log(`\n🎨 Design Comparison`);
+        console.log(`Subject:   ${result.subjectUrl}`);
+        console.log(`Reference: ${result.referenceUrl}`);
+        console.log(`Score:     ${comparison.score}/10`);
+        console.log(`\n${comparison.summary}`);
+        if (comparison.gaps.length > 0) {
+          console.log(`\nGaps (${comparison.gaps.length}):`);
+          for (const gap of comparison.gaps) {
+            const sev = gap.severity === 'high' ? '🔴' : gap.severity === 'medium' ? '🟡' : '🟢';
+            console.log(`  ${sev} ${gap.property}: ${gap.description}`);
+            console.log(`     Subject:    ${gap.subject}`);
+            console.log(`     Reference:  ${gap.reference}`);
+            console.log(`     Suggestion: ${gap.suggestion}`);
+          }
+        }
+      }
+    } catch (error) {
+      if (spinner) spinner.fail('Design comparison failed');
+      console.error(`Error: ${(error as Error).message}`);
+      process.exit(1);
+    }
+  });
+
 program.parse();
 
 // ============================================================
