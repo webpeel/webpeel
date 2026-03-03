@@ -5581,13 +5581,23 @@
 .nav-links { gap: 28px !important; }
 
 /* 35. Ticker overflow — prevent clip at edges */
-/* 35. Ticker: seamless blend — no hard edges */
+/* 35. Ticker: seamless infinite scroll fix */
 .ai-ecosystem-strip {
   overflow: hidden !important;
   background: transparent !important;
   border: none !important;
   padding-top: 24px !important;
   padding-bottom: 24px !important;
+  /* Edge fade belongs on the CONTAINER, not the scrolling inner */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+}
+/* Remove mask from scrolling element — it was clipping during scroll */
+.ai-ecosystem-inner {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  gap: 24px !important;
+  padding: 0 12px !important;
 }
 
 /* 36. How It Works step description: tighter copy */
