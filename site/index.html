@@ -5447,8 +5447,8 @@
   inset: 0 !important;
   background:
     radial-gradient(circle, rgba(148,163,184,0.15) 1px, transparent 1px),
-    radial-gradient(circle 220px at 50% 18%, rgba(99,102,241,0.40) 0%, transparent 100%),
-    radial-gradient(ellipse 700px 500px at 50% 30%, rgba(99,102,241,0.18) 0%, transparent 70%),
+    radial-gradient(circle 300px at 50% 18%, rgba(99,102,241,0.50) 0%, transparent 100%),
+    radial-gradient(ellipse 700px 500px at 50% 30%, rgba(99,102,241,0.20) 0%, transparent 70%),
     radial-gradient(ellipse 400px 350px at 75% 55%, rgba(59,130,246,0.08) 0%, transparent 60%) !important;
   background-size: 28px 28px, cover, cover, cover !important;
   pointer-events: none !important;
@@ -5535,20 +5535,22 @@
 /* Already present in HTML - just ensure it's readable */
 .hero-cta-note { font-size: 13px !important; color: rgba(255,255,255,0.48) !important; margin-top: 14px !important; }
 
-/* 22. Hero CTA primary button — white outer ring visible on dark bg (indigo-on-indigo was invisible) */
+/* 22. Hero CTA primary button — bright white ring + strong bloom visible on dark bg */
 .hero-ctas .btn-primary {
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.18),
-    0 0 0 3px rgba(99,102,241,0.30),
+    0 0 0 1px rgba(255,255,255,0.30),
+    0 0 0 4px rgba(129,140,248,0.40),
+    0 0 20px rgba(99,102,241,0.50),
     0 8px 32px rgba(99,102,241,0.55),
-    inset 0 1px 0 rgba(255,255,255,0.22) !important;
+    inset 0 1px 0 rgba(255,255,255,0.25) !important;
 }
 .hero-ctas .btn-primary:hover {
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.25),
-    0 0 0 3px rgba(99,102,241,0.45),
+    0 0 0 1px rgba(255,255,255,0.40),
+    0 0 0 4px rgba(129,140,248,0.55),
+    0 0 30px rgba(99,102,241,0.65),
     0 12px 40px rgba(99,102,241,0.70),
-    inset 0 1px 0 rgba(255,255,255,0.28) !important;
+    inset 0 1px 0 rgba(255,255,255,0.30) !important;
   transform: translateY(-2px) !important;
 }
 
@@ -5799,7 +5801,7 @@
         </div>
         </div><!-- /demo-card-wrap -->
         <div class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:40px;">
-          <a href="https://app.webpeel.dev/signup" class="btn-primary" style="display:inline-flex;padding:14px 36px;font-size:16px;font-weight:600;">Get Your Free API Key →</a>
+          <a href="https://app.webpeel.dev/signup" style="display:inline-flex;align-items:center;gap:8px;padding:14px 36px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(180deg,#6B73FF 0%,#5865F2 50%,#4752C4 100%);border-radius:8px;text-decoration:none;box-shadow:0 0 0 1px rgba(99,102,241,0.4),0 8px 24px rgba(99,102,241,0.5);transition:transform 150ms ease,box-shadow 150ms ease;">Get Your Free API Key →</a>
           <p style="color:rgba(255,255,255,0.40);font-size:13px;margin-top:12px;">No credit card required · 500 fetches/week free</p>
         </div>
       </div>
