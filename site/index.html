@@ -3843,7 +3843,7 @@
     font-weight: 800 !important;
     font-size: 1em !important;
     letter-spacing: -0.025em !important;
-    background: linear-gradient(90deg, #C7D2FE 0%, #818CF8 40%, #A78BFA 70%, #C4B5FD 100%) !important;
+    background: linear-gradient(90deg, #E0E7FF 0%, #A5B4FC 35%, #818CF8 65%, #C4B5FD 100%) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
     background-clip: text !important;
@@ -3853,23 +3853,9 @@
   /* === GLOBAL === */
   body::after { display: none !important; }
   .hero-ambient-orb, .hero-card-bloom, .hero-terminal-glow { display: none !important; }
-  /* Kill the purple glow pseudo-element on hero-grid (was rgba(88,101,242,0.40)) */
-  .hero-grid::after { background: none !important; box-shadow: none !important; }
-  .hero-grid::before { background: none !important; }
-  /* Add a SINGLE subtle directional glow behind the demo widget only */
-  @media (min-width: 769px) {
-    .hero-grid::after {
-      content: '' !important;
-      position: absolute !important;
-      top: 10% !important; right: -5% !important;
-      width: 50% !important; height: 80% !important;
-      background: radial-gradient(ellipse 60% 55% at 60% 45%,
-        rgba(88,101,242,0.10) 0%,
-        transparent 70%) !important;
-      pointer-events: none !important;
-      z-index: 0 !important;
-    }
-  }
+  /* Kill ALL purple glow pseudo-elements on hero-grid — zero tolerance */
+  .hero-grid::after { display: none !important; }
+  .hero-grid::before { display: none !important; }
 
   /* === NAV === */
   nav {
@@ -3902,10 +3888,11 @@
     background: #ffffff !important;
     border-radius: 8px !important;
     border: none !important;
-    box-shadow: 0 4px 20px rgba(255,255,255,0.12) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 20px rgba(255,255,255,0.10) !important;
     color: #0d0d10 !important;
     font-weight: 700 !important;
     letter-spacing: -0.02em !important;
+    text-shadow: none !important;
   }
   .btn-primary:hover {
     background: rgba(255,255,255,0.92) !important;
@@ -4031,14 +4018,19 @@
       display: block !important;
       order: 6 !important;
       width: 100% !important;
-      margin-top: 20px !important;
+      margin-top: 12px !important;
       border-radius: 12px !important;
       background: rgba(12,12,22,0.95) !important;
       border: 1px solid rgba(255,255,255,0.10) !important;
       box-shadow:
         0 0 0 1px rgba(99,102,241,0.10),
         0 12px 32px rgba(0,0,0,0.50) !important;
-      overflow: hidden !important;
+      overflow: visible !important;
+    }
+    .hero-mobile-code .hdw-body {
+      padding: 12px 14px 16px !important;
+      font-size: 11.5px !important;
+      line-height: 1.65 !important;
     }
 
     .hero-cta-note { order: 7 !important; width: 100% !important; text-align: center !important; margin: 10px 0 0 !important; font-size: 11.5px !important; }
