@@ -5489,9 +5489,19 @@
 /* 13. Feature card body text: legible */
 .feat-card-desc { font-size: 14px !important; color: rgba(255,255,255,0.68) !important; line-height: 1.65 !important; }
 
-/* 18. CRITICAL: Features section headline — text was invisible (--text = #09090B on dark bg) */
-.feat-cards-section .section-h2 { color: rgba(255,255,255,0.88) !important; }
-.feat-cards-section .section-h2 .accent { color: #A5B4FC !important; }
+/* 18. ALL section headlines — Inter, visible on dark bg, no serif */
+.section-h2 {
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-weight: 800 !important;
+  color: rgba(255,255,255,0.92) !important;
+  letter-spacing: -0.03em !important;
+}
+.section-h2 .accent {
+  color: #A5B4FC !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+}
 .feat-cards-section p { color: rgba(255,255,255,0.55) !important; }
 
 /* 19. Demo pills — prevent orphan tab on own row */
@@ -5500,9 +5510,9 @@
 /* 20. MCP label — prevent text wrap */
 .hero-stat-l { white-space: nowrap !important; }
 
-/* 21. Why-section headline — ensure visible on dark bg */
-.why-section .section-h2 { color: rgba(255,255,255,0.88) !important; }
-.why-section .section-h2 .accent { color: #A5B4FC !important; }
+/* 21. Why-section headline — force Inter (serif was clashing with dark dev aesthetic) */
+.why-section .section-h2 { color: rgba(255,255,255,0.88) !important; font-family: 'Inter', -apple-system, sans-serif !important; font-weight: 800 !important; letter-spacing: -0.03em !important; }
+.why-section .section-h2 .accent { color: #A5B4FC !important; font-style: normal !important; }
 
 /* 14. Final CTA: more padding, bigger headline, larger button */
 .final-cta { padding: 140px 0 !important; }
@@ -5542,8 +5552,34 @@
   transform: translateY(-2px) !important;
 }
 
-/* 23. Stat numbers — clean round number */
-.hero-stat-n[data-count-suffix="ms"] { --display: '<650ms'; }
+/* 23. Pricing Free tier button — visible against dark card */
+.price-card:not(.featured) .price-cta {
+  background: rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(255,255,255,0.20) !important;
+  color: rgba(255,255,255,0.90) !important;
+}
+.price-card:not(.featured) .price-cta:hover {
+  background: rgba(255,255,255,0.14) !important;
+  border-color: rgba(255,255,255,0.35) !important;
+}
+
+/* 24. FAQ cards — more visible against dark bg */
+.faq-item {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+}
+.faq-item:hover {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.14) !important;
+}
+.faq-item.open {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(99,102,241,0.25) !important;
+}
+
+/* 25. Widget command line — prevent text overflow clipping */
+.hdw-cmd-line { overflow: hidden !important; text-overflow: ellipsis !important; }
+.hdw-body { overflow: hidden !important; }
 
   </style>
 </head>
@@ -5625,7 +5661,7 @@
               <button class="hdw-run-btn" tabindex="-1" aria-hidden="true" style="pointer-events:none;">Extract →</button>
             </div>
             <div class="hdw-body">
-              <div class="hdw-cmd-line">$ curl "api.webpeel.dev/v1/fetch?url=stripe.com"</div>
+              <div class="hdw-cmd-line">$ webpeel "stripe.com"</div>
               <div><span class="t-dim">{</span></div>
               <div>&nbsp;&nbsp;<span class="t-key">"title"</span><span class="t-dim">:</span> <span class="t-str">"Stripe | Financial Infra…"</span><span class="t-dim">,</span></div>
               <div>&nbsp;&nbsp;<span class="t-key">"tokens"</span><span class="t-dim">:</span> <span class="t-num">2847</span><span class="t-dim">,</span></div>
@@ -5762,10 +5798,10 @@
           </div>
         </div>
         </div><!-- /demo-card-wrap -->
-        <p class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:36px;">
-          Convinced? <a href="https://app.webpeel.dev/signup" style="color:#818CF8;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(129,140,248,0.35);padding-bottom:1px;">Get your free API key →</a>
-          <span style="color:rgba(255,255,255,0.35);font-size:13px;margin-left:8px;">No credit card required</span>
-        </p>
+        <div class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:40px;">
+          <a href="https://app.webpeel.dev/signup" class="btn-primary" style="display:inline-flex;padding:14px 36px;font-size:16px;font-weight:600;">Get Your Free API Key →</a>
+          <p style="color:rgba(255,255,255,0.40);font-size:13px;margin-top:12px;">No credit card required · 500 fetches/week free</p>
+        </div>
       </div>
     </div>
   </section>
@@ -6109,9 +6145,9 @@ traffic. Advertisers are watching closely.
           <button class="faq-q"><span>Is there a free tier?</span><span class="faq-icon">+</span></button>
           <div class="faq-answer"><div class="faq-answer-inner">Yes. 500 fetches per week, no credit card required. The free tier includes all features — browser rendering, MCP tools, search, extraction, everything. Weekly limits reset every Monday.</div></div>
         </div>
-        <div class="faq-item">
+        <div class="faq-item open">
           <button class="faq-q"><span>How does it compare to Firecrawl?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel extracts more content (98% vs 82% completeness), has better protected site success (97.6% vs 65%), includes 18 MCP tools vs ~6, and has a built-in deep research agent. It's also fully open source and offers a Firecrawl-compatible API for easy migration.</div></div>
+          <div class="faq-answer" style="max-height:560px;"><div class="faq-answer-inner">WebPeel extracts more content (98% vs 82% completeness), has better protected site success (97.6% vs 65%), includes 18 MCP tools vs ~6, and has a built-in deep research agent. It's also fully open source and offers a Firecrawl-compatible API for easy migration.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-q"><span>Can I self-host?</span><span class="faq-icon">+</span></button>
@@ -6135,7 +6171,7 @@ traffic. Advertisers are watching closely.
       <h2 class="reveal" style="text-wrap:balance;">Your AI is one API call away from <span class="accent">the&nbsp;entire&nbsp;web.</span></h2>
       <p class="sub reveal" data-delay="1">Free forever. 500 fetches/week. No credit card needed.</p>
       <div class="install-card reveal" data-delay="2">
-        <code id="install-cmd">curl -fsSL https://webpeel.dev/install.sh | bash</code>
+        <code id="install-cmd">npm install -g webpeel</code>
         <button class="install-copy-btn" id="install-copy">Copy</button>
       </div>
       <br>
@@ -6642,7 +6678,7 @@ traffic. Advertisers are watching closely.
   (function() {
     var DEMOS = [
       {
-        cmd: '$ curl "api.webpeel.dev/v1/fetch?url=stripe.com"',
+        cmd: '$ webpeel "stripe.com"',
         lines: [
           '{',
           '  "url": "https://stripe.com",',
@@ -6655,7 +6691,7 @@ traffic. Advertisers are watching closely.
         ]
       },
       {
-        cmd: '$ curl "api.webpeel.dev/v1/fetch?url=en.wikipedia.org/wiki/AI"',
+        cmd: '$ webpeel "wikipedia.org/wiki/AI"',
         lines: [
           '{',
           '  "url": "https://en.wikipedia.org/wiki/AI",',
@@ -6668,7 +6704,7 @@ traffic. Advertisers are watching closely.
         ]
       },
       {
-        cmd: '$ curl "api.webpeel.dev/v1/fetch?url=news.ycombinator.com"',
+        cmd: '$ webpeel "news.ycombinator.com"',
         lines: [
           '{',
           '  "url": "https://news.ycombinator.com",',
