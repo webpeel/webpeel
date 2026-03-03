@@ -4647,6 +4647,88 @@
     line-height: 1.15 !important;
   }
 
+  /* ── ULTRA-POLISH: Precision fixes — ghost numbers, glow, bars ── */
+
+  /* 1. How It Works: GIANT ghost watermark step numbers */
+  .how-step {
+    position: relative !important;
+    overflow: hidden !important;
+  }
+  .how-step-num {
+    font-size: 130px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    opacity: 0.06 !important;
+    position: absolute !important;
+    top: -8px !important;
+    right: 16px !important;
+    color: #ffffff !important;
+    letter-spacing: -0.06em !important;
+    width: auto !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+    user-select: none !important;
+  }
+  .how-step > * { position: relative !important; z-index: 1 !important; }
+  .how-step > .how-step-num { z-index: 0 !important; }
+
+  /* 2. Final CTA: FORCE radial glow — override everything */
+  .final-cta {
+    background:
+      radial-gradient(ellipse 900px 400px at 50% -20%, rgba(88,101,242,0.22) 0%, transparent 65%),
+      #08080c !important;
+    border-top: 1px solid rgba(88,101,242,0.22) !important;
+  }
+
+  /* 3. Comparison bars: taller, punchier */
+  .bar-track {
+    height: 12px !important;
+    border-radius: 999px !important;
+    background: rgba(255,255,255,0.07) !important;
+  }
+  .bar-fill {
+    height: 12px !important;
+    border-radius: 999px !important;
+  }
+  .bar-fill.accent {
+    background: linear-gradient(90deg, #5865F2, #818CF8) !important;
+    box-shadow: 0 0 12px rgba(88,101,242,0.40) !important;
+  }
+  .bar-fill.muted {
+    background: rgba(255,255,255,0.18) !important;
+  }
+  .bar-val {
+    font-weight: 800 !important;
+    font-size: 15px !important;
+  }
+  .bar-label.hl { color: #ffffff !important; font-weight: 700 !important; }
+
+  /* 4. Stats dividers: visible */
+  .hero-stat + .hero-stat::before {
+    background: rgba(255,255,255,0.14) !important;
+  }
+  .nav-cta {
+    border-color: rgba(255,255,255,0.28) !important;
+  }
+
+  /* 5. AI ecosystem: edge fade masks */
+  .ai-ecosystem-inner {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+    mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+  }
+
+  /* 6. Feature card accent strips: 3px */
+  .feat-card::before { height: 3px !important; }
+
+  /* 7. Demo card: premium shadow */
+  .demo-card-wrap {
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.40), 0 0 60px rgba(88,101,242,0.06) !important;
+  }
+
   /* ── HERO BUTTON FIX: restore blue gradient (was overridden to white) ── */
   .hero-ctas .btn-primary {
     background: linear-gradient(180deg, #7C83FF 0%, #6B73FF 40%, #5865F2 100%) !important;
