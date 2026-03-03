@@ -3843,7 +3843,7 @@
     font-weight: 800 !important;
     font-size: 1em !important;
     letter-spacing: -0.025em !important;
-    background: linear-gradient(90deg, #E0E7FF 0%, #A5B4FC 35%, #818CF8 65%, #C4B5FD 100%) !important;
+    background: linear-gradient(90deg, #E0E7FF 0%, #7DD3FC 25%, #60A5FA 50%, #818CF8 75%, #C4B5FD 100%) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
     background-clip: text !important;
@@ -3898,6 +3898,17 @@
     background: rgba(255,255,255,0.92) !important;
     box-shadow: 0 8px 28px rgba(255,255,255,0.18) !important;
     transform: translateY(-1px) !important;
+  }
+
+  /* Mobile CTA depth: inset shadow for tactile feedback */
+  @media (max-width: 768px) {
+    .btn-primary,
+    .hero-ctas .btn-primary {
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -2px 6px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.25) !important;
+    }
+    .btn-primary:hover {
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 8px rgba(0,0,0,0.15), 0 6px 16px rgba(0,0,0,0.30) !important;
+    }
   }
 
   /* === HERO KICKER === */
@@ -4033,8 +4044,9 @@
       line-height: 1.65 !important;
     }
 
-    .hero-cta-note { order: 7 !important; width: 100% !important; text-align: center !important; margin: 10px 0 0 !important; font-size: 11.5px !important; }
-    .hero-trust    { order: 8 !important; width: 100% !important; justify-content: center !important; margin: 14px 0 0 !important; opacity: 1 !important; gap: 10px !important; display: flex !important; align-items: center !important; flex-wrap: wrap !important; }
+    .hero-trust    { order: 6 !important; width: 100% !important; justify-content: center !important; margin: 12px 0 0 !important; opacity: 1 !important; gap: 10px !important; display: flex !important; align-items: center !important; flex-wrap: wrap !important; font-size: 12px !important; }
+    .hero-mobile-code { order: 7 !important; } /* Mobile widget below trust bar, above fold */
+    .hero-cta-note { order: 8 !important; width: 100% !important; text-align: center !important; margin: 10px 0 0 !important; font-size: 11.5px !important; }
 
     /* Hide interactive widget on mobile — static code block handles it */
     .hero .hero-demo-widget { display: none !important; }
