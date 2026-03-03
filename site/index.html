@@ -3900,8 +3900,9 @@
   /* Kill ALL purple glow pseudo-elements on hero-grid — zero tolerance */
   .hero-grid::after { display: none !important; }
   .hero-grid::before { display: none !important; }
-  /* Kill the 200px indigo box-shadow glow on .hero-terminal (line 400 base CSS) */
-  .hero-terminal {
+  /* Kill ALL indigo box-shadow glows on hero elements — terminal, demo widget, everything */
+  .hero-terminal,
+  .hero-demo-widget {
     box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 24px 48px -12px rgba(0,0,0,0.70), inset 0 1px 0 rgba(255,255,255,0.08) !important;
   }
 
