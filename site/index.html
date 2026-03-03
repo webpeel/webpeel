@@ -3834,9 +3834,16 @@
   /* ══ DESIGN-FINAL: single authoritative block — clean slate ══ */
 
   /* === TYPEFACE FIX: replace Instrument Serif with Inter + gradient ===
-     Reviewers consistently flagged serif italic + bold sans = two design systems fighting.
-     Fix: one font family (Inter 800), differentiated by indigo gradient on accent line.
-     This is exactly how Linear/Stripe/Vercel handle headline callouts. */
+     One font family (Inter 800), differentiated by cyan→blue→purple gradient on accent line.
+     Brightness hierarchy: gradient accent > dim white setup line > subtext. */
+
+  /* Setup line slightly dimmed so the gradient line *glows* by comparison */
+  .hero h1 span:not(.accent) {
+    color: rgba(255,255,255,0.82) !important;
+    -webkit-text-fill-color: rgba(255,255,255,0.82) !important;
+  }
+
+  /* Gradient accent — the payoff line, full luminosity */
   .hero h1 .accent {
     font-family: 'Inter', -apple-system, sans-serif !important;
     font-style: normal !important;
@@ -3850,9 +3857,26 @@
     color: transparent !important;
   }
 
+  /* Edge vignette — adds premium depth without glow blobs (Awwwards technique)
+     Must override mix-blend-mode:screen from line 2135 or black becomes transparent */
+  .hero::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: radial-gradient(ellipse 110% 70% at 50% 50%, transparent 55%, rgba(0,0,0,0.28) 100%) !important;
+    mix-blend-mode: normal !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+    border-radius: 0 !important;
+  }
+
   /* === GLOBAL === */
   body::after { display: none !important; }
   .hero-ambient-orb, .hero-card-bloom, .hero-terminal-glow { display: none !important; }
+  /* Ensure hero-grid (content) sits above the vignette pseudo-element */
+  .hero-grid { position: relative !important; z-index: 1 !important; }
+  .hero { position: relative !important; overflow: hidden !important; }
   /* Kill ALL purple glow pseudo-elements on hero-grid — zero tolerance */
   .hero-grid::after { display: none !important; }
   .hero-grid::before { display: none !important; }
