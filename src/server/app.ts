@@ -246,7 +246,7 @@ export function createApp(config: ServerConfig = {}): Express {
     app.use(demoRouter);
     log.info('Demo router registered at /v1/demo');
   } catch (err) {
-    log.error('Failed to register demo router:', err);
+    log.error('Failed to register demo router:', err as Record<string, unknown>);
   }
 
   // Apply auth middleware globally
