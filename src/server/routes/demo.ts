@@ -116,6 +116,8 @@ const SIGN_UP_URL = 'https://app.webpeel.dev';
 const WIKI_HEADERS = {
   'User-Agent': 'WebPeel/0.17.1 (https://webpeel.dev; jake@jakeliu.me) Node.js',
   'Api-User-Agent': 'WebPeel/0.17.1 (https://webpeel.dev; jake@jakeliu.me)',
+  'Cache-Control': 'no-cache',
+  'If-None-Match': '',  // Prevent 304 responses from Wikipedia REST API
 };
 
 // ── Helper: strip HTML tags and decode common entities ────────────────────────
