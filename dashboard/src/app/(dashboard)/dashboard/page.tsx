@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UsageBar } from '@/components/usage-bar';
 import { StatCard } from '@/components/stat-card';
 import { ActivityTable } from '@/components/activity-table';
-import { OnboardingModal } from '@/components/onboarding-modal';
+import { OnboardingBanner } from '@/components/onboarding-modal';
 import { CopyButton } from '@/components/copy-button';
 import {
   RefreshCw,
@@ -172,8 +172,8 @@ print(r.json()['markdown'])`,
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
-      {/* Onboarding Modal */}
-      <OnboardingModal sessionApiKey={sessionApiKey} />
+      {/* Welcome Banner (replaces blocking modal) */}
+      <OnboardingBanner sessionApiKey={sessionApiKey} />
 
       {/* Hero Section */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">

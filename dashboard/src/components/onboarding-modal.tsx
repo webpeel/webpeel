@@ -1,172 +1,70 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, Copy, Sparkles, Key, Terminal, BookOpen, AlertTriangle, ExternalLink, Play, Zap, Globe } from 'lucide-react';
+import { Sparkles, Key, Copy, CheckCircle2, X } from 'lucide-react';
 
 interface OnboardingModalProps {
   sessionApiKey?: string;
 }
 
-function CopyBlock({ text, label }: { text: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <div className="space-y-1">
-      {label && <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{label}</p>}
-      <div className="relative group">
-        <pre className="p-3 bg-zinc-900 text-zinc-100 rounded-lg overflow-x-auto text-xs pr-10">
-          <code>{text}</code>
-        </pre>
-        <button
-          onClick={handleCopy}
-          className="absolute top-2.5 right-2.5 p-1.5 hover:bg-zinc-700 rounded-md transition-colors"
-          title="Copy"
-        >
-          {copied ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-          ) : (
-            <Copy className="h-3.5 w-3.5 text-zinc-400" />
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function OnboardingModal({ sessionApiKey }: OnboardingModalProps) {
-  const [open, setOpen] = useState(false);
-  const [step, setStep] = useState(0);
-  const [apiKeyCopied, setApiKeyCopied] = useState(false);
+export function OnboardingBanner({ sessionApiKey }: OnboardingModalProps) {
+  const [visible, setVisible] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Support both the legacy key and the new standardized key
     const onboarded =
       localStorage.getItem('webpeel_onboarded') ||
       localStorage.getItem('webpeel_onboarding_complete');
     if (!onboarded) {
       const storedKey = localStorage.getItem('webpeel_first_api_key');
       setApiKey(storedKey || sessionApiKey || null);
-      setOpen(true);
+      setVisible(true);
     }
   }, [sessionApiKey]);
 
-  const handleComplete = () => {
+  const handleDismiss = () => {
     localStorage.setItem('webpeel_onboarded', 'true');
     localStorage.setItem('webpeel_onboarding_complete', 'true');
     localStorage.removeItem('webpeel_first_api_key');
-    setOpen(false);
+    setVisible(false);
   };
 
-  const handleCopyKey = () => {
+  const handleCopy = () => {
     if (apiKey) {
       navigator.clipboard.writeText(apiKey);
-      setApiKeyCopied(true);
-      setTimeout(() => setApiKeyCopied(false), 2000);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const displayKey = apiKey || 'YOUR_API_KEY';
+  if (!visible) return null;
 
-  const steps = [
-    {
-      icon: Sparkles,
-      iconBg: 'bg-zinc-100',
-      iconColor: 'text-zinc-800',
-      title: 'Welcome to WebPeel',
-      subtitle: 'AI-ready web understanding',
-    },
-    {
-      icon: Key,
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600',
-      title: apiKey ? 'Save Your API Key' : 'Your API Key',
-      subtitle: apiKey ? '⚠️ This is the only time you\'ll see it' : 'Access the WebPeel API',
-    },
-    {
-      icon: Terminal,
-      iconBg: 'bg-zinc-800',
-      iconColor: 'text-zinc-100',
-      title: 'Quick Start',
-      subtitle: 'Three ways to start in 60 seconds',
-    },
-    {
-      icon: BookOpen,
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600',
-      title: "You're all set!",
-      subtitle: 'Start building with WebPeel',
-    },
-  ];
+  return (
+    <div className="mb-6 rounded-xl border border-zinc-200 bg-gradient-to-r from-zinc-50 to-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500 flex-shrink-0" />
+            Welcome to WebPeel
+          </h3>
+          <p className="mt-1 text-sm text-zinc-500">
+            Your account is ready. Start fetching any URL → clean, structured data for your AI.
+          </p>
 
-  const stepContent = [
-    /* Step 0 — Welcome */
-    <div className="space-y-4" key="step0">
-      <p className="text-sm text-zinc-600 leading-relaxed">
-        WebPeel turns any website into clean, structured data — perfect for AI agents, research tools, and developer workflows.
-      </p>
-      <div className="grid gap-3">
-        {[
-          {
-            icon: Globe,
-            title: 'Fetch any URL',
-            desc: 'Get clean markdown, plain text, or raw HTML from any page',
-            color: 'text-zinc-800',
-            bg: 'bg-zinc-50',
-          },
-          {
-            icon: Zap,
-            title: 'Bypass bot detection',
-            desc: 'Stealth mode handles CAPTCHAs, Cloudflare, and JS-heavy sites',
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
-          },
-          {
-            icon: Play,
-            title: 'MCP server included',
-            desc: 'Drop WebPeel directly into Claude, Cursor, or any MCP-compatible AI',
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-50',
-          },
-        ].map(({ icon: Icon, title, desc, color, bg }) => (
-          <div key={title} className={`flex items-start gap-3 p-3 ${bg} rounded-lg`}>
-            <div className={`${color} flex-shrink-0 mt-0.5`}>
-              <Icon className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-zinc-900">{title}</p>
-              <p className="text-xs text-zinc-600 mt-0.5">{desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>,
-
-    /* Step 1 — API Key */
-    <div className="space-y-4" key="step1">
-      {apiKey ? (
-        <>
-          <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800">
-              <strong>Copy this now!</strong> We only show API keys once and cannot recover them.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Your API Key</p>
-            <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
-              <code className="flex-1 text-xs font-mono text-zinc-800 break-all">{apiKey}</code>
+          {apiKey && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 rounded-lg bg-zinc-100 border border-zinc-200 px-3 py-2 font-mono text-xs text-zinc-700">
+                <Key className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
+                <span className="truncate max-w-[200px]">
+                  {apiKey.slice(0, 16)}...{apiKey.slice(-4)}
+                </span>
+              </div>
               <button
-                onClick={handleCopyKey}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-800 text-white text-xs font-medium rounded-md transition-colors"
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-2 text-xs font-medium transition-colors"
               >
-                {apiKeyCopied ? (
+                {copied ? (
                   <>
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Copied!
@@ -174,216 +72,40 @@ export function OnboardingModal({ sessionApiKey }: OnboardingModalProps) {
                 ) : (
                   <>
                     <Copy className="h-3.5 w-3.5" />
-                    Copy
+                    Copy Key
                   </>
                 )}
               </button>
+              <span className="text-xs text-red-500 font-medium">← Save this — shown once only</span>
             </div>
-          </div>
-          <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-lg space-y-1">
-            <p className="text-xs font-medium text-zinc-700">Store it safely:</p>
-            <ul className="text-xs text-zinc-600 space-y-0.5 list-disc list-inside">
-              <li>Add to your <code className="bg-zinc-200 px-1 rounded">.env</code> file as <code className="bg-zinc-200 px-1 rounded">WEBPEEL_API_KEY</code></li>
-              <li>Save in a password manager</li>
-              <li>Never commit to version control</li>
-            </ul>
-          </div>
-        </>
-      ) : (
-        <div className="space-y-4">
-          <p className="text-sm text-zinc-600">
-            Create your API key from the <a href="/keys" className="text-zinc-800 hover:underline font-medium">Keys page</a>. Keep it safe — it's only shown once!
-          </p>
-          <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-lg">
-            <p className="text-sm font-semibold text-zinc-900 mb-1">How to get your key:</p>
-            <ol className="text-xs text-zinc-800 space-y-1 list-decimal list-inside">
-              <li>Go to API Keys in the sidebar</li>
-              <li>Click "Create New Key"</li>
-              <li>Name it and copy the key immediately</li>
-              <li>Store it in your <code className="bg-zinc-100 px-1 rounded">.env</code> file</li>
-            </ol>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <a href="/docs" className="text-zinc-500 hover:text-zinc-800 underline underline-offset-2">
+              Read docs
+            </a>
+            <span className="text-zinc-300 hidden sm:inline">·</span>
+            <a href="/keys" className="text-zinc-500 hover:text-zinc-800 underline underline-offset-2">
+              Manage API keys
+            </a>
+            <span className="text-zinc-300 hidden sm:inline">·</span>
+            <a href="/playground" className="text-zinc-500 hover:text-zinc-800 underline underline-offset-2">
+              Try playground
+            </a>
           </div>
         </div>
-      )}
-    </div>,
 
-    /* Step 2 — Quick Start */
-    <div className="space-y-5" key="step2">
-      <CopyBlock
-        label="1. Install CLI"
-        text={`npm install -g webpeel-cli
-
-# Or use it without installing:
-npx webpeel "https://example.com"`}
-      />
-      <CopyBlock
-        label="2. Make your first fetch"
-        text={`curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \\
-  -H "Authorization: Bearer ${displayKey}"`}
-      />
-      <CopyBlock
-        label="3. Add to Claude / Cursor (MCP)"
-        text={`# Add to your MCP config (claude_desktop_config.json):
-{
-  "mcpServers": {
-    "webpeel": {
-      "command": "npx",
-      "args": ["webpeel-mcp"],
-      "env": {
-        "WEBPEEL_API_KEY": "${displayKey}"
-      }
-    }
-  }
-}`}
-      />
-    </div>,
-
-    /* Step 3 — What's Next */
-    <div className="space-y-4" key="step3">
-      <p className="text-sm text-zinc-600">
-        You're ready to go. Here's where to start:
-      </p>
-      <div className="grid gap-3">
-        {[
-          {
-            href: '/playground',
-            icon: Play,
-            title: 'Try the Playground',
-            desc: 'Test any URL and see results live in your browser',
-            color: 'text-zinc-800',
-            bg: 'bg-zinc-50 hover:bg-zinc-100',
-          },
-          {
-            href: 'https://webpeel.dev/docs',
-            icon: BookOpen,
-            title: 'Read the Docs',
-            desc: 'Full API reference, guides, and examples',
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-50 hover:bg-emerald-100',
-            external: true,
-          },
-          {
-            href: '/keys',
-            icon: Key,
-            title: 'Manage API Keys',
-            desc: 'Create additional keys for different environments',
-            color: 'text-amber-600',
-            bg: 'bg-amber-50 hover:bg-amber-100',
-          },
-        ].map(({ href, icon: Icon, title, desc, color, bg, external }) => (
-          <a
-            key={title}
-            href={href}
-            target={external ? '_blank' : undefined}
-            rel={external ? 'noopener noreferrer' : undefined}
-            onClick={external ? undefined : handleComplete}
-            className={`flex items-start gap-3 p-3 ${bg} rounded-lg transition-colors cursor-pointer`}
-          >
-            <Icon className={`h-5 w-5 ${color} flex-shrink-0 mt-0.5`} />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-zinc-900 flex items-center gap-1">
-                {title}
-                {external && <ExternalLink className="h-3 w-3 text-zinc-400" />}
-              </p>
-              <p className="text-xs text-zinc-600 mt-0.5">{desc}</p>
-            </div>
-          </a>
-        ))}
+        <button
+          onClick={handleDismiss}
+          className="text-zinc-400 hover:text-zinc-600 p-1 rounded-md hover:bg-zinc-100 transition-colors flex-shrink-0"
+          aria-label="Dismiss welcome banner"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
-    </div>,
-  ];
-
-  const currentStep = steps[step];
-  const Icon = currentStep.icon;
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] p-0 flex flex-col overflow-hidden">
-        {/* Progress bar — fixed top */}
-        <div className="h-1 bg-zinc-100 rounded-t-lg overflow-hidden flex-shrink-0">
-          <div
-            className="h-full bg-gradient-to-r from-zinc-900 to-zinc-800 transition-all duration-500 ease-out"
-            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
-          />
-        </div>
-
-        {/* Header — fixed */}
-        <div className="px-6 pt-6 pb-2 flex-shrink-0">
-          <div className="flex items-start gap-4">
-            <div className={`w-12 h-12 rounded-xl ${currentStep.iconBg} flex items-center justify-center flex-shrink-0`}>
-              <Icon className={`h-6 w-6 ${currentStep.iconColor}`} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-zinc-900 leading-tight">{currentStep.title}</h2>
-              <p className="text-sm text-zinc-500 mt-0.5">{currentStep.subtitle}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Step content — scrollable middle */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
-          {stepContent[step]}
-        </div>
-
-        {/* Footer — always visible */}
-        <div className="px-6 pb-6 pt-2 flex-shrink-0 space-y-3">
-          {/* Progress dots */}
-          <div className="flex items-center justify-center gap-2">
-            {steps.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setStep(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === step
-                    ? 'w-8 bg-zinc-800'
-                    : index < step
-                    ? 'w-2 bg-zinc-500'
-                    : 'w-2 bg-zinc-200'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
-            {step > 0 ? (
-              <Button variant="ghost" size="sm" onClick={() => setStep(step - 1)} className="text-zinc-500">
-                ← Back
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleComplete}
-                className="text-zinc-400 hover:text-zinc-600"
-              >
-                Skip
-              </Button>
-            )}
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-400">{step + 1} of {steps.length}</span>
-              {step < steps.length - 1 ? (
-                <Button
-                  onClick={() => setStep(step + 1)}
-                  size="sm"
-                  className="bg-zinc-800 hover:bg-zinc-800"
-                >
-                  Next →
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleComplete}
-                  size="sm"
-                  className="bg-zinc-800 hover:bg-zinc-800"
-                >
-                  Start Building 🚀
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }
+
+// Keep backward-compat alias so any other import of OnboardingModal still compiles
+export { OnboardingBanner as OnboardingModal };
