@@ -5827,13 +5827,25 @@
 .hdw-impact {
   font-family: 'Inter', -apple-system, sans-serif;
   padding: 4px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+.hdw-impact-left {
+  grid-column: 1;
+}
+.hdw-impact-right {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .hdw-impact-header {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(255,255,255,0.4);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -5845,7 +5857,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 3px 0;
+  padding: 2px 0;
   font-size: 13px;
 }
 .hdw-impact-num {
@@ -5858,15 +5870,64 @@
 .hdw-impact-label {
   color: rgba(255,255,255,0.6);
 }
+/* Right column: content preview */
+.hdw-impact-content-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hdw-impact-content-box {
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 8px 10px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+}
+.hdw-impact-tokens {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.5);
+  padding: 4px 0 0;
+}
+.hdw-impact-tokens .savings {
+  color: #34D399;
+  font-weight: 700;
+}
+.hdw-impact-tokens .old {
+  text-decoration: line-through;
+  color: rgba(255,255,255,0.25);
+}
+.hdw-impact-tokens .new {
+  color: #A5B4FC;
+  font-weight: 600;
+}
+/* Full-width bottom row */
 .hdw-impact-divider {
+  grid-column: 1 / -1;
   border: none;
   border-top: 1px solid rgba(255,255,255,0.08);
-  margin: 8px 0;
+  margin: 6px 0;
 }
 .hdw-impact-summary {
+  grid-column: 1 / -1;
   font-size: 12px;
   color: rgba(255,255,255,0.45);
-  margin-top: 4px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -5876,14 +5937,22 @@
   font-weight: 600;
 }
 .hdw-impact-preview {
+  grid-column: 1 / -1;
   font-size: 12px;
   color: rgba(255,255,255,0.35);
-  margin-top: 8px;
+  margin-top: 4px;
   font-style: italic;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+}
+/* Mobile: single column */
+@media (max-width: 768px) {
+  .hdw-impact { grid-template-columns: 1fr; }
+  .hdw-impact-left, .hdw-impact-right { grid-column: 1; }
+  .hdw-impact-right { margin-top: 8px; }
+  .hdw-impact-content-box { -webkit-line-clamp: 3; }
 }
 
 /* 46. Final CTA — tighten gap between install card and button */
@@ -7025,14 +7094,16 @@ traffic. Advertisers are watching closely.
         url: 'https://en.wikipedia.org/wiki/Artificial_intelligence',
         impact: true,
         stats: { scripts: 6, styles: 17, ads: 5, tracking: 1, navigation: 23, words: 18420, reduction: 77, time: 380, origKB: 1007, cleanKB: 228 },
-        title: 'Artificial intelligence - Wikipedia'
+        title: 'Artificial intelligence - Wikipedia',
+        contentPreview: 'Artificial intelligence (AI), in its broadest sense, is intelligence exhibited by machines, particularly computer systems. It is a field of research in computer science that develops and studies methods and software that enable machines to perceive their environment...'
       },
       {
         cmd: '$ webpeel "news.ycombinator.com"',
         url: 'https://news.ycombinator.com',
         impact: true,
         stats: { scripts: 1, styles: 1, ads: 0, tracking: 0, navigation: 0, words: 1204, reduction: 75, time: 198, origKB: 34, cleanKB: 9 },
-        title: 'Hacker News'
+        title: 'Hacker News',
+        contentPreview: '1. Show HN: I built an open-source alternative to Notion\n2. Why SQLite is taking over embedded databases\n3. The unreasonable effectiveness of simple HTML\n4. Ask HN: What are you working on?\n5. Claude 3.5 Sonnet long-context support...'
       }
     ];
 
@@ -7101,9 +7172,19 @@ traffic. Advertisers are watching closely.
 
       function showImpact(step) {
         var rows = renderImpactRows(demo.stats);
+        var s = demo.stats;
+        var rawTokens = Math.round(s.origKB * 1024 / 4);
+        var cleanTokens = Math.round(s.words * 1.3);
+        var tokenSavings = rawTokens > 0 ? Math.round((1 - cleanTokens / rawTokens) * 100) : 0;
+        function fmtT(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString(); }
+
         if (step === 0) {
-          // Show header
-          outEl.innerHTML = '<div class="hdw-impact"><div class="hdw-impact-header"><span class="shield">🛡️</span> Cleaned for your AI agent</div><div id="hdw-rows"></div></div>';
+          // Build two-column shell
+          var shell = '<div class="hdw-impact">';
+          shell += '<div class="hdw-impact-left"><div class="hdw-impact-header"><span class="shield">🛡️</span> Cleaned for AI</div><div id="hdw-rows"></div></div>';
+          shell += '<div class="hdw-impact-right" id="hdw-right" style="opacity:0;transition:opacity 0.3s;"></div>';
+          shell += '</div>';
+          outEl.innerHTML = shell;
           animTimer = setTimeout(function() { showImpact(1); }, 150);
         } else if (step <= rows.length) {
           var rowsEl = document.getElementById('hdw-rows');
@@ -7115,8 +7196,22 @@ traffic. Advertisers are watching closely.
             rowsEl.appendChild(div);
           }
           animTimer = setTimeout(function() { showImpact(step + 1); }, 120);
+        } else if (step === rows.length + 1) {
+          // Reveal right column: content preview + token savings
+          var rightEl = document.getElementById('hdw-right');
+          if (rightEl) {
+            var rhtml = '<div class="hdw-impact-content-header">📄 Extracted content</div>';
+            rhtml += '<div class="hdw-impact-content-box">' + escapeForDisplay(demo.contentPreview || '') + '</div>';
+            rhtml += '<div class="hdw-impact-tokens">';
+            rhtml += '<span>Tokens:</span> <span class="old">' + fmtT(rawTokens) + '</span> → <span class="new">' + fmtT(cleanTokens) + '</span>';
+            if (tokenSavings > 0) rhtml += ' <span class="savings">(' + tokenSavings + '% saved)</span>';
+            rhtml += '</div>';
+            rightEl.innerHTML = rhtml;
+            rightEl.style.opacity = '1';
+          }
+          animTimer = setTimeout(function() { showImpact(step + 1); }, 300);
         } else {
-          // Show divider + summary
+          // Add bottom summary row
           var impactEl = outEl.querySelector('.hdw-impact');
           if (impactEl) {
             var hr = document.createElement('hr');
@@ -7124,15 +7219,9 @@ traffic. Advertisers are watching closely.
             impactEl.appendChild(hr);
             var summary = document.createElement('div');
             summary.className = 'hdw-impact-summary';
-            var sizeText = demo.stats.origKB ? '<span><span class="accent">' + demo.stats.origKB + 'KB → ' + demo.stats.cleanKB + 'KB</span> (' + demo.stats.reduction + '% smaller)</span>' : '<span><span class="accent">' + demo.stats.reduction + '%</span> smaller</span>';
-            summary.innerHTML = '<span><span class="accent">' + demo.stats.words.toLocaleString() + '</span> words extracted</span><span>·</span>' + sizeText + '<span>·</span><span><span class="accent">' + demo.stats.time + 'ms</span></span>';
+            summary.innerHTML = '<span><span class="accent">' + s.words.toLocaleString() + '</span> words</span><span>·</span><span><span class="accent">' + s.origKB + 'KB → ' + s.cleanKB + 'KB</span></span><span>·</span><span><span class="accent">' + s.time + 'ms</span></span>';
+            if (demo.title) summary.innerHTML += '<span>·</span><span>"' + demo.title + '"</span>';
             impactEl.appendChild(summary);
-            if (demo.title) {
-              var preview = document.createElement('div');
-              preview.className = 'hdw-impact-preview';
-              preview.textContent = '"' + demo.title + '"';
-              impactEl.appendChild(preview);
-            }
             // "View full response" link
             var linkEl = document.createElement('a');
             linkEl.className = 'hdw-view-link';
@@ -7216,24 +7305,45 @@ traffic. Advertisers are watching closely.
             if (cleaned.socialWidgets > 0) rows.push({ n: cleaned.socialWidgets, l: 'widgets removed' });
             if (cleaned.popups > 0) rows.push({ n: cleaned.popups, l: 'popups blocked' });
 
+            // Token estimates: raw HTML ~4 chars/token, cleaned markdown ~1.3 tokens/word
+            var rawTokens = Math.round(cleaned.originalSizeKB * 1024 / 4);
+            var cleanTokens = Math.round(words * 1.3);
+            var tokenSavings = rawTokens > 0 ? Math.round((1 - cleanTokens / rawTokens) * 100) : 0;
+            function formatTokens(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString(); }
+
+            // Content preview — first 200 chars, clean up markdown artifacts
+            var preview = content.replace(/\[([^\]]*)\]\([^\)]*\)/g, '$1').replace(/[#*_`]/g, '').replace(/\n+/g, ' ').trim();
+            if (preview.length > 200) preview = preview.substring(0, 200) + '...';
+
             var html = '<div class="hdw-impact">';
-            html += '<div class="hdw-impact-header"><span class="shield">🛡️</span> Cleaned for your AI agent</div>';
+            // Left column: cleaning stats
+            html += '<div class="hdw-impact-left">';
+            html += '<div class="hdw-impact-header"><span class="shield">🛡️</span> Cleaned for AI</div>';
             rows.forEach(function(r) {
               html += '<div class="hdw-impact-row"><span class="hdw-impact-num">' + r.n + '</span><span class="hdw-impact-label">' + r.l + '</span></div>';
             });
+            html += '</div>';
+            // Right column: content preview + token savings
+            html += '<div class="hdw-impact-right">';
+            html += '<div class="hdw-impact-content-header">📄 Extracted content</div>';
+            html += '<div class="hdw-impact-content-box">' + escapeForDisplay(preview) + '</div>';
+            html += '<div class="hdw-impact-tokens">';
+            html += '<span>Tokens:</span> <span class="old">' + formatTokens(rawTokens) + '</span> → <span class="new">' + formatTokens(cleanTokens) + '</span>';
+            if (tokenSavings > 0) html += ' <span class="savings">(' + tokenSavings + '% saved)</span>';
+            html += '</div>';
+            html += '</div>';
+            // Full-width bottom
             html += '<hr class="hdw-impact-divider">';
             html += '<div class="hdw-impact-summary">';
-            html += '<span><span class="accent">' + words + '</span> words extracted</span>';
+            html += '<span><span class="accent">' + words + '</span> words</span>';
             html += '<span>·</span>';
-            if (cleaned.reductionPercent > 0 && cleaned.originalSizeKB > 0) {
-              html += '<span><span class="accent">' + cleaned.originalSizeKB + 'KB → ' + cleaned.cleanedSizeKB + 'KB</span> (' + cleaned.reductionPercent + '% smaller)</span>';
+            if (cleaned.originalSizeKB > 0) {
+              html += '<span><span class="accent">' + cleaned.originalSizeKB + 'KB → ' + cleaned.cleanedSizeKB + 'KB</span></span>';
               html += '<span>·</span>';
             }
             html += '<span><span class="accent">' + timeMs + 'ms</span></span>';
+            if (title) html += '<span>·</span><span>"' + escapeForDisplay(title) + '"</span>';
             html += '</div>';
-            if (title) {
-              html += '<div class="hdw-impact-preview">"' + escapeForDisplay(title) + '"</div>';
-            }
             html += '</div>';
             outEl.innerHTML = html;
           } else {
