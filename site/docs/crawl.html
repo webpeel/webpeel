@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Crawl &amp; Map — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/crawl">
+  <meta property="og:title" content="Crawl &amp; Map — WebPeel">
+  <meta property="og:description" content="Crawl entire domains or map URL structures with the Firecrawl-compatible crawl and map endpoints.">
+  <meta property="og:url" content="https://webpeel.dev/docs/crawl">
+  <meta property="og:type" content="website">
+  <meta name="description" content="WebPeel Crawl and Map API — recursively crawl websites, discover all URLs, and map site structure. Firecrawl-compatible endpoint.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .method-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-right: 8px; vertical-align: middle; }
+    .method-post { background: #DBEAFE; color: #2563EB; }
+    .method-get { background: #DCFCE7; color: #16A34A; }
+    .endpoint-block { border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 24px 0; background: var(--surface); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--text); vertical-align: middle; }
+    .auth-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .auth-required { background: #FEF3C7; color: #92400E; }
+    .compat-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 6px; font-size: 11px; font-weight: 600; background: #EDE9FE; color: #6D28D9; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .param-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+    .param-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7C3AED; }
+    .param-required { font-size: 11px; font-weight: 600; color: #DC2626; }
+    .param-optional { font-size: 11px; font-weight: 600; color: #6B7280; }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link active">Crawl &amp; Map</a>
+        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Crawl &amp; Map</span>
+      </div>
+
+      <h1>Crawl &amp; Map</h1>
+      <p class="lead">Recursively crawl a website to scrape all pages, or map a domain's URL structure. Fully Firecrawl-compatible — change only the base URL to migrate.</p>
+
+      <div class="callout callout-tip">
+        <strong>Firecrawl compatible:</strong> These endpoints accept the same request/response format as Firecrawl's <code>/v1/crawl</code> and <code>/v1/map</code>. See <a href="/docs/migrate-from-firecrawl">Migrating from Firecrawl</a> for full details.
+      </div>
+
+      <h2 id="endpoints">Endpoints</h2>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/crawl</span><span class="auth-badge auth-required">Auth Required</span><span class="compat-badge">Firecrawl compat</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Start an async crawl job. Scrapes all pages on a domain, respecting the same-origin policy. Returns a job ID for polling.</p>
+      </div>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/crawl/:id</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Poll crawl job status and retrieve completed page data.</p>
+      </div>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/map</span><span class="auth-badge auth-required">Auth Required</span><span class="compat-badge">Firecrawl compat</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Discover and return all URLs on a domain without scraping the content. Fast sitemap generation.</p>
+      </div>
+
+      <h2 id="post-crawl">POST /v1/crawl</h2>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">url</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td><span class="param-required">Required.</span> Starting URL. The crawler stays within this domain.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">limit</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><code>100</code></td>
+            <td>Maximum number of pages to crawl.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">maxDepth</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><code>3</code></td>
+            <td>Maximum link depth from the starting URL.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">formats</span></td>
+            <td><span class="param-type">string[]</span></td>
+            <td><code>["markdown"]</code></td>
+            <td>Output format for each page: <code>markdown</code>, <code>html</code>, <code>links</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">excludePaths</span></td>
+            <td><span class="param-type">string[]</span></td>
+            <td>—</td>
+            <td>URL path patterns to exclude from crawling (e.g. <code>["/admin", "/login"]</code>).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">includePaths</span></td>
+            <td><span class="param-type">string[]</span></td>
+            <td>—</td>
+            <td>Only crawl paths matching these patterns.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">webhook</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td>Webhook URL for job events (<code>started</code>, <code>page</code>, <code>completed</code>, <code>failed</code>).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">scrapeOptions</span></td>
+            <td><span class="param-type">object</span></td>
+            <td>—</td>
+            <td>Options for each page fetch (see <a href="/docs/api-reference">API Reference</a> for full option list).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Response — 202 Accepted</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "id": "crawl_01J8XKZP4T...",
+  "url": "/v1/crawl/crawl_01J8XKZP4T..."
+}</code></pre>
+
+      <h2 id="get-crawl">GET /v1/crawl/:id</h2>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "status": "completed",
+  "total": 48,
+  "completed": 48,
+  "creditsUsed": 48,
+  "expiresAt": "2024-03-05T12:00:00.000Z",
+  "data": [
+    {
+      "markdown": "# Home Page\n\nWelcome to...",
+      "metadata": {
+        "title": "Home — Example.com",
+        "description": "...",
+        "sourceURL": "https://example.com",
+        "statusCode": 200
+      }
+    },
+    {
+      "markdown": "# About Us\n\n...",
+      "metadata": {
+        "title": "About — Example.com",
+        "sourceURL": "https://example.com/about",
+        "statusCode": 200
+      }
+    }
+  ]
+}</code></pre>
+
+      <h3>Job Status Values</h3>
+      <ul>
+        <li><code>pending</code> — queued, not yet started</li>
+        <li><code>scraping</code> — actively crawling pages (maps to <code>processing</code> in Firecrawl format)</li>
+        <li><code>completed</code> — crawl finished</li>
+        <li><code>failed</code> — crawl failed</li>
+        <li><code>cancelled</code> — cancelled by user</li>
+      </ul>
+
+      <h2 id="post-map">POST /v1/map</h2>
+      <p>Quickly enumerate all URLs on a domain by parsing sitemaps and following links — without scraping page content. Much faster than a full crawl.</p>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">url</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td><span class="param-required">Required.</span> Domain root URL to map.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">limit</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><code>5000</code></td>
+            <td>Maximum number of URLs to return.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">search</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td>Filter URLs containing this substring.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "links": [
+    "https://example.com",
+    "https://example.com/about",
+    "https://example.com/pricing",
+    "https://example.com/blog",
+    "https://example.com/blog/post-1",
+    "https://example.com/docs",
+    "..."
+  ]
+}</code></pre>
+
+      <h2 id="scrape-compat">Firecrawl-Compatible Scrape Endpoint</h2>
+      <p>In addition to crawl and map, WebPeel also exposes Firecrawl-compatible scrape endpoints:</p>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/scrape</span><span class="compat-badge">Firecrawl compat</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Firecrawl v1 scrape — same request/response format as Firecrawl's <code>POST /v1/scrape</code>. Accepts <code>formats</code>, <code>actions</code>, <code>extract</code>, and all Firecrawl options.</p>
+      </div>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v2/scrape</span><span class="compat-badge">Firecrawl v2 compat</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Firecrawl v2 scrape with first-class screenshot support. When <code>formats: ["screenshot"]</code> is the only format, returns image data directly.</p>
+      </div>
+
+      <h2 id="examples">Examples</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl-crawl">Start Crawl</button>
+        <button class="tab-btn" data-tab="curl-poll">Poll Status</button>
+        <button class="tab-btn" data-tab="curl-map">Map Domain</button>
+        <button class="tab-btn" data-tab="curl-scrape">Firecrawl Scrape</button>
+        <button class="tab-btn" data-tab="node-crawl">Node.js</button>
+      </div>
+
+      <div class="tab-content active" data-content="curl-crawl">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/crawl \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "limit": 50,
+    "maxDepth": 3,
+    "formats": ["markdown"],
+    "excludePaths": ["/admin", "/login", "/cart"]
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-poll">
+        <pre><code class="language-bash">curl https://api.webpeel.dev/v1/crawl/crawl_01J8XKZP4T... \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-map">
+        <pre><code class="language-bash"># Map all URLs on a domain
+curl -X POST https://api.webpeel.dev/v1/map \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://docs.example.com",
+    "limit": 1000
+  }'
+
+# Filter to only blog URLs
+curl -X POST https://api.webpeel.dev/v1/map \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "search": "/blog/",
+    "limit": 500
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-scrape">
+        <pre><code class="language-bash"># Firecrawl-compatible scrape (drop-in replacement)
+curl -X POST https://api.webpeel.dev/v1/scrape \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown", "links"],
+    "onlyMainContent": true
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="node-crawl">
+        <pre><code class="language-javascript">const API_KEY = process.env.WEBPEEL_API_KEY;
+const BASE = 'https://api.webpeel.dev';
+
+// Start crawl
+const startRes = await fetch(`${BASE}/v1/crawl`, {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    url: 'https://docs.example.com',
+    limit: 100,
+    formats: ['markdown'],
+  }),
+});
+const { id } = await startRes.json();
+
+// Poll until complete
+let result;
+do {
+  await new Promise(r => setTimeout(r, 3000));
+  const pollRes = await fetch(`${BASE}/v1/crawl/${id}`, {
+    headers: { 'Authorization': `Bearer ${API_KEY}` },
+  });
+  result = await pollRes.json();
+  console.log(`${result.completed}/${result.total} pages crawled (${result.status})`);
+} while (['pending', 'scraping'].includes(result.status));
+
+console.log(`Crawl complete. ${result.data.length} pages scraped.`);</code></pre>
+      </div>
+
+      <h2 id="limits">Limits</h2>
+      <ul>
+        <li><strong>Max pages per crawl:</strong> Configurable via <code>limit</code> parameter</li>
+        <li><strong>Max map URLs:</strong> 5000 per request</li>
+        <li><strong>Credits:</strong> 1 credit per page scraped during crawl</li>
+        <li><strong>Map credits:</strong> 1 credit per map request (regardless of URL count)</li>
+        <li><strong>Job TTL:</strong> Results expire after 24 hours</li>
+        <li><strong>Scope:</strong> Crawl stays within the origin domain (no cross-domain following)</li>
+      </ul>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.tab-content[data-content="${tab}"]`)?.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

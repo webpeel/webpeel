@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Batch Scraping — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/batch">
+  <meta property="og:title" content="Batch Scraping — WebPeel">
+  <meta property="og:description" content="Scrape up to 100 URLs concurrently with real-time SSE streaming or async job polling.">
+  <meta property="og:url" content="https://webpeel.dev/docs/batch">
+  <meta property="og:type" content="website">
+  <meta name="description" content="WebPeel Batch Scraping API — submit up to 100 URLs, track progress via SSE or polling, and receive webhook notifications on completion.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .method-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; margin-right: 8px; vertical-align: middle;
+    }
+    .method-post { background: #DBEAFE; color: #2563EB; }
+    .method-get { background: #DCFCE7; color: #16A34A; }
+    .method-delete { background: #FEE2E2; color: #DC2626; }
+    .endpoint-block {
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 20px 24px; margin: 24px 0; background: var(--surface);
+    }
+    .endpoint-path {
+      font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600;
+      color: var(--text); vertical-align: middle;
+    }
+    .auth-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 4px; margin-left: 10px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+    }
+    .auth-required { background: #FEF3C7; color: #92400E; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .param-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border);
+      font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+    .param-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7C3AED; }
+    .param-required { font-size: 11px; font-weight: 600; color: #DC2626; }
+    .param-optional { font-size: 11px; font-weight: 600; color: #6B7280; }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/batch" class="sidebar-link active">Batch Scraping</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Batch Scraping</span>
+      </div>
+
+      <h1>Batch Scraping</h1>
+      <p class="lead">Scrape up to 100 URLs concurrently in a single API call. Supports real-time SSE streaming for live results, async job polling, and webhook callbacks.</p>
+
+      <div class="callout callout-tip">
+        <strong>Two delivery modes:</strong> Send <code>Accept: text/event-stream</code> for real-time SSE streaming as each URL completes, or use the default async mode to poll <code>GET /v1/batch/scrape/:id</code> for the full batch result.
+      </div>
+
+      <h2 id="endpoints">Endpoints</h2>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/batch/scrape</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Submit a batch of URLs for concurrent scraping. Returns a job ID immediately; results are delivered via SSE or polling.</p>
+      </div>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/batch/scrape/:id</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Poll a batch job for status and results. Returns progress, completed count, and the full data array when done.</p>
+      </div>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-delete">DELETE</span><span class="endpoint-path">/v1/batch/scrape/:id</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Cancel a running batch job. Only works on jobs that are <code>pending</code> or <code>processing</code>.</p>
+      </div>
+
+      <h2 id="post-batch">POST /v1/batch/scrape</h2>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">urls</span></td>
+            <td><span class="param-type">string[]</span></td>
+            <td><span class="param-required">Required</span></td>
+            <td>Array of URLs to scrape. Maximum 100 URLs per batch.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">formats</span></td>
+            <td><span class="param-type">string[]</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Output formats. Default: <code>["markdown"]</code>. Options: <code>markdown</code>, <code>html</code>, <code>text</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">concurrency</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Max concurrent fetches. Default: <code>5</code>. Range: 1–10.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">extract</span></td>
+            <td><span class="param-type">object</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Structured extraction options. See <a href="/docs/extract">Structured Extraction</a>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">maxTokens</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Truncate content to this many tokens per URL.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">webhook</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>URL to receive webhook events: <code>started</code>, <code>page</code>, <code>completed</code>, <code>failed</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Response (Async Mode — default)</h3>
+      <p>Returns <code>202 Accepted</code> immediately with a job ID:</p>
+      <pre><code class="language-json">{
+  "success": true,
+  "id": "batch_01J8XKZP4T...",
+  "url": "/v1/batch/scrape/batch_01J8XKZP4T..."
+}</code></pre>
+
+      <h3>Response (SSE Mode)</h3>
+      <p>Send <code>Accept: text/event-stream</code> to receive results as each URL completes:</p>
+      <pre><code class="language-text">event: started
+data: {"batchId":"batch_01J8XKZP4T...","totalUrls":3}
+
+event: result
+data: {"url":"https://example.com","content":"# Example\n...","index":0}
+
+event: error
+data: {"url":"https://broken.url","error":"FETCH_ERROR","message":"...","index":1}
+
+event: done
+data: {"batchId":"batch_01J8XKZP4T...","completed":2,"failed":1,"duration":4521}</code></pre>
+
+      <h2 id="get-batch">GET /v1/batch/scrape/:id</h2>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "status": "completed",
+  "total": 3,
+  "completed": 3,
+  "creditsUsed": 3,
+  "data": [
+    {
+      "url": "https://example.com",
+      "content": "# Example Domain\nThis domain is for illustrative examples...",
+      "metadata": { "title": "Example Domain", "description": "..." }
+    },
+    {
+      "url": "https://broken.url",
+      "error": "fetch failed"
+    }
+  ],
+  "expiresAt": "2024-03-05T12:00:00.000Z"
+}</code></pre>
+
+      <h3>Job Status Values</h3>
+      <ul>
+        <li><code>pending</code> — job created, not yet started</li>
+        <li><code>processing</code> — URLs are being fetched</li>
+        <li><code>completed</code> — all URLs processed (some may have errored)</li>
+        <li><code>failed</code> — the job itself failed (infrastructure error)</li>
+        <li><code>cancelled</code> — cancelled via DELETE</li>
+      </ul>
+
+      <h2 id="examples">Examples</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl-async">curl (async)</button>
+        <button class="tab-btn" data-tab="curl-sse">curl (SSE)</button>
+        <button class="tab-btn" data-tab="node-batch">Node.js</button>
+      </div>
+
+      <div class="tab-content active" data-content="curl-async">
+        <pre><code class="language-bash"># Submit batch
+curl -X POST https://api.webpeel.dev/v1/batch/scrape \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": [
+      "https://example.com",
+      "https://httpbin.org/get",
+      "https://news.ycombinator.com"
+    ],
+    "formats": ["markdown"],
+    "concurrency": 3
+  }'
+
+# Poll for results
+curl https://api.webpeel.dev/v1/batch/scrape/batch_01J8XKZP4T... \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-sse">
+        <pre><code class="language-bash"># Stream results as each URL completes
+curl -X POST https://api.webpeel.dev/v1/batch/scrape \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "urls": ["https://example.com", "https://news.ycombinator.com"],
+    "concurrency": 2
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="node-batch">
+        <pre><code class="language-javascript">// Submit and poll
+const res = await fetch('https://api.webpeel.dev/v1/batch/scrape', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.WEBPEEL_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    urls: ['https://example.com', 'https://httpbin.org/get'],
+    formats: ['markdown'],
+    concurrency: 5,
+  }),
+});
+const { id } = await res.json();
+
+// Poll until complete
+let job;
+do {
+  await new Promise(r => setTimeout(r, 2000));
+  const poll = await fetch(`https://api.webpeel.dev/v1/batch/scrape/${id}`, {
+    headers: { 'Authorization': `Bearer ${process.env.WEBPEEL_API_KEY}` },
+  });
+  job = await poll.json();
+} while (job.status === 'pending' || job.status === 'processing');
+
+console.log(`Done: ${job.completed} pages fetched`);
+console.log(job.data);</code></pre>
+      </div>
+
+      <h2 id="webhooks">Webhook Events</h2>
+      <p>If you provide a <code>webhook</code> URL, WebPeel POSTs JSON events as the batch progresses:</p>
+      <table class="param-table">
+        <thead>
+          <tr><th>Event</th><th>Payload</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>started</code></td>
+            <td><code>{ jobId, total }</code></td>
+          </tr>
+          <tr>
+            <td><code>page</code></td>
+            <td><code>{ jobId, url, completed, total }</code></td>
+          </tr>
+          <tr>
+            <td><code>completed</code></td>
+            <td><code>{ jobId, total, completed }</code></td>
+          </tr>
+          <tr>
+            <td><code>failed</code></td>
+            <td><code>{ jobId, error }</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="limits">Limits</h2>
+      <ul>
+        <li><strong>Max URLs per batch:</strong> 100</li>
+        <li><strong>Max concurrency:</strong> 10 (default: 5)</li>
+        <li><strong>Credits:</strong> 1 credit per URL successfully fetched</li>
+        <li><strong>Job TTL:</strong> Results expire after 24 hours</li>
+      </ul>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        const parent = btn.closest('.tabs, .docs-content');
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll(`.tab-content[data-content="${tab}"]`).forEach(c => {
+          document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+          c.classList.add('active');
+        });
+      });
+    });
+  </script>
+</body>
+</html>

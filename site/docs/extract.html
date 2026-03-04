@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Structured Extraction — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/extract">
+  <meta property="og:title" content="Structured Extraction — WebPeel">
+  <meta property="og:description" content="Extract structured JSON data from any web page using LLM and JSON Schema. BYOK support for OpenAI-compatible endpoints.">
+  <meta property="og:url" content="https://webpeel.dev/docs/extract">
+  <meta property="og:type" content="website">
+  <meta name="description" content="WebPeel Structured Extraction API — extract structured JSON from any web page using LLM inference with JSON Schema. BYOK (Bring Your Own Key) with any OpenAI-compatible endpoint.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .method-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-right: 8px; vertical-align: middle; }
+    .method-post { background: #DBEAFE; color: #2563EB; }
+    .method-get { background: #DCFCE7; color: #16A34A; }
+    .endpoint-block { border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 24px 0; background: var(--surface); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--text); vertical-align: middle; }
+    .auth-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .auth-required { background: #FEF3C7; color: #92400E; }
+    .auth-optional { background: #F0FDF4; color: #15803D; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .param-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+    .param-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7C3AED; }
+    .param-required { font-size: 11px; font-weight: 600; color: #DC2626; }
+    .param-optional { font-size: 11px; font-weight: 600; color: #6B7280; }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/extract" class="sidebar-link active">Structured Extraction</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Structured Extraction</span>
+      </div>
+
+      <h1>Structured Extraction</h1>
+      <p class="lead">Extract structured JSON data from any web page using LLM inference. Define a JSON Schema or natural language prompt — WebPeel fetches the page and returns typed, structured data.</p>
+
+      <div class="callout callout-tip">
+        <strong>BYOK (Bring Your Own Key):</strong> WebPeel calls your LLM provider directly. Provide an OpenAI-compatible API key in <code>llmApiKey</code>. Works with OpenAI, Anthropic (via proxy), or any OpenAI-compatible endpoint.
+      </div>
+
+      <h2 id="endpoints">Endpoints</h2>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/extract</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Fetch a URL and extract structured data using LLM inference and a JSON Schema or prompt.</p>
+      </div>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/extract/auto</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Automatically detect the page type and extract heuristic structured data without an LLM. No API key needed for the extraction itself.</p>
+      </div>
+
+      <h2 id="post-extract">POST /v1/extract</h2>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">url</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-required">Required</span></td>
+            <td>The URL to fetch and extract data from.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">schema</span></td>
+            <td><span class="param-type">object</span></td>
+            <td><span class="param-optional">Optional*</span></td>
+            <td>JSON Schema object defining the expected output shape. Either <code>schema</code> or <code>prompt</code> must be provided.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">prompt</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional*</span></td>
+            <td>Natural language instruction for extraction. Either <code>schema</code> or <code>prompt</code> must be provided.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">llmApiKey</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Your OpenAI-compatible API key. Falls back to server-configured <code>OPENAI_API_KEY</code> if omitted.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">model</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>LLM model to use. Default: <code>gpt-4o-mini</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">baseUrl</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Custom OpenAI-compatible base URL. Default: <code>https://api.openai.com/v1</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:13px;color:var(--text-3);">* At least one of <code>schema</code> or <code>prompt</code> is required.</p>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "title": "Example Product",
+    "price": "$29.99",
+    "rating": 4.5,
+    "inStock": true
+  },
+  "metadata": {
+    "url": "https://example.com/product",
+    "title": "Example Product Page",
+    "tokensUsed": 842,
+    "model": "gpt-4o-mini",
+    "cost": 0.000252,
+    "elapsed": 3241
+  }
+}</code></pre>
+
+      <h2 id="get-extract-auto">GET /v1/extract/auto</h2>
+      <p>Heuristic extraction without LLM — detects page type (product, article, job listing, etc.) and extracts known fields using DOM parsing.</p>
+
+      <h3>Query Parameters</h3>
+      <table class="param-table">
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">url</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-required">Required</span></td>
+            <td>The URL to auto-extract from.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "url": "https://example.com/article",
+  "pageType": "article",
+  "structured": {
+    "type": "article",
+    "title": "Breaking News: ...",
+    "author": "Jane Doe",
+    "publishedAt": "2024-03-04",
+    "description": "A summary of the article..."
+  }
+}</code></pre>
+
+      <h2 id="examples">Examples</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl-schema">curl (schema)</button>
+        <button class="tab-btn" data-tab="curl-prompt">curl (prompt)</button>
+        <button class="tab-btn" data-tab="curl-auto">curl (auto)</button>
+        <button class="tab-btn" data-tab="node-extract">Node.js</button>
+      </div>
+
+      <div class="tab-content active" data-content="curl-schema">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/extract \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://en.wikipedia.org/wiki/WebPeel",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "founded": { "type": "string" },
+        "headquarters": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "llmApiKey": "sk-..."
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-prompt">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/extract \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://news.ycombinator.com",
+    "prompt": "Extract the top 5 story titles and their point counts as a JSON array.",
+    "llmApiKey": "sk-..."
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-auto">
+        <pre><code class="language-bash"># No LLM key needed for auto-extraction
+curl "https://api.webpeel.dev/v1/extract/auto?url=https://example.com/article" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="node-extract">
+        <pre><code class="language-javascript">const response = await fetch('https://api.webpeel.dev/v1/extract', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.WEBPEEL_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    url: 'https://shop.example.com/product/123',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        price: { type: 'number' },
+        availability: { type: 'string', enum: ['in_stock', 'out_of_stock'] },
+        images: { type: 'array', items: { type: 'string' } },
+      },
+    },
+    llmApiKey: process.env.OPENAI_API_KEY,
+    model: 'gpt-4o-mini',
+  }),
+});
+const { data, metadata } = await response.json();
+console.log(data);
+// { name: 'Widget Pro', price: 49.99, availability: 'in_stock', images: [...] }</code></pre>
+      </div>
+
+      <h2 id="errors">Errors</h2>
+      <table class="param-table">
+        <thead>
+          <tr><th>Error Code</th><th>Status</th><th>Cause</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>invalid_request</code></td><td>400</td><td>Missing <code>url</code>, or neither <code>schema</code> nor <code>prompt</code> provided.</td></tr>
+          <tr><td><code>missing_api_key</code></td><td>400</td><td>No LLM API key in request and no server default configured.</td></tr>
+          <tr><td><code>llm_auth_failed</code></td><td>401</td><td>The provided <code>llmApiKey</code> was rejected by the LLM provider.</td></tr>
+          <tr><td><code>llm_rate_limited</code></td><td>429</td><td>The LLM provider returned a rate limit error.</td></tr>
+          <tr><td><code>extraction_failed</code></td><td>500</td><td>The page was fetched but LLM extraction failed.</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.tab-content[data-content="${tab}"]`)?.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

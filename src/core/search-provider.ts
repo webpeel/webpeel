@@ -120,6 +120,90 @@ function decodeDdgUrl(rawUrl: string): string {
   }
 }
 
+// ============================================================
+// ProviderStatsTracker
+// Tracks per-source success/failure rates over a sliding window.
+// Sources that fail >= FAIL_THRESHOLD of the time (min MIN_SAMPLES
+// attempts) are "skipped" by the DuckDuckGo fallback chain until
+// they start succeeding again.
+// ============================================================
+
+interface _AttemptRecord {
+  success: boolean;
+}
+
+class ProviderStatsTracker {
+  private readonly history = new Map<string, _AttemptRecord[]>();
+  private readonly windowSize: number;
+  private readonly failThreshold: number;
+  private readonly minSamples: number;
+
+  constructor(windowSize = 10, failThreshold = 0.8, minSamples = 3) {
+    this.windowSize = windowSize;
+    this.failThreshold = failThreshold;
+    this.minSamples = minSamples;
+  }
+
+  /** Record the outcome of a single attempt for the given source. */
+  record(sourceId: string, success: boolean): void {
+    const arr = this.history.get(sourceId) ?? [];
+    arr.push({ success });
+    if (arr.length > this.windowSize) arr.splice(0, arr.length - this.windowSize);
+    this.history.set(sourceId, arr);
+  }
+
+  /**
+   * Returns the failure rate (0–1) for the given source based on
+   * the sliding window of recorded attempts.  Returns 0 if fewer
+   * than minSamples have been recorded.
+   */
+  getFailureRate(sourceId: string): number {
+    const arr = this.history.get(sourceId);
+    if (!arr || arr.length < this.minSamples) return 0;
+    const failures = arr.filter(a => !a.success).length;
+    return failures / arr.length;
+  }
+
+  /**
+   * Returns true when the source should be skipped (failure rate >=
+   * failThreshold with at least minSamples recorded).
+   */
+  shouldSkip(sourceId: string): boolean {
+    return this.getFailureRate(sourceId) >= this.failThreshold;
+  }
+
+  /** Debug snapshot for a source. */
+  getStats(sourceId: string): { attempts: number; failures: number; failureRate: number; skipRecommended: boolean } {
+    const arr = this.history.get(sourceId) ?? [];
+    const failures = arr.filter(a => !a.success).length;
+    const failureRate = arr.length === 0 ? 0 : failures / arr.length;
+    return { attempts: arr.length, failures, failureRate, skipRecommended: this.shouldSkip(sourceId) };
+  }
+
+  /** Clear history — useful in tests. */
+  reset(sourceId?: string): void {
+    if (sourceId !== undefined) this.history.delete(sourceId);
+    else this.history.clear();
+  }
+}
+
+/**
+ * Module-level singleton. Exported so callers can inspect or reset stats
+ * (e.g. in tests) and to log diagnostics.
+ */
+export const providerStats = new ProviderStatsTracker();
+
+/**
+ * Build a combined AbortSignal that fires after `timeoutMs` OR when the
+ * optional `parent` signal is aborted — whichever comes first.
+ */
+function createTimeoutSignal(timeoutMs: number, parent?: AbortSignal): AbortSignal {
+  const ts = AbortSignal.timeout(timeoutMs);
+  if (!parent) return ts;
+  // AbortSignal.any available in Node.js ≥ 20.3
+  return (AbortSignal as unknown as { any(signals: AbortSignal[]): AbortSignal }).any([parent, ts]);
+}
+
 function normalizeUrlForDedupe(rawUrl: string): string {
   try {
     const u = new URL(rawUrl);
@@ -640,51 +724,110 @@ export class DuckDuckGoProvider implements SearchProvider {
   async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
     const attempts = this.buildQueryAttempts(query);
 
-    for (const q of attempts) {
+    // -----------------------------------------------------------
+    // Stage 1: DDG HTTP
+    // Skip entirely if the source has a ≥80% failure rate over the
+    // last 10 attempts.  When elevated-but-not-skipped, cap the per-
+    // request timeout at 2 s instead of the default 8 s so we fail
+    // fast and get to a working fallback sooner.
+    // -----------------------------------------------------------
+    const ddgHttpRate = providerStats.getFailureRate('ddg-http');
+    const skipDdgHttp = providerStats.shouldSkip('ddg-http');
+
+    if (skipDdgHttp) {
+      console.log(
+        `[webpeel:search] DDG HTTP skipped (failure rate ${Math.round(ddgHttpRate * 100)}% ≥ 80%)`,
+      );
+    } else {
+      const ddgTimeoutMs = ddgHttpRate > 0.5 ? 2_000 : 8_000;
+      const ddgSignal = createTimeoutSignal(ddgTimeoutMs, options.signal);
+      const ddgOptions: WebSearchOptions = { ...options, signal: ddgSignal };
+
+      let ddgSucceeded = false;
+      for (const q of attempts) {
+        try {
+          const results = await this.searchOnce(q, ddgOptions);
+          if (results.length > 0) {
+            providerStats.record('ddg-http', true);
+            console.log(
+              `[webpeel:search] source=ddg-http returned ${results.length} results` +
+              (ddgTimeoutMs < 8_000 ? ` (fast-timeout ${ddgTimeoutMs}ms)` : ''),
+            );
+            return results;
+          }
+          ddgSucceeded = true; // connected OK, just 0 results
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.log('[webpeel:search] DDG HTTP failed:', msg);
+          break;
+        }
+      }
+      // Record outcome: connected but empty = failure for our purposes
+      providerStats.record('ddg-http', ddgSucceeded ? false : false);
+      // (both paths are failures — we only record true above on a live hit)
+    }
+
+    // -----------------------------------------------------------
+    // Stage 2: DDG Lite
+    // Same skip/fast-timeout logic as DDG HTTP.
+    // -----------------------------------------------------------
+    const ddgLiteRate = providerStats.getFailureRate('ddg-lite');
+    const skipDdgLite = providerStats.shouldSkip('ddg-lite');
+
+    if (skipDdgLite) {
+      console.log(
+        `[webpeel:search] DDG Lite skipped (failure rate ${Math.round(ddgLiteRate * 100)}% ≥ 80%)`,
+      );
+    } else {
+      console.log('[webpeel:search] DDG returned 0 results, trying DDG Lite...');
+      const liteTimeoutMs = ddgLiteRate > 0.5 ? 2_000 : 8_000;
+      const liteSignal = createTimeoutSignal(liteTimeoutMs, options.signal);
       try {
-        const results = await this.searchOnce(q, options);
-        if (results.length > 0) return results;
+        const liteResults = await this.searchLite(query, { ...options, signal: liteSignal });
+        if (liteResults.length > 0) {
+          providerStats.record('ddg-lite', true);
+          console.log(
+            `[webpeel:search] source=ddg-lite returned ${liteResults.length} results` +
+            (liteTimeoutMs < 8_000 ? ` (fast-timeout ${liteTimeoutMs}ms)` : ''),
+          );
+          return liteResults;
+        }
+        providerStats.record('ddg-lite', false);
+        console.log('[webpeel:search] DDG Lite also returned 0 results');
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.log('[webpeel:search] DDG HTTP failed:', msg);
-        break;
+        providerStats.record('ddg-lite', false);
+        console.log('[webpeel:search] DDG Lite failed:', e instanceof Error ? e.message : e);
       }
     }
 
-    // DDG responded but returned 0 results or connection failed
-    // Try DDG Lite which may bypass challenges
-    console.log('[webpeel:search] DDG returned 0 results, trying DDG Lite...');
-    try {
-      const liteResults = await this.searchLite(query, options);
-      if (liteResults.length > 0) {
-        console.log(`[webpeel:search] DDG Lite returned ${liteResults.length} results`);
-        return liteResults;
-      }
-      console.log('[webpeel:search] DDG Lite also returned 0 results');
-    } catch (e) {
-      console.log('[webpeel:search] DDG Lite failed:', e instanceof Error ? e.message : e);
-    }
-
-    // Fallback: try Brave Search API if key is configured
+    // -----------------------------------------------------------
+    // Stage 3: Brave Search API (BYOK — instant if key configured)
+    // -----------------------------------------------------------
     const braveKey = process.env.BRAVE_SEARCH_KEY || process.env.BRAVE_API_KEY;
     if (braveKey) {
       try {
         const braveProvider = new BraveSearchProvider();
         const braveResults = await braveProvider.searchWeb(query, { ...options, apiKey: braveKey });
-        if (braveResults.length > 0) return braveResults;
+        if (braveResults.length > 0) {
+          console.log(`[webpeel:search] source=brave returned ${braveResults.length} results`);
+          return braveResults;
+        }
       } catch (e) {
         console.log('[webpeel:search] Brave search failed:', e instanceof Error ? e.message : e);
       }
     }
 
-    // Last resort: stealth multi-engine search (DDG + Bing + Ecosia via stealth browser)
-    // Bypasses bot detection on datacenter IPs where HTTP scraping fails.
+    // -----------------------------------------------------------
+    // Stage 4: Stealth multi-engine (DDG + Bing + Ecosia in parallel)
+    // Bypasses bot-detection on datacenter IPs. This is the reliable
+    // last resort — but it spins up a browser so it takes a few seconds.
+    // -----------------------------------------------------------
     console.log('[webpeel:search] Trying stealth browser search (DDG + Bing + Ecosia)...');
     try {
       const stealthProvider = new StealthSearchProvider();
       const stealthResults = await stealthProvider.searchWeb(query, options);
       if (stealthResults.length > 0) {
-        console.log(`[webpeel:search] Stealth search returned ${stealthResults.length} results`);
+        console.log(`[webpeel:search] source=stealth returned ${stealthResults.length} results`);
         return stealthResults;
       }
       console.log('[webpeel:search] Stealth search returned 0 results');
