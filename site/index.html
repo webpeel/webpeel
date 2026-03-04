@@ -5612,6 +5612,107 @@
 /* 37. mini-code: slightly tighter bottom padding so cards feel balanced */
 .mini-code { padding-bottom: 16px !important; }
 
+/* 38. Hero secondary CTA → ghost button */
+.hero-ctas .btn-ghost,
+.hero-ctas a[href="#features"] {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  color: rgba(255,255,255,0.7) !important;
+}
+.hero-ctas .btn-ghost:hover,
+.hero-ctas a[href="#features"]:hover {
+  border-color: rgba(255,255,255,0.3) !important;
+  color: #fff !important;
+}
+
+/* 39. How It Works grid — 3 columns at all desktop widths */
+.how-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 24px !important;
+}
+@media (max-width: 768px) {
+  .how-grid { grid-template-columns: 1fr !important; }
+}
+
+/* 40. Final CTA — tighten padding + button glow */
+.final-cta {
+  padding: 80px 0 !important;
+}
+.final-cta .btn-primary,
+.final-cta-btn {
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.4), 0 0 80px rgba(99, 102, 241, 0.15) !important;
+  font-size: 18px !important;
+  padding: 16px 40px !important;
+}
+
+/* 41. FAQ — tighten gaps */
+.faq-item + .faq-item {
+  margin-top: 8px !important;
+}
+
+/* 42. Pricing cards — widen at desktop */
+@media (min-width: 1024px) {
+  .pricing-grid {
+    max-width: 1200px !important;
+  }
+  .price-card {
+    max-width: 400px !important;
+  }
+}
+
+/* 43. Live demo widget — output footer and error styles */
+.hdw-live-footer {
+  margin-top: 12px !important;
+  font-size: 12px !important;
+  color: rgba(255,255,255,0.50) !important;
+  border-top: 1px solid rgba(255,255,255,0.08) !important;
+  padding-top: 10px !important;
+}
+.hdw-live-footer a {
+  color: #818CF8 !important;
+  text-decoration: none !important;
+}
+.hdw-live-footer a:hover { text-decoration: underline !important; }
+.hdw-error-line {
+  color: #F87171 !important;
+  font-size: 13px !important;
+  margin-top: 8px !important;
+}
+.hdw-error-line a {
+  color: #FCA5A5 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+.hdw-loading-cursor {
+  display: inline-block !important;
+  width: 2px !important;
+  height: 1em !important;
+  background: rgba(255,255,255,0.8) !important;
+  margin-left: 2px !important;
+  vertical-align: text-bottom !important;
+  animation: hdw-blink 0.8s step-end infinite !important;
+}
+@keyframes hdw-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* 44. Mobile fixes — code block overflow + stat label */
+@media (max-width: 768px) {
+  .hdw-cmd-line, .hdw-output, .ba-code, .install-code, pre, code {
+    overflow-x: auto !important;
+    word-break: break-all !important;
+    white-space: pre-wrap !important;
+  }
+  .hero-stat-l {
+    font-size: 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -5715,7 +5816,7 @@
             </div>
           </div>
           <div class="hdw-input-row">
-            <input type="text" class="hdw-url-input" id="hdw-url-input" placeholder="https://stripe.com" autocomplete="off" spellcheck="false">
+            <input type="text" class="hdw-url-input" id="hdw-url-input" placeholder="Try any URL — stripe.com, wikipedia.org..." autocomplete="off" spellcheck="false">
             <button class="hdw-run-btn" id="hdw-run-btn">Extract →</button>
           </div>
           <div class="hdw-body">
@@ -5742,7 +5843,7 @@
         </div>
         <div class="hero-stat">
           <span class="hero-stat-n" data-count-to="18" style="color: #A5B4FC">18</span>
-          <span class="hero-stat-l">MCP tools (Claude/Cursor)</span>
+          <span class="hero-stat-l">MCP tools</span>
         </div>
       </div>
       <p class="hero-stats-note hero-el" data-delay="700">30-day rolling averages · Tested across 500+ domains · <a href="/methodology" style="color:#818CF8;text-decoration:underline;text-decoration-color:rgba(129,140,248,0.4);text-underline-offset:3px;">methodology ↗</a></p>
@@ -6720,6 +6821,7 @@ traffic. Advertisers are watching closely.
     var DEMOS = [
       {
         cmd: '$ webpeel "stripe.com"',
+        url: 'https://stripe.com',
         lines: [
           '{',
           '  "url": "https://stripe.com",',
@@ -6733,6 +6835,7 @@ traffic. Advertisers are watching closely.
       },
       {
         cmd: '$ webpeel "wikipedia.org/wiki/AI"',
+        url: 'https://en.wikipedia.org/wiki/Artificial_intelligence',
         lines: [
           '{',
           '  "url": "https://en.wikipedia.org/wiki/AI",',
@@ -6746,6 +6849,7 @@ traffic. Advertisers are watching closely.
       },
       {
         cmd: '$ webpeel "news.ycombinator.com"',
+        url: 'https://news.ycombinator.com',
         lines: [
           '{',
           '  "url": "https://news.ycombinator.com",',
@@ -6760,20 +6864,30 @@ traffic. Advertisers are watching closely.
     ];
 
     var currentIdx = 0, cycleTimer = null, hovered = false, animTimer = null;
-
-    function colorLine(raw) {
-      var s = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      s = s.replace(/(&quot;(?:[^&]|&(?!quot;))*&quot;)(?=\s*:)/g, '<span class="t-key">$1</span>');
-      s = s.replace(/:\s*(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, ': <span class="t-str">$1</span>');
-      s = s.replace(/:\s*(\d+)/g, ': <span class="t-num">$1</span>');
-      s = s.replace(/^(\s*[{}]\s*)$/, '<span class="t-dim">$1</span>');
-      return s;
-    }
+    var liveMode = false; // flips true on first user interaction
 
     function escapeForDisplay(s) {
       return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // Syntax-highlight a JSON object for display
+    function highlightJson(obj) {
+      var json = JSON.stringify(obj, null, 2);
+      var escaped = json
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+      // Keys
+      escaped = escaped.replace(/(&quot;[^&]+&quot;)(?=\s*:)/g, '<span class="t-key">$1</span>');
+      // String values
+      escaped = escaped.replace(/:\s*(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, ': <span class="t-str">$1</span>');
+      // Numeric values
+      escaped = escaped.replace(/:\s*(\d+)/g, ': <span class="t-num">$1</span>');
+      // Braces
+      escaped = escaped.replace(/^(\s*[{}]\s*)$/mg, '<span class="t-dim">$1</span>');
+      return escaped;
+    }
+
+    // Show a pre-baked demo with typewriter animation (initial load)
     function runDemo(i) {
       var w = document.getElementById('hero-demo-widget');
       if (!w) return;
@@ -6804,7 +6918,6 @@ traffic. Advertisers are watching closely.
 
       function showLine(j) {
         if (j >= demo.lines.length) {
-          // All lines shown — add "View full response →" link
           var linkEl = document.createElement('a');
           linkEl.className = 'hdw-view-link';
           linkEl.href = '#demo';
@@ -6815,7 +6928,6 @@ traffic. Advertisers are watching closely.
         }
         var el = document.createElement('div');
         var escaped = escapeForDisplay(demo.lines[j]);
-        // Re-apply colors after escaping
         escaped = escaped
           .replace(/(&quot;[^&]+&quot;)(?=\s*:)/g, '<span class="t-key">$1</span>')
           .replace(/:\s*(&quot;[^&]+&quot;)/g, ': <span class="t-str">$1</span>')
@@ -6829,10 +6941,69 @@ traffic. Advertisers are watching closely.
       typeChar();
     }
 
+    // Fetch live from the API and display result
+    function fetchLive(url) {
+      var cmdEl = document.getElementById('hdw-cmd');
+      var outEl = document.getElementById('hdw-output');
+      if (!cmdEl || !outEl) return;
+      if (animTimer) clearTimeout(animTimer);
+
+      // Show loading state
+      var shortUrl = url.replace(/^https?:\/\//i, '');
+      cmdEl.innerHTML = '$ webpeel &quot;' + escapeForDisplay(shortUrl) + '&quot; --readable <span class="hdw-loading-cursor"></span>';
+      outEl.innerHTML = '';
+
+      fetch('https://api.webpeel.dev/v1/demo?url=' + encodeURIComponent(url))
+        .then(function(r) {
+          if (r.status === 403) throw { code: 403 };
+          if (r.status === 429) throw { code: 429 };
+          if (!r.ok) throw { code: r.status };
+          return r.json();
+        })
+        .then(function(data) {
+          // Finalize command line
+          cmdEl.innerHTML = '$ webpeel &quot;' + escapeForDisplay(shortUrl) + '&quot; --readable';
+
+          // Build display object with truncated content
+          var content = data.content || data.text || '';
+          var truncated = content.length > 300 ? content.substring(0, 300) + '...' : content;
+          var displayObj = {
+            title: data.title || '',
+            content: truncated,
+            wordCount: data.wordCount || data.word_count || 0,
+            fetchTimeMs: data.fetchTimeMs || data.elapsed || data.fetch_time_ms || 0,
+            url: url
+          };
+
+          // Render highlighted JSON
+          var jsonHtml = highlightJson(displayObj);
+          outEl.innerHTML = '<pre style="margin:0;font-family:inherit;font-size:inherit;white-space:pre-wrap;word-break:break-word;">' + jsonHtml + '</pre>';
+
+          // Footer line
+          var footer = document.createElement('div');
+          footer.className = 'hdw-live-footer';
+          footer.innerHTML = '✓ ' + displayObj.wordCount + ' words · ' + displayObj.fetchTimeMs + 'ms · <a href="/docs/">Try the full API →</a>';
+          outEl.appendChild(footer);
+        })
+        .catch(function(err) {
+          cmdEl.innerHTML = '$ webpeel &quot;' + escapeForDisplay(shortUrl) + '&quot; --readable';
+          var errDiv = document.createElement('div');
+          errDiv.className = 'hdw-error-line';
+          if (err && err.code === 403) {
+            errDiv.innerHTML = '⚠ Domain not in demo allowlist. <a href="https://app.webpeel.dev/signup">Sign up for full access. →</a>';
+          } else if (err && err.code === 429) {
+            errDiv.textContent = '⚠ Rate limit reached. Try again in a moment.';
+          } else {
+            errDiv.textContent = '⚠ Could not reach that URL. Try one of the examples above.';
+          }
+          outEl.appendChild(errDiv);
+        });
+    }
+
     function scheduleCycle() {
       clearTimeout(cycleTimer);
       cycleTimer = setTimeout(function() {
-        if (!hovered) {
+        if (!hovered && !liveMode) {
           currentIdx = (currentIdx + 1) % DEMOS.length;
           runDemo(currentIdx);
         }
@@ -6845,43 +7016,60 @@ traffic. Advertisers are watching closely.
       if (!w) return;
       w.addEventListener('mouseenter', function() { hovered = true; });
       w.addEventListener('mouseleave', function() { hovered = false; });
+
+      var urlInput = document.getElementById('hdw-url-input');
+
+      // Tab click: populate input + trigger live fetch (after first interaction)
       document.querySelectorAll('.hdw-tab').forEach(function(tab, i) {
-        tab.addEventListener('click', function() { currentIdx = i; runDemo(i); });
+        tab.addEventListener('click', function() {
+          currentIdx = i;
+          document.querySelectorAll('.hdw-tab').forEach(function(t, j) {
+            t.classList.toggle('active', j === i);
+          });
+          var tabUrl = DEMOS[i].url;
+          if (urlInput) urlInput.value = tabUrl;
+          if (liveMode) {
+            clearTimeout(cycleTimer);
+            fetchLive(tabUrl);
+          } else {
+            // First tab click: use pre-baked, flip to live mode for future
+            liveMode = true;
+            clearTimeout(cycleTimer);
+            runDemo(i);
+          }
+        });
       });
+
       runDemo(0);
       scheduleCycle();
 
-      // Auto-focus URL input on desktop (Norman: affordance — cursor blinks here = "start here")
+      // Auto-focus URL input on desktop
       if (window.innerWidth >= 769) {
         setTimeout(function() {
-          var inp = document.getElementById('hdw-url-input');
-          if (inp) inp.focus();
-        }, 1800); // after initial animation plays
+          if (urlInput) urlInput.focus();
+        }, 1800);
       }
 
-      // URL input: submit → scroll to live demo section + pre-fill URL
-      var urlInput = document.getElementById('hdw-url-input');
+      // URL input: auto-prepend https:// + live fetch
       var runBtn = document.getElementById('hdw-run-btn');
       if (urlInput && runBtn) {
         function submitHeroUrl() {
           var url = urlInput.value.trim();
           if (!url) return;
           if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-          // Pre-fill the demo section URL display
-          var demoDisplay = document.getElementById('demo-url-display');
-          if (demoDisplay) demoDisplay.textContent = url;
-          // Scroll to demo section
-          var demoSection = document.getElementById('demo');
-          if (demoSection) demoSection.scrollIntoView({ behavior: 'smooth' });
-          // Click extract after a short delay to let scroll start
-          setTimeout(function() {
-            var extractBtn = document.getElementById('demo-extract-btn');
-            if (extractBtn) extractBtn.click();
-          }, 400);
+          urlInput.value = url;
+          liveMode = true;
+          clearTimeout(cycleTimer);
+          fetchLive(url);
         }
         runBtn.addEventListener('click', submitHeroUrl);
         urlInput.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') submitHeroUrl();
+        });
+        // Any input interaction flips to live mode
+        urlInput.addEventListener('input', function() {
+          liveMode = true;
+          clearTimeout(cycleTimer);
         });
       }
     });
