@@ -5,6 +5,7 @@ from unittest.mock import patch, MagicMock
 import json
 
 from webpeel import WebPeel, ScrapeResult, WebPeelError
+from webpeel.types import ScrapeResult as ScrapeResultType
 
 
 class TestWebPeel(unittest.TestCase):
@@ -90,6 +91,75 @@ class TestWebPeel(unittest.TestCase):
         
         self.assertEqual(result.method, "browser")
         self.assertEqual(result.url, "https://example.com")
+
+
+class TestScrapeResultNewFields(unittest.TestCase):
+    """Test new fields added in v0.13.0."""
+
+    def test_new_fields_default_none(self):
+        """New fields should default to None (backwards compatible)."""
+        result = ScrapeResultType(
+            url="https://example.com",
+            title="Test",
+            content="Content",
+            markdown="Content",
+            metadata={},
+            links=[],
+            tokens=100,
+            method="simple",
+            elapsed=200,
+        )
+        self.assertIsNone(result.raw_token_estimate)
+        self.assertIsNone(result.token_savings_percent)
+        self.assertIsNone(result.auto_interact)
+
+    def test_new_fields_set(self):
+        """New fields should accept values correctly."""
+        result = ScrapeResultType(
+            url="https://example.com",
+            title="Test",
+            content="Content",
+            markdown="Content",
+            metadata={},
+            links=[],
+            tokens=100,
+            method="simple",
+            elapsed=200,
+            raw_token_estimate=1000,
+            token_savings_percent=95,
+            auto_interact={"cookieBanner": "dismissed"},
+        )
+        self.assertEqual(result.raw_token_estimate, 1000)
+        self.assertEqual(result.token_savings_percent, 95)
+        self.assertEqual(result.auto_interact, {"cookieBanner": "dismissed"})
+
+    @patch('urllib.request.urlopen')
+    def test_scrape_maps_new_fields_from_api(self, mock_urlopen):
+        """Client should map camelCase API fields to snake_case."""
+        mock_response = MagicMock()
+        mock_response.read.return_value = json.dumps({
+            "url": "https://example.com",
+            "title": "Example",
+            "content": "Content",
+            "metadata": {},
+            "links": [],
+            "tokens": 500,
+            "method": "simple",
+            "elapsed": 300,
+            "rawTokenEstimate": 8000,
+            "tokenSavingsPercent": 94,
+            "autoInteract": {"cookieBanner": "dismissed", "gdprConsent": "accepted"},
+        }).encode('utf-8')
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_response
+
+        client = WebPeel(api_key="test-key")
+        result = client.scrape("https://example.com")
+
+        self.assertEqual(result.raw_token_estimate, 8000)
+        self.assertEqual(result.token_savings_percent, 94)
+        self.assertEqual(result.auto_interact, {"cookieBanner": "dismissed", "gdprConsent": "accepted"})
 
 
 if __name__ == '__main__':

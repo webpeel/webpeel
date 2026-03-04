@@ -55,6 +55,15 @@ class ScrapeResult:
     
     summary: Optional[str] = None
     """AI-generated summary."""
+    
+    raw_token_estimate: Optional[int] = None
+    """Estimated tokens if raw HTML was fed to LLM (~4 chars/token)."""
+    
+    token_savings_percent: Optional[int] = None
+    """Percentage of tokens saved compared to raw HTML."""
+    
+    auto_interact: Optional[Dict[str, Any]] = None
+    """Auto-interaction results (cookie banners dismissed, etc.)."""
 
 
 @dataclass

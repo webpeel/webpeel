@@ -256,6 +256,31 @@ function getTools(): Tool[] {
       },
     },
     {
+      name: 'webpeel_design_analysis',
+      description: 'Extract visual design intelligence from a URL — palette, typography, layout, quality signals.',
+      annotations: { title: 'Analyze Visual Design', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      inputSchema: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to analyze' },
+        },
+        required: ['url'],
+      },
+    },
+    {
+      name: 'webpeel_design_compare',
+      description: 'Compare the visual design of two URLs — returns structured gap analysis.',
+      annotations: { title: 'Compare Visual Design', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      inputSchema: {
+        type: 'object',
+        properties: {
+          url1: { type: 'string', description: 'First URL to compare (subject)' },
+          url2: { type: 'string', description: 'Second URL to compare (reference)' },
+        },
+        required: ['url1', 'url2'],
+      },
+    },
+    {
       name: 'webpeel_summarize',
       description: 'Generate an AI summary of a URL\'s content. Requires an LLM API key (BYOK).',
       annotations: { title: 'Summarize Page', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
@@ -829,6 +854,51 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
         format: result.format,
         contentType: result.contentType,
         screenshot: result.screenshot,
+      }));
+    }
+
+    // webpeel_design_analysis
+    if (name === 'webpeel_design_analysis') {
+      const url = args.url as string;
+      if (!url || typeof url !== 'string') throw new Error('Invalid URL');
+      if (url.length > 2048) throw new Error('URL too long');
+
+      const { takeDesignAnalysis } = await import('../../core/screenshot.js');
+      const result = await Promise.race([
+        takeDesignAnalysis(url, {}),
+        timeout(90000, 'Design analysis timed out'),
+      ]) as any;
+
+      return ok(safeStringify({
+        url: result.url,
+        analysis: result.analysis,
+      }));
+    }
+
+    // webpeel_design_compare
+    if (name === 'webpeel_design_compare') {
+      const url1 = args.url1 as string;
+      const url2 = args.url2 as string;
+      if (!url1 || typeof url1 !== 'string') throw new Error('Invalid url1');
+      if (!url2 || typeof url2 !== 'string') throw new Error('Invalid url2');
+      if (url1.length > 2048) throw new Error('url1 too long');
+      if (url2.length > 2048) throw new Error('url2 too long');
+      if (url1 === url2) throw new Error('url1 and url2 must be different URLs');
+
+      const { takeDesignComparison } = await import('../../core/screenshot.js');
+      const result = await Promise.race([
+        takeDesignComparison(url1, url2, {}),
+        timeout(120000, 'Design comparison timed out'),
+      ]) as any;
+
+      return ok(safeStringify({
+        subjectUrl: result.subjectUrl,
+        referenceUrl: result.referenceUrl,
+        score: result.comparison.score,
+        summary: result.comparison.summary,
+        gaps: result.comparison.gaps,
+        subjectAnalysis: result.comparison.subjectAnalysis,
+        referenceAnalysis: result.comparison.referenceAnalysis,
       }));
     }
 

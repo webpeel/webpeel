@@ -138,12 +138,12 @@ export function createCompatRouter(jobQueue: IJobQueue): Router {
       const data: any = {
         markdown: result.content,
         metadata: {
-          title: result.title,
-          description: result.metadata.description || '',
-          language: 'en', // WebPeel doesn't detect language yet
-          sourceURL: result.url,
-          statusCode: 200, // We don't track status codes in PeelResult
           ...result.metadata,
+          title: result.title,
+          description: result.metadata?.description || '',
+          language: result.metadata?.language || 'en',
+          sourceURL: result.url,
+          statusCode: 200,
         },
       };
 

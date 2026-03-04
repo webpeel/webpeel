@@ -6039,6 +6039,7 @@
 .hdw-clean-bar .old { text-decoration: line-through !important; color: rgba(255,255,255,0.2) !important; }
 .hdw-clean-bar .new { color: #A5B4FC !important; font-weight: 600 !important; }
 .hdw-clean-bar .savings { color: #34D399 !important; font-weight: 700 !important; }
+.hdw-clean-bar .cb-headline { font-size: 13px !important; font-weight: 700 !important; color: #34D399 !important; margin-bottom: 4px !important; }
 
 /* 51. Bigger terminal + left-side spacing (textbook 8px grid rhythm) */
 /* Terminal: wider + taller */
@@ -7149,7 +7150,7 @@ traffic. Advertisers are watching closely.
           '"fetchTimeMs": 380,',
           '"url": "https://en.wikipedia.org/wiki/Artificial_intelligence"'
         ],
-        cleaned: { total: 52, origKB: 1007, cleanKB: 228, rawTokens: '257.8K', cleanTokens: '23.9K', savings: 91, scripts: 6, styles: 17, ads: 5, tracking: 1, nav: 23 }
+        cleaned: { total: 52, origKB: 1007, cleanKB: 228, rawTokens: '257.8K', cleanTokens: '23.9K', savings: 92, scripts: 6, styles: 17, ads: 5, tracking: 1, nav: 23 }
       },
       {
         cmd: '$ webpeel "news.ycombinator.com"',
@@ -7161,7 +7162,7 @@ traffic. Advertisers are watching closely.
           '"fetchTimeMs": 198,',
           '"url": "https://news.ycombinator.com"'
         ],
-        cleaned: { total: 2, origKB: 34, cleanKB: 9, rawTokens: '8.7K', cleanTokens: '1.6K', savings: 82, scripts: 1, styles: 1, ads: 0, tracking: 0, nav: 0 }
+        cleaned: { total: 2, origKB: 34, cleanKB: 9, rawTokens: '8.7K', cleanTokens: '1.6K', savings: 0, scripts: 1, styles: 1, ads: 0, tracking: 0, nav: 0 }
       }
     ];
 
@@ -7234,10 +7235,12 @@ traffic. Advertisers are watching closely.
             if (c.nav > 0) parts.push('<span class="cb-num">' + c.nav + '</span> nav');
             var bar = document.createElement('div');
             bar.className = 'hdw-clean-bar';
-            bar.innerHTML = '<div class="cb-line1"><span class="shield">🛡️</span> ' + parts.join(' <span class="sep">·</span> ') + ' <span class="cb-label">removed</span></div>' +
-              '<div class="cb-line2">' + c.origKB + 'KB → ' + c.cleanKB + 'KB' +
-              ' <span class="sep">·</span> Tokens: <span class="old">' + c.rawTokens + '</span> → <span class="new">' + c.cleanTokens + '</span>' +
-              (c.savings > 0 ? ' <span class="savings">(' + c.savings + '% saved)</span>' : '') + '</div>';
+            var headlineHtml = (c.savings > 10) ? '<div class="cb-headline">⚡ ' + c.savings + '% fewer tokens for your AI</div>' : '';
+            var tokenLineHtml = (c.savings > 10) ? (' <span class="sep">·</span> Tokens: <span class="old">' + c.rawTokens + '</span> → <span class="new">' + c.cleanTokens + '</span>' +
+              ' <span class="savings">(' + c.savings + '% saved)</span>') : '';
+            bar.innerHTML = headlineHtml +
+              '<div class="cb-line1"><span class="shield">🛡️</span> ' + parts.join(' <span class="sep">·</span> ') + ' <span class="cb-label">removed</span></div>' +
+              '<div class="cb-line2">' + c.origKB + 'KB → ' + c.cleanKB + 'KB' + tokenLineHtml + '</div>';
             outEl.appendChild(bar);
           }
           var linkEl = document.createElement('a');
@@ -7326,9 +7329,10 @@ traffic. Advertisers are watching closely.
 
           // Cleaning stats footer bar (below JSON)
           if (cleaned && cleaned.totalRemoved > 0) {
-            var rawTokens = Math.round(cleaned.originalSizeKB * 1024 / 4);
-            var cleanTokens = Math.round(words * 1.3);
-            var tokenSavings = rawTokens > 0 ? Math.round((1 - cleanTokens / rawTokens) * 100) : 0;
+            var te = data.tokenEstimate || {};
+            var rawTokens = te.raw || Math.round(cleaned.originalSizeKB * 1024 / 4);
+            var cleanTokens = te.clean || Math.round(words * 1.3);
+            var tokenSavings = te.savings || (rawTokens > 0 ? Math.round((1 - cleanTokens / rawTokens) * 100) : 0);
             function formatTokens(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString(); }
 
             // Build individual breakdown
@@ -7343,10 +7347,12 @@ traffic. Advertisers are watching closely.
 
             var statsBar = document.createElement('div');
             statsBar.className = 'hdw-clean-bar';
-            statsBar.innerHTML = '<div class="cb-line1"><span class="shield">🛡️</span> ' + parts.join(' <span class="sep">·</span> ') + ' <span class="cb-label">removed</span></div>' +
-              '<div class="cb-line2">' + cleaned.originalSizeKB + 'KB → ' + cleaned.cleanedSizeKB + 'KB' +
-              ' <span class="sep">·</span> Tokens: <span class="old">' + formatTokens(rawTokens) + '</span> → <span class="new">' + formatTokens(cleanTokens) + '</span>' +
-              (tokenSavings > 0 ? ' <span class="savings">(' + tokenSavings + '% saved)</span>' : '') + '</div>';
+            var liveHeadlineHtml = (tokenSavings > 10) ? '<div class="cb-headline">⚡ ' + tokenSavings + '% fewer tokens for your AI</div>' : '';
+            var liveTokenLineHtml = (tokenSavings > 10) ? (' <span class="sep">·</span> Tokens: <span class="old">' + formatTokens(rawTokens) + '</span> → <span class="new">' + formatTokens(cleanTokens) + '</span>' +
+              ' <span class="savings">(' + tokenSavings + '% saved)</span>') : '';
+            statsBar.innerHTML = liveHeadlineHtml +
+              '<div class="cb-line1"><span class="shield">🛡️</span> ' + parts.join(' <span class="sep">·</span> ') + ' <span class="cb-label">removed</span></div>' +
+              '<div class="cb-line2">' + cleaned.originalSizeKB + 'KB → ' + cleaned.cleanedSizeKB + 'KB' + liveTokenLineHtml + '</div>';
             outEl.appendChild(statsBar);
           }
 

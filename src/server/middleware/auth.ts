@@ -135,16 +135,25 @@ export function createAuthMiddleware(authStore: AuthStore) {
             }
           }
 
-          res.status(401).json({
-            success: false,
-            error: {
-              type: 'invalid_key',
-              message: 'Invalid or expired API key.',
-              hint: 'Check your key at https://app.webpeel.dev/keys or generate a new one.',
-              docs: 'https://webpeel.dev/docs/errors#unauthorized',
-            },
-            metadata: { requestId: req.requestId },
-          });
+          // Firecrawl compat routes expect { error: "string" } not { error: { type, message } }
+          const isCompatRoute = /^\/(v[12]\/(scrape|crawl|map|search))/.test(req.path);
+          if (isCompatRoute) {
+            res.status(401).json({
+              success: false,
+              error: 'Invalid or expired API key. Get one at https://app.webpeel.dev/keys',
+            });
+          } else {
+            res.status(401).json({
+              success: false,
+              error: {
+                type: 'invalid_key',
+                message: 'Invalid or expired API key.',
+                hint: 'Check your key at https://app.webpeel.dev/keys or generate a new one.',
+                docs: 'https://webpeel.dev/docs/errors#unauthorized',
+              },
+              metadata: { requestId: req.requestId },
+            });
+          }
           return;
         }
 

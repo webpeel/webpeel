@@ -224,6 +224,9 @@ class WebPeel:
             extracted=response.get("extracted"),
             branding=response.get("branding"),
             summary=response.get("summary"),
+            raw_token_estimate=response.get("rawTokenEstimate"),
+            token_savings_percent=response.get("tokenSavingsPercent"),
+            auto_interact=response.get("autoInteract"),
         )
     
     def search(
