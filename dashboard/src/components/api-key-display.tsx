@@ -15,8 +15,8 @@ export function ApiKeyDisplay({ apiKey }: ApiKeyDisplayProps) {
   const displayKey = revealed ? apiKey : `${apiKey.slice(0, 12)}...${apiKey.slice(-4)}`;
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-zinc-50 border rounded-lg">
-      <code className="flex-1 text-sm font-mono">{displayKey}</code>
+    <div className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-700 rounded-lg">
+      <code className="flex-1 text-sm font-mono text-zinc-200">{displayKey}</code>
       <Button
         variant="ghost"
         size="sm"

@@ -15,7 +15,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#FAFAF8' }}>
+      <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#0A0A0F', color: '#EDEDEF' }}>
         <div
           style={{
             display: 'flex',
@@ -29,17 +29,17 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
         >
           {/* Logo mark */}
           <svg width="40" height="40" viewBox="0 0 32 32" style={{ marginBottom: '1.5rem' }} aria-hidden="true">
-            <rect width="32" height="32" fill="#18181B" rx="8" />
+            <rect width="32" height="32" fill="#5865F2" rx="8" />
             <path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFFFFF" fillOpacity="0.95" />
             <path d="M20 3v5a2 2 0 002 2h5" fill="#C7D2FE" />
-            <path d="M8 16h10" stroke="#18181B" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M8 16h10" stroke="#5865F2" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
 
           <h1
             style={{
               fontSize: '1.25rem',
               fontWeight: 600,
-              color: '#18181B',
+              color: '#EDEDEF',
               marginBottom: '0.5rem',
             }}
           >
@@ -48,7 +48,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
           <p
             style={{
               fontSize: '0.875rem',
-              color: '#71717A',
+              color: '#8B8B99',
               maxWidth: '360px',
               marginBottom: '1.5rem',
               lineHeight: 1.6,
@@ -57,7 +57,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             A critical error occurred while loading the page. Please try again or{' '}
             <a
               href="mailto:support@webpeel.dev"
-              style={{ color: '#18181B', textDecoration: 'underline' }}
+              style={{ color: '#818CF8', textDecoration: 'underline' }}
             >
               contact support
             </a>{' '}
@@ -73,8 +73,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 justifyContent: 'center',
                 padding: '0.625rem 1.25rem',
                 borderRadius: '0.5rem',
-                backgroundColor: '#18181B',
-                color: '#FFFFFF',
+                backgroundColor: '#E4E4E7',
+                color: '#18181B',
                 fontSize: '0.875rem',
                 fontWeight: 500,
                 border: 'none',
@@ -91,11 +91,11 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 justifyContent: 'center',
                 padding: '0.625rem 1.25rem',
                 borderRadius: '0.5rem',
-                backgroundColor: '#FFFFFF',
-                color: '#3F3F46',
+                backgroundColor: 'transparent',
+                color: '#A1A1AA',
                 fontSize: '0.875rem',
                 fontWeight: 500,
-                border: '1px solid #E4E4E7',
+                border: '1px solid #3F3F46',
                 textDecoration: 'none',
                 cursor: 'pointer',
               }}
@@ -105,7 +105,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
           </div>
 
           {error.digest && (
-            <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#A1A1AA' }}>
+            <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#52525B' }}>
               Error ID: {error.digest}
             </p>
           )}

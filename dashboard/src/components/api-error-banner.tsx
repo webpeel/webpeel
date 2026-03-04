@@ -26,26 +26,26 @@ export function ApiErrorBanner({
   reconnecting = false,
 }: ApiErrorBannerProps) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
       <div className="flex items-start gap-3">
         {reconnecting ? (
-          <RefreshCw className="h-5 w-5 flex-shrink-0 text-amber-600 mt-0.5 animate-spin" />
+          <RefreshCw className="h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5 animate-spin" />
         ) : (
-          <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-600 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5" />
         )}
         <div className="flex-1 space-y-3">
           <div>
-            <h3 className="text-sm font-semibold text-amber-900">
+            <h3 className="text-sm font-semibold text-amber-300">
               {reconnecting ? 'Reconnecting...' : title}
             </h3>
-            <p className="mt-1 text-sm text-amber-700">{message}</p>
+            <p className="mt-1 text-sm text-amber-400">{message}</p>
           </div>
           {showSignOut && !reconnecting && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => signOut({ callbackUrl: '/login' })}
-              className="border-amber-300 bg-white text-amber-800 hover:bg-amber-100 hover:border-amber-400"
+              className="border-amber-500/50 bg-zinc-800 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400"
             >
               Sign out &amp; retry
             </Button>

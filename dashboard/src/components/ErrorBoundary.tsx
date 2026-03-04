@@ -51,7 +51,7 @@ export class ErrorBoundary extends React.Component<
             </svg>
           </div>
 
-          <h2 className="mb-2 text-xl font-semibold text-zinc-900">Something went wrong</h2>
+          <h2 className="mb-2 text-xl font-semibold text-zinc-100">Something went wrong</h2>
           <p className="mb-6 max-w-sm text-sm text-zinc-500">
             {this.state.error?.message || 'An unexpected error occurred.'}
           </p>

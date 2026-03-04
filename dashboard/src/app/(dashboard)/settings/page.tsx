@@ -29,13 +29,13 @@ function Toggle({
       type="button"
       onClick={() => !disabled && onChange(!checked)}
       className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#5865F2] focus:ring-offset-2 ${
-        checked ? 'bg-[#5865F2]' : 'bg-zinc-300'
+        checked ? 'bg-[#5865F2]' : 'bg-zinc-600'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       aria-checked={checked}
       role="switch"
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-zinc-900 rounded-full shadow-sm transition-transform ${
           checked ? 'translate-x-5' : 'translate-x-0'
         }`}
       />
@@ -56,7 +56,7 @@ function SegmentedControl({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
+    <div className="inline-flex rounded-lg border border-zinc-700 bg-zinc-900 p-0.5 gap-0.5">
       {options.map((opt) => (
         <button
           key={opt}
@@ -64,8 +64,8 @@ function SegmentedControl({
           onClick={() => onChange(opt)}
           className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
             value === opt
-              ? 'bg-white text-zinc-900 shadow-sm border border-zinc-200'
-              : 'text-zinc-500 hover:text-zinc-700'
+              ? 'bg-zinc-900 text-zinc-100 shadow-sm border border-zinc-700'
+              : 'text-zinc-500 hover:text-zinc-300'
           }`}
         >
           {opt}
@@ -110,7 +110,7 @@ export default function SettingsPage() {
       ? 'bg-[#5865F2] text-white'
       : tier === 'max'
       ? 'bg-amber-500 text-white'
-      : 'bg-zinc-100 text-zinc-600';
+      : 'bg-zinc-800 text-zinc-600';
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,12 +192,12 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-3xl space-y-6 md:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900">Settings</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-zinc-100">Settings</h1>
         <p className="text-sm md:text-base text-zinc-500 mt-1">Manage your account settings and preferences</p>
       </div>
 
       {/* ── Section 1: Profile ── */}
-      <Card className="border-zinc-200">
+      <Card className="border-zinc-700">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Profile</CardTitle>
           <CardDescription>Your personal information and account details</CardDescription>
@@ -218,7 +218,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-zinc-900">{session?.user?.name || 'User'}</span>
+                  <span className="font-medium text-zinc-100">{session?.user?.name || 'User'}</span>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${tierColor}`}>
                     {tierLabel}
                   </span>
@@ -234,17 +234,17 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <Separator className="bg-zinc-100" />
+            <Separator className="bg-zinc-800" />
 
             {/* Email (read-only) */}
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-sm font-medium text-zinc-700">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-zinc-300">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={session?.user?.email || ''}
                 disabled
-                className="bg-zinc-50 border-zinc-200 text-zinc-400 cursor-not-allowed"
+                className="bg-zinc-900 border-zinc-700 text-zinc-400 cursor-not-allowed"
               />
               <p className="text-xs text-zinc-400">
                 {isOAuthUser ? `Managed by ${providerLabel} — cannot be changed here` : 'Email address cannot be changed'}
@@ -253,14 +253,14 @@ export default function SettingsPage() {
 
             {/* Name (editable) */}
             <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-sm font-medium text-zinc-700">Display Name</Label>
+              <Label htmlFor="name" className="text-sm font-medium text-zinc-300">Display Name</Label>
               <Input
                 id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
-                className="border-zinc-200 focus-visible:ring-[#5865F2]/30 focus-visible:border-[#5865F2]"
+                className="border-zinc-700 focus-visible:ring-[#5865F2]/30 focus-visible:border-[#5865F2]"
               />
             </div>
 
@@ -285,7 +285,7 @@ export default function SettingsPage() {
 
       {/* ── Password (credentials users only) ── */}
       {!isOAuthUser && (
-        <Card className="border-zinc-200">
+        <Card className="border-zinc-700">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Password</CardTitle>
             <CardDescription>Change your account password</CardDescription>
@@ -293,37 +293,37 @@ export default function SettingsPage() {
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="current-password" className="text-sm font-medium text-zinc-700">Current Password</Label>
+                <Label htmlFor="current-password" className="text-sm font-medium text-zinc-300">Current Password</Label>
                 <Input
                   id="current-password"
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
-                  className="border-zinc-200 focus-visible:ring-[#5865F2]/30 focus-visible:border-[#5865F2]"
+                  className="border-zinc-700 focus-visible:ring-[#5865F2]/30 focus-visible:border-[#5865F2]"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="new-password" className="text-sm font-medium text-zinc-700">New Password</Label>
+                <Label htmlFor="new-password" className="text-sm font-medium text-zinc-300">New Password</Label>
                 <Input
                   id="new-password"
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
-                  className="border-zinc-200 focus-visible:ring-[#5865F2]/30 focus-visible:border-[#5865F2]"
+                  className="border-zinc-700 focus-visible:ring-[#5865F2]/30 focus-visible:border-[#5865F2]"
                 />
                 <p className="text-xs text-zinc-400">Must be at least 8 characters</p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="confirm-password" className="text-sm font-medium text-zinc-700">Confirm New Password</Label>
+                <Label htmlFor="confirm-password" className="text-sm font-medium text-zinc-300">Confirm New Password</Label>
                 <Input
                   id="confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="border-zinc-200 focus-visible:ring-[#5865F2]/30 focus-visible:border-[#5865F2]"
+                  className="border-zinc-700 focus-visible:ring-[#5865F2]/30 focus-visible:border-[#5865F2]"
                 />
               </div>
               <Button type="submit" disabled={passwordLoading} className="bg-[#5865F2] hover:bg-[#4752C4] text-white">
@@ -335,7 +335,7 @@ export default function SettingsPage() {
       )}
 
       {/* ── Section 2: API Preferences ── */}
-      <Card className="border-zinc-200">
+      <Card className="border-zinc-700">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">API Preferences</CardTitle>
           <CardDescription>Default parameters used when making API requests from the Playground</CardDescription>
@@ -344,9 +344,9 @@ export default function SettingsPage() {
           {/* Default format */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="space-y-0.5">
-              <p className="text-sm font-medium text-zinc-900">Default Output Format</p>
+              <p className="text-sm font-medium text-zinc-100">Default Output Format</p>
               <p className="text-xs text-zinc-400">
-                Sets the <code className="font-mono bg-zinc-100 px-1 rounded">format</code> query param automatically
+                Sets the <code className="font-mono bg-zinc-800 px-1 rounded">format</code> query param automatically
               </p>
             </div>
             <SegmentedControl
@@ -356,14 +356,14 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Separator className="bg-zinc-100" />
+          <Separator className="bg-zinc-800" />
 
           {/* Default detail */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="space-y-0.5">
-              <p className="text-sm font-medium text-zinc-900">Default Detail Level</p>
+              <p className="text-sm font-medium text-zinc-100">Default Detail Level</p>
               <p className="text-xs text-zinc-400">
-                Sets the <code className="font-mono bg-zinc-100 px-1 rounded">detail</code> query param automatically
+                Sets the <code className="font-mono bg-zinc-800 px-1 rounded">detail</code> query param automatically
               </p>
             </div>
             <SegmentedControl
@@ -376,7 +376,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* ── Section 3: Notifications ── */}
-      <Card className="border-zinc-200">
+      <Card className="border-zinc-700">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Notifications</CardTitle>
           <CardDescription>Control how WebPeel communicates with you</CardDescription>
@@ -386,8 +386,8 @@ export default function SettingsPage() {
             <div key={notif.key} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-zinc-900">{notif.label}</p>
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+                  <p className="text-sm font-medium text-zinc-100">{notif.label}</p>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
                     Coming soon
                   </span>
                 </div>
@@ -400,7 +400,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* ── Section 4: Danger Zone ── */}
-      <Card className="border-l-4 border-l-red-500 border-t border-r border-b border-red-200 bg-red-50/30">
+      <Card className="border-l-4 border-l-red-500 border-t border-r border-b border-red-500/30 bg-red-500/5">
         <CardHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-500" />
@@ -412,7 +412,7 @@ export default function SettingsPage() {
           <Separator className="bg-red-100 mb-4" />
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="space-y-1">
-              <p className="font-medium text-zinc-900">Delete Account</p>
+              <p className="font-medium text-zinc-100">Delete Account</p>
               <p className="text-sm text-zinc-500">
                 Permanently delete your account and all associated data.{' '}
                 <span className="font-medium text-red-600">This action cannot be undone.</span>
@@ -421,7 +421,7 @@ export default function SettingsPage() {
             <Button
               variant="outline"
               disabled
-              className="w-full sm:w-auto border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500 disabled:opacity-60 disabled:cursor-not-allowed"
               title="Account deletion is coming soon"
             >
               <AlertTriangle className="h-4 w-4 mr-2" />

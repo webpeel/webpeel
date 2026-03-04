@@ -345,8 +345,8 @@ export default function PlaygroundPage() {
     <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 flex items-center gap-2">
-          <Play className="h-7 w-7 text-zinc-800" />
+        <h1 className="text-2xl md:text-3xl font-bold text-zinc-100 flex items-center gap-2">
+          <Play className="h-7 w-7 text-zinc-200" />
           Playground
         </h1>
         <p className="text-sm md:text-base text-zinc-500 mt-1">
@@ -355,7 +355,7 @@ export default function PlaygroundPage() {
       </div>
 
       {/* Mode Tabs */}
-      <div className="flex gap-1 p-1 bg-zinc-100 rounded-xl w-full sm:w-fit">
+      <div className="flex gap-1 p-1 bg-zinc-800 rounded-xl w-full sm:w-fit">
         {(
           [
             { value: 'fetch', label: 'Fetch', icon: Globe },
@@ -369,7 +369,7 @@ export default function PlaygroundPage() {
             className={`flex flex-1 sm:flex-none items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
               mode === value
                 ? 'bg-zinc-900 text-white shadow-sm'
-                : 'bg-transparent text-zinc-700 hover:text-zinc-900'
+                : 'bg-transparent text-zinc-300 hover:text-zinc-100'
             }`}
           >
             <Icon className="h-4 w-4" />
@@ -381,7 +381,7 @@ export default function PlaygroundPage() {
       {/* ── FETCH MODE ────────────────────────────────────────────────────── */}
       {mode === 'fetch' && (
         <>
-          <Card className="border-zinc-200">
+          <Card className="border-zinc-700">
             <CardHeader>
               <CardTitle className="text-lg">Fetch a URL</CardTitle>
               <CardDescription>Enter any URL to extract its content using your API key</CardDescription>
@@ -389,7 +389,7 @@ export default function PlaygroundPage() {
             <CardContent className="space-y-6">
               {/* URL Input */}
               <div className="space-y-2">
-                <Label htmlFor="url-input" className="text-sm font-semibold text-zinc-900">URL</Label>
+                <Label htmlFor="url-input" className="text-sm font-semibold text-zinc-100">URL</Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
@@ -428,7 +428,7 @@ export default function PlaygroundPage() {
                     <button
                       key={exUrl}
                       onClick={() => setFetchUrl(exUrl)}
-                      className="text-xs text-zinc-800 hover:underline transition-colors"
+                      className="text-xs text-zinc-200 hover:underline transition-colors"
                     >
                       {exUrl.replace('https://', '')}
                     </button>
@@ -439,16 +439,16 @@ export default function PlaygroundPage() {
               {/* Options Row */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-zinc-900">Output Format</Label>
-                  <div className="flex gap-1 p-1 bg-zinc-100 rounded-lg">
+                  <Label className="text-sm font-semibold text-zinc-100">Output Format</Label>
+                  <div className="flex gap-1 p-1 bg-zinc-800 rounded-lg">
                     {formatOptions.map((opt) => (
                       <button
                         key={opt.value}
                         onClick={() => setFormat(opt.value)}
                         className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all ${
                           format === opt.value
-                            ? 'bg-white text-zinc-900 shadow-sm'
-                            : 'text-zinc-500 hover:text-zinc-700'
+                            ? 'bg-zinc-700 text-zinc-100 shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-300'
                         }`}
                       >
                         {opt.label}
@@ -458,8 +458,8 @@ export default function PlaygroundPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label className="text-sm font-semibold text-zinc-900">Browser Rendering</Label>
-                  <div className="flex items-center gap-3 h-9 px-3 bg-zinc-50 rounded-lg border border-zinc-200">
+                  <Label className="text-sm font-semibold text-zinc-100">Browser Rendering</Label>
+                  <div className="flex items-center gap-3 h-9 px-3 bg-zinc-900 rounded-lg border border-zinc-700">
                     <Switch id="render-toggle" checked={renderBrowser} onCheckedChange={setRenderBrowser} />
                     <label htmlFor="render-toggle" className="text-xs text-zinc-600 cursor-pointer">
                       {renderBrowser ? 'Enabled' : 'Off'}
@@ -468,8 +468,8 @@ export default function PlaygroundPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label className="text-sm font-semibold text-zinc-900">Stealth Mode</Label>
-                  <div className="flex items-center gap-3 h-9 px-3 bg-zinc-50 rounded-lg border border-zinc-200">
+                  <Label className="text-sm font-semibold text-zinc-100">Stealth Mode</Label>
+                  <div className="flex items-center gap-3 h-9 px-3 bg-zinc-900 rounded-lg border border-zinc-700">
                     <Switch id="stealth-toggle" checked={stealthMode} onCheckedChange={setStealthMode} />
                     <label htmlFor="stealth-toggle" className="text-xs text-zinc-600 cursor-pointer">
                       {stealthMode ? 'Enabled' : 'Off'}
@@ -482,12 +482,12 @@ export default function PlaygroundPage() {
 
           {/* Fetch Error */}
           {fetchError && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-500/30 bg-red-500/10">
               <CardContent className="flex items-start gap-3 pt-4 md:pt-6">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-red-900">Request Failed</p>
-                  <p className="text-xs text-red-700 mt-1">{fetchError}</p>
+                  <p className="text-sm font-medium text-red-300">Request Failed</p>
+                  <p className="text-xs text-red-400 mt-1">{fetchError}</p>
                   {fetchElapsed != null && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                       <Clock className="h-3 w-3" /> Failed after {fetchElapsed}ms
@@ -501,7 +501,7 @@ export default function PlaygroundPage() {
           {/* Fetch Results */}
           {fetchResult && (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                 <Badge className="bg-emerald-100 text-emerald-700 border-0">✓ Success</Badge>
                 {fetchElapsed != null && (
                   <span className="text-xs text-zinc-600 flex items-center gap-1">
@@ -523,14 +523,14 @@ export default function PlaygroundPage() {
                     href={fetchResult.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-zinc-800 hover:underline flex items-center gap-1 ml-auto"
+                    className="text-xs text-zinc-200 hover:underline flex items-center gap-1 ml-auto"
                   >
                     View original <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
               </div>
 
-              <Card className="border-zinc-200">
+              <Card className="border-zinc-700">
                 <CardHeader className="pb-0">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">Result</CardTitle>
@@ -555,14 +555,14 @@ export default function PlaygroundPage() {
 
                     {fetchResult.links && fetchResult.links.length > 0 && (
                       <TabsContent value="links" className="mt-0">
-                        <div className="rounded-lg border border-zinc-200 overflow-auto max-h-[60vh]">
+                        <div className="rounded-lg border border-zinc-700 overflow-auto max-h-[60vh]">
                           {fetchResult.links.map((link, i) => (
                             <a
                               key={i}
                               href={link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-4 py-2.5 text-xs font-mono text-zinc-800 hover:bg-zinc-50 border-b border-zinc-100 last:border-0 transition-colors"
+                              className="flex items-center gap-2 px-4 py-2.5 text-xs font-mono text-zinc-200 hover:bg-zinc-900 border-b border-zinc-800 last:border-0 transition-colors"
                             >
                               <ExternalLink className="h-3 w-3 flex-shrink-0 text-zinc-400" />
                               <span className="truncate">{link}</span>
@@ -585,13 +585,13 @@ export default function PlaygroundPage() {
 
           {/* Fetch Loading */}
           {fetchLoading && (
-            <Card className="border-zinc-200">
+            <Card className="border-zinc-700">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <div className="relative mb-4">
-                  <div className="h-12 w-12 rounded-full border-4 border-zinc-100 border-t-zinc-800 animate-spin" />
-                  <Globe className="absolute inset-0 m-auto h-5 w-5 text-zinc-800" />
+                  <div className="h-12 w-12 rounded-full border-4 border-zinc-800 border-t-zinc-800 animate-spin" />
+                  <Globe className="absolute inset-0 m-auto h-5 w-5 text-zinc-200" />
                 </div>
-                <p className="text-sm font-medium text-zinc-700">Fetching content...</p>
+                <p className="text-sm font-medium text-zinc-300">Fetching content...</p>
                 <p className="text-xs text-zinc-400 mt-1">This may take a moment for complex pages</p>
               </CardContent>
             </Card>
@@ -600,10 +600,10 @@ export default function PlaygroundPage() {
           {/* Fetch empty state + cURL */}
           {!fetchLoading && !fetchResult && !fetchError && (
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-zinc-200">
+              <Card className="border-zinc-700">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-zinc-800" />
+                    <Sparkles className="h-4 w-4 text-zinc-200" />
                     What the API returns
                   </CardTitle>
                 </CardHeader>
@@ -615,13 +615,13 @@ export default function PlaygroundPage() {
                     ['Stats', 'Response time, token count, status code'],
                   ].map(([key, val]) => (
                     <div key={key} className="flex gap-3">
-                      <span className="text-xs font-semibold text-zinc-800 w-20 flex-shrink-0 pt-0.5">{key}</span>
+                      <span className="text-xs font-semibold text-zinc-200 w-20 flex-shrink-0 pt-0.5">{key}</span>
                       <span className="text-xs text-zinc-600">{val}</span>
                     </div>
                   ))}
                 </CardContent>
               </Card>
-              <Card className="border-zinc-200">
+              <Card className="border-zinc-700">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">Equivalent cURL</CardTitle>
@@ -639,7 +639,7 @@ export default function PlaygroundPage() {
 
           {/* cURL after result/error */}
           {(fetchResult || fetchError) && (
-            <Card className="border-zinc-200">
+            <Card className="border-zinc-700">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -662,7 +662,7 @@ export default function PlaygroundPage() {
       {/* ── SEARCH MODE ───────────────────────────────────────────────────── */}
       {mode === 'search' && (
         <>
-          <Card className="border-zinc-200">
+          <Card className="border-zinc-700">
             <CardHeader>
               <CardTitle className="text-lg">Search the Web</CardTitle>
               <CardDescription>Enter a search query to get structured results from the web</CardDescription>
@@ -670,7 +670,7 @@ export default function PlaygroundPage() {
             <CardContent className="space-y-4">
               {/* Query Input */}
               <div className="space-y-2">
-                <Label htmlFor="search-input" className="text-sm font-semibold text-zinc-900">Search query</Label>
+                <Label htmlFor="search-input" className="text-sm font-semibold text-zinc-100">Search query</Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
@@ -710,7 +710,7 @@ export default function PlaygroundPage() {
                     <button
                       key={q}
                       onClick={() => handleSearch(q)}
-                      className="text-xs text-zinc-800 hover:underline transition-colors"
+                      className="text-xs text-zinc-200 hover:underline transition-colors"
                     >
                       {q}
                     </button>
@@ -722,12 +722,12 @@ export default function PlaygroundPage() {
 
           {/* Search Error */}
           {searchError && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-500/30 bg-red-500/10">
               <CardContent className="flex items-start gap-3 pt-4 md:pt-6">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-red-900">Search Failed</p>
-                  <p className="text-xs text-red-700 mt-1">{searchError}</p>
+                  <p className="text-sm font-medium text-red-300">Search Failed</p>
+                  <p className="text-xs text-red-400 mt-1">{searchError}</p>
                   {searchElapsed != null && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                       <Clock className="h-3 w-3" /> Failed after {searchElapsed}ms
@@ -740,13 +740,13 @@ export default function PlaygroundPage() {
 
           {/* Search Loading */}
           {searchLoading && (
-            <Card className="border-zinc-200">
+            <Card className="border-zinc-700">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <div className="relative mb-4">
-                  <div className="h-12 w-12 rounded-full border-4 border-zinc-100 border-t-zinc-800 animate-spin" />
-                  <Search className="absolute inset-0 m-auto h-5 w-5 text-zinc-800" />
+                  <div className="h-12 w-12 rounded-full border-4 border-zinc-800 border-t-zinc-800 animate-spin" />
+                  <Search className="absolute inset-0 m-auto h-5 w-5 text-zinc-200" />
                 </div>
-                <p className="text-sm font-medium text-zinc-700">Searching the web...</p>
+                <p className="text-sm font-medium text-zinc-300">Searching the web...</p>
                 <p className="text-xs text-zinc-400 mt-1">Fetching and ranking results</p>
               </CardContent>
             </Card>
@@ -755,7 +755,7 @@ export default function PlaygroundPage() {
           {/* Search Results */}
           {searchResult && (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                 <Badge className="bg-emerald-100 text-emerald-700 border-0">✓ Success</Badge>
                 {searchElapsed != null && (
                   <span className="text-xs text-zinc-600 flex items-center gap-1">
@@ -774,7 +774,7 @@ export default function PlaygroundPage() {
 
               <div className="space-y-3">
                 {searchResult.results?.map((item, i) => (
-                  <Card key={i} className="border-zinc-200 hover:border-zinc-300 transition-colors">
+                  <Card key={i} className="border-zinc-700 hover:border-zinc-300 transition-colors">
                     <CardContent className="pt-4 pb-4">
                       <div className="space-y-1">
                         <a
@@ -795,7 +795,7 @@ export default function PlaygroundPage() {
                   </Card>
                 ))}
                 {(!searchResult.results || searchResult.results.length === 0) && (
-                  <Card className="border-zinc-200">
+                  <Card className="border-zinc-700">
                     <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                       <Search className="h-8 w-8 text-zinc-300 mb-3" />
                       <p className="text-sm text-zinc-500">No results found</p>
@@ -809,10 +809,10 @@ export default function PlaygroundPage() {
           {/* Search empty state + cURL */}
           {!searchLoading && !searchResult && !searchError && (
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-zinc-200">
+              <Card className="border-zinc-700">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-zinc-800" />
+                    <Sparkles className="h-4 w-4 text-zinc-200" />
                     What search returns
                   </CardTitle>
                 </CardHeader>
@@ -824,13 +824,13 @@ export default function PlaygroundPage() {
                     ['Content', 'Full extracted page content'],
                   ].map(([key, val]) => (
                     <div key={key} className="flex gap-3">
-                      <span className="text-xs font-semibold text-zinc-800 w-20 flex-shrink-0 pt-0.5">{key}</span>
+                      <span className="text-xs font-semibold text-zinc-200 w-20 flex-shrink-0 pt-0.5">{key}</span>
                       <span className="text-xs text-zinc-600">{val}</span>
                     </div>
                   ))}
                 </CardContent>
               </Card>
-              <Card className="border-zinc-200">
+              <Card className="border-zinc-700">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">Equivalent cURL</CardTitle>
@@ -848,7 +848,7 @@ export default function PlaygroundPage() {
 
           {/* cURL after result/error */}
           {(searchResult || searchError) && (
-            <Card className="border-zinc-200">
+            <Card className="border-zinc-700">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -871,7 +871,7 @@ export default function PlaygroundPage() {
       {/* ── SCREENSHOT MODE ───────────────────────────────────────────────── */}
       {mode === 'screenshot' && (
         <>
-          <Card className="border-zinc-200">
+          <Card className="border-zinc-700">
             <CardHeader>
               <CardTitle className="text-lg">Screenshot a Page</CardTitle>
               <CardDescription>Capture a full-page or viewport screenshot of any URL</CardDescription>
@@ -879,7 +879,7 @@ export default function PlaygroundPage() {
             <CardContent className="space-y-6">
               {/* URL Input */}
               <div className="space-y-2">
-                <Label htmlFor="screenshot-url-input" className="text-sm font-semibold text-zinc-900">URL</Label>
+                <Label htmlFor="screenshot-url-input" className="text-sm font-semibold text-zinc-100">URL</Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
@@ -919,7 +919,7 @@ export default function PlaygroundPage() {
                     <button
                       key={exUrl}
                       onClick={() => setScreenshotUrl(exUrl)}
-                      className="text-xs text-zinc-800 hover:underline transition-colors"
+                      className="text-xs text-zinc-200 hover:underline transition-colors"
                     >
                       {exUrl.replace('https://', '')}
                     </button>
@@ -931,8 +931,8 @@ export default function PlaygroundPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
                 {/* Full Page Toggle */}
                 <div className="flex flex-col gap-2">
-                  <Label className="text-sm font-semibold text-zinc-900">Full Page</Label>
-                  <div className="flex items-center gap-3 h-9 px-3 bg-zinc-50 rounded-lg border border-zinc-200">
+                  <Label className="text-sm font-semibold text-zinc-100">Full Page</Label>
+                  <div className="flex items-center gap-3 h-9 px-3 bg-zinc-900 rounded-lg border border-zinc-700">
                     <Switch
                       id="fullpage-toggle"
                       checked={fullPage}
@@ -946,16 +946,16 @@ export default function PlaygroundPage() {
 
                 {/* Format Selector */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-zinc-900">Format</Label>
-                  <div className="flex gap-1 p-1 bg-zinc-100 rounded-lg">
+                  <Label className="text-sm font-semibold text-zinc-100">Format</Label>
+                  <div className="flex gap-1 p-1 bg-zinc-800 rounded-lg">
                     {(['png', 'jpeg'] as ScreenshotFormat[]).map((fmt) => (
                       <button
                         key={fmt}
                         onClick={() => setScreenshotFormat(fmt)}
                         className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all uppercase ${
                           screenshotFormat === fmt
-                            ? 'bg-white text-zinc-900 shadow-sm'
-                            : 'text-zinc-500 hover:text-zinc-700'
+                            ? 'bg-zinc-700 text-zinc-100 shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-300'
                         }`}
                       >
                         {fmt}
@@ -969,12 +969,12 @@ export default function PlaygroundPage() {
 
           {/* Screenshot Error */}
           {screenshotError && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-500/30 bg-red-500/10">
               <CardContent className="flex items-start gap-3 pt-4 md:pt-6">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-red-900">Capture Failed</p>
-                  <p className="text-xs text-red-700 mt-1">{screenshotError}</p>
+                  <p className="text-sm font-medium text-red-300">Capture Failed</p>
+                  <p className="text-xs text-red-400 mt-1">{screenshotError}</p>
                   {screenshotElapsed != null && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                       <Clock className="h-3 w-3" /> Failed after {screenshotElapsed}ms
@@ -987,13 +987,13 @@ export default function PlaygroundPage() {
 
           {/* Screenshot Loading */}
           {screenshotLoading && (
-            <Card className="border-zinc-200">
+            <Card className="border-zinc-700">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <div className="relative mb-4">
-                  <div className="h-12 w-12 rounded-full border-4 border-zinc-100 border-t-zinc-800 animate-spin" />
-                  <Camera className="absolute inset-0 m-auto h-5 w-5 text-zinc-800" />
+                  <div className="h-12 w-12 rounded-full border-4 border-zinc-800 border-t-zinc-800 animate-spin" />
+                  <Camera className="absolute inset-0 m-auto h-5 w-5 text-zinc-200" />
                 </div>
-                <p className="text-sm font-medium text-zinc-700">Capturing screenshot...</p>
+                <p className="text-sm font-medium text-zinc-300">Capturing screenshot...</p>
                 <p className="text-xs text-zinc-400 mt-1">Rendering the page in a headless browser</p>
               </CardContent>
             </Card>
@@ -1002,7 +1002,7 @@ export default function PlaygroundPage() {
           {/* Screenshot Result */}
           {screenshotSrc && (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                 <Badge className="bg-emerald-100 text-emerald-700 border-0">✓ Captured</Badge>
                 {screenshotElapsed != null && (
                   <span className="text-xs text-zinc-600 flex items-center gap-1">
@@ -1014,13 +1014,13 @@ export default function PlaygroundPage() {
                 <a
                   href={screenshotSrc}
                   download={`screenshot.${screenshotFormat}`}
-                  className="text-xs text-zinc-800 hover:underline flex items-center gap-1 ml-auto"
+                  className="text-xs text-zinc-200 hover:underline flex items-center gap-1 ml-auto"
                 >
                   Download <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
 
-              <Card className="border-zinc-200">
+              <Card className="border-zinc-700">
                 <CardHeader className="pb-0">
                   <CardTitle className="text-lg">Screenshot</CardTitle>
                 </CardHeader>
@@ -1029,7 +1029,7 @@ export default function PlaygroundPage() {
                   <img
                     src={screenshotSrc}
                     alt="Page screenshot"
-                    className="w-full rounded-lg border border-zinc-200 shadow-sm"
+                    className="w-full rounded-lg border border-zinc-700 shadow-sm"
                   />
                 </CardContent>
               </Card>
@@ -1039,10 +1039,10 @@ export default function PlaygroundPage() {
           {/* Screenshot empty state + cURL */}
           {!screenshotLoading && !screenshotSrc && !screenshotError && (
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-zinc-200">
+              <Card className="border-zinc-700">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-zinc-800" />
+                    <Sparkles className="h-4 w-4 text-zinc-200" />
                     What screenshot returns
                   </CardTitle>
                 </CardHeader>
@@ -1054,13 +1054,13 @@ export default function PlaygroundPage() {
                     ['High res', 'Retina-quality 2× pixel density'],
                   ].map(([key, val]) => (
                     <div key={key} className="flex gap-3">
-                      <span className="text-xs font-semibold text-zinc-800 w-24 flex-shrink-0 pt-0.5">{key}</span>
+                      <span className="text-xs font-semibold text-zinc-200 w-24 flex-shrink-0 pt-0.5">{key}</span>
                       <span className="text-xs text-zinc-600">{val}</span>
                     </div>
                   ))}
                 </CardContent>
               </Card>
-              <Card className="border-zinc-200">
+              <Card className="border-zinc-700">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">Equivalent cURL</CardTitle>
@@ -1078,7 +1078,7 @@ export default function PlaygroundPage() {
 
           {/* cURL after result/error */}
           {(screenshotSrc || screenshotError) && (
-            <Card className="border-zinc-200">
+            <Card className="border-zinc-700">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>

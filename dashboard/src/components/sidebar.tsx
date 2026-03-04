@@ -42,12 +42,12 @@ function UsageWidget({ collapsed }: { collapsed?: boolean }) {
     return (
       <Link
         href="/usage"
-        className="flex items-center justify-center rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 transition-colors"
+        className="flex items-center justify-center rounded-lg p-2.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
         title={`Usage: ${used} / ${total} (${percent}%)`}
       >
         <div className="relative w-5 h-5">
           <svg viewBox="0 0 20 20" className="w-5 h-5 -rotate-90">
-            <circle cx="10" cy="10" r="8" fill="none" stroke="#E4E4E7" strokeWidth="2.5" />
+            <circle cx="10" cy="10" r="8" fill="none" stroke="#3f3f46" strokeWidth="2.5" />
             <circle
               cx="10"
               cy="10"
@@ -68,26 +68,26 @@ function UsageWidget({ collapsed }: { collapsed?: boolean }) {
   return (
     <Link
       href="/usage"
-      className="block rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2.5 hover:bg-zinc-100 transition-colors group mx-1 mb-1"
+      className="block rounded-xl border border-zinc-800 bg-zinc-800/50 px-3 py-2.5 hover:bg-zinc-800 transition-colors group mx-1 mb-1"
     >
       {/* Usage counts */}
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-medium text-zinc-500">
+        <span className="text-[11px] font-medium text-zinc-400">
           {total > 0 ? (
             <>
-              <span className="text-zinc-700 font-semibold">{used.toLocaleString()}</span>
+              <span className="text-zinc-200 font-semibold">{used.toLocaleString()}</span>
               {' / '}
               {total.toLocaleString()}
             </>
           ) : (
-            <span className="text-zinc-400">Loading…</span>
+            <span className="text-zinc-500">Loading…</span>
           )}
         </span>
-        <span className="text-[11px] text-zinc-400">{percent}%</span>
+        <span className="text-[11px] text-zinc-500">{percent}%</span>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 rounded-full bg-zinc-200 overflow-hidden mb-1.5">
+      <div className="h-1 rounded-full bg-zinc-700 overflow-hidden mb-1.5">
         <div
           className="h-full rounded-full bg-[#5865F2] transition-all duration-500"
           style={{ width: `${percent}%` }}
@@ -96,10 +96,10 @@ function UsageWidget({ collapsed }: { collapsed?: boolean }) {
 
       {/* Plan label */}
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-zinc-400 group-hover:text-zinc-500 transition-colors capitalize">
+        <span className="text-[11px] text-zinc-500 group-hover:text-zinc-400 transition-colors capitalize">
           {planLabel}
         </span>
-        <span className="text-[10px] text-zinc-300 group-hover:text-zinc-400 transition-colors">View →</span>
+        <span className="text-[10px] text-zinc-600 group-hover:text-zinc-500 transition-colors">View →</span>
       </div>
     </Link>
   );
@@ -128,8 +128,8 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
         className={cn(
           'relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all group',
           isActive
-            ? 'bg-zinc-100 text-zinc-900'
-            : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 hover:translate-x-0.5',
+            ? 'bg-zinc-800 text-zinc-100'
+            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 hover:translate-x-0.5',
           collapsed && 'justify-center'
         )}
         title={collapsed ? item.name : undefined}
@@ -146,7 +146,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
   const sidebarContent = (
     <>
       {/* Logo */}
-      <div className="flex h-14 items-center border-b border-zinc-100 px-5">
+      <div className="flex h-14 items-center border-b border-zinc-800 px-5">
         <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
           <svg width="24" height="24" viewBox="0 0 32 32">
             <rect width="32" height="32" fill="#5865F2" rx="7"/>
@@ -155,7 +155,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
             <path d="M8 16h10" stroke="#5865F2" strokeWidth="2.5" strokeLinecap="round"/>
             <path d="M8 21h14" stroke="#52525B" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
-          {!collapsed && <span className="text-[15px] font-semibold text-zinc-900">WebPeel</span>}
+          {!collapsed && <span className="text-[15px] font-semibold text-zinc-100">WebPeel</span>}
         </Link>
       </div>
 
@@ -167,7 +167,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-zinc-100 px-3 pt-3 pb-2 space-y-1">
+      <div className="border-t border-zinc-800 px-3 pt-3 pb-2 space-y-1">
         {/* Usage bar */}
         <UsageWidget collapsed={false} />
 
@@ -187,7 +187,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-400 transition-all hover:bg-zinc-50 hover:text-zinc-600 hover:translate-x-0.5",
+            "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-500 transition-all hover:bg-zinc-800 hover:text-zinc-300 hover:translate-x-0.5",
             collapsed && 'justify-center'
           )}
           title={collapsed ? 'Documentation' : undefined}
@@ -211,18 +211,18 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
         {/* Backdrop */}
         {isOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+            className="fixed inset-0 bg-black/60 z-40 transition-opacity"
             onClick={onClose}
           />
         )}
 
         {/* Sliding sidebar */}
         <div className={cn(
-          "fixed top-0 left-0 bottom-0 w-[280px] bg-white border-r border-zinc-200 z-50 transform transition-transform duration-300 ease-in-out flex flex-col",
+          "fixed top-0 left-0 bottom-0 w-[280px] bg-[#0D0D12] border-r border-zinc-800 z-50 transform transition-transform duration-300 ease-in-out flex flex-col",
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}>
           {/* Close button for mobile */}
-          <div className="flex items-center justify-between h-14 px-5 border-b border-zinc-100">
+          <div className="flex items-center justify-between h-14 px-5 border-b border-zinc-800">
             <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
               <svg width="24" height="24" viewBox="0 0 32 32">
                 <rect width="32" height="32" fill="#5865F2" rx="7"/>
@@ -231,11 +231,11 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
                 <path d="M8 16h10" stroke="#5865F2" strokeWidth="2.5" strokeLinecap="round"/>
                 <path d="M8 21h14" stroke="#52525B" strokeWidth="2.5" strokeLinecap="round"/>
               </svg>
-              <span className="text-[15px] font-semibold text-zinc-900">WebPeel</span>
+              <span className="text-[15px] font-semibold text-zinc-100">WebPeel</span>
             </Link>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-200"
             >
               <X className="h-4 w-4" />
             </button>
@@ -249,7 +249,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-zinc-100 px-3 pt-3 pb-2 space-y-1">
+          <div className="border-t border-zinc-800 px-3 pt-3 pb-2 space-y-1">
             {/* Usage bar */}
             <UsageWidget collapsed={false} />
 
@@ -268,7 +268,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
               href="https://webpeel.dev/docs"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
             >
               <BookOpen className="h-4 w-4" />
               Documentation
@@ -279,9 +279,9 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
       </div>
 
       {/* Tablet: Collapsed sidebar (icon-only) */}
-      <div className="hidden md:flex lg:hidden h-full w-[60px] flex-col border-r border-zinc-200 bg-white">
+      <div className="hidden md:flex lg:hidden h-full w-[60px] flex-col border-r border-zinc-800 bg-[#0D0D12]">
         {/* Logo icon only */}
-        <div className="flex h-14 items-center justify-center border-b border-zinc-100">
+        <div className="flex h-14 items-center justify-center border-b border-zinc-800">
           <Link href="/dashboard">
             <svg width="24" height="24" viewBox="0 0 32 32">
               <rect width="32" height="32" fill="#5865F2" rx="7"/>
@@ -305,8 +305,8 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
                 className={cn(
                   'relative flex items-center justify-center rounded-lg p-2.5 transition-colors',
                   isActive
-                    ? 'bg-zinc-100 text-zinc-900'
-                    : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
                 )}
                 title={item.name}
               >
@@ -319,7 +319,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
           })}
         </nav>
         {/* Icon-only footer */}
-        <div className="border-t border-zinc-100 px-2 py-3 space-y-1">
+        <div className="border-t border-zinc-800 px-2 py-3 space-y-1">
           {/* Compact usage indicator */}
           <UsageWidget collapsed={true} />
 
@@ -336,7 +336,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
             href="https://webpeel.dev/docs"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center rounded-lg p-2.5 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600"
+            className="flex items-center justify-center rounded-lg p-2.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
             title="Documentation"
           >
             <BookOpen className="h-4 w-4" />
@@ -345,7 +345,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false, tier = 'fre
       </div>
 
       {/* Desktop: Full sidebar */}
-      <div className="hidden lg:flex h-full w-[240px] flex-col border-r border-zinc-200 bg-white">
+      <div className="hidden lg:flex h-full w-[240px] flex-col border-r border-zinc-800 bg-[#0D0D12]">
         {sidebarContent}
       </div>
     </>

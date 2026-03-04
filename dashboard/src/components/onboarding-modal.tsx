@@ -41,28 +41,28 @@ export function OnboardingBanner({ sessionApiKey }: OnboardingModalProps) {
   if (!visible) return null;
 
   return (
-    <div className="mb-6 rounded-xl border border-zinc-200 bg-gradient-to-r from-zinc-50 to-white p-4 shadow-sm">
+    <div className="mb-6 rounded-xl border border-zinc-700 bg-gradient-to-r from-zinc-900 to-zinc-800 p-4 shadow-sm shadow-black/20">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-500 flex-shrink-0" />
+          <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-400 flex-shrink-0" />
             Welcome to WebPeel
           </h3>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-400">
             Your account is ready. Start fetching any URL → clean, structured data for your AI.
           </p>
 
           {apiKey && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2 rounded-lg bg-zinc-100 border border-zinc-200 px-3 py-2 font-mono text-xs text-zinc-700">
-                <Key className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 font-mono text-xs text-zinc-300">
+                <Key className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
                 <span className="truncate max-w-[200px]">
                   {apiKey.slice(0, 16)}...{apiKey.slice(-4)}
                 </span>
               </div>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-2 text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 rounded-lg bg-[#5865F2] hover:bg-[#4752C4] text-white px-3 py-2 text-xs font-medium transition-colors"
               >
                 {copied ? (
                   <>
@@ -76,20 +76,20 @@ export function OnboardingBanner({ sessionApiKey }: OnboardingModalProps) {
                   </>
                 )}
               </button>
-              <span className="text-xs text-red-500 font-medium">← Save this — shown once only</span>
+              <span className="text-xs text-red-400 font-medium">← Save this — shown once only</span>
             </div>
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <a href="/docs" className="text-zinc-500 hover:text-zinc-800 underline underline-offset-2">
+            <a href="/docs" className="text-zinc-400 hover:text-zinc-200 underline underline-offset-2">
               Read docs
             </a>
-            <span className="text-zinc-300 hidden sm:inline">·</span>
-            <a href="/keys" className="text-zinc-500 hover:text-zinc-800 underline underline-offset-2">
+            <span className="text-zinc-600 hidden sm:inline">·</span>
+            <a href="/keys" className="text-zinc-400 hover:text-zinc-200 underline underline-offset-2">
               Manage API keys
             </a>
-            <span className="text-zinc-300 hidden sm:inline">·</span>
-            <a href="/playground" className="text-zinc-500 hover:text-zinc-800 underline underline-offset-2">
+            <span className="text-zinc-600 hidden sm:inline">·</span>
+            <a href="/playground" className="text-zinc-400 hover:text-zinc-200 underline underline-offset-2">
               Try playground
             </a>
           </div>
@@ -97,7 +97,7 @@ export function OnboardingBanner({ sessionApiKey }: OnboardingModalProps) {
 
         <button
           onClick={handleDismiss}
-          className="text-zinc-400 hover:text-zinc-600 p-1 rounded-md hover:bg-zinc-100 transition-colors flex-shrink-0"
+          className="text-zinc-500 hover:text-zinc-300 p-1 rounded-md hover:bg-zinc-800 transition-colors flex-shrink-0"
           aria-label="Dismiss welcome banner"
         >
           <X className="h-4 w-4" />

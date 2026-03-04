@@ -178,10 +178,10 @@ print(r.json()['markdown'])`,
       {/* Hero Section */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-1">
-            Welcome back, <span className="font-serif italic text-zinc-800">{userName}</span>
+          <h1 className="text-3xl md:text-4xl font-bold text-zinc-100 mb-1">
+            Welcome back, <span className="font-serif italic text-zinc-300">{userName}</span>
           </h1>
-          <p className="text-base text-zinc-500">Here's your API activity at a glance</p>
+          <p className="text-base text-zinc-400">Here&apos;s your API activity at a glance</p>
         </div>
         <Button
           variant="outline"
@@ -199,17 +199,17 @@ print(r.json()['markdown'])`,
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statsLoading ? (
           <>
-            <div className="h-32 animate-pulse rounded-lg bg-zinc-100" />
-            <div className="h-32 animate-pulse rounded-lg bg-zinc-100" />
-            <div className="h-32 animate-pulse rounded-lg bg-zinc-100" />
-            <div className="h-32 animate-pulse rounded-lg bg-zinc-100" />
+            <div className="h-32 animate-pulse rounded-lg bg-zinc-800" />
+            <div className="h-32 animate-pulse rounded-lg bg-zinc-800" />
+            <div className="h-32 animate-pulse rounded-lg bg-zinc-800" />
+            <div className="h-32 animate-pulse rounded-lg bg-zinc-800" />
           </>
         ) : (
           <>
             <StatCard icon={Activity} label="Total Requests" value={totalRequests.toLocaleString()} delay={0} />
-            <StatCard icon={Zap} label="Remaining" value={remaining.toLocaleString()} iconColor="text-emerald-600" iconBg="bg-emerald-100" delay={100} />
-            <StatCard icon={CheckCircle2} label="Success Rate" value={hasData ? `${successRate.toFixed(1)}%` : '—'} iconColor="text-blue-600" iconBg="bg-blue-100" delay={200} />
-            <StatCard icon={Clock} label="Avg Response" value={hasData ? `${avgResponseTime}ms` : '—'} iconColor="text-amber-600" iconBg="bg-amber-100" delay={300} />
+            <StatCard icon={Zap} label="Remaining" value={remaining.toLocaleString()} iconColor="text-emerald-400" iconBg="bg-emerald-500/10" delay={100} />
+            <StatCard icon={CheckCircle2} label="Success Rate" value={hasData ? `${successRate.toFixed(1)}%` : '—'} iconColor="text-blue-400" iconBg="bg-blue-500/10" delay={200} />
+            <StatCard icon={Clock} label="Avg Response" value={hasData ? `${avgResponseTime}ms` : '—'} iconColor="text-amber-400" iconBg="bg-amber-500/10" delay={300} />
           </>
         )}
       </div>
@@ -218,65 +218,65 @@ print(r.json()['markdown'])`,
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <a
           href="/playground"
-          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-zinc-500 hover:shadow-sm transition-all"
+          className="group flex items-center gap-3 p-4 bg-[#111116] border border-zinc-800 rounded-xl hover:border-zinc-600 hover:shadow-sm hover:shadow-black/20 transition-all"
         >
-          <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200 transition-colors flex-shrink-0">
-            <Play className="h-5 w-5 text-zinc-800" />
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors flex-shrink-0">
+            <Play className="h-5 w-5 text-zinc-300" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-zinc-900">Fetch a URL</p>
+            <p className="text-sm font-semibold text-zinc-100">Fetch a URL</p>
             <p className="text-xs text-zinc-500 truncate">Try the playground</p>
           </div>
-          <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
+          <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
         </a>
 
         <a
           href="/keys"
-          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-zinc-500 hover:shadow-sm transition-all"
+          className="group flex items-center gap-3 p-4 bg-[#111116] border border-zinc-800 rounded-xl hover:border-zinc-600 hover:shadow-sm hover:shadow-black/20 transition-all"
         >
-          <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200 transition-colors flex-shrink-0">
-            <Key className="h-5 w-5 text-zinc-800" />
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors flex-shrink-0">
+            <Key className="h-5 w-5 text-zinc-300" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-zinc-900">Manage Keys</p>
+            <p className="text-sm font-semibold text-zinc-100">Manage Keys</p>
             <p className="text-xs text-zinc-500 truncate">Create & rotate API keys</p>
           </div>
-          <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
+          <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
         </a>
 
         <a
           href="/usage"
-          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-zinc-500 hover:shadow-sm transition-all"
+          className="group flex items-center gap-3 p-4 bg-[#111116] border border-zinc-800 rounded-xl hover:border-zinc-600 hover:shadow-sm hover:shadow-black/20 transition-all"
         >
-          <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200 transition-colors flex-shrink-0">
-            <BarChart3 className="h-5 w-5 text-zinc-800" />
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors flex-shrink-0">
+            <BarChart3 className="h-5 w-5 text-zinc-300" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-zinc-900">View Usage</p>
+            <p className="text-sm font-semibold text-zinc-100">View Usage</p>
             <p className="text-xs text-zinc-500 truncate">Charts & quota breakdown</p>
           </div>
-          <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
+          <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
         </a>
 
         <a
           href="https://webpeel.dev/docs/mcp"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center gap-3 p-4 bg-white border border-zinc-200 rounded-xl hover:border-zinc-500 hover:shadow-sm transition-all"
+          className="group flex items-center gap-3 p-4 bg-[#111116] border border-zinc-800 rounded-xl hover:border-zinc-600 hover:shadow-sm hover:shadow-black/20 transition-all"
         >
-          <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200 transition-colors flex-shrink-0">
-            <Terminal className="h-5 w-5 text-zinc-800" />
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors flex-shrink-0">
+            <Terminal className="h-5 w-5 text-zinc-300" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-zinc-900">Set up MCP</p>
+            <p className="text-sm font-semibold text-zinc-100">Set up MCP</p>
             <p className="text-xs text-zinc-500 truncate">Claude / Cursor / Windsurf</p>
           </div>
-          <ExternalLink className="h-4 w-4 text-zinc-300 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
+          <ExternalLink className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
         </a>
       </div>
 
       {/* Getting Started Checklist */}
-      {!gettingStartedDismissed && <Card className="border-zinc-200">
+      {!gettingStartedDismissed && <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
@@ -288,7 +288,7 @@ print(r.json()['markdown'])`,
                 localStorage.setItem('webpeel-getting-started-dismissed', 'true');
                 setGettingStartedDismissed(true);
               }}
-              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+              className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
               aria-label="Dismiss"
             >
               <X className="h-4 w-4" />
@@ -332,23 +332,23 @@ print(r.json()['markdown'])`,
                 rel={external ? 'noopener noreferrer' : undefined}
                 className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
                   done
-                    ? 'border-emerald-100 bg-emerald-50 hover:bg-emerald-100'
-                    : 'border-zinc-100 bg-zinc-50 hover:border-zinc-200 hover:bg-white'
+                    ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15'
+                    : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800'
                 }`}
               >
                 {done ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
                 ) : (
-                  <Circle className="h-5 w-5 text-zinc-300 flex-shrink-0" />
+                  <Circle className="h-5 w-5 text-zinc-600 flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${done ? 'text-emerald-800 line-through opacity-70' : 'text-zinc-800'}`}>
+                  <p className={`text-sm font-medium ${done ? 'text-emerald-400 line-through opacity-70' : 'text-zinc-200'}`}>
                     {label}
                   </p>
-                  <p className="text-xs text-zinc-400 mt-0.5 truncate">{desc}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5 truncate">{desc}</p>
                 </div>
                 {!done && (
-                  <ArrowRight className="h-4 w-4 text-zinc-300 flex-shrink-0" />
+                  <ArrowRight className="h-4 w-4 text-zinc-600 flex-shrink-0" />
                 )}
               </a>
             ))}
@@ -359,7 +359,7 @@ print(r.json()['markdown'])`,
       {/* Usage + Activity Chart */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Usage Overview */}
-        <Card className="border-zinc-200">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -367,7 +367,7 @@ print(r.json()['markdown'])`,
                 <CardDescription>Weekly API usage and limits</CardDescription>
               </div>
               {usage?.weekly && (
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs text-zinc-500">
                   Resets {new Date(usage.weekly.resetsAt).toLocaleDateString()}
                 </span>
               )}
@@ -378,7 +378,7 @@ print(r.json()['markdown'])`,
             <div className="flex items-center gap-6">
               <div className="relative w-28 h-28 flex-shrink-0">
                 <svg className="w-full h-full -rotate-90 transform">
-                  <circle cx="56" cy="56" r="46" fill="none" stroke="#F4F4F5" strokeWidth="10" />
+                  <circle cx="56" cy="56" r="46" fill="none" stroke="#3f3f46" strokeWidth="10" />
                   <circle
                     cx="56" cy="56" r="46" fill="none"
                     stroke={weeklyPercentage > 80 ? 'url(#warningGrad)' : 'url(#grad)'}
@@ -389,8 +389,8 @@ print(r.json()['markdown'])`,
                   />
                   <defs>
                     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#52525B" />
-                      <stop offset="100%" stopColor="#18181B" />
+                      <stop offset="0%" stopColor="#5865F2" />
+                      <stop offset="100%" stopColor="#818CF8" />
                     </linearGradient>
                     <linearGradient id="warningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#FCD34D" />
@@ -399,7 +399,7 @@ print(r.json()['markdown'])`,
                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xl font-bold text-zinc-900">{Math.round(weeklyPercentage)}%</span>
+                  <span className="text-xl font-bold text-zinc-100">{Math.round(weeklyPercentage)}%</span>
                   <span className="text-[10px] text-zinc-500">used</span>
                 </div>
               </div>
@@ -411,8 +411,8 @@ print(r.json()['markdown'])`,
                   </>
                 ) : (
                   <>
-                    <div className="h-14 animate-pulse rounded-lg bg-zinc-100" />
-                    <div className="h-14 animate-pulse rounded-lg bg-zinc-100" />
+                    <div className="h-14 animate-pulse rounded-lg bg-zinc-800" />
+                    <div className="h-14 animate-pulse rounded-lg bg-zinc-800" />
                   </>
                 )}
               </div>
@@ -433,14 +433,14 @@ print(r.json()['markdown'])`,
         </Card>
 
         {/* Activity Chart */}
-        <Card className="border-zinc-200">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Requests (7 days)</CardTitle>
                 <CardDescription>Daily API request volume</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild className="text-xs text-zinc-500 hover:text-zinc-800">
+              <Button variant="ghost" size="sm" asChild className="text-xs text-zinc-500 hover:text-zinc-300">
                 <a href="/activity">View all <ArrowRight className="h-3 w-3 ml-1" /></a>
               </Button>
             </div>
@@ -464,41 +464,41 @@ print(r.json()['markdown'])`,
                           <div
                             className={`w-full rounded-t-md transition-all ${
                               isToday
-                                ? 'bg-gradient-to-t from-zinc-800 to-zinc-600'
-                                : 'bg-gradient-to-t from-zinc-500 to-zinc-200 group-hover:from-zinc-600 group-hover:to-zinc-500'
+                                ? 'bg-gradient-to-t from-[#5865F2] to-indigo-400'
+                                : 'bg-gradient-to-t from-zinc-700 to-zinc-600 group-hover:from-zinc-600 group-hover:to-zinc-500'
                             }`}
                             style={{ height: heightPct > 0 ? `${Math.max(heightPct * 1.4, 6)}px` : '2px' }}
                           />
                           {/* Tooltip */}
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                            <div className="bg-zinc-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                            <div className="bg-zinc-800 text-zinc-100 text-xs rounded px-2 py-1 whitespace-nowrap border border-zinc-700">
                               {total} req
                             </div>
                           </div>
                         </div>
-                        <span className={`text-[9px] font-medium ${isToday ? 'text-zinc-800' : 'text-zinc-400'}`}>
+                        <span className={`text-[9px] font-medium ${isToday ? 'text-zinc-300' : 'text-zinc-500'}`}>
                           {dayName}
                         </span>
                       </div>
                     );
                   })}
                 </div>
-                <div className="mt-3 flex items-center gap-4 text-xs text-zinc-400">
+                <div className="mt-3 flex items-center gap-4 text-xs text-zinc-500">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-sm bg-zinc-900" />
+                    <div className="w-2.5 h-2.5 rounded-sm bg-[#5865F2]" />
                     <span>Today</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-sm bg-zinc-200" />
+                    <div className="w-2.5 h-2.5 rounded-sm bg-zinc-700" />
                     <span>Previous days</span>
                   </div>
                 </div>
               </>
             ) : (
               <div className="h-40 flex flex-col items-center justify-center">
-                <Globe className="h-10 w-10 text-zinc-200 mb-2" />
+                <Globe className="h-10 w-10 text-zinc-700 mb-2" />
                 <p className="text-sm text-zinc-400 font-medium">No requests yet</p>
-                <p className="text-xs text-zinc-300 mt-0.5">Try the playground to get started</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Try the playground to get started</p>
                 <Button size="sm" variant="outline" asChild className="mt-3">
                   <a href="/playground">
                     <Play className="h-3 w-3 mr-1.5" />
@@ -512,7 +512,7 @@ print(r.json()['markdown'])`,
       </div>
 
       {/* API Endpoint + Quick Start */}
-      <Card className="border-zinc-200">
+      <Card>
         <CardHeader>
           <CardTitle className="text-xl">Quick Start</CardTitle>
           <CardDescription>Start making requests in seconds</CardDescription>
@@ -520,32 +520,32 @@ print(r.json()['markdown'])`,
         <CardContent className="space-y-5">
           {/* API Endpoint */}
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-zinc-900">API Endpoint</label>
-            <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
-              <Globe className="h-4 w-4 text-zinc-400 flex-shrink-0" />
-              <code className="flex-1 text-sm font-mono text-zinc-700 truncate">{API_URL}/v1/fetch</code>
+            <label className="text-sm font-semibold text-zinc-200">API Endpoint</label>
+            <div className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-700 rounded-lg">
+              <Globe className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+              <code className="flex-1 text-sm font-mono text-zinc-300 truncate">{API_URL}/v1/fetch</code>
               <CopyButton text={`${API_URL}/v1/fetch`} size="sm" variant="ghost" />
             </div>
           </div>
 
           {/* API Key Display */}
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-zinc-900">Your API Key</label>
-            <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg font-mono text-sm">
-              <code className="flex-1 truncate text-zinc-700">{displayApiKey}</code>
+            <label className="text-sm font-semibold text-zinc-200">Your API Key</label>
+            <div className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-700 rounded-lg font-mono text-sm">
+              <code className="flex-1 truncate text-zinc-300">{displayApiKey}</code>
               <CopyButton text={displayApiKey} size="sm" variant="ghost" />
             </div>
             {!realApiKey && (
               <p className="text-xs text-zinc-500">
                 Get your key from the{' '}
-                <a href="/keys" className="text-zinc-800 hover:underline">Keys page</a>.
+                <a href="/keys" className="text-zinc-300 hover:underline">Keys page</a>.
               </p>
             )}
           </div>
 
           {/* Code Examples */}
           <div className="space-y-3">
-            <label className="text-sm font-semibold text-zinc-900">Example Request</label>
+            <label className="text-sm font-semibold text-zinc-200">Example Request</label>
             <Tabs defaultValue="curl" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-3">
                 <TabsTrigger value="curl">cURL</TabsTrigger>
@@ -555,7 +555,7 @@ print(r.json()['markdown'])`,
               {Object.entries(codeExamples).map(([lang, code]) => (
                 <TabsContent key={lang} value={lang} className="mt-0">
                   <div className="relative">
-                    <pre className="p-4 bg-zinc-900 text-zinc-100 rounded-lg overflow-x-auto text-xs md:text-sm">
+                    <pre className="p-4 bg-zinc-950 text-zinc-100 rounded-lg overflow-x-auto text-xs md:text-sm border border-zinc-800">
                       <code>{code}</code>
                     </pre>
                     <div className="absolute top-3 right-3">
@@ -587,7 +587,7 @@ print(r.json()['markdown'])`,
       </Card>
 
       {/* Recent Activity */}
-      <Card className="border-zinc-200">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -604,7 +604,7 @@ print(r.json()['markdown'])`,
         </CardHeader>
         <CardContent>
           {activityLoading ? (
-            <div className="h-64 animate-pulse rounded-lg bg-zinc-100" />
+            <div className="h-64 animate-pulse rounded-lg bg-zinc-800" />
           ) : (
             <ActivityTable requests={activity?.requests || []} />
           )}

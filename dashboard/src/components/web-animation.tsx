@@ -9,7 +9,7 @@ const DEMO_SITES = [
     markdown: '# Introducing GPT-5\n\nToday we announce our most capable\nmodel yet, with breakthrough\nperformance across every benchmark...',
     time: '164ms',
     mode: 'HTTP',
-    modeColor: 'bg-emerald-100 text-emerald-700',
+    modeColor: 'bg-emerald-500/20 text-emerald-400',
   },
   {
     url: 'https://github.com/trending',
@@ -17,7 +17,7 @@ const DEMO_SITES = [
     markdown: '# Trending repositories on GitHub\n\n## 🔥 webpeel/webpeel\nOpen-source web fetcher for AI\n⭐ 2,431 stars today',
     time: '312ms',
     mode: 'HTTP',
-    modeColor: 'bg-emerald-100 text-emerald-700',
+    modeColor: 'bg-emerald-500/20 text-emerald-400',
   },
   {
     url: 'https://news.ycombinator.com',
@@ -25,7 +25,7 @@ const DEMO_SITES = [
     markdown: '# Hacker News\n\n1. Show HN: WebPeel (423 pts)\n2. React Server Components (389 pts)\n3. The future of web fetching (301 pts)',
     time: '89ms',
     mode: 'HTTP',
-    modeColor: 'bg-emerald-100 text-emerald-700',
+    modeColor: 'bg-emerald-500/20 text-emerald-400',
   },
   {
     url: 'https://react.dev/learn',
@@ -33,7 +33,7 @@ const DEMO_SITES = [
     markdown: '# Quick Start\n\nWelcome to the React docs!\nThis page will give you an intro\nto the 80% of React concepts...',
     time: '441ms',
     mode: 'Browser',
-    modeColor: 'bg-zinc-100 text-zinc-800',
+    modeColor: 'bg-zinc-700 text-zinc-300',
   },
 ];
 
@@ -58,7 +58,7 @@ function TypeWriter({ text, speed = 30, onDone }: { text: string; speed?: number
   return (
     <>
       {displayed}
-      {displayed.length < text.length && <span className="animate-pulse text-zinc-900">▎</span>}
+      {displayed.length < text.length && <span className="animate-pulse text-zinc-300">▎</span>}
     </>
   );
 }
@@ -91,15 +91,15 @@ export function WebAnimation() {
   return (
     <div className="relative w-full max-w-[480px]">
       {/* Main Terminal Card */}
-      <div className="rounded-2xl border border-zinc-200 bg-white shadow-xl overflow-hidden">
+      <div className="rounded-2xl border border-zinc-700 bg-[#111116] shadow-xl shadow-black/40 overflow-hidden">
         {/* Title Bar */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-zinc-50/80">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-900/80">
           <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-zinc-300" />
-            <div className="w-3 h-3 rounded-full bg-zinc-300" />
-            <div className="w-3 h-3 rounded-full bg-zinc-300" />
+            <div className="w-3 h-3 rounded-full bg-zinc-700" />
+            <div className="w-3 h-3 rounded-full bg-zinc-700" />
+            <div className="w-3 h-3 rounded-full bg-zinc-700" />
           </div>
-          <span className="text-[11px] text-zinc-400 font-mono ml-2">Terminal</span>
+          <span className="text-[11px] text-zinc-500 font-mono ml-2">Terminal</span>
         </div>
 
         {/* Terminal Content */}
@@ -163,19 +163,19 @@ export function WebAnimation() {
       </div>
 
       {/* Floating Stats Card */}
-      <div className="absolute -bottom-6 -right-6 rounded-xl border border-zinc-200 bg-white p-4 shadow-lg animate-float-up" style={{ animationDelay: '0.3s' }}>
-        <div className="text-[11px] text-zinc-400 uppercase tracking-wider font-medium mb-2">Avg Response</div>
-        <div className="text-2xl font-bold text-zinc-900">
+      <div className="absolute -bottom-6 -right-6 rounded-xl border border-zinc-700 bg-[#111116] p-4 shadow-lg shadow-black/40 animate-float-up" style={{ animationDelay: '0.3s' }}>
+        <div className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium mb-2">Avg Response</div>
+        <div className="text-2xl font-bold text-zinc-100">
           {site.time}
         </div>
-        <div className="text-[11px] text-emerald-600 font-medium mt-0.5">3x faster than alternatives</div>
+        <div className="text-[11px] text-emerald-400 font-medium mt-0.5">3x faster than alternatives</div>
       </div>
 
       {/* Floating Badge */}
-      <div className="absolute -top-4 -left-4 rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-lg">
+      <div className="absolute -top-4 -left-4 rounded-xl border border-zinc-700 bg-[#111116] px-3 py-2 shadow-lg shadow-black/40">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="text-[12px] font-medium text-zinc-700">API Online</span>
+          <span className="text-[12px] font-medium text-zinc-300">API Online</span>
         </div>
       </div>
     </div>

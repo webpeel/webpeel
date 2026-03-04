@@ -259,7 +259,7 @@ export default function ApiKeysPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Key className="h-7 w-7 text-zinc-800" />
+            <Key className="h-7 w-7 text-zinc-200" />
             API Keys
           </h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">
@@ -294,8 +294,8 @@ export default function ApiKeysPage() {
               <div className="space-y-4">
                 {/* Key display */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 p-3 bg-zinc-50 border-2 border-zinc-200 rounded-lg">
-                    <code className="flex-1 text-xs sm:text-sm font-mono break-all text-zinc-800">{newKey}</code>
+                  <div className="flex items-center gap-2 p-3 bg-zinc-900 border-2 border-zinc-700 rounded-lg">
+                    <code className="flex-1 text-xs sm:text-sm font-mono break-all text-zinc-200">{newKey}</code>
                     <button
                       onClick={handleCopyNewKey}
                       className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
@@ -319,10 +319,10 @@ export default function ApiKeysPage() {
                 </div>
 
                 {/* Where to store it */}
-                <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 space-y-1.5">
-                  <p className="text-xs font-semibold text-zinc-700">Store it safely:</p>
+                <div className="p-3 bg-zinc-900 rounded-lg border border-zinc-700 space-y-1.5">
+                  <p className="text-xs font-semibold text-zinc-300">Store it safely:</p>
                   <ul className="text-xs text-zinc-600 space-y-1 list-disc list-inside">
-                    <li>Add to <code className="bg-zinc-200 px-1 rounded">.env</code> as <code className="bg-zinc-200 px-1 rounded">WEBPEEL_API_KEY</code></li>
+                    <li>Add to <code className="bg-zinc-700 px-1 rounded">.env</code> as <code className="bg-zinc-700 px-1 rounded">WEBPEEL_API_KEY</code></li>
                     <li>Save in 1Password, Bitwarden, or similar</li>
                     <li>Never commit to Git or share publicly</li>
                   </ul>
@@ -330,7 +330,7 @@ export default function ApiKeysPage() {
 
                 {/* Curl example with the new key */}
                 <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-zinc-700">Try it right now:</p>
+                  <p className="text-xs font-semibold text-zinc-300">Try it right now:</p>
                   <div className="relative group">
                     <pre className="p-3 pb-10 bg-zinc-900 text-zinc-100 rounded-lg text-[11px] sm:text-xs overflow-x-auto whitespace-pre-wrap break-all">
                       <code>{`curl "${API_URL}/v1/fetch?url=https://example.com" \\\n  -H "Authorization: Bearer ${newKey}"`}</code>
@@ -364,7 +364,7 @@ export default function ApiKeysPage() {
                     id="key-expiry"
                     value={newKeyExpiry}
                     onChange={(e) => setNewKeyExpiry(e.target.value)}
-                    className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5865F2] focus:border-transparent"
+                    className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5865F2] focus:border-transparent"
                   >
                     <option value="never">Never</option>
                     <option value="7d">7 days</option>
@@ -427,11 +427,11 @@ export default function ApiKeysPage() {
 
       {/* Security Warning */}
       {!bannerDismissed && (
-        <Card className="border-amber-200 bg-amber-50">
+        <Card className="border-amber-500/30 bg-amber-500/10">
           <CardContent className="flex items-start gap-3 pt-4 md:pt-6 relative">
             <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="space-y-1 flex-1">
-              <p className="text-sm font-medium text-amber-900">Keep your keys secure</p>
+              <p className="text-sm font-medium text-amber-300">Keep your keys secure</p>
               <p className="text-xs sm:text-sm text-amber-700">
                 API keys are shown only once when created. Store them in environment variables or a password manager, never in source code.
               </p>
@@ -459,7 +459,7 @@ export default function ApiKeysPage() {
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 animate-pulse rounded-lg bg-zinc-100" />
+                <div key={i} className="h-16 animate-pulse rounded-lg bg-zinc-800" />
               ))}
             </div>
           ) : keys.length > 0 ? (
@@ -492,7 +492,7 @@ export default function ApiKeysPage() {
                           <div className="flex items-center gap-1 mb-1">
                             <p className="font-medium text-sm truncate">{key.name}</p>
                             {key.isActive && (
-                              <button onClick={() => startEdit(key.id, key.name)} className="p-0.5 text-zinc-400 hover:text-zinc-700 transition-colors flex-shrink-0">
+                              <button onClick={() => startEdit(key.id, key.name)} className="p-0.5 text-zinc-400 hover:text-zinc-300 transition-colors flex-shrink-0">
                                 <Pencil className="h-3 w-3" />
                               </button>
                             )}
@@ -534,7 +534,7 @@ export default function ApiKeysPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full"
+                            className="text-red-600 hover:text-red-400 hover:bg-red-500/10 w-full"
                             onClick={() => setDeleteId(key.id)}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -600,7 +600,7 @@ export default function ApiKeysPage() {
                               <div className="flex items-center gap-1 mb-0.5">
                                 <p className="font-medium text-sm">{key.name}</p>
                                 {key.isActive && (
-                                  <button onClick={() => startEdit(key.id, key.name)} className="p-0.5 text-zinc-400 hover:text-zinc-700 transition-colors opacity-0 group-hover:opacity-100">
+                                  <button onClick={() => startEdit(key.id, key.name)} className="p-0.5 text-zinc-400 hover:text-zinc-300 transition-colors opacity-0 group-hover:opacity-100">
                                     <Pencil className="h-3.5 w-3.5" />
                                   </button>
                                 )}
@@ -611,7 +611,7 @@ export default function ApiKeysPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <code className="text-sm bg-zinc-100 px-2 py-0.5 rounded">{key.prefix}...</code>
+                            <code className="text-sm bg-zinc-800 px-2 py-0.5 rounded">{key.prefix}...</code>
                             <button
                               onClick={() => { navigator.clipboard.writeText(key.prefix + '...'); toast.success('Prefix copied'); }}
                               className="p-0.5 text-zinc-400 hover:text-zinc-600 transition-colors opacity-0 group-hover:opacity-100"
@@ -647,7 +647,7 @@ export default function ApiKeysPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="text-red-600 hover:text-red-400 hover:bg-red-500/10"
                                   onClick={() => setDeleteId(key.id)}
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -678,10 +678,10 @@ export default function ApiKeysPage() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
-                <Key className="h-8 w-8 text-zinc-800" />
+              <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
+                <Key className="h-8 w-8 text-zinc-200" />
               </div>
-              <h3 className="text-lg font-semibold text-zinc-900 mb-2">No API keys yet</h3>
+              <h3 className="text-lg font-semibold text-zinc-100 mb-2">No API keys yet</h3>
               <p className="text-sm text-zinc-500 text-center mb-4 max-w-md">
                 Create your first API key to start making requests to the WebPeel API.
               </p>
@@ -696,14 +696,14 @@ export default function ApiKeysPage() {
 
       {/* Usage reminder */}
       {activeKeys.length > 0 && (
-        <Card className="border-zinc-200 bg-zinc-50">
+        <Card className="border-zinc-700 bg-zinc-900">
           <CardContent className="flex items-start gap-3 pt-4 md:pt-6">
             <Globe className="h-5 w-5 text-zinc-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-zinc-700">API Endpoint</p>
+              <p className="text-sm font-medium text-zinc-300">API Endpoint</p>
               <code className="text-xs text-zinc-500 font-mono">{API_URL}/v1/fetch</code>
               <p className="text-xs text-zinc-400 mt-1">
-                Pass your API key as <code className="bg-zinc-200 px-1 rounded">Authorization: Bearer YOUR_KEY</code>
+                Pass your API key as <code className="bg-zinc-700 px-1 rounded">Authorization: Bearer YOUR_KEY</code>
               </p>
             </div>
           </CardContent>

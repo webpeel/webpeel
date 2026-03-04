@@ -116,8 +116,8 @@ export default function ActivityPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 flex items-center gap-2">
-            <Activity className="h-7 w-7 text-zinc-800" />
+          <h1 className="text-2xl md:text-3xl font-bold text-zinc-100 flex items-center gap-2">
+            <Activity className="h-7 w-7 text-zinc-200" />
             Activity
           </h1>
           <p className="text-sm md:text-base text-zinc-500 mt-1">
@@ -139,12 +139,12 @@ export default function ActivityPage() {
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Requests', value: totalCount.toLocaleString(), color: 'text-zinc-900' },
+          { label: 'Total Requests', value: totalCount.toLocaleString(), color: 'text-zinc-100' },
           { label: 'Successful', value: successCount.toLocaleString(), color: 'text-emerald-600' },
           { label: 'Errors', value: errorCount.toLocaleString(), color: errorCount > 0 ? 'text-red-600' : 'text-zinc-400' },
           { label: 'Avg Response', value: hasActivityData ? `${avgResponseTime}ms` : '—', color: 'text-amber-600' },
         ].map((stat) => (
-          <Card key={stat.label} className="border-zinc-200">
+          <Card key={stat.label} className="border-zinc-700">
             <CardContent className="pt-4 pb-4">
               <p className="text-xs text-zinc-500 font-medium">{stat.label}</p>
               <p className={`text-2xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
@@ -154,7 +154,7 @@ export default function ActivityPage() {
       </div>
 
       {/* Filters */}
-      <Card className="border-zinc-200">
+      <Card className="border-zinc-700">
         <CardContent className="pt-4 pb-4">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
@@ -169,7 +169,7 @@ export default function ActivityPage() {
             </div>
 
             {/* Status Filter */}
-            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg shrink-0">
+            <div className="flex items-center gap-1 p-1 bg-zinc-800 rounded-lg shrink-0">
               <Filter className="h-3.5 w-3.5 text-zinc-400 ml-1" />
               {(['all', 'success', 'error'] as StatusFilter[]).map((s) => (
                 <button
@@ -177,8 +177,8 @@ export default function ActivityPage() {
                   onClick={() => setStatusFilter(s)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize ${
                     statusFilter === s
-                      ? 'bg-white text-zinc-900 shadow-sm'
-                      : 'text-zinc-500 hover:text-zinc-700'
+                      ? 'bg-zinc-700 text-zinc-100 shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
                   {s}
@@ -187,15 +187,15 @@ export default function ActivityPage() {
             </div>
 
             {/* Mode Filter */}
-            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg shrink-0">
+            <div className="flex items-center gap-1 p-1 bg-zinc-800 rounded-lg shrink-0">
               {(['all', 'basic', 'stealth'] as ModeFilter[]).map((m) => (
                 <button
                   key={m}
                   onClick={() => setModeFilter(m)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize ${
                     modeFilter === m
-                      ? 'bg-white text-zinc-900 shadow-sm'
-                      : 'text-zinc-500 hover:text-zinc-700'
+                      ? 'bg-zinc-700 text-zinc-100 shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
                   {m}
@@ -207,7 +207,7 @@ export default function ActivityPage() {
       </Card>
 
       {/* Activity Table */}
-      <Card className="border-zinc-200">
+      <Card className="border-zinc-700">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -225,20 +225,20 @@ export default function ActivityPage() {
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-14 animate-pulse rounded-lg bg-zinc-100" />
+                <div key={i} className="h-14 animate-pulse rounded-lg bg-zinc-800" />
               ))}
             </div>
           ) : filteredRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
               {requests.length === 0 ? (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
-                    <Activity className="h-8 w-8 text-zinc-800" />
+                  <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
+                    <Activity className="h-8 w-8 text-zinc-200" />
                   </div>
-                  <h3 className="text-lg font-semibold text-zinc-900 mb-2">No requests yet</h3>
+                  <h3 className="text-lg font-semibold text-zinc-100 mb-2">No requests yet</h3>
                   <p className="text-sm text-zinc-500 text-center max-w-sm mb-4">
                     Your API requests will appear here. Try the{' '}
-                    <a href="/playground" className="text-zinc-800 hover:underline font-medium">
+                    <a href="/playground" className="text-zinc-200 hover:underline font-medium">
                       Playground
                     </a>{' '}
                     to make your first request.
@@ -247,7 +247,7 @@ export default function ActivityPage() {
               ) : (
                 <>
                   <Search className="h-12 w-12 text-zinc-300 mb-3" />
-                  <h3 className="text-base font-semibold text-zinc-900 mb-1">No matching requests</h3>
+                  <h3 className="text-base font-semibold text-zinc-100 mb-1">No matching requests</h3>
                   <p className="text-sm text-zinc-500">Try adjusting your filters or search query</p>
                   <Button
                     variant="outline"
@@ -281,15 +281,15 @@ export default function ActivityPage() {
                           href={req.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-zinc-900 hover:text-zinc-800 transition-colors truncate block font-medium"
+                          className="text-sm text-zinc-100 hover:text-zinc-200 transition-colors truncate block font-medium"
                         >
                           {req.url}
                         </a>
                       </div>
                       <Badge
                         className={req.status === 'success'
-                          ? 'bg-emerald-100 text-emerald-700 border-0 flex-shrink-0'
-                          : 'bg-red-100 text-red-700 border-0 flex-shrink-0'
+                          ? 'bg-emerald-500/20 text-emerald-400 border-0 flex-shrink-0'
+                          : 'bg-red-500/20 text-red-400 border-0 flex-shrink-0'
                         }
                       >
                         {req.status}
@@ -300,7 +300,7 @@ export default function ActivityPage() {
                         <Clock className="h-3 w-3" />
                         {req.responseTime}ms
                       </span>
-                      <Badge variant="secondary" className="bg-zinc-100 text-zinc-600 text-xs px-1.5 py-0">
+                      <Badge variant="secondary" className="bg-zinc-800 text-zinc-600 text-xs px-1.5 py-0">
                         {req.mode}
                       </Badge>
                       <span className="ml-auto">{timeAgo(req.timestamp)}</span>
@@ -313,7 +313,7 @@ export default function ActivityPage() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-zinc-200">
+                    <tr className="border-b border-zinc-700">
                       <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wide">URL</th>
                       <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Status</th>
                       <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Time</th>
@@ -325,7 +325,7 @@ export default function ActivityPage() {
                     {filteredRequests.map((req) => (
                       <tr
                         key={req.id}
-                        className="border-b border-zinc-100 last:border-0 hover:bg-zinc-50 transition-colors group"
+                        className="border-b border-zinc-800 last:border-0 hover:bg-zinc-900 transition-colors group"
                       >
                         <td className="py-3 px-4 max-w-xs">
                           <div className="flex items-center gap-2">
@@ -333,7 +333,7 @@ export default function ActivityPage() {
                               href={req.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-zinc-900 hover:text-zinc-800 transition-colors truncate block"
+                              className="text-sm text-zinc-100 hover:text-zinc-200 transition-colors truncate block"
                               title={req.url}
                             >
                               {req.url}
@@ -345,8 +345,8 @@ export default function ActivityPage() {
                         <td className="py-3 px-4">
                           <Badge
                             className={req.status === 'success'
-                              ? 'bg-emerald-100 text-emerald-700 border-0'
-                              : 'bg-red-100 text-red-700 border-0'
+                              ? 'bg-emerald-500/20 text-emerald-400 border-0'
+                              : 'bg-red-500/20 text-red-400 border-0'
                             }
                           >
                             {req.statusCode ? `${req.statusCode} ` : ''}{req.status}
@@ -363,8 +363,8 @@ export default function ActivityPage() {
                         <td className="py-3 px-4">
                           <Badge variant="secondary" className={`${
                             req.mode === 'stealth'
-                              ? 'bg-zinc-100 text-zinc-800'
-                              : 'bg-zinc-100 text-zinc-600'
+                              ? 'bg-zinc-800 text-zinc-200'
+                              : 'bg-zinc-800 text-zinc-600'
                           }`}>
                             {req.mode}
                           </Badge>

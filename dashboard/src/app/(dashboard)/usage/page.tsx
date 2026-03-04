@@ -38,10 +38,10 @@ const fetcher = async <T,>(url: string, token: string): Promise<T> =>
 function WeeklyUsageBar({ usage }: { usage: Usage | undefined; isLoading: boolean }) {
   if (!usage?.weekly) {
     return (
-      <div className="rounded-xl border border-zinc-200 p-6 space-y-4 animate-pulse">
-        <div className="h-6 w-48 rounded-lg bg-zinc-100" />
-        <div className="h-5 w-full rounded-full bg-zinc-100" />
-        <div className="h-4 w-64 rounded-lg bg-zinc-100" />
+      <div className="rounded-xl border border-zinc-700 p-6 space-y-4 animate-pulse">
+        <div className="h-6 w-48 rounded-lg bg-zinc-800" />
+        <div className="h-5 w-full rounded-full bg-zinc-800" />
+        <div className="h-4 w-64 rounded-lg bg-zinc-800" />
       </div>
     );
   }
@@ -65,11 +65,11 @@ function WeeklyUsageBar({ usage }: { usage: Usage | undefined; isLoading: boolea
   });
 
   return (
-    <div className="rounded-xl border border-zinc-200 p-6 space-y-4">
+    <div className="rounded-xl border border-zinc-700 p-6 space-y-4">
       {/* Header row */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-900">Weekly Usage</h2>
+          <h2 className="text-lg font-semibold text-zinc-100">Weekly Usage</h2>
           <p className="text-sm text-zinc-500 mt-0.5">
             Resets {resetStr} · 12:00 AM EST
           </p>
@@ -81,7 +81,7 @@ function WeeklyUsageBar({ usage }: { usage: Usage | undefined; isLoading: boolea
                 ? 'text-red-600'
                 : pct >= 80
                 ? 'text-amber-600'
-                : 'text-zinc-900'
+                : 'text-zinc-100'
             }`}
           >
             {pctDisplay}%
@@ -92,14 +92,14 @@ function WeeklyUsageBar({ usage }: { usage: Usage | undefined; isLoading: boolea
 
       {/* Progress bar */}
       <div className="space-y-2">
-        <div className="h-5 w-full rounded-full bg-zinc-200 overflow-hidden">
+        <div className="h-5 w-full rounded-full bg-zinc-700 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-700 ease-out ${barColor}`}
             style={{ width: `${Math.min(pct, 100)}%` }}
           />
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-zinc-700">
+          <span className="font-medium text-zinc-300">
             {totalUsed.toLocaleString()} / {totalAvailable.toLocaleString()} fetches used
           </span>
           <span className="text-zinc-400 tabular-nums">
@@ -113,8 +113,8 @@ function WeeklyUsageBar({ usage }: { usage: Usage | undefined; isLoading: boolea
         <div
           className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg border ${
             pct >= 95
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : 'bg-amber-50 text-amber-700 border-amber-200'
+              ? 'bg-red-500/10 text-red-400 border-red-500/30'
+              : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
           }`}
         >
           <AlertCircle className="h-4 w-4 shrink-0" />
@@ -135,10 +135,10 @@ function WeeklyUsageBar({ usage }: { usage: Usage | undefined; isLoading: boolea
         ).map(({ label, value, color }) => (
           <div
             key={label}
-            className="flex items-center gap-1.5 text-xs text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-full px-3 py-1"
+            className="flex items-center gap-1.5 text-xs text-zinc-500 bg-zinc-900 border border-zinc-700 rounded-full px-3 py-1"
           >
             <span className={`w-2 h-2 rounded-full ${color}`} />
-            {label}: <span className="font-semibold text-zinc-700">{value.toLocaleString()}</span>
+            {label}: <span className="font-semibold text-zinc-300">{value.toLocaleString()}</span>
           </div>
         ))}
       </div>
@@ -339,7 +339,7 @@ function EndpointBreakdown({ usage }: { usage: Usage | undefined }) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-8 animate-pulse rounded-lg bg-zinc-100" />
+          <div key={i} className="h-8 animate-pulse rounded-lg bg-zinc-800" />
         ))}
       </div>
     );
@@ -370,14 +370,14 @@ function EndpointBreakdown({ usage }: { usage: Usage | undefined }) {
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${bg}`} />
-                <span className="font-medium text-zinc-700">{label}</span>
+                <span className="font-medium text-zinc-300">{label}</span>
               </div>
               <span className="text-zinc-500 tabular-nums">
                 {value.toLocaleString()}{' '}
                 <span className="text-zinc-400 text-xs">({pct}%)</span>
               </span>
             </div>
-            <div className="h-2.5 w-full rounded-full bg-zinc-100 overflow-hidden">
+            <div className="h-2.5 w-full rounded-full bg-zinc-800 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-700 ${bg}`}
                 style={{ width: `${pct}%` }}
@@ -388,9 +388,9 @@ function EndpointBreakdown({ usage }: { usage: Usage | undefined }) {
       })}
 
       {/* Total */}
-      <div className="pt-3 mt-3 border-t border-zinc-100 flex items-center justify-between text-sm">
+      <div className="pt-3 mt-3 border-t border-zinc-800 flex items-center justify-between text-sm">
         <span className="text-zinc-500 font-medium">Total this week</span>
-        <span className="font-bold text-zinc-900 tabular-nums">
+        <span className="font-bold text-zinc-100 tabular-nums">
           {totalUsed.toLocaleString()}
         </span>
       </div>
@@ -406,8 +406,8 @@ function ResponseTimeSection({ stats }: { stats: Stats | undefined }) {
   if (!stats) {
     return (
       <div className="space-y-4 animate-pulse">
-        <div className="h-10 w-32 rounded-lg bg-zinc-100" />
-        <div className="h-3 w-full rounded-full bg-zinc-100" />
+        <div className="h-10 w-32 rounded-lg bg-zinc-800" />
+        <div className="h-3 w-full rounded-full bg-zinc-800" />
       </div>
     );
   }
@@ -434,17 +434,17 @@ function ResponseTimeSection({ stats }: { stats: Stats | undefined }) {
     avg <= 0 ? 'No data' : avg < 500 ? 'Fast' : avg < 2000 ? 'Medium' : 'Slow';
   const speedStyle =
     avg < 500
-      ? 'bg-emerald-50 text-emerald-700'
+      ? 'bg-emerald-500/10 text-emerald-400'
       : avg < 2000
-      ? 'bg-amber-50 text-amber-700'
-      : 'bg-red-50 text-red-700';
+      ? 'bg-amber-500/10 text-amber-400'
+      : 'bg-red-500/10 text-red-400';
 
   return (
     <div className="space-y-5">
       {/* Key metrics row */}
       <div className="flex flex-wrap items-end gap-6">
         <div>
-          <p className="text-3xl font-bold text-zinc-900 tabular-nums">
+          <p className="text-3xl font-bold text-zinc-100 tabular-nums">
             {avg > 0 ? `${avg}ms` : '—'}
           </p>
           <p className="text-xs text-zinc-400 mt-0.5">avg response time</p>
@@ -455,7 +455,7 @@ function ResponseTimeSection({ stats }: { stats: Stats | undefined }) {
           </span>
         )}
         <div className="ml-auto text-right">
-          <p className="text-3xl font-bold text-zinc-900 tabular-nums">
+          <p className="text-3xl font-bold text-zinc-100 tabular-nums">
             {stats.successRate.toFixed(1)}%
           </p>
           <p className="text-xs text-zinc-400 mt-0.5">success rate</p>
@@ -499,9 +499,9 @@ function ResponseTimeSection({ stats }: { stats: Stats | undefined }) {
       )}
 
       {/* Total requests */}
-      <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-sm">
+      <div className="pt-3 border-t border-zinc-800 flex items-center justify-between text-sm">
         <span className="text-zinc-500 font-medium">All-time requests</span>
-        <span className="font-bold text-zinc-900 tabular-nums">
+        <span className="font-bold text-zinc-100 tabular-nums">
           {stats.totalRequests.toLocaleString()}
         </span>
       </div>
@@ -529,14 +529,14 @@ function DailyHistoryRow({
   });
 
   return (
-    <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-zinc-50 transition-colors group">
+    <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-zinc-900 transition-colors group">
       {/* Date */}
       <span className="w-28 text-sm text-zinc-600 shrink-0">{dateLabel}</span>
 
       {/* Stacked bar */}
       <div className="flex-1 min-w-0">
         {total > 0 ? (
-          <div className="h-2 rounded-full bg-zinc-100 overflow-hidden flex">
+          <div className="h-2 rounded-full bg-zinc-800 overflow-hidden flex">
             <div
               className="bg-[#5865F2] transition-all duration-500"
               style={{ width: `${(day.fetches / barMax) * 100}%` }}
@@ -551,12 +551,12 @@ function DailyHistoryRow({
             />
           </div>
         ) : (
-          <div className="h-2 rounded-full bg-zinc-100" />
+          <div className="h-2 rounded-full bg-zinc-800" />
         )}
       </div>
 
       {/* Count */}
-      <span className="w-14 text-right text-sm font-semibold text-zinc-900 tabular-nums shrink-0">
+      <span className="w-14 text-right text-sm font-semibold text-zinc-100 tabular-nums shrink-0">
         {total > 0 ? (
           <>
             {total}
@@ -642,7 +642,7 @@ export default function UsagePage() {
     <div className="mx-auto max-w-4xl space-y-6 pb-12">
       {/* ── Page header ── */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900">Usage</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-zinc-100">Usage</h1>
         <p className="text-sm text-zinc-500 mt-1">
           Your API usage at a glance · auto-refreshes every 30 s
         </p>
@@ -652,13 +652,13 @@ export default function UsagePage() {
       <WeeklyUsageBar usage={usage} isLoading={isLoading} />
 
       {/* ── Section 2: Usage Over Time ── */}
-      <div className="rounded-xl border border-zinc-200 p-6">
-        <h2 className="text-lg font-semibold text-zinc-900">Usage Over Time</h2>
+      <div className="rounded-xl border border-zinc-700 p-6">
+        <h2 className="text-lg font-semibold text-zinc-100">Usage Over Time</h2>
         <p className="text-sm text-zinc-500 mt-0.5 mb-5">
           Daily requests — last 14 days
         </p>
         {!history ? (
-          <div className="h-48 animate-pulse rounded-lg bg-zinc-100" />
+          <div className="h-48 animate-pulse rounded-lg bg-zinc-800" />
         ) : (
           <UsageLineChart history={chartHistory} />
         )}
@@ -667,8 +667,8 @@ export default function UsagePage() {
       {/* ── Sections 3 + 4: two columns on desktop ── */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Section 3: Endpoint Breakdown */}
-        <div className="rounded-xl border border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-900">Endpoint Breakdown</h2>
+        <div className="rounded-xl border border-zinc-700 p-6">
+          <h2 className="text-lg font-semibold text-zinc-100">Endpoint Breakdown</h2>
           <p className="text-sm text-zinc-500 mt-0.5 mb-5">
             This week&apos;s requests by type
           </p>
@@ -676,8 +676,8 @@ export default function UsagePage() {
         </div>
 
         {/* Section 4: Response Time */}
-        <div className="rounded-xl border border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-900">Performance</h2>
+        <div className="rounded-xl border border-zinc-700 p-6">
+          <h2 className="text-lg font-semibold text-zinc-100">Performance</h2>
           <p className="text-sm text-zinc-500 mt-0.5 mb-5">
             Response time &amp; reliability
           </p>
@@ -686,8 +686,8 @@ export default function UsagePage() {
       </div>
 
       {/* ── Daily History ── */}
-      <div className="rounded-xl border border-zinc-200 p-6">
-        <h2 className="text-lg font-semibold text-zinc-900">Daily History</h2>
+      <div className="rounded-xl border border-zinc-700 p-6">
+        <h2 className="text-lg font-semibold text-zinc-100">Daily History</h2>
         <p className="text-sm text-zinc-500 mt-0.5 mb-5">
           Request breakdown per day — last 14 days
         </p>
@@ -695,7 +695,7 @@ export default function UsagePage() {
         {!history ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-8 animate-pulse rounded-lg bg-zinc-100" />
+              <div key={i} className="h-8 animate-pulse rounded-lg bg-zinc-800" />
             ))}
           </div>
         ) : chartHistory.length > 0 ? (
@@ -712,7 +712,7 @@ export default function UsagePage() {
               ))}
             </div>
             {/* Legend */}
-            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-zinc-100 text-xs text-zinc-400">
+            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-zinc-800 text-xs text-zinc-400">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-[#5865F2]" />
                 Fetch

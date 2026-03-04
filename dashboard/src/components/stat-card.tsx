@@ -21,14 +21,14 @@ export function StatCard({
   label,
   value,
   trend,
-  iconColor = 'text-zinc-800',
-  iconBg = 'bg-zinc-100',
+  iconColor = 'text-zinc-300',
+  iconBg = 'bg-zinc-800',
   delay = 0,
 }: StatCardProps) {
   return (
     <div
       className={cn(
-        "bg-white border border-zinc-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 opacity-0 animate-float-up",
+        "bg-[#111116] border border-zinc-800 rounded-xl p-6 shadow-sm shadow-black/20 hover:shadow-md hover:border-zinc-700 transition-all duration-300 opacity-0 animate-float-up",
         delay === 100 && "animate-delay-100",
         delay === 200 && "animate-delay-200",
         delay === 300 && "animate-delay-300",
@@ -37,13 +37,13 @@ export function StatCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm text-zinc-500 mb-2">{label}</p>
+          <p className="text-sm text-zinc-400 mb-2">{label}</p>
           <div className="flex items-baseline gap-2">
-            <p className="text-2xl md:text-3xl font-bold text-zinc-900">{value}</p>
+            <p className="text-2xl md:text-3xl font-bold text-zinc-100">{value}</p>
             {trend && (
               <span className={cn(
                 "text-xs font-medium",
-                trend.isPositive ? "text-emerald-600" : "text-red-600"
+                trend.isPositive ? "text-emerald-400" : "text-red-400"
               )}>
                 {trend.isPositive ? '↑' : '↓'}{trend.value}
               </span>

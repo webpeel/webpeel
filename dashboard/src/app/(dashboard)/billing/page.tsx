@@ -65,7 +65,7 @@ const plans: Record<PlanTier, PlanMeta> = {
     popular: false,
     icon: Sparkles,
     iconColor: 'text-zinc-600',
-    iconBg: 'bg-zinc-100',
+    iconBg: 'bg-zinc-800',
   },
   pro: {
     name: 'Pro',
@@ -216,7 +216,7 @@ export default function BillingPage() {
       {/* Page header                                                         */}
       {/* ------------------------------------------------------------------ */}
       <div>
-        <h1 className="text-3xl font-bold text-zinc-900">Billing &amp; Plans</h1>
+        <h1 className="text-3xl font-bold text-zinc-100">Billing &amp; Plans</h1>
         <p className="text-sm text-zinc-500 mt-1.5">Manage your subscription and view usage</p>
       </div>
 
@@ -226,7 +226,7 @@ export default function BillingPage() {
       <div className={`relative rounded-2xl overflow-hidden border-2 ${
         isPaid || isAdmin
           ? 'border-[#5865F2] shadow-[0_0_0_1px_rgba(88,101,242,0.15),0_4px_24px_rgba(88,101,242,0.12)]'
-          : 'border-zinc-200 shadow-sm'
+          : 'border-zinc-700 shadow-sm'
       }`}>
         {/* Subtle blurple gradient wash for paid plans */}
         {(isPaid || isAdmin) && (
@@ -240,7 +240,7 @@ export default function BillingPage() {
               <PlanIcon tier={currentTier} size="lg" />
               <div>
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h2 className="text-2xl font-bold text-zinc-900">{currentPlan.name}</h2>
+                  <h2 className="text-2xl font-bold text-zinc-100">{currentPlan.name}</h2>
                   <Badge
                     className={`text-xs font-semibold px-2.5 py-0.5 ${
                       isPaid || isAdmin
@@ -255,7 +255,7 @@ export default function BillingPage() {
 
                 {/* Price row */}
                 <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-4xl font-bold text-zinc-900">
+                  <span className="text-4xl font-bold text-zinc-100">
                     ${currentPlan.priceMonthly}
                   </span>
                   <span className="text-zinc-400 text-sm">/mo</span>
@@ -312,7 +312,7 @@ export default function BillingPage() {
           </div>
 
           {/* Features list */}
-          <div className="mt-6 pt-6 border-t border-zinc-100">
+          <div className="mt-6 pt-6 border-t border-zinc-800">
             <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
               {currentPlan.features.map((f) => (
                 <li key={f} className="flex items-center gap-2 text-sm text-zinc-600">
@@ -328,11 +328,11 @@ export default function BillingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Section 2: Usage This Period                                        */}
       {/* ------------------------------------------------------------------ */}
-      <Card className="border-zinc-200">
+      <Card className="border-zinc-700">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-zinc-900">Usage This Period</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs text-zinc-500 hover:text-zinc-800 gap-1 -mr-1" asChild>
+            <CardTitle className="text-base font-semibold text-zinc-100">Usage This Period</CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs text-zinc-500 hover:text-zinc-200 gap-1 -mr-1" asChild>
               <Link href="/usage">
                 Full details
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -348,7 +348,7 @@ export default function BillingPage() {
             <>
               {/* Compact label */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-700 font-medium">
+                <span className="text-zinc-300 font-medium">
                   {usedFetches.toLocaleString()} / {availFetches.toLocaleString()} fetches
                   <span className="text-zinc-400 font-normal ml-2">·</span>
                   <span className="text-zinc-400 font-normal ml-2">{usedPct.toFixed(1)}% used</span>
@@ -357,7 +357,7 @@ export default function BillingPage() {
               </div>
 
               {/* Progress bar */}
-              <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-700 ${
                     usedPct > 80
@@ -386,8 +386,8 @@ export default function BillingPage() {
             </>
           ) : (
             <div className="space-y-3">
-              <div className="h-4 rounded-full bg-zinc-100 animate-pulse" />
-              <div className="h-2 rounded-full bg-zinc-100 animate-pulse" />
+              <div className="h-4 rounded-full bg-zinc-800 animate-pulse" />
+              <div className="h-2 rounded-full bg-zinc-800 animate-pulse" />
             </div>
           )}
         </CardContent>
@@ -399,16 +399,16 @@ export default function BillingPage() {
       <div className="space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-zinc-900">All Plans</h2>
+            <h2 className="text-xl font-bold text-zinc-100">All Plans</h2>
             <p className="text-sm text-zinc-500 mt-0.5">Compare plans and switch anytime</p>
           </div>
 
           {/* Monthly / Annual toggle */}
-          <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-full w-fit">
+          <div className="flex items-center gap-1 p-1 bg-zinc-800 rounded-full w-fit">
             <button
               onClick={() => setIsAnnual(false)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                !isAnnual ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
+                !isAnnual ? 'bg-zinc-900 text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               Monthly
@@ -416,7 +416,7 @@ export default function BillingPage() {
             <button
               onClick={() => setIsAnnual(true)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-                isAnnual ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
+                isAnnual ? 'bg-zinc-900 text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               Annual
@@ -435,7 +435,7 @@ export default function BillingPage() {
                 <Zap className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-zinc-900">Start your 7-day free trial of Pro</p>
+                <p className="text-sm font-semibold text-zinc-100">Start your 7-day free trial of Pro</p>
                 <p className="text-xs text-zinc-500">No credit card required · Cancel anytime</p>
               </div>
             </div>
@@ -488,8 +488,8 @@ export default function BillingPage() {
                     isCurrent
                       ? 'border-[#5865F2] shadow-[0_0_0_1px_rgba(88,101,242,0.1),0_4px_16px_rgba(88,101,242,0.1)]'
                       : plan.popular
-                      ? 'border-zinc-200 shadow-md hover:border-indigo-200 hover:shadow-lg'
-                      : 'border-zinc-200 hover:border-zinc-300 hover:shadow-sm'
+                      ? 'border-zinc-700 shadow-md hover:border-indigo-200 hover:shadow-lg'
+                      : 'border-zinc-700 hover:border-zinc-300 hover:shadow-sm'
                   }`}
                 >
                   {/* Subtle gradient for current */}
@@ -504,7 +504,7 @@ export default function BillingPage() {
                         <div className={`w-10 h-10 rounded-xl ${plan.iconBg} flex items-center justify-center`}>
                           <Icon className={`h-5 w-5 ${plan.iconColor}`} />
                         </div>
-                        <span className="font-bold text-zinc-900 text-lg">{plan.name}</span>
+                        <span className="font-bold text-zinc-100 text-lg">{plan.name}</span>
                       </div>
                       {isCurrent && (
                         <Badge className="bg-[#5865F2] text-white text-[10px] px-2 py-0.5">
@@ -516,7 +516,7 @@ export default function BillingPage() {
                     {/* Price */}
                     <div className="mb-1">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-zinc-900">${price}</span>
+                        <span className="text-4xl font-bold text-zinc-100">${price}</span>
                         <span className="text-zinc-400 text-sm">/{isAnnual ? 'yr' : 'mo'}</span>
                       </div>
                       {annualSavings > 0 && (
@@ -548,7 +548,7 @@ export default function BillingPage() {
                         Current Plan
                       </div>
                     ) : isDowngrade || tier === 'free' ? (
-                      <Button variant="outline" className="w-full text-zinc-400 border-zinc-200" disabled>
+                      <Button variant="outline" className="w-full text-zinc-400 border-zinc-700" disabled>
                         {tier === 'free' ? 'Downgrade' : 'Contact support'}
                       </Button>
                     ) : (
@@ -575,20 +575,20 @@ export default function BillingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Section 4: Payment Method (placeholder)                             */}
       {/* ------------------------------------------------------------------ */}
-      <Card className="border-zinc-200">
+      <Card className="border-zinc-700">
         <CardHeader>
           <div className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-zinc-400" />
-            <CardTitle className="text-base font-semibold text-zinc-900">Payment Method</CardTitle>
+            <CardTitle className="text-base font-semibold text-zinc-100">Payment Method</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-start gap-4 p-4 rounded-xl bg-zinc-50 border border-zinc-100">
-            <div className="w-10 h-10 rounded-lg bg-zinc-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <div className="flex items-start gap-4 p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+            <div className="w-10 h-10 rounded-lg bg-zinc-700 flex items-center justify-center flex-shrink-0 mt-0.5">
               <CreditCard className="h-5 w-5 text-zinc-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-zinc-700">Stripe integration coming soon</p>
+              <p className="text-sm font-medium text-zinc-300">Stripe integration coming soon</p>
               <p className="text-xs text-zinc-400 mt-0.5">
                 Payment methods and saved cards will be available once our Stripe checkout is connected.
                 For billing questions, email{' '}
@@ -607,17 +607,17 @@ export default function BillingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Section 5: Invoices (placeholder)                                   */}
       {/* ------------------------------------------------------------------ */}
-      <Card className="border-zinc-200">
+      <Card className="border-zinc-700">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Receipt className="h-5 w-5 text-zinc-400" />
-            <CardTitle className="text-base font-semibold text-zinc-900">Invoices</CardTitle>
+            <CardTitle className="text-base font-semibold text-zinc-100">Invoices</CardTitle>
           </div>
           <CardDescription className="text-xs">Your billing history will appear here</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center mb-3">
+            <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mb-3">
               <Receipt className="h-6 w-6 text-zinc-400" />
             </div>
             <p className="text-sm font-medium text-zinc-600">No invoices yet</p>
