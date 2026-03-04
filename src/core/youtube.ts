@@ -6,6 +6,10 @@
  * track URLs, fetch the timedtext XML, and return structured transcript data.
  */
 
+import { execFile } from 'node:child_process';
+import { readFile, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { simpleFetch } from './fetcher.js';
 import { getBrowser, getRandomUserAgent, applyStealthScripts } from './browser-pool.js';
 
@@ -328,6 +332,11 @@ export async function getYouTubeTranscript(
     const selectedTrack = selectBestTrack(captionTracks, preferredLang);
     const captionXml = await fetchCaptionXml(selectedTrack.baseUrl);
     const segments = parseCaptionXml(captionXml);
+    if (segments.length === 0) {
+      // Caption URL returned empty content (common when ip=0.0.0.0 in signature)
+      // Fall through to browser intercept path
+      throw new Error('Caption XML returned empty — session-locked URL');
+    }
     const fullText = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
     const wordCount = fullText.split(/\s+/).filter(Boolean).length;
     const chapters = parseChaptersFromDescription(description);
@@ -359,11 +368,130 @@ export async function getYouTubeTranscript(
     // Network/parsing failures — fall through to browser intercept approach
   }
 
-  // --- Path 2: Browser intercept approach ---
+  // --- Path 2: yt-dlp approach (fast, reliable, handles signature challenges) ---
+  try {
+    const ytdlpResult = await getTranscriptViaYtDlp(videoId, preferredLang);
+    if (ytdlpResult && ytdlpResult.segments.length > 0) {
+      return ytdlpResult;
+    }
+  } catch (err: any) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'yt-dlp transcript failed:', err?.message);
+  }
+
+  // --- Path 3: Browser intercept approach ---
   // YouTube's caption URLs are session-specific (they return empty when fetched
   // from a different HTTP client). We intercept the timedtext network request
   // that the YouTube player makes automatically when loading the page.
   return getTranscriptViaBrowserIntercept(videoId, videoUrl, preferredLang);
+}
+
+/**
+ * Use yt-dlp to extract YouTube transcripts. yt-dlp handles all the
+ * signature challenges (player JS deciphering, multiple API endpoints)
+ * that defeat server-side HTTP fetch approaches.
+ */
+async function getTranscriptViaYtDlp(
+  videoId: string,
+  preferredLang: string,
+): Promise<YouTubeTranscript | null> {
+  const outPath = join(tmpdir(), `webpeel_yt_${videoId}_${Date.now()}`);
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+  return new Promise<YouTubeTranscript | null>((resolve) => {
+    const args = [
+      '--skip-download',
+      '--write-auto-sub',
+      '--sub-lang', preferredLang,
+      '--sub-format', 'json3',
+      '--write-info-json',
+      '--output', outPath,
+      '--no-warnings',
+      '--quiet',
+      videoUrl,
+    ];
+
+    const proc = execFile('yt-dlp', args, { timeout: 20000 }, async (err) => {
+      try {
+        if (err) {
+          // yt-dlp not installed or failed
+          resolve(null);
+          return;
+        }
+
+        // Read subtitle file
+        const subFiles = [`${outPath}.${preferredLang}.json3`, `${outPath}.en.json3`];
+        let subData: any = null;
+        for (const sf of subFiles) {
+          try {
+            const raw = await readFile(sf, 'utf-8');
+            subData = JSON.parse(raw);
+            await unlink(sf).catch(() => {});
+            break;
+          } catch { /* try next */ }
+        }
+
+        // Read info JSON for metadata
+        let infoData: any = null;
+        try {
+          const infoRaw = await readFile(`${outPath}.info.json`, 'utf-8');
+          infoData = JSON.parse(infoRaw);
+          await unlink(`${outPath}.info.json`).catch(() => {});
+        } catch { /* metadata is optional */ }
+
+        if (!subData || !subData.events) {
+          resolve(null);
+          return;
+        }
+
+        const events = subData.events || [];
+        const segments: TranscriptSegment[] = events
+          .filter((e: any) => e.segs)
+          .map((e: any) => ({
+            text: (e.segs as any[]).map((s) => s.utf8 || '').join('').trim(),
+            start: (e.tStartMs || 0) / 1000,
+            duration: (e.dDurationMs || 0) / 1000,
+          }))
+          .filter((s: TranscriptSegment) => s.text.length > 0);
+
+        const fullText = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
+        const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+
+        const title = infoData?.title || '';
+        const channel = infoData?.uploader || infoData?.channel || '';
+        const lengthSeconds = infoData?.duration || 0;
+        const description = infoData?.description || '';
+        const publishDate = infoData?.upload_date
+          ? `${infoData.upload_date.slice(0, 4)}-${infoData.upload_date.slice(4, 6)}-${infoData.upload_date.slice(6, 8)}`
+          : '';
+
+        const chapters = parseChaptersFromDescription(description);
+        const keyPoints = extractKeyPoints(segments, chapters, lengthSeconds);
+        const summary = extractSummary(fullText);
+
+        resolve({
+          videoId,
+          title,
+          channel,
+          duration: formatDuration(lengthSeconds),
+          language: preferredLang,
+          segments,
+          fullText,
+          availableLanguages: [preferredLang],
+          description,
+          publishDate,
+          chapters: chapters.length > 0 ? chapters : undefined,
+          keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
+          summary,
+          wordCount,
+        });
+      } catch {
+        resolve(null);
+      }
+    });
+
+    // Safety: if process hangs, resolve null
+    proc.on('error', () => resolve(null));
+  });
 }
 
 /**
