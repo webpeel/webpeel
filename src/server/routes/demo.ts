@@ -18,7 +18,7 @@ import { Router, Request, Response } from 'express';
 import { RateLimiter } from '../middleware/rate-limit.js';
 import { simpleFetch } from '../../core/http-fetch.js';
 import { validateUrl } from '../../core/http-fetch.js';
-import { htmlToMarkdown, detectMainContent } from '../../core/markdown.js';
+import { htmlToMarkdown, detectMainContent, countRemovedElements, CleaningStats } from '../../core/markdown.js';
 import { extractMetadata } from '../../core/metadata.js';
 
 // ── Domain allowlist ──────────────────────────────────────────────────────────
@@ -74,6 +74,20 @@ const demoCache = new Map<string, CacheEntry>();
 
 // ── Response shape ────────────────────────────────────────────────────────────
 
+interface CleanedSummary {
+  scripts: number;
+  styles: number;
+  ads: number;
+  tracking: number;
+  navigation: number;
+  socialWidgets: number;
+  popups: number;
+  totalRemoved: number;
+  originalSizeKB: number;
+  cleanedSizeKB: number;
+  reductionPercent: number;
+}
+
 interface DemoResponse {
   url: string;
   title: string;
@@ -83,6 +97,7 @@ interface DemoResponse {
   truncated: boolean;
   demo: true;
   signUpUrl: string;
+  cleaned: CleanedSummary;
 }
 
 const MAX_CONTENT_LENGTH = 2000;
@@ -259,6 +274,19 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
       // ── 7. Extract title and content ─────────────────────────────────────────
       const html = fetchResult.html || '';
 
+      // Count what will be removed BEFORE cleaning runs
+      let cleaningStats: CleaningStats;
+      try {
+        cleaningStats = countRemovedElements(html);
+      } catch {
+        cleaningStats = {
+          scripts: 0, styles: 0, ads: 0, tracking: 0,
+          navigation: 0, socialWidgets: 0, popups: 0, totalRemoved: 0,
+          originalSizeBytes: Buffer.byteLength(html, 'utf8'),
+          cleanedSizeBytes: 0, reductionPercent: 0,
+        };
+      }
+
       // Extract title from metadata
       let title = '';
       try {
@@ -277,6 +305,27 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
       } catch {
         markdownContent = '';
       }
+
+      // Finalize cleaning stats now that we have the cleaned content size
+      const cleanedSizeBytes = Buffer.byteLength(markdownContent, 'utf8');
+      const originalSizeBytes = cleaningStats.originalSizeBytes;
+      const reductionPercent = originalSizeBytes > 0
+        ? Math.round(((originalSizeBytes - cleanedSizeBytes) / originalSizeBytes) * 100)
+        : 0;
+
+      const cleaned: CleanedSummary = {
+        scripts:      cleaningStats.scripts,
+        styles:       cleaningStats.styles,
+        ads:          cleaningStats.ads,
+        tracking:     cleaningStats.tracking,
+        navigation:   cleaningStats.navigation,
+        socialWidgets: cleaningStats.socialWidgets,
+        popups:       cleaningStats.popups,
+        totalRemoved: cleaningStats.totalRemoved,
+        originalSizeKB: Math.round(originalSizeBytes / 1024 * 10) / 10,
+        cleanedSizeKB:  Math.round(cleanedSizeBytes  / 1024 * 10) / 10,
+        reductionPercent: Math.max(0, Math.min(100, reductionPercent)),
+      };
 
       // ── 8. Truncate content ──────────────────────────────────────────────────
       const truncated = markdownContent.length > MAX_CONTENT_LENGTH;
@@ -297,6 +346,7 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
         truncated,
         demo: true,
         signUpUrl: SIGN_UP_URL,
+        cleaned,
       };
 
       demoCache.set(cacheKey, { result: response, timestamp: Date.now() });

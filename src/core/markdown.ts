@@ -54,6 +54,108 @@ const JUNK_SELECTORS = [
   '.skip-to-content', '.skip-link', '.skip-nav',
 ];
 
+// ── Cleaning stats ─────────────────────────────────────────────────────────────
+
+export interface CleaningStats {
+  scripts: number;       // script, noscript tags
+  styles: number;        // style, link[rel=stylesheet] tags
+  ads: number;           // elements matching ad selectors
+  tracking: number;      // iframes (often tracking), cookie banners, consent
+  navigation: number;    // nav, breadcrumbs, pagination, sidebars
+  socialWidgets: number; // social share, newsletter, chat widgets
+  popups: number;        // modals, popups, notification bars
+  totalRemoved: number;  // sum of all above
+  originalSizeBytes: number; // raw HTML size
+  cleanedSizeBytes: number;  // cleaned content size (set later)
+  reductionPercent: number;  // percentage reduced (set later)
+}
+
+const STATS_SELECTORS = {
+  scripts: ['script', 'noscript'],
+  styles: ['style', 'link[rel="stylesheet"]'],
+  ads: [
+    '.advertisement', '.ad', '[class*="ad-"]', '[id*="ad-"]',
+    '[class*="advert"]', '[class*="sponsor"]', '[class*="promo"]',
+    '.ad-banner', '.promo-banner',
+  ],
+  tracking: [
+    'iframe', '.cookie-banner', '.cookie-notice', '.cookie-consent',
+    '[class*="cookie"]', '[id*="cookie"]',
+    '[class*="consent"]', '[class*="gdpr"]',
+  ],
+  navigation: [
+    'nav', '[role="navigation"]', '[role="search"]',
+    '.sidebar', '.topbar', '.top-bar', '.site-nav', '.main-nav',
+    '.breadcrumb', '.breadcrumbs', '[class*="breadcrumb"]',
+    '.pagination', '[class*="pagination"]',
+  ],
+  socialWidgets: [
+    '.social-share', '.share-buttons', '.share-widget',
+    '.newsletter-signup', '[class*="newsletter"]',
+    '.subscribe-form', '.subscribe-widget',
+    '.signup-form', '.signup-widget', '.signup-cta',
+    '[class*="chat-widget"]', '[class*="chatbot"]',
+    '[class*="intercom"]', '[class*="drift-"]', '[class*="zendesk"]',
+    '[class*="crisp"]', '[class*="hubspot"]',
+  ],
+  popups: [
+    '[class*="popup"]', '[class*="modal"]',
+    '[class*="notification-bar"]',
+  ],
+} as const;
+
+/**
+ * Count elements that would be removed by the cleaning pipeline.
+ * Call this BEFORE cleanHTML to get an accurate picture of what gets stripped.
+ */
+export function countRemovedElements(html: string): CleaningStats {
+  const $ = cheerio.load(html);
+
+  // Track unique element nodes to avoid double-counting
+  const seen = new Set<any>();
+
+  function countCategory(selectors: readonly string[]): number {
+    let count = 0;
+    for (const sel of selectors) {
+      try {
+        $(sel).each((_, el) => {
+          if (!seen.has(el)) {
+            seen.add(el);
+            count++;
+          }
+        });
+      } catch {
+        // Ignore invalid selectors
+      }
+    }
+    return count;
+  }
+
+  const scripts      = countCategory(STATS_SELECTORS.scripts);
+  const styles       = countCategory(STATS_SELECTORS.styles);
+  const ads          = countCategory(STATS_SELECTORS.ads);
+  const tracking     = countCategory(STATS_SELECTORS.tracking);
+  const navigation   = countCategory(STATS_SELECTORS.navigation);
+  const socialWidgets = countCategory(STATS_SELECTORS.socialWidgets);
+  const popups       = countCategory(STATS_SELECTORS.popups);
+
+  const totalRemoved = scripts + styles + ads + tracking + navigation + socialWidgets + popups;
+
+  return {
+    scripts,
+    styles,
+    ads,
+    tracking,
+    navigation,
+    socialWidgets,
+    popups,
+    totalRemoved,
+    originalSizeBytes: Buffer.byteLength(html, 'utf8'),
+    cleanedSizeBytes: 0,   // set by caller after cleaning
+    reductionPercent: 0,   // set by caller after cleaning
+  };
+}
+
 /**
  * Filter HTML by including or excluding specific tags/selectors
  * Applied BEFORE markdown conversion for precise content control

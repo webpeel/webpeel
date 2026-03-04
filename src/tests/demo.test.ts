@@ -173,6 +173,38 @@ describe('GET /v1/demo', () => {
     expect(res.body.signUpUrl).toBe('https://app.webpeel.dev');
     expect(typeof res.body.fetchTimeMs).toBe('number');
     expect(typeof res.body.wordCount).toBe('number');
+    // cleaned field must be present
+    expect(res.body.cleaned).toBeDefined();
+    expect(typeof res.body.cleaned.totalRemoved).toBe('number');
+    expect(typeof res.body.cleaned.reductionPercent).toBe('number');
+  });
+
+  it('returns cleaning stats with reasonable values', async () => {
+    const { app } = await makeApp();
+    const res = await request(app)
+      .get('/v1/demo')
+      .query({ url: ALLOWED_URL });
+
+    expect(res.status).toBe(200);
+    const { cleaned } = res.body;
+    expect(cleaned).toBeDefined();
+
+    // All numeric fields
+    const numericFields = [
+      'scripts', 'styles', 'ads', 'tracking', 'navigation',
+      'socialWidgets', 'popups', 'totalRemoved',
+      'originalSizeKB', 'cleanedSizeKB', 'reductionPercent',
+    ];
+    for (const field of numericFields) {
+      expect(typeof cleaned[field]).toBe('number');
+    }
+
+    // Reasonable ranges
+    expect(cleaned.totalRemoved).toBeGreaterThanOrEqual(0);
+    expect(cleaned.reductionPercent).toBeGreaterThanOrEqual(0);
+    expect(cleaned.reductionPercent).toBeLessThanOrEqual(100);
+    expect(cleaned.originalSizeKB).toBeGreaterThanOrEqual(0);
+    expect(cleaned.cleanedSizeKB).toBeGreaterThanOrEqual(0);
   });
 
   it('includes a title in the response', async () => {
