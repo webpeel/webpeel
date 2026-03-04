@@ -7305,7 +7305,7 @@ traffic. Advertisers are watching closely.
           // If cleaning stats available, show impact counter (AdBlock-style)
           // Always show JSON response
           var truncated = content.length > 300 ? content.substring(0, 300) + '...' : content;
-          var displayObj = { title: title, content: truncated, wordCount: words, fetchTimeMs: timeMs };
+          var displayObj = { title: title, content: truncated, wordCount: words, fetchTimeMs: timeMs, url: url };
           var jsonHtml = highlightJson(displayObj);
           outEl.innerHTML = '<pre style="margin:0;font-family:inherit;font-size:inherit;white-space:pre-wrap;word-break:break-word;">' + jsonHtml + '</pre>';
 
