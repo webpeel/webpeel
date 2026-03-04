@@ -5713,6 +5713,55 @@
   }
 }
 
+/* 45. Hero widget output — max-height with fade for truncated pre-baked demos */
+.hdw-output {
+  max-height: 220px !important;
+  overflow-y: hidden !important;
+  position: relative !important;
+}
+.hdw-body {
+  position: relative !important;
+}
+.hdw-body::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 48px !important;
+  background: linear-gradient(to bottom, transparent, #0C0C0E) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+/* 46. Final CTA — tighten gap between install card and button */
+.final-cta .install-card {
+  margin-bottom: 24px !important;
+}
+.final-cta br {
+  display: none !important;
+}
+
+/* 47. Pricing heading contrast boost */
+.pricing-sub {
+  color: rgba(255,255,255,0.55) !important;
+}
+
+/* 48. Hero trust links — bigger touch targets on mobile */
+@media (max-width: 768px) {
+  .hero-trust a {
+    padding: 8px 4px !important;
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+  /* Ticker pill min-height for touch */
+  .ai-strip-pill {
+    min-height: 36px !important;
+    padding: 6px 14px !important;
+  }
+}
+
   </style>
 </head>
 <body>
