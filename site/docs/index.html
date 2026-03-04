@@ -67,6 +67,17 @@
       </div>
 
       <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
+      </div>
+      <div class="sidebar-section">
         <div class="sidebar-title">Features</div>
         <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
         <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
@@ -302,6 +313,52 @@ npx webpeel search "latest AI news" --provider brave</code></pre>
   --llm openai \
   --llm-api-key $OPENAI_API_KEY \
   --max-sources 5</code></pre>
+
+      <h2 id="api-endpoints">API Endpoints</h2>
+      <p>WebPeel exposes 55+ endpoints across 8 feature areas:</p>
+
+      <div class="card-grid">
+        <a href="/docs/batch" class="doc-card">
+          <div class="doc-card-icon">📦</div>
+          <h3>Batch Scraping</h3>
+          <p>Scrape up to 100 URLs concurrently with SSE streaming or async polling</p>
+        </a>
+        <a href="/docs/extract" class="doc-card">
+          <div class="doc-card-icon">🔍</div>
+          <h3>Structured Extraction</h3>
+          <p>Extract typed JSON from any page using LLM + JSON Schema (BYOK)</p>
+        </a>
+        <a href="/docs/agents" class="doc-card">
+          <div class="doc-card-icon">🤖</div>
+          <h3>Research Agents</h3>
+          <p>Autonomous multi-step web research with LLM synthesis</p>
+        </a>
+        <a href="/docs/monitoring" class="doc-card">
+          <div class="doc-card-icon">👀</div>
+          <h3>Page Monitoring</h3>
+          <p>Watch URLs for content changes and receive webhook notifications</p>
+        </a>
+        <a href="/docs/screenshots" class="doc-card">
+          <div class="doc-card-icon">📸</div>
+          <h3>Screenshots</h3>
+          <p>Capture pages at any viewport, run visual diffs, and audit designs</p>
+        </a>
+        <a href="/docs/search" class="doc-card">
+          <div class="doc-card-icon">🔎</div>
+          <h3>Search</h3>
+          <p>Web, news, and image search with optional result scraping</p>
+        </a>
+        <a href="/docs/crawl" class="doc-card">
+          <div class="doc-card-icon">🕷️</div>
+          <h3>Crawl &amp; Map</h3>
+          <p>Recursively crawl domains or map URL structure. Firecrawl compatible.</p>
+        </a>
+        <a href="/docs/deep-fetch" class="doc-card">
+          <div class="doc-card-icon">⚡</div>
+          <h3>Deep Fetch</h3>
+          <p>Search + fetch + synthesize multiple sources in one API call</p>
+        </a>
+      </div>
 
       <h2 id="next-steps">Next Steps</h2>
 

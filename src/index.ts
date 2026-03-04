@@ -34,6 +34,7 @@ export {
   getSearchProvider,
   DuckDuckGoProvider,
   BraveSearchProvider,
+  providerStats,
   type SearchProvider,
   type SearchProviderId,
   type WebSearchResult,

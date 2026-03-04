@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Page Monitoring — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/monitoring">
+  <meta property="og:title" content="Page Monitoring — WebPeel">
+  <meta property="og:description" content="Monitor web pages for content changes and receive webhook notifications when changes are detected.">
+  <meta property="og:url" content="https://webpeel.dev/docs/monitoring">
+  <meta property="og:type" content="website">
+  <meta name="description" content="WebPeel Page Monitoring API — watch URLs for content changes, set check intervals, and receive webhook callbacks on change detection.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .method-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-right: 8px; vertical-align: middle; }
+    .method-post { background: #DBEAFE; color: #2563EB; }
+    .method-get { background: #DCFCE7; color: #16A34A; }
+    .method-patch { background: #FEF9C3; color: #A16207; }
+    .method-delete { background: #FEE2E2; color: #DC2626; }
+    .endpoint-block { border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 24px 0; background: var(--surface); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--text); vertical-align: middle; }
+    .auth-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .auth-required { background: #FEF3C7; color: #92400E; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .param-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+    .param-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7C3AED; }
+    .param-required { font-size: 11px; font-weight: 600; color: #DC2626; }
+    .param-optional { font-size: 11px; font-weight: 600; color: #6B7280; }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link active">Page Monitoring</a>
+        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Page Monitoring</span>
+      </div>
+
+      <h1>Page Monitoring</h1>
+      <p class="lead">Monitor web pages for content changes on a schedule. When a change is detected, WebPeel calls your webhook with a diff of what changed.</p>
+
+      <div class="callout callout-tip">
+        All watch endpoints require authentication. Watches are scoped to your account — you can only read and modify your own watches.
+      </div>
+
+      <h2 id="endpoints">Endpoints</h2>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/watch</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Create a new watch on a URL.</p>
+      </div>
+      <div class="endpoint-block">
+        <div><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/watch</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">List all watches for your account.</p>
+      </div>
+      <div class="endpoint-block">
+        <div><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/watch/:id</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Get details for a single watch.</p>
+      </div>
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/watch/:id/check</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Manually trigger an immediate content check.</p>
+      </div>
+      <div class="endpoint-block">
+        <div><span class="method-badge method-patch">PATCH</span><span class="endpoint-path">/v1/watch/:id</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Update a watch — change interval, webhook URL, pause, or resume.</p>
+      </div>
+      <div class="endpoint-block">
+        <div><span class="method-badge method-delete">DELETE</span><span class="endpoint-path">/v1/watch/:id</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Delete a watch permanently.</p>
+      </div>
+
+      <h2 id="create-watch">POST /v1/watch — Create Watch</h2>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">url</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-required">Required</span></td>
+            <td>The URL to monitor. Must be a valid HTTP/HTTPS URL, max 2048 chars.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">webhookUrl</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Endpoint to receive change notifications. WebPeel will POST a JSON diff here when content changes.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">checkIntervalMinutes</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>How often to check the page for changes. Default: <code>60</code> minutes. Range: 1–44640 (31 days).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">selector</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>CSS selector to monitor only a specific part of the page (e.g. <code>#price</code>, <code>.article-body</code>).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Response — 201 Created</h3>
+      <pre><code class="language-json">{
+  "ok": true,
+  "watch": {
+    "id": "wch_01J8XKZP4T...",
+    "accountId": "acc_...",
+    "url": "https://example.com/pricing",
+    "webhookUrl": "https://your-server.com/webhooks/webpeel",
+    "checkIntervalMinutes": 60,
+    "selector": null,
+    "status": "active",
+    "lastCheckedAt": null,
+    "lastChangedAt": null,
+    "createdAt": "2024-03-04T12:00:00.000Z"
+  }
+}</code></pre>
+
+      <h2 id="update-watch">PATCH /v1/watch/:id — Update Watch</h2>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">status</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Set to <code>"paused"</code> to pause checks, or <code>"active"</code> to resume.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">webhookUrl</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Update the webhook destination URL.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">checkIntervalMinutes</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Update the check frequency. Range: 1–44640.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">selector</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Update the CSS selector to monitor.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="manual-check">POST /v1/watch/:id/check — Manual Check</h2>
+      <p>Immediately checks the watched URL for changes, regardless of the schedule. Returns a diff if content has changed since the last check.</p>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "ok": true,
+  "diff": {
+    "changed": true,
+    "previous": "Price: $29",
+    "current": "Price: $39",
+    "changedAt": "2024-03-04T13:00:00.000Z"
+  }
+}</code></pre>
+
+      <h2 id="webhook-payload">Webhook Payload</h2>
+      <p>When a content change is detected, WebPeel POSTs this payload to your <code>webhookUrl</code>:</p>
+      <pre><code class="language-json">{
+  "event": "change_detected",
+  "watchId": "wch_01J8XKZP4T...",
+  "url": "https://example.com/pricing",
+  "checkedAt": "2024-03-04T14:00:00.000Z",
+  "diff": {
+    "changed": true,
+    "previous": "...",
+    "current": "...",
+    "changedAt": "2024-03-04T14:00:00.000Z"
+  }
+}</code></pre>
+
+      <h2 id="examples">Examples</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl-create">Create Watch</button>
+        <button class="tab-btn" data-tab="curl-list">List Watches</button>
+        <button class="tab-btn" data-tab="curl-pause">Pause/Resume</button>
+        <button class="tab-btn" data-tab="node-watch">Node.js</button>
+      </div>
+
+      <div class="tab-content active" data-content="curl-create">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/watch \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/pricing",
+    "webhookUrl": "https://your-server.com/webhooks/price-change",
+    "checkIntervalMinutes": 30,
+    "selector": "#pricing-table"
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-list">
+        <pre><code class="language-bash"># List all watches
+curl https://api.webpeel.dev/v1/watch \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+# Get a specific watch
+curl https://api.webpeel.dev/v1/watch/wch_01J8XKZP4T... \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-pause">
+        <pre><code class="language-bash"># Pause a watch
+curl -X PATCH https://api.webpeel.dev/v1/watch/wch_01J8XKZP4T... \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "status": "paused" }'
+
+# Resume a watch and change interval
+curl -X PATCH https://api.webpeel.dev/v1/watch/wch_01J8XKZP4T... \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "status": "active", "checkIntervalMinutes": 15 }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="node-watch">
+        <pre><code class="language-javascript">const API_KEY = process.env.WEBPEEL_API_KEY;
+const BASE = 'https://api.webpeel.dev';
+
+// Create a watch
+const res = await fetch(`${BASE}/v1/watch`, {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    url: 'https://example.com/pricing',
+    webhookUrl: 'https://your-server.com/webhooks/change',
+    checkIntervalMinutes: 60,
+  }),
+});
+const { watch } = await res.json();
+console.log(`Watch created: ${watch.id}`);
+
+// Manually trigger a check
+const checkRes = await fetch(`${BASE}/v1/watch/${watch.id}/check`, {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${API_KEY}` },
+});
+const { diff } = await checkRes.json();
+if (diff.changed) {
+  console.log('Content changed!', diff);
+}</code></pre>
+      </div>
+
+      <h2 id="watch-object">Watch Object</h2>
+      <table class="param-table">
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">id</span></td><td><span class="param-type">string</span></td><td>Unique watch ID.</td></tr>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td>The monitored URL.</td></tr>
+          <tr><td><span class="param-name">status</span></td><td><span class="param-type">string</span></td><td><code>active</code> or <code>paused</code>.</td></tr>
+          <tr><td><span class="param-name">checkIntervalMinutes</span></td><td><span class="param-type">number</span></td><td>Check frequency in minutes.</td></tr>
+          <tr><td><span class="param-name">selector</span></td><td><span class="param-type">string|null</span></td><td>CSS selector being monitored, or <code>null</code> for full page.</td></tr>
+          <tr><td><span class="param-name">webhookUrl</span></td><td><span class="param-type">string|null</span></td><td>Notification endpoint.</td></tr>
+          <tr><td><span class="param-name">lastCheckedAt</span></td><td><span class="param-type">string|null</span></td><td>ISO timestamp of last check.</td></tr>
+          <tr><td><span class="param-name">lastChangedAt</span></td><td><span class="param-type">string|null</span></td><td>ISO timestamp of last detected change.</td></tr>
+          <tr><td><span class="param-name">createdAt</span></td><td><span class="param-type">string</span></td><td>ISO timestamp when watch was created.</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.tab-content[data-content="${tab}"]`)?.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

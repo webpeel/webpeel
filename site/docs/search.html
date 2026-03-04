@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Search API — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/search">
+  <meta property="og:title" content="Search API — WebPeel">
+  <meta property="og:description" content="Search the web and return structured results. Supports DuckDuckGo (free), Brave (BYOK), news, and images. Optional scraping of result pages.">
+  <meta property="og:url" content="https://webpeel.dev/docs/search">
+  <meta property="og:type" content="website">
+  <meta name="description" content="WebPeel Search API — web, news, and image search with optional result scraping. No API key needed for DuckDuckGo. Supports Brave Search for higher quality results.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .method-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-right: 8px; vertical-align: middle; }
+    .method-post { background: #DBEAFE; color: #2563EB; }
+    .method-get { background: #DCFCE7; color: #16A34A; }
+    .endpoint-block { border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 24px 0; background: var(--surface); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--text); vertical-align: middle; }
+    .auth-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .auth-required { background: #FEF3C7; color: #92400E; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .param-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+    .param-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7C3AED; }
+    .param-required { font-size: 11px; font-weight: 600; color: #DC2626; }
+    .param-optional { font-size: 11px; font-weight: 600; color: #6B7280; }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link active">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Search</span>
+      </div>
+
+      <h1>Search API</h1>
+      <p class="lead">Search the web and return structured results. Supports web, news, and image searches. Optionally scrape the content of each result page.</p>
+
+      <div class="callout callout-tip">
+        <strong>Free by default:</strong> WebPeel uses DuckDuckGo by default — no search API key needed. For higher-quality results, pass <code>provider=brave</code> with your Brave Search API key. Results are cached for 15 minutes.
+      </div>
+
+      <h2 id="endpoints">Endpoint</h2>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/search</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Search the web and return structured results with optional page scraping.</p>
+      </div>
+
+      <h2 id="params">Query Parameters</h2>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">q</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td><span class="param-required">Required.</span> Search query.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">count</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><code>5</code></td>
+            <td>Number of results per source (1–10).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">sources</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><code>web</code></td>
+            <td>Comma-separated sources: <code>web</code>, <code>news</code>, <code>images</code>. Example: <code>web,news</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">scrapeResults</span></td>
+            <td><span class="param-type">boolean</span></td>
+            <td><code>false</code></td>
+            <td>If <code>true</code>, fetches and includes the full Markdown content of each result URL.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">provider</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><code>auto</code></td>
+            <td>Search provider: <code>auto</code>, <code>duckduckgo</code>, <code>brave</code>, <code>google</code>, <code>stealth</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">searchApiKey</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td>API key for paid providers (Brave, Google). Also via <code>X-Search-Api-Key</code> header.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">categories</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td>Filter results by category (comma-separated): <code>github</code>, <code>docs</code>, <code>blog</code>, <code>news</code>, <code>video</code>, <code>social</code>, <code>pdf</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">tbs</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td>Time filter (Google-style): <code>qdr:h</code> (past hour), <code>qdr:d</code> (past day), <code>qdr:w</code> (past week).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">country</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td>Country code for localized results (e.g. <code>US</code>, <code>GB</code>, <code>DE</code>).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">location</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td>Location string for geo-targeted results (e.g. <code>New York, NY</code>).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="response">Response</h2>
+      <p>Results for each requested source are returned under their respective keys:</p>
+      <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "web": [
+      {
+        "title": "WebPeel — Fast Web Fetching for AI",
+        "url": "https://webpeel.dev",
+        "snippet": "Smart web scraping that auto-escalates from HTTP to headless browser...",
+        "content": "# WebPeel\n\nFast web fetching for AI agents..."
+      }
+    ],
+    "news": [
+      {
+        "title": "WebPeel Launches New Batch API",
+        "url": "https://techcrunch.com/...",
+        "snippet": "...",
+        "source": "TechCrunch",
+        "date": "2024-03-04"
+      }
+    ],
+    "images": [
+      {
+        "title": "WebPeel Logo",
+        "url": "https://example.com/image.png",
+        "thumbnail": "...",
+        "source": "example.com"
+      }
+    ]
+  }
+}</code></pre>
+
+      <h3>Response Headers</h3>
+      <table class="param-table">
+        <thead><tr><th>Header</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">X-Cache</span></td><td><code>HIT</code> or <code>MISS</code> — whether results were served from cache.</td></tr>
+          <tr><td><span class="param-name">X-Cache-Age</span></td><td>Seconds since this result was cached (only on HIT).</td></tr>
+          <tr><td><span class="param-name">X-Credits-Used</span></td><td>Credits consumed by this request (<code>0</code> on cache hit).</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="examples">Examples</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl-basic">Basic Search</button>
+        <button class="tab-btn" data-tab="curl-multi">Multi-Source</button>
+        <button class="tab-btn" data-tab="curl-scrape">With Scraping</button>
+        <button class="tab-btn" data-tab="curl-brave">Brave Provider</button>
+        <button class="tab-btn" data-tab="node-search">Node.js</button>
+      </div>
+
+      <div class="tab-content active" data-content="curl-basic">
+        <pre><code class="language-bash">curl "https://api.webpeel.dev/v1/search?q=WebPeel+API&count=5" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-multi">
+        <pre><code class="language-bash"># Search web + news in one request
+curl "https://api.webpeel.dev/v1/search?q=AI+news+2024&sources=web,news&count=5" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-scrape">
+        <pre><code class="language-bash"># Return full markdown content for each result page
+curl "https://api.webpeel.dev/v1/search?q=web+scraping+API&scrapeResults=true&count=3" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-brave">
+        <pre><code class="language-bash"># Use Brave Search for higher-quality results (BYOK)
+curl "https://api.webpeel.dev/v1/search?q=WebPeel&provider=brave&searchApiKey=YOUR_BRAVE_KEY&count=10" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+# Or use a header for the search API key
+curl "https://api.webpeel.dev/v1/search?q=WebPeel&provider=brave&count=10" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "X-Search-Api-Key: YOUR_BRAVE_KEY"</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="node-search">
+        <pre><code class="language-javascript">const params = new URLSearchParams({
+  q: 'best web scraping APIs 2024',
+  count: '5',
+  sources: 'web,news',
+  categories: 'docs,github',
+});
+
+const res = await fetch(`https://api.webpeel.dev/v1/search?${params}`, {
+  headers: { 'Authorization': `Bearer ${process.env.WEBPEEL_API_KEY}` },
+});
+const { data } = await res.json();
+
+console.log(`Found ${data.web?.length} web results, ${data.news?.length} news results`);
+data.web?.forEach(r => console.log(r.title, r.url));</code></pre>
+      </div>
+
+      <h2 id="caching">Caching</h2>
+      <p>Search results are cached for <strong>15 minutes</strong> using an LRU cache (max 500 entries, 50MB). Cache hits are free — no credits consumed. The cache key includes all query parameters, so different parameter combinations are cached separately.</p>
+
+      <h2 id="providers">Search Providers</h2>
+      <table class="param-table">
+        <thead><tr><th>Provider</th><th>API Key</th><th>Quality</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>duckduckgo</code></td><td>Not required</td><td>Good</td><td>Default free provider. HTML scraping of DDG results.</td></tr>
+          <tr><td><code>brave</code></td><td>Brave API key (BYOK)</td><td>Excellent</td><td>Best quality. Supports <code>tbs</code>, <code>country</code>, <code>location</code> filtering.</td></tr>
+          <tr><td><code>google</code></td><td>Google API key (BYOK)</td><td>Excellent</td><td>Google Custom Search JSON API.</td></tr>
+          <tr><td><code>stealth</code></td><td>Not required</td><td>Good</td><td>Stealthy DDG variant for restricted environments.</td></tr>
+          <tr><td><code>auto</code></td><td>Optional</td><td>Best available</td><td>Automatically selects the best provider based on configured keys.</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.tab-content[data-content="${tab}"]`)?.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

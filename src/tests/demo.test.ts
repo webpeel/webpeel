@@ -219,15 +219,15 @@ describe('GET /v1/demo', () => {
 
   // ── Content truncation ───────────────────────────────────────────────────────
 
-  it('truncates content to max 2000 chars', async () => {
+  it('truncates content to max 3000 chars', async () => {
     const { app } = await makeApp();
-    // 'long' in URL triggers MOCK_LONG_HTML with >2000 chars of content
+    // 'long' in URL triggers MOCK_LONG_HTML with >3000 chars of content
     const res = await request(app)
       .get('/v1/demo')
       .query({ url: 'https://github.com?q=long' });
 
     expect(res.status).toBe(200);
-    expect(res.body.content.length).toBeLessThanOrEqual(2000);
+    expect(res.body.content.length).toBeLessThanOrEqual(3000);
   });
 
   it('sets truncated=true when content was cut', async () => {
@@ -238,10 +238,10 @@ describe('GET /v1/demo', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.truncated).toBe(true);
-    expect(res.body.content.length).toBeLessThanOrEqual(2000);
+    expect(res.body.content.length).toBeLessThanOrEqual(3000);
   });
 
-  it('sets truncated=false when content fits within 2000 chars', async () => {
+  it('sets truncated=false when content fits within 3000 chars', async () => {
     const { app } = await makeApp();
     const res = await request(app)
       .get('/v1/demo')
@@ -250,7 +250,7 @@ describe('GET /v1/demo', () => {
     expect(res.status).toBe(200);
     // Short mock — should not need truncation
     expect(res.body.truncated).toBe(false);
-    expect(res.body.content.length).toBeLessThanOrEqual(2000);
+    expect(res.body.content.length).toBeLessThanOrEqual(3000);
   });
 
   // ── CORS headers ─────────────────────────────────────────────────────────────

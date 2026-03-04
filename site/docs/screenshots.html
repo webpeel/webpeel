@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Screenshots — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/screenshots">
+  <meta property="og:title" content="Screenshots — WebPeel">
+  <meta property="og:description" content="Full-featured screenshot API: single captures, multi-viewport, filmstrips, visual diffs, design audits, and animation captures.">
+  <meta property="og:url" content="https://webpeel.dev/docs/screenshots">
+  <meta property="og:type" content="website">
+  <meta name="description" content="WebPeel Screenshot API — capture web pages at any viewport, compare designs, detect visual regressions, and audit design systems.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .method-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-right: 8px; vertical-align: middle; }
+    .method-post { background: #DBEAFE; color: #2563EB; }
+    .method-get { background: #DCFCE7; color: #16A34A; }
+    .endpoint-block { border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 16px 0; background: var(--surface); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--text); vertical-align: middle; }
+    .auth-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .auth-required { background: #FEF3C7; color: #92400E; }
+    .credit-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 6px; font-size: 11px; font-weight: 600; background: #F0FDF4; color: #15803D; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .param-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+    .param-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7C3AED; }
+    .param-required { font-size: 11px; font-weight: 600; color: #DC2626; }
+    .param-optional { font-size: 11px; font-weight: 600; color: #6B7280; }
+    .endpoint-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+    @media (max-width: 768px) { .endpoint-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+        <a href="/docs/screenshots" class="sidebar-link active">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Screenshots</span>
+      </div>
+
+      <h1>Screenshots</h1>
+      <p class="lead">Capture web pages as images, compare designs, detect visual regressions, and audit design systems — all via a single API.</p>
+
+      <h2 id="endpoints">All Endpoints</h2>
+
+      <div class="endpoint-grid">
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-post">POST</span><a href="#basic"><span class="endpoint-path">/v1/screenshot</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">Single screenshot. 1 credit.</p>
+        </div>
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-post">POST</span><a href="#filmstrip"><span class="endpoint-path">/v1/screenshot/filmstrip</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">Scroll-through frames. 1 credit.</p>
+        </div>
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-post">POST</span><a href="#viewports"><span class="endpoint-path">/v1/screenshot/viewports</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">Multiple viewports at once. N credits (one per viewport).</p>
+        </div>
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-post">POST</span><a href="#diff"><span class="endpoint-path">/v1/screenshot/diff</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">Visual regression diff between two URLs. 2 credits.</p>
+        </div>
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-post">POST</span><a href="#design-audit"><span class="endpoint-path">/v1/screenshot/design-audit</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">Section-by-section audit screenshots. Variable credits.</p>
+        </div>
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-post">POST</span><a href="#design-analysis"><span class="endpoint-path">/v1/screenshot/design-analysis</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">AI design analysis of a page. 1 credit.</p>
+        </div>
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-get">GET</span><a href="#design-compare"><span class="endpoint-path">/v1/design-compare</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">Compare design of two URLs with scoring. 2 credits.</p>
+        </div>
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-post">POST</span><a href="#animation"><span class="endpoint-path">/v1/screenshot/animation</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">Capture animation/scroll as timed frames. 1 credit.</p>
+        </div>
+        <div class="endpoint-block" style="margin:0;">
+          <div><span class="method-badge method-post">POST</span><a href="#review"><span class="endpoint-path">/v1/review</span></a></div>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--text-2);">Combined: 3 viewports + design audit. 4 credits.</p>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        All screenshot endpoints require authentication (<code>Authorization: Bearer YOUR_API_KEY</code>). Responses include base64-encoded image data. Use <code>"responseFormat": "binary"</code> to get raw image bytes instead.
+      </div>
+
+      <h2 id="basic">POST /v1/screenshot — Basic Screenshot</h2>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td>—</td><td><span class="param-required">Required.</span> The URL to screenshot.</td></tr>
+          <tr><td><span class="param-name">fullPage</span></td><td><span class="param-type">boolean</span></td><td><code>false</code></td><td>Capture the full scrollable page height.</td></tr>
+          <tr><td><span class="param-name">width</span></td><td><span class="param-type">number</span></td><td><code>1280</code></td><td>Viewport width in pixels (100–5000).</td></tr>
+          <tr><td><span class="param-name">height</span></td><td><span class="param-type">number</span></td><td><code>720</code></td><td>Viewport height in pixels (100–5000).</td></tr>
+          <tr><td><span class="param-name">format</span></td><td><span class="param-type">string</span></td><td><code>"png"</code></td><td>Image format: <code>png</code>, <code>jpeg</code>, or <code>jpg</code>.</td></tr>
+          <tr><td><span class="param-name">quality</span></td><td><span class="param-type">number</span></td><td>—</td><td>JPEG quality (1–100). Only used with <code>jpeg</code>/<code>jpg</code> format.</td></tr>
+          <tr><td><span class="param-name">waitFor</span></td><td><span class="param-type">number</span></td><td>—</td><td>Milliseconds to wait after page load (0–60000).</td></tr>
+          <tr><td><span class="param-name">selector</span></td><td><span class="param-type">string</span></td><td>—</td><td>CSS selector — screenshot only this element.</td></tr>
+          <tr><td><span class="param-name">actions</span></td><td><span class="param-type">array</span></td><td>—</td><td>Browser actions to perform before screenshotting (click, type, scroll, etc.).</td></tr>
+          <tr><td><span class="param-name">stealth</span></td><td><span class="param-type">boolean</span></td><td><code>false</code></td><td>Enable stealth mode for Cloudflare-protected pages.</td></tr>
+          <tr><td><span class="param-name">scrollThrough</span></td><td><span class="param-type">boolean</span></td><td><code>false</code></td><td>Scroll through the page before capturing (triggers lazy-loaded content).</td></tr>
+          <tr><td><span class="param-name">headers</span></td><td><span class="param-type">object</span></td><td>—</td><td>Custom HTTP headers to send with the request.</td></tr>
+          <tr><td><span class="param-name">responseFormat</span></td><td><span class="param-type">string</span></td><td><code>"json"</code></td><td>Set <code>"binary"</code> to receive raw image bytes instead of base64 JSON.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "screenshot": "data:image/png;base64,iVBORw0KGgo...",
+    "metadata": {
+      "sourceURL": "https://example.com",
+      "format": "png",
+      "width": 1280,
+      "height": 720,
+      "fullPage": false
+    }
+  }
+}</code></pre>
+
+      <h2 id="filmstrip">POST /v1/screenshot/filmstrip</h2>
+      <p>Scrolls through the page and captures evenly-spaced frames, useful for previewing long pages.</p>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td>—</td><td><span class="param-required">Required.</span></td></tr>
+          <tr><td><span class="param-name">frames</span></td><td><span class="param-type">number</span></td><td><code>6</code></td><td>Number of frames to capture (2–12).</td></tr>
+          <tr><td><span class="param-name">width</span></td><td><span class="param-type">number</span></td><td><code>1280</code></td><td>Viewport width (100–5000).</td></tr>
+          <tr><td><span class="param-name">height</span></td><td><span class="param-type">number</span></td><td><code>720</code></td><td>Viewport height (100–5000).</td></tr>
+          <tr><td><span class="param-name">format</span></td><td><span class="param-type">string</span></td><td><code>"png"</code></td><td>Image format.</td></tr>
+          <tr><td><span class="param-name">stealth</span></td><td><span class="param-type">boolean</span></td><td><code>false</code></td><td>Stealth mode.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "format": "png",
+    "frameCount": 6,
+    "frames": [
+      { "index": 0, "scrollY": 0, "screenshot": "data:image/png;base64,..." },
+      { "index": 1, "scrollY": 720, "screenshot": "data:image/png;base64,..." }
+    ]
+  }
+}</code></pre>
+
+      <h2 id="viewports">POST /v1/screenshot/viewports</h2>
+      <p>Capture the same URL at multiple viewport sizes in a single request. Perfect for responsive design testing.</p>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td>—</td><td><span class="param-required">Required.</span></td></tr>
+          <tr><td><span class="param-name">viewports</span></td><td><span class="param-type">array</span></td><td>—</td><td><span class="param-required">Required.</span> Array of <code>{"width": N, "height": N, "label": "..."}</code> objects. Max 6.</td></tr>
+          <tr><td><span class="param-name">fullPage</span></td><td><span class="param-type">boolean</span></td><td><code>false</code></td><td>Full-page capture for all viewports.</td></tr>
+          <tr><td><span class="param-name">format</span></td><td><span class="param-type">string</span></td><td><code>"jpeg"</code></td><td>Image format.</td></tr>
+          <tr><td><span class="param-name">quality</span></td><td><span class="param-type">number</span></td><td>—</td><td>JPEG quality (1–100).</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "format": "jpeg",
+    "viewports": [
+      { "label": "mobile", "width": 375, "height": 812, "screenshot": "data:image/jpeg;base64,..." },
+      { "label": "desktop", "width": 1440, "height": 900, "screenshot": "data:image/jpeg;base64,..." }
+    ]
+  }
+}</code></pre>
+
+      <h2 id="diff">POST /v1/screenshot/diff</h2>
+      <p>Compare two URLs pixel-by-pixel and return a diff image highlighting changes.</p>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url1</span></td><td><span class="param-type">string</span></td><td>—</td><td><span class="param-required">Required.</span> First URL (baseline).</td></tr>
+          <tr><td><span class="param-name">url2</span></td><td><span class="param-type">string</span></td><td>—</td><td><span class="param-required">Required.</span> Second URL (comparison). Must differ from url1.</td></tr>
+          <tr><td><span class="param-name">width</span></td><td><span class="param-type">number</span></td><td><code>1280</code></td><td>Viewport width.</td></tr>
+          <tr><td><span class="param-name">height</span></td><td><span class="param-type">number</span></td><td><code>720</code></td><td>Viewport height.</td></tr>
+          <tr><td><span class="param-name">fullPage</span></td><td><span class="param-type">boolean</span></td><td><code>false</code></td><td>Full-page comparison.</td></tr>
+          <tr><td><span class="param-name">threshold</span></td><td><span class="param-type">number</span></td><td><code>0.1</code></td><td>Per-pixel difference threshold (0–1). Higher = more tolerant.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "diff": "data:image/png;base64,...",
+    "diffPixels": 4821,
+    "totalPixels": 921600,
+    "diffPercent": 0.52,
+    "dimensions": { "width": 1280, "height": 720 }
+  }
+}</code></pre>
+
+      <h2 id="design-audit">POST /v1/screenshot/design-audit</h2>
+      <p>Screenshot each major section of a page (e.g. <code>&lt;section&gt;</code> elements) individually. Useful for component-level visual audits.</p>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td>—</td><td><span class="param-required">Required.</span></td></tr>
+          <tr><td><span class="param-name">selector</span></td><td><span class="param-type">string</span></td><td><code>"section"</code></td><td>CSS selector for elements to capture individually.</td></tr>
+          <tr><td><span class="param-name">rules</span></td><td><span class="param-type">object</span></td><td>—</td><td>Custom audit rules object.</td></tr>
+          <tr><td><span class="param-name">scrollThrough</span></td><td><span class="param-type">boolean</span></td><td><code>false</code></td><td>Scroll before capturing to trigger lazy-loaded content.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "format": "jpeg",
+    "sections": [
+      { "index": 0, "tag": "section", "id": "hero", "className": "hero", "top": 0, "height": 600, "screenshot": "..." },
+      { "index": 1, "tag": "section", "id": "features", "className": "features", "top": 600, "height": 400, "screenshot": "..." }
+    ]
+  }
+}</code></pre>
+
+      <h2 id="design-analysis">POST /v1/screenshot/design-analysis</h2>
+      <p>AI-powered analysis of a page's design — colors, typography, layout structure, and UX observations.</p>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td>—</td><td><span class="param-required">Required.</span></td></tr>
+          <tr><td><span class="param-name">selector</span></td><td><span class="param-type">string</span></td><td>—</td><td>Analyze only a specific element.</td></tr>
+          <tr><td><span class="param-name">width</span></td><td><span class="param-type">number</span></td><td><code>1280</code></td><td>Viewport width.</td></tr>
+          <tr><td><span class="param-name">stealth</span></td><td><span class="param-type">boolean</span></td><td><code>false</code></td><td>Stealth mode for protected pages.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "analysis": {
+      "colors": ["#18181B", "#FFFFFF", "#3B82F6"],
+      "typography": { "headingFont": "Inter", "bodyFont": "Inter" },
+      "layout": "single-column with hero, features grid, and CTA",
+      "observations": ["Strong contrast ratio", "Consistent spacing", "Mobile-first layout"]
+    }
+  }
+}</code></pre>
+
+      <h2 id="design-compare">GET /v1/design-compare</h2>
+      <p>Compare the design quality of two URLs and receive a similarity score with improvement suggestions.</p>
+
+      <h3>Query Parameters</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td><span class="param-required">Required.</span> Subject URL to evaluate.</td></tr>
+          <tr><td><span class="param-name">ref</span></td><td><span class="param-type">string</span></td><td><span class="param-required">Required.</span> Reference URL (benchmark design).</td></tr>
+          <tr><td><span class="param-name">width</span></td><td><span class="param-type">number</span></td><td>Viewport width (100–5000).</td></tr>
+          <tr><td><span class="param-name">height</span></td><td><span class="param-type">number</span></td><td>Viewport height (100–5000).</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="animation">POST /v1/screenshot/animation</h2>
+      <p>Capture a sequence of frames at regular intervals to visualize animations, transitions, or scrolling behavior.</p>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td>—</td><td><span class="param-required">Required.</span></td></tr>
+          <tr><td><span class="param-name">frames</span></td><td><span class="param-type">number</span></td><td><code>6</code></td><td>Number of frames to capture (1–30).</td></tr>
+          <tr><td><span class="param-name">intervalMs</span></td><td><span class="param-type">number</span></td><td><code>500</code></td><td>Milliseconds between frames (50–10000).</td></tr>
+          <tr><td><span class="param-name">scrollTo</span></td><td><span class="param-type">number</span></td><td>—</td><td>Scroll to this Y position before starting capture.</td></tr>
+          <tr><td><span class="param-name">selector</span></td><td><span class="param-type">string</span></td><td>—</td><td>Capture only this element.</td></tr>
+          <tr><td><span class="param-name">format</span></td><td><span class="param-type">string</span></td><td><code>"jpeg"</code></td><td>Image format.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="review">POST /v1/review</h2>
+      <p>Convenience endpoint that runs mobile + tablet + desktop screenshots AND a design audit in one request.</p>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td><span class="param-required">Required.</span></td></tr>
+          <tr><td><span class="param-name">rules</span></td><td><span class="param-type">object</span></td><td>Custom design audit rules.</td></tr>
+          <tr><td><span class="param-name">selector</span></td><td><span class="param-type">string</span></td><td>CSS selector for the audit.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="examples">Examples</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl-basic">Basic Screenshot</button>
+        <button class="tab-btn" data-tab="curl-viewports">Multi-Viewport</button>
+        <button class="tab-btn" data-tab="curl-diff">Visual Diff</button>
+        <button class="tab-btn" data-tab="curl-review">Full Review</button>
+      </div>
+
+      <div class="tab-content active" data-content="curl-basic">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/screenshot \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://webpeel.dev",
+    "fullPage": true,
+    "width": 1440,
+    "format": "jpeg",
+    "quality": 85
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-viewports">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/screenshot/viewports \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://webpeel.dev",
+    "viewports": [
+      { "width": 375, "height": 812, "label": "mobile" },
+      { "width": 768, "height": 1024, "label": "tablet" },
+      { "width": 1440, "height": 900, "label": "desktop" }
+    ],
+    "format": "jpeg",
+    "quality": 80
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-diff">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/screenshot/diff \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url1": "https://staging.example.com",
+    "url2": "https://production.example.com",
+    "width": 1280,
+    "height": 800,
+    "threshold": 0.05
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-review">
+        <pre><code class="language-bash"># Runs mobile + tablet + desktop + design audit in one request (4 credits)
+curl -X POST https://api.webpeel.dev/v1/review \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://webpeel.dev"
+  }'</code></pre>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.tab-content[data-content="${tab}"]`)?.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

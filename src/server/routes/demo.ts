@@ -9,7 +9,7 @@
  * - Separate rate limiter: 3 req/min, 30 req/day per IP
  * - SSRF validation via validateUrl()
  * - HTTP-only fetch (no Puppeteer/browser rendering)
- * - 5s timeout, 2000 char content truncation
+ * - 5s timeout, 3000 char content truncation
  * - CORS: only webpeel.dev + localhost
  * - In-memory cache: 10 min per URL
  */
@@ -100,9 +100,149 @@ interface DemoResponse {
   cleaned: CleanedSummary;
 }
 
-const MAX_CONTENT_LENGTH = 2000;
+const MAX_CONTENT_LENGTH = 3000;
 const FETCH_TIMEOUT_MS = 5000;
 const SIGN_UP_URL = 'https://app.webpeel.dev';
+
+// ── Wikipedia REST API headers (per Wikimedia User-Agent policy) ──────────────
+
+const WIKI_HEADERS = {
+  'User-Agent': 'WebPeel/0.17.1 (https://webpeel.dev; jake@jakeliu.me) Node.js',
+  'Api-User-Agent': 'WebPeel/0.17.1 (https://webpeel.dev; jake@jakeliu.me)',
+};
+
+// ── Helper: strip HTML tags and decode common entities ────────────────────────
+// Uses a quote-aware regex to handle `>` inside attribute values (e.g. data-mw='{"type":"..."}')
+
+function stripHtmlTags(str: string): string {
+  return str
+    // Remove tags, handling quoted attribute values containing >
+    .replace(/<(?:[^>"']|"[^"]*"|'[^']*')*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+}
+
+// ── Wikipedia-specific content cleaner (mirrors domain-extractors.ts) ─────────
+
+function cleanWikipediaContent(content: string): string {
+  return content
+    // Remove [edit] links
+    .replace(/\[edit\]/gi, '')
+    // Remove citation brackets [1], [2], etc.
+    .replace(/\[\d+\]/g, '')
+    // Remove [citation needed], [verification], etc.
+    .replace(/\[(citation needed|verification|improve this article|adding citations[^\]]*|when\?|where\?|who\?|clarification needed|dubious[^\]]*|failed verification[^\]]*|unreliable source[^\]]*)\]/gi, '')
+    // Remove [Learn how and when to remove this message]
+    .replace(/\[Learn how and when to remove this message\]/gi, '')
+    // Clean up excess whitespace
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ── General post-processing for all demo content ──────────────────────────────
+
+function cleanDemoContent(content: string): string {
+  return content
+    // Remove empty markdown links: [](/path "tooltip") or [  ](...)
+    .replace(/\[(?:\s*)\]\([^)]*\)/g, '')
+    // Remove Wikipedia boilerplate
+    .replace(/From Wikipedia, the free encyclopedia\s*/gi, '')
+    // Remove redirect notices
+    .replace(/"[^"]*" (?:and "[^"]*" )?redirect(?:s)? here\.\s*(?:For[^.]*\.\s*)?/gi, '')
+    // Remove [edit] links
+    .replace(/\[edit\]/gi, '')
+    // Remove citation brackets
+    .replace(/\[\d+\]/g, '')
+    // Remove stray JSON attribute value artifacts from HTML parsing (e.g. "}"> )
+    .replace(/^["}'>]+\s*$/gm, '')
+    // Clean up excess whitespace
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ── Wikipedia REST API fetcher ────────────────────────────────────────────────
+
+async function fetchWikipediaContent(url: string): Promise<string | null> {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+
+    // Only handle article pages: /wiki/Article_Title
+    if (pathParts[0] !== 'wiki' || pathParts.length < 2) return null;
+
+    const articleTitle = decodeURIComponent(pathParts[1]);
+    // Skip special pages (contain a colon, e.g. Special:Random, Talk:Article)
+    if (articleTitle.includes(':')) return null;
+
+    const lang = urlObj.hostname.split('.')[0] || 'en';
+
+    // Fetch summary for title/description
+    const summaryUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(articleTitle)}`;
+    const summaryResult = await simpleFetch(summaryUrl, undefined, 8000, {
+      ...WIKI_HEADERS,
+      'Accept': 'application/json',
+    });
+
+    let summaryData: Record<string, any> | null = null;
+    try {
+      summaryData = JSON.parse(summaryResult.html || '');
+    } catch {
+      summaryData = null;
+    }
+
+    if (!summaryData || summaryData.type === 'https://mediawiki.org/wiki/HyperSwitch/errors/not_found') {
+      return null;
+    }
+
+    const articleTitleClean: string = (summaryData.title as string) || articleTitle.replace(/_/g, ' ');
+    const description: string = (summaryData.description as string) || '';
+
+    // Fetch full content via mobile-html
+    let fullContent = '';
+    try {
+      const mobileUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/mobile-html/${encodeURIComponent(articleTitle)}`;
+      const mobileResult = await simpleFetch(mobileUrl, undefined, 15000, {
+        ...WIKI_HEADERS,
+        'Accept': 'text/html',
+      });
+
+      if (mobileResult?.html) {
+        const sectionMatches = mobileResult.html.match(/<section[^>]*>([\s\S]*?)<\/section>/gi) || [];
+        for (const section of sectionMatches) {
+          // Extract section heading
+          const headingMatch = section.match(/<h[2-6][^>]*id="([^"]*)"[^>]*class="[^"]*pcs-edit-section-title[^"]*"[^>]*>([\s\S]*?)<\/h[2-6]>/i);
+          const heading = headingMatch ? stripHtmlTags(headingMatch[2]).trim() : '';
+          // Extract paragraphs
+          const paragraphs = section.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+          const sectionText = paragraphs
+            .map((p: string) => stripHtmlTags(p).trim())
+            .filter((t: string) => t.length > 0)
+            .join('\n\n');
+          if (sectionText) {
+            const prefix = heading ? `## ${heading}\n\n` : '';
+            fullContent += `\n\n${prefix}${sectionText}`;
+          }
+        }
+      }
+    } catch {
+      // mobile-html failed — fall back to summary extract
+      fullContent = (summaryData.extract as string) || '';
+    }
+
+    // Clean Wikipedia noise
+    fullContent = cleanWikipediaContent(fullContent);
+
+    const cleanContent = `# ${articleTitleClean}\n\n${description ? `*${description}*\n\n` : ''}${fullContent || (summaryData.extract as string) || ''}`;
+    return cleanContent;
+  } catch {
+    return null;
+  }
+}
 
 // ── CORS helper ───────────────────────────────────────────────────────────────
 
@@ -297,14 +437,33 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
       }
 
       // Extract main content and convert to markdown
+      // For Wikipedia URLs: use the REST API for clean structured content
       let markdownContent = '';
-      try {
-        const detected = detectMainContent(html);
-        const contentHtml = detected.html || html;
-        markdownContent = htmlToMarkdown(contentHtml, { prune: true });
-      } catch {
-        markdownContent = '';
+      const isWikipedia = /(?:^|\.)wikipedia\.org$/.test(parsedUrl.hostname.toLowerCase());
+      if (isWikipedia) {
+        try {
+          const wikiContent = await fetchWikipediaContent(url);
+          if (wikiContent) {
+            markdownContent = wikiContent;
+          }
+        } catch {
+          markdownContent = '';
+        }
       }
+
+      // Fall back to generic HTML→markdown pipeline if Wikipedia fetch failed/N/A
+      if (!markdownContent) {
+        try {
+          const detected = detectMainContent(html);
+          const contentHtml = detected.html || html;
+          markdownContent = htmlToMarkdown(contentHtml, { prune: true });
+        } catch {
+          markdownContent = '';
+        }
+      }
+
+      // Apply general post-processing to remove common noise artifacts
+      markdownContent = cleanDemoContent(markdownContent);
 
       // Finalize cleaning stats now that we have the cleaned content size
       const cleanedSizeBytes = Buffer.byteLength(markdownContent, 'utf8');

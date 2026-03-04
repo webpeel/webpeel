@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Deep Fetch — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/deep-fetch">
+  <meta property="og:title" content="Deep Fetch — WebPeel">
+  <meta property="og:description" content="Search + fetch + synthesize in one call. Deep web intelligence that combines search results and page content into a single coherent output.">
+  <meta property="og:url" content="https://webpeel.dev/docs/deep-fetch">
+  <meta property="og:type" content="website">
+  <meta name="description" content="WebPeel Deep Fetch API — search the web, fetch top results, and synthesize content from multiple sources into merged, structured, or comparison output.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .method-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-right: 8px; vertical-align: middle; }
+    .method-post { background: #DBEAFE; color: #2563EB; }
+    .endpoint-block { border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 24px 0; background: var(--surface); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--text); vertical-align: middle; }
+    .auth-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .auth-required { background: #FEF3C7; color: #92400E; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .param-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+    .param-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7C3AED; }
+    .param-required { font-size: 11px; font-weight: 600; color: #DC2626; }
+    .param-optional { font-size: 11px; font-weight: 600; color: #6B7280; }
+    .format-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+    .format-name { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #7C3AED; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/deep-fetch" class="sidebar-link active">Deep Fetch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Deep Fetch</span>
+      </div>
+
+      <h1>Deep Fetch</h1>
+      <p class="lead">Search the web, fetch the top results, and synthesize content from multiple sources into a single coherent output — in one API call.</p>
+
+      <div class="callout callout-tip">
+        <strong>vs. Research Agents:</strong> Deep Fetch is simpler and faster — it searches, fetches, and merges content without LLM inference. Use <a href="/docs/agents">Research Agents</a> when you need an LLM to reason, synthesize, or answer a question across sources.
+      </div>
+
+      <h2 id="endpoint">Endpoint</h2>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/deep-fetch</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Search the web for a query, fetch the top results, and return synthesized content in the chosen format.</p>
+      </div>
+
+      <h2 id="params">Request Body</h2>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">query</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td><span class="param-required">Required.</span> The search query. Results are fetched and combined.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">count</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><code>5</code></td>
+            <td>Number of search results to fetch. Range: 1–10.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">format</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><code>"merged"</code></td>
+            <td>Output format. See <a href="#formats">Formats</a> below.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">maxChars</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><code>32000</code></td>
+            <td>Maximum total characters in the combined output.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="formats">Output Formats</h2>
+
+      <div class="format-card">
+        <div class="format-name">merged</div>
+        <p style="margin: 0; font-size: 14px; color: var(--text-2);">All fetched pages are combined into a single continuous Markdown document, with source headers between sections. Good for passing to an LLM as context.</p>
+      </div>
+
+      <div class="format-card">
+        <div class="format-name">structured</div>
+        <p style="margin: 0; font-size: 14px; color: var(--text-2);">Returns an array of individual source objects, each with title, URL, and content. Good for processing sources separately.</p>
+      </div>
+
+      <div class="format-card">
+        <div class="format-name">comparison</div>
+        <p style="margin: 0; font-size: 14px; color: var(--text-2);">Returns sources side-by-side with overlap analysis — useful for comparing how different sources cover the same topic.</p>
+      </div>
+
+      <h2 id="response">Response</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="res-merged">merged</button>
+        <button class="tab-btn" data-tab="res-structured">structured</button>
+        <button class="tab-btn" data-tab="res-comparison">comparison</button>
+      </div>
+
+      <div class="tab-content active" data-content="res-merged">
+        <pre><code class="language-json">{
+  "query": "WebPeel API pricing",
+  "format": "merged",
+  "count": 3,
+  "sources": [
+    { "url": "https://webpeel.dev/pricing", "title": "Pricing — WebPeel" },
+    { "url": "https://webpeel.dev/docs", "title": "Documentation — WebPeel" }
+  ],
+  "content": "# Source 1: Pricing — WebPeel\nhttps://webpeel.dev/pricing\n\nWebPeel offers a generous free tier...\n\n---\n\n# Source 2: Documentation — WebPeel\n..."
+}</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="res-structured">
+        <pre><code class="language-json">{
+  "query": "WebPeel API pricing",
+  "format": "structured",
+  "count": 2,
+  "sources": [
+    {
+      "url": "https://webpeel.dev/pricing",
+      "title": "Pricing — WebPeel",
+      "content": "WebPeel offers a generous free tier with 1,000 requests/month..."
+    },
+    {
+      "url": "https://webpeel.dev",
+      "title": "WebPeel — Fast Web Fetching for AI",
+      "content": "# WebPeel\n\nSmart web scraping API..."
+    }
+  ]
+}</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="res-comparison">
+        <pre><code class="language-json">{
+  "query": "WebPeel API pricing",
+  "format": "comparison",
+  "count": 2,
+  "sources": [
+    { "url": "https://webpeel.dev/pricing", "title": "Pricing — WebPeel", "content": "..." },
+    { "url": "https://competitor.com/pricing", "title": "Competitor Pricing", "content": "..." }
+  ],
+  "comparison": {
+    "overlap": ["monthly pricing", "free tier", "API credits"],
+    "unique": {
+      "source1": ["bulk discounts", "enterprise plan"],
+      "source2": ["per-seat pricing", "trial period"]
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h2 id="examples">Examples</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl-merged">curl (merged)</button>
+        <button class="tab-btn" data-tab="curl-structured">curl (structured)</button>
+        <button class="tab-btn" data-tab="node-deep">Node.js</button>
+      </div>
+
+      <div class="tab-content active" data-content="curl-merged">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/deep-fetch \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "best JavaScript web scraping libraries 2024",
+    "count": 5,
+    "format": "merged",
+    "maxChars": 20000
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-structured">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/deep-fetch \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "OpenAI GPT-4 pricing",
+    "count": 3,
+    "format": "structured"
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="node-deep">
+        <pre><code class="language-javascript">// Use deep-fetch to gather context before passing to an LLM
+const res = await fetch('https://api.webpeel.dev/v1/deep-fetch', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.WEBPEEL_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    query: 'React Server Components best practices 2024',
+    count: 5,
+    format: 'merged',
+    maxChars: 30000,
+  }),
+});
+const result = await res.json();
+
+// Pass merged content to your LLM
+const answer = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [
+    { role: 'system', content: 'Answer based on the following web research context.' },
+    { role: 'user', content: result.content },
+    { role: 'user', content: 'What are the top 3 best practices for React Server Components?' },
+  ],
+});
+console.log(answer.choices[0].message.content);</code></pre>
+      </div>
+
+      <h2 id="use-cases">Use Cases</h2>
+      <ul>
+        <li><strong>RAG context gathering:</strong> Fetch relevant web content before calling your LLM</li>
+        <li><strong>Competitive research:</strong> Gather pricing/feature info from multiple sources simultaneously</li>
+        <li><strong>Content aggregation:</strong> Merge news or blog content on a topic</li>
+        <li><strong>Fact checking:</strong> Cross-reference multiple sources for a claim</li>
+      </ul>
+
+      <h2 id="vs-alternatives">Deep Fetch vs. Alternatives</h2>
+      <table class="param-table">
+        <thead><tr><th>Feature</th><th>Deep Fetch</th><th>Search API</th><th>Research Agents</th></tr></thead>
+        <tbody>
+          <tr><td>Searches web</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Fetches page content</td><td>✅</td><td>Optional</td><td>✅</td></tr>
+          <tr><td>LLM synthesis</td><td>❌ No LLM</td><td>❌</td><td>✅ BYOK</td></tr>
+          <tr><td>Multi-step reasoning</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Structured JSON output</td><td>❌</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Best for</td><td>Context gathering</td><td>URL discovery</td><td>Answering questions</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="limits">Limits</h2>
+      <ul>
+        <li><strong>Max results:</strong> 10 per request</li>
+        <li><strong>Max output:</strong> 32,000 characters (configurable via <code>maxChars</code>)</li>
+        <li><strong>Credits:</strong> 1 credit per source URL fetched</li>
+      </ul>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.tab-content[data-content="${tab}"]`)?.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
