@@ -5714,11 +5714,71 @@
   }
 }
 
-/* 45. Hero widget output — max-height with scroll for live results */
+/* 45. Hero widget output — taller, no scroll needed */
 .hdw-output {
-  max-height: 280px !important;
-  overflow-y: auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
   position: relative !important;
+}
+.hdw-body {
+  min-height: 320px !important;
+}
+
+/* 45a. Loading animation */
+.hdw-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+.hdw-loading-status {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hdw-loading-bar {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  width: 100%;
+}
+.hdw-loading-bar-fill {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, #6366F1, #818CF8);
+  border-radius: 2px;
+  animation: hdw-scan 1.2s ease-in-out infinite;
+}
+@keyframes hdw-scan {
+  0% { transform: translateX(-100%); width: 30%; }
+  50% { width: 50%; }
+  100% { transform: translateX(340%); width: 30%; }
+}
+.hdw-loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hdw-loading-step {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.3s, opacity 0.3s;
+}
+.hdw-loading-step.active {
+  color: rgba(255,255,255,0.6);
+}
+.hdw-loading-step.done {
+  color: #818CF8;
+}
+.hdw-loading-step .check {
+  font-size: 11px;
+  min-width: 16px;
 }
 
 /* 45b. Impact counter display (AdBlock-style) */
@@ -6925,30 +6985,16 @@ traffic. Advertisers are watching closely.
       {
         cmd: '$ webpeel "wikipedia.org/wiki/AI"',
         url: 'https://en.wikipedia.org/wiki/Artificial_intelligence',
-        lines: [
-          '{',
-          '  "url": "https://en.wikipedia.org/wiki/AI",',
-          '  "title": "Artificial intelligence - Wikipedia",',
-          '  "tokens": 18420,',
-          '  "elapsed": 380,',
-          '  "method": "fetch",',
-          '  "content": "# Artificial Intelligence..."',
-          '}'
-        ]
+        impact: true,
+        stats: { scripts: 12, styles: 8, ads: 0, tracking: 3, navigation: 6, words: 18420, reduction: 94, time: 380 },
+        title: 'Artificial intelligence - Wikipedia'
       },
       {
         cmd: '$ webpeel "news.ycombinator.com"',
         url: 'https://news.ycombinator.com',
-        lines: [
-          '{',
-          '  "url": "https://news.ycombinator.com",',
-          '  "title": "Hacker News",',
-          '  "tokens": 1204,',
-          '  "elapsed": 198,',
-          '  "method": "fetch",',
-          '  "content": "# Hacker News\\n1. Show HN: I built..."',
-          '}'
-        ]
+        impact: true,
+        stats: { scripts: 24, styles: 3, ads: 0, tracking: 1, navigation: 4, words: 1204, reduction: 87, time: 198 },
+        title: 'Hacker News'
       }
     ];
 
@@ -6977,6 +7023,16 @@ traffic. Advertisers are watching closely.
     }
 
     // Show a pre-baked demo with typewriter animation (initial load)
+    function renderImpactRows(stats) {
+      var rows = [];
+      if (stats.scripts > 0) rows.push({ n: stats.scripts, l: 'scripts removed' });
+      if (stats.styles > 0) rows.push({ n: stats.styles, l: 'stylesheets stripped' });
+      if (stats.ads > 0) rows.push({ n: stats.ads, l: 'ads blocked' });
+      if (stats.tracking > 0) rows.push({ n: stats.tracking, l: 'trackers removed' });
+      if (stats.navigation > 0) rows.push({ n: stats.navigation, l: 'nav elements filtered' });
+      return rows;
+    }
+
     function runDemo(i) {
       var w = document.getElementById('hero-demo-widget');
       if (!w) return;
@@ -7001,30 +7057,52 @@ traffic. Advertisers are watching closely.
           animTimer = setTimeout(typeChar, 22);
         } else {
           cmdEl.textContent = demo.cmd;
-          animTimer = setTimeout(function() { showLine(0); }, 200);
+          animTimer = setTimeout(function() { showImpact(0); }, 300);
         }
       }
 
-      function showLine(j) {
-        if (j >= demo.lines.length) {
-          var linkEl = document.createElement('a');
-          linkEl.className = 'hdw-view-link';
-          linkEl.href = '#demo';
-          linkEl.textContent = 'View full response →';
-          outEl.appendChild(linkEl);
-          animTimer = setTimeout(function() { linkEl.classList.add('visible'); }, 200);
-          return;
+      function showImpact(step) {
+        var rows = renderImpactRows(demo.stats);
+        if (step === 0) {
+          // Show header
+          outEl.innerHTML = '<div class="hdw-impact"><div class="hdw-impact-header"><span class="shield">🛡️</span> Cleaned for your AI agent</div><div id="hdw-rows"></div></div>';
+          animTimer = setTimeout(function() { showImpact(1); }, 150);
+        } else if (step <= rows.length) {
+          var rowsEl = document.getElementById('hdw-rows');
+          if (rowsEl) {
+            var r = rows[step - 1];
+            var div = document.createElement('div');
+            div.className = 'hdw-impact-row';
+            div.innerHTML = '<span class="hdw-impact-num">' + r.n + '</span><span class="hdw-impact-label">' + r.l + '</span>';
+            rowsEl.appendChild(div);
+          }
+          animTimer = setTimeout(function() { showImpact(step + 1); }, 120);
+        } else {
+          // Show divider + summary
+          var impactEl = outEl.querySelector('.hdw-impact');
+          if (impactEl) {
+            var hr = document.createElement('hr');
+            hr.className = 'hdw-impact-divider';
+            impactEl.appendChild(hr);
+            var summary = document.createElement('div');
+            summary.className = 'hdw-impact-summary';
+            summary.innerHTML = '<span><span class="accent">' + demo.stats.words.toLocaleString() + '</span> words extracted</span><span>·</span><span><span class="accent">' + demo.stats.reduction + '%</span> smaller</span><span>·</span><span><span class="accent">' + demo.stats.time + 'ms</span></span>';
+            impactEl.appendChild(summary);
+            if (demo.title) {
+              var preview = document.createElement('div');
+              preview.className = 'hdw-impact-preview';
+              preview.textContent = '"' + demo.title + '"';
+              impactEl.appendChild(preview);
+            }
+            // "View full response" link
+            var linkEl = document.createElement('a');
+            linkEl.className = 'hdw-view-link';
+            linkEl.href = '#demo';
+            linkEl.textContent = 'View full response →';
+            outEl.appendChild(linkEl);
+            animTimer = setTimeout(function() { linkEl.classList.add('visible'); }, 200);
+          }
         }
-        var el = document.createElement('div');
-        var escaped = escapeForDisplay(demo.lines[j]);
-        escaped = escaped
-          .replace(/(&quot;[^&]+&quot;)(?=\s*:)/g, '<span class="t-key">$1</span>')
-          .replace(/:\s*(&quot;[^&]+&quot;)/g, ': <span class="t-str">$1</span>')
-          .replace(/:\s*(\d+)/g, ': <span class="t-num">$1</span>')
-          .replace(/^(&amp;|\s*)([\{\}])(\s*)$/g, '$1<span class="t-dim">$2</span>$3');
-        el.innerHTML = escaped;
-        outEl.appendChild(el);
-        animTimer = setTimeout(function() { showLine(j + 1); }, 85);
       }
 
       typeChar();
@@ -7037,10 +7115,31 @@ traffic. Advertisers are watching closely.
       if (!cmdEl || !outEl) return;
       if (animTimer) clearTimeout(animTimer);
 
-      // Show loading state
+      // Show loading state with animated progress
       var shortUrl = url.replace(/^https?:\/\//i, '');
-      cmdEl.innerHTML = '$ webpeel &quot;' + escapeForDisplay(shortUrl) + '&quot; --readable <span class="hdw-loading-cursor"></span>';
-      outEl.innerHTML = '';
+      cmdEl.innerHTML = '$ webpeel &quot;' + escapeForDisplay(shortUrl) + '&quot; --readable';
+      outEl.innerHTML = '<div class="hdw-loading">' +
+        '<div class="hdw-loading-bar"><div class="hdw-loading-bar-fill"></div></div>' +
+        '<div class="hdw-loading-steps">' +
+          '<div class="hdw-loading-step active" id="hdw-step-1"><span class="check">◉</span> Connecting to ' + escapeForDisplay(shortUrl) + '</div>' +
+          '<div class="hdw-loading-step" id="hdw-step-2"><span class="check">○</span> Extracting content</div>' +
+          '<div class="hdw-loading-step" id="hdw-step-3"><span class="check">○</span> Cleaning for AI</div>' +
+        '</div>' +
+      '</div>';
+      // Animate steps
+      var stepTimers = [];
+      stepTimers.push(setTimeout(function() {
+        var s1 = document.getElementById('hdw-step-1');
+        var s2 = document.getElementById('hdw-step-2');
+        if (s1) { s1.classList.remove('active'); s1.classList.add('done'); s1.querySelector('.check').textContent = '✓'; }
+        if (s2) { s2.classList.add('active'); s2.querySelector('.check').textContent = '◉'; }
+      }, 400));
+      stepTimers.push(setTimeout(function() {
+        var s2 = document.getElementById('hdw-step-2');
+        var s3 = document.getElementById('hdw-step-3');
+        if (s2) { s2.classList.remove('active'); s2.classList.add('done'); s2.querySelector('.check').textContent = '✓'; }
+        if (s3) { s3.classList.add('active'); s3.querySelector('.check').textContent = '◉'; }
+      }, 800));
 
       fetch('https://api.webpeel.dev/v1/demo?url=' + encodeURIComponent(url))
         .then(function(r) {
@@ -7050,6 +7149,8 @@ traffic. Advertisers are watching closely.
           return r.json();
         })
         .then(function(data) {
+          // Clear loading step timers
+          stepTimers.forEach(function(t) { clearTimeout(t); });
           // Finalize command line
           cmdEl.innerHTML = '$ webpeel &quot;' + escapeForDisplay(shortUrl) + '&quot; --readable';
 
@@ -7105,6 +7206,7 @@ traffic. Advertisers are watching closely.
           outEl.appendChild(footer);
         })
         .catch(function(err) {
+          stepTimers.forEach(function(t) { clearTimeout(t); });
           cmdEl.innerHTML = '$ webpeel &quot;' + escapeForDisplay(shortUrl) + '&quot; --readable';
           var errDiv = document.createElement('div');
           errDiv.className = 'hdw-error-line';
