@@ -6013,38 +6013,64 @@
 }
 
 /* 50. Cleaning stats footer bar — two lines */
+/* === Impact Card — "AdBlock for AI" === */
 .hdw-clean-bar {
-  padding: 8px 0 2px !important;
-  margin-top: 8px !important;
+  padding: 10px 14px 8px !important;
+  margin-top: 10px !important;
   border-top: 1px solid rgba(255,255,255,0.08) !important;
-  font-size: 11.5px !important;
-  color: rgba(255,255,255,0.45) !important;
+  font-size: 12px !important;
+  color: rgba(255,255,255,0.5) !important;
   font-family: 'Inter', -apple-system, sans-serif !important;
+  background: rgba(255,255,255,0.02) !important;
+  border-radius: 0 0 10px 10px !important;
 }
-.hdw-clean-bar .cb-line1 {
-  display: flex !important;
+.hdw-clean-bar .cb-header {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.75) !important;
+  margin-bottom: 8px !important;
+}
+.hdw-clean-bar .cb-accent { color: #34D399 !important; }
+.hdw-clean-bar .cb-grid {
+  display: grid !important;
+  grid-template-columns: 20px 100px 1fr !important;
+  gap: 4px 8px !important;
   align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 5px !important;
-  margin-bottom: 3px !important;
+  margin-bottom: 8px !important;
+  padding: 0 !important;
 }
-.hdw-clean-bar .cb-line2 {
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 5px !important;
-  padding-left: 22px !important;
-  font-size: 11px !important;
-  color: rgba(255,255,255,0.35) !important;
+.hdw-clean-bar .cb-row {
+  display: contents !important;
 }
-.hdw-clean-bar .shield { font-size: 13px !important; }
-.hdw-clean-bar .sep { color: rgba(255,255,255,0.12) !important; }
-.hdw-clean-bar .cb-num { color: #A5B4FC !important; font-weight: 700 !important; font-variant-numeric: tabular-nums !important; }
-.hdw-clean-bar .cb-label { color: rgba(255,255,255,0.3) !important; }
-.hdw-clean-bar .old { text-decoration: line-through !important; color: rgba(255,255,255,0.2) !important; }
+.hdw-clean-bar .cb-icon {
+  font-size: 12px !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  width: 20px !important;
+  display: inline-block !important;
+}
+.hdw-clean-bar .cb-cat {
+  color: rgba(255,255,255,0.5) !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+}
+.hdw-clean-bar .cb-val {
+  font-size: 11.5px !important;
+  color: rgba(255,255,255,0.7) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.hdw-clean-bar .old { text-decoration: line-through !important; color: rgba(255,255,255,0.25) !important; }
 .hdw-clean-bar .new { color: #A5B4FC !important; font-weight: 600 !important; }
-.hdw-clean-bar .savings { color: #34D399 !important; font-weight: 700 !important; }
-.hdw-clean-bar .cb-headline { font-size: 13px !important; font-weight: 700 !important; color: #34D399 !important; margin-bottom: 4px !important; }
+.hdw-clean-bar .savings { color: #34D399 !important; font-weight: 700 !important; font-size: 11px !important; }
+.hdw-clean-bar .cb-muted { color: rgba(255,255,255,0.25) !important; font-size: 10px !important; }
+.hdw-clean-bar .cb-tagline {
+  font-size: 11px !important;
+  color: rgba(255,255,255,0.3) !important;
+  font-style: italic !important;
+  padding-top: 6px !important;
+  border-top: 1px solid rgba(255,255,255,0.05) !important;
+}
 
 /* 51. Bigger terminal — centered, full-width up to 800px */
 .hero-demo-widget { max-width: 800px !important; width: 100% !important; margin: 0 auto !important; min-width: 0 !important; }
@@ -7065,6 +7091,35 @@ traffic. Advertisers are watching closely.
     var currentIdx = 0, cycleTimer = null, hovered = false, animTimer = null;
     var liveMode = false; // flips true on first user interaction
 
+    function formatTokens(n) { return n >= 1000 ? Math.round(n / 1000) + 'K' : n.toString(); }
+    function estimateCostSaved(rawTokens, cleanTokens) {
+      // GPT-4o input: $2.50/1M tokens
+      var saved = (rawTokens - cleanTokens) * 2.50 / 1000000;
+      return saved >= 0.01 ? '$' + saved.toFixed(2) : '<$0.01';
+    }
+    function buildImpactCard(adsTrackers, chromeNav, origKB, cleanKB, rawTokens, cleanTokens, savings, totalRemoved) {
+      // Handle both string ('257.8K') and numeric token values
+      var rawDisplay = (typeof rawTokens === 'string') ? rawTokens : formatTokens(rawTokens);
+      var cleanDisplay = (typeof cleanTokens === 'string') ? cleanTokens : formatTokens(cleanTokens);
+      // Parse numeric value for cost calculation
+      var rawNum = (typeof rawTokens === 'number') ? rawTokens : parseFloat(String(rawTokens).replace('K','')) * 1000;
+      var cleanNum = (typeof cleanTokens === 'number') ? cleanTokens : parseFloat(String(cleanTokens).replace('K','')) * 1000;
+
+      var html = '<div class="cb-header">🛡️ Cleaned for AI — <span class="cb-accent">' + totalRemoved + ' distractions removed</span></div>';
+      html += '<div class="cb-grid">';
+      if (adsTrackers > 0) html += '<div class="cb-row"><span class="cb-icon">🚫</span><span class="cb-cat">Ads & Trackers</span><span class="cb-val">' + adsTrackers + ' blocked</span></div>';
+      html += '<div class="cb-row"><span class="cb-icon">🧹</span><span class="cb-cat">Page Chrome</span><span class="cb-val">' + chromeNav + ' stripped</span></div>';
+      html += '<div class="cb-row"><span class="cb-icon">📦</span><span class="cb-cat">Page Size</span><span class="cb-val">' + origKB + ' KB → ' + cleanKB + ' KB</span></div>';
+      if (savings > 10) {
+        html += '<div class="cb-row"><span class="cb-icon">🪙</span><span class="cb-cat">Tokens</span><span class="cb-val"><span class="old">' + rawDisplay + '</span> → <span class="new">' + cleanDisplay + '</span> <span class="savings">(' + savings + '% cheaper)</span></span></div>';
+        var costSaved = estimateCostSaved(rawNum, cleanNum);
+        html += '<div class="cb-row"><span class="cb-icon">💰</span><span class="cb-cat">Cost Saved</span><span class="cb-val">~' + costSaved + '/page <span class="cb-muted">at GPT-4o rates</span></span></div>';
+      }
+      html += '</div>';
+      html += '<div class="cb-tagline">Your agent reads clean markdown. Not the internet\'s garbage.</div>';
+      return html;
+    }
+
     function escapeForDisplay(s) {
       return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
@@ -7122,21 +7177,9 @@ traffic. Advertisers are watching closely.
           // After JSON: add cleaning stats bar
           if (demo.cleaned) {
             var c = demo.cleaned;
-            // Line 1: individual breakdown
-            var parts = [];
-            if (c.scripts > 0) parts.push('<span class="cb-num">' + c.scripts + '</span> scripts');
-            if (c.styles > 0) parts.push('<span class="cb-num">' + c.styles + '</span> stylesheets');
-            if (c.ads > 0) parts.push('<span class="cb-num">' + c.ads + '</span> ads');
-            if (c.tracking > 0) parts.push('<span class="cb-num">' + c.tracking + '</span> trackers');
-            if (c.nav > 0) parts.push('<span class="cb-num">' + c.nav + '</span> nav');
             var bar = document.createElement('div');
             bar.className = 'hdw-clean-bar';
-            var headlineHtml = (c.savings > 10) ? '<div class="cb-headline">⚡ ' + c.savings + '% fewer tokens for your AI</div>' : '';
-            var tokenLineHtml = (c.savings > 10) ? (' <span class="sep">·</span> Tokens: <span class="old">' + c.rawTokens + '</span> → <span class="new">' + c.cleanTokens + '</span>' +
-              ' <span class="savings">(' + c.savings + '% saved)</span>') : '';
-            bar.innerHTML = headlineHtml +
-              '<div class="cb-line1"><span class="shield">🛡️</span> ' + parts.join(' <span class="sep">·</span> ') + ' <span class="cb-label">removed</span></div>' +
-              '<div class="cb-line2">' + c.origKB + 'KB → ' + c.cleanKB + 'KB' + tokenLineHtml + '</div>';
+            bar.innerHTML = buildImpactCard(c.ads + c.tracking, c.scripts + c.styles + c.nav, c.origKB, c.cleanKB, c.rawTokens, c.cleanTokens, c.savings, c.ads + c.tracking + c.scripts + c.styles + c.nav);
             outEl.appendChild(bar);
           }
           var linkEl = document.createElement('a');
@@ -7229,26 +7272,14 @@ traffic. Advertisers are watching closely.
             var rawTokens = te.raw || Math.round(cleaned.originalSizeKB * 1024 / 4);
             var cleanTokens = te.clean || Math.round(words * 1.3);
             var tokenSavings = te.savings || (rawTokens > 0 ? Math.round((1 - cleanTokens / rawTokens) * 100) : 0);
-            function formatTokens(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString(); }
 
-            // Build individual breakdown
-            var parts = [];
-            if (cleaned.scripts > 0) parts.push('<span class="cb-num">' + cleaned.scripts + '</span> scripts');
-            if (cleaned.styles > 0) parts.push('<span class="cb-num">' + cleaned.styles + '</span> stylesheets');
-            if (cleaned.ads > 0) parts.push('<span class="cb-num">' + cleaned.ads + '</span> ads');
-            if (cleaned.tracking > 0) parts.push('<span class="cb-num">' + cleaned.tracking + '</span> trackers');
-            if (cleaned.navigation > 0) parts.push('<span class="cb-num">' + cleaned.navigation + '</span> nav');
-            if (cleaned.socialWidgets > 0) parts.push('<span class="cb-num">' + cleaned.socialWidgets + '</span> widgets');
-            if (cleaned.popups > 0) parts.push('<span class="cb-num">' + cleaned.popups + '</span> popups');
+            var adsTrackers = (cleaned.ads || 0) + (cleaned.tracking || 0);
+            var chromeNav = (cleaned.scripts || 0) + (cleaned.styles || 0) + (cleaned.navigation || 0) + (cleaned.socialWidgets || 0) + (cleaned.popups || 0);
+            var totalRemoved = cleaned.totalRemoved || (adsTrackers + chromeNav);
 
             var statsBar = document.createElement('div');
             statsBar.className = 'hdw-clean-bar';
-            var liveHeadlineHtml = (tokenSavings > 10) ? '<div class="cb-headline">⚡ ' + tokenSavings + '% fewer tokens for your AI</div>' : '';
-            var liveTokenLineHtml = (tokenSavings > 10) ? (' <span class="sep">·</span> Tokens: <span class="old">' + formatTokens(rawTokens) + '</span> → <span class="new">' + formatTokens(cleanTokens) + '</span>' +
-              ' <span class="savings">(' + tokenSavings + '% saved)</span>') : '';
-            statsBar.innerHTML = liveHeadlineHtml +
-              '<div class="cb-line1"><span class="shield">🛡️</span> ' + parts.join(' <span class="sep">·</span> ') + ' <span class="cb-label">removed</span></div>' +
-              '<div class="cb-line2">' + cleaned.originalSizeKB + 'KB → ' + cleaned.cleanedSizeKB + 'KB' + liveTokenLineHtml + '</div>';
+            statsBar.innerHTML = buildImpactCard(adsTrackers, chromeNav, cleaned.originalSizeKB, cleaned.cleanedSizeKB, rawTokens, cleanTokens, tokenSavings, totalRemoved);
             outEl.appendChild(statsBar);
           }
 
