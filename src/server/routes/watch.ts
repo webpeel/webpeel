@@ -13,7 +13,31 @@
 
 import { Router, Request, Response } from 'express';
 import pg from 'pg';
-import { WatchManager } from '../../core/watch-manager.js';
+import { WatchManager, computeLineDiff } from '../../core/watch-manager.js';
+
+// ─── Diff-mode response shape ─────────────────────────────────────────────────
+
+interface WatchDiffResult {
+  changed: boolean;
+  /** Full current page content (always present). */
+  content: string;
+  /** Line-level diff details (only when ?diff=true and content changed). */
+  diff?: {
+    added: string[];
+    removed: string[];
+    summary: string;
+    changePercent: number;
+  };
+  /** Approximate token count of the diff text alone. */
+  diffTokens?: number;
+  /** Approximate token count of the full content. */
+  fullTokens?: number;
+}
+
+/** Rough token estimate: ~4 characters per token (GPT-style approximation). */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
 
 export function createWatchRouter(pool: pg.Pool): Router {
   const router = Router();
@@ -134,11 +158,17 @@ export function createWatchRouter(pool: pg.Pool): Router {
   });
 
   // ─── POST /v1/watch/:id/check — manual check ─────────────────────────────────
+  //
+  // Query params:
+  //   ?diff=true  — Return a line-level diff alongside the full content, with
+  //                 token-savings metadata.  Default behaviour (no param) is
+  //                 unchanged — returns the raw WatchDiff object.
 
   router.post('/v1/watch/:id/check', async (req: Request, res: Response) => {
     const accountId = requireAuth(req, res);
     if (!accountId) return;
     const watchId = req.params['id'] as string;
+    const includeDiff = req.query['diff'] === 'true';
 
     try {
       const entry = await manager.get(watchId);
@@ -151,8 +181,35 @@ export function createWatchRouter(pool: pg.Pool): Router {
         return;
       }
 
-      const diff = await manager.check(watchId);
-      res.json({ ok: true, diff });
+      const watchDiff = await manager.check(watchId);
+
+      if (includeDiff) {
+        // Compute line-level diff between previous and current content.
+        const lineDiff = computeLineDiff(watchDiff.previousContent, watchDiff.content);
+        const fullTokens = estimateTokens(watchDiff.content);
+        const diffText = [...lineDiff.added, ...lineDiff.removed].join('\n');
+        const diffTokens = estimateTokens(diffText);
+
+        const result: WatchDiffResult = {
+          changed: watchDiff.changed,
+          content: watchDiff.content,
+          diffTokens,
+          fullTokens,
+        };
+
+        if (lineDiff.changed) {
+          result.diff = {
+            added: lineDiff.added,
+            removed: lineDiff.removed,
+            summary: lineDiff.summary,
+            changePercent: lineDiff.changePercent,
+          };
+        }
+
+        res.json({ ok: true, diff: result });
+      } else {
+        res.json({ ok: true, diff: watchDiff });
+      }
     } catch (err) {
       console.error('[watch] manual check error:', err);
       res.status(500).json({

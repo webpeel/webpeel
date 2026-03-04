@@ -23,6 +23,7 @@ import {
 } from './browser-pool.js';
 import { applyStealthPatches, applyAcceptLanguageHeader } from './stealth-patches.js';
 import { validateUrl, validateUserAgent, createAbortError, type FetchResult } from './http-fetch.js';
+import { autoInteract, type AutoInteractResult } from './auto-interact.js';
 
 // ── Concurrency state (owned by this module) ─────────────────────────────────
 
@@ -447,6 +448,24 @@ export async function browserFetch(
         throwIfAborted();
       }
 
+      // Auto-interact: dismiss cookie banners, consent popups, overlays
+      // before content extraction. Runs before user-specified actions so
+      // that popups don't interfere with custom interactions.
+      let autoInteractResult: AutoInteractResult | undefined;
+      if (!isBinaryDoc) {
+        try {
+          autoInteractResult = await Promise.race([
+            autoInteract(page!),
+            new Promise<AutoInteractResult>((resolve) =>
+              setTimeout(() => resolve({ cookieBannerDismissed: false, consentHandled: false, loadMoreClicked: 0, overlaysDismissed: 0 }), 3500)
+            ),
+          ]);
+        } catch {
+          // Never block extraction
+        }
+        throwIfAborted();
+      }
+
       // Execute page actions if provided
       if (actions && actions.length > 0) {
         const { executeActions } = await import('./actions.js');
@@ -487,6 +506,7 @@ export async function browserFetch(
         finalUrl,
         contentType,
         statusCode: response?.status(),
+        autoInteractResult,
       };
     })();
 
@@ -503,6 +523,7 @@ export async function browserFetch(
     const fetchBuffer = 'buffer' in fetchData ? (fetchData as any).buffer as Buffer | undefined : undefined;
     const fetchContentType = 'contentType' in fetchData ? (fetchData as any).contentType as string | undefined : undefined;
     const fetchStatusCode = 'statusCode' in fetchData ? (fetchData as any).statusCode as number | undefined : undefined;
+    const fetchAutoInteract = 'autoInteractResult' in fetchData ? (fetchData as any).autoInteractResult as AutoInteractResult | undefined : undefined;
     const isBinaryDoc = !!fetchBuffer;
 
     // SECURITY: Limit HTML size (skip for binary documents where html is empty)
@@ -546,6 +567,7 @@ export async function browserFetch(
         screenshot: screenshotBuffer,
         page,
         browser,
+        ...(fetchAutoInteract !== undefined ? { autoInteract: fetchAutoInteract } : {}),
       };
     }
 
@@ -556,6 +578,7 @@ export async function browserFetch(
       statusCode: fetchStatusCode,
       contentType: fetchContentType,
       screenshot: screenshotBuffer,
+      ...(fetchAutoInteract !== undefined ? { autoInteract: fetchAutoInteract } : {}),
     };
   } catch (error) {
     if (error instanceof BlockedError || error instanceof WebPeelError || error instanceof TimeoutError) {

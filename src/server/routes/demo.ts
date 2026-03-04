@@ -88,6 +88,12 @@ interface CleanedSummary {
   reductionPercent: number;
 }
 
+interface TokenEstimate {
+  raw: number;
+  clean: number;
+  savings: number;
+}
+
 interface DemoResponse {
   url: string;
   title: string;
@@ -98,6 +104,7 @@ interface DemoResponse {
   demo: true;
   signUpUrl: string;
   cleaned: CleanedSummary;
+  tokenEstimate: TokenEstimate;
 }
 
 const MAX_CONTENT_LENGTH = 3000;
@@ -486,6 +493,18 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
         reductionPercent: Math.max(0, Math.min(100, reductionPercent)),
       };
 
+      // ── 7b. Token savings metrics ────────────────────────────────────────────
+      const rawTokens = Math.round(html.length / 4);
+      const cleanTokens = Math.round(markdownContent.length / 4);
+      const savingsPercent = rawTokens > 0
+        ? Math.max(0, Math.round((1 - cleanTokens / rawTokens) * 100))
+        : 0;
+      const tokenEstimate: TokenEstimate = {
+        raw: rawTokens,
+        clean: cleanTokens,
+        savings: savingsPercent,
+      };
+
       // ── 8. Truncate content ──────────────────────────────────────────────────
       const truncated = markdownContent.length > MAX_CONTENT_LENGTH;
       const content = truncated
@@ -506,6 +525,7 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
         demo: true,
         signUpUrl: SIGN_UP_URL,
         cleaned,
+        tokenEstimate,
       };
 
       demoCache.set(cacheKey, { result: response, timestamp: Date.now() });

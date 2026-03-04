@@ -76,6 +76,8 @@ export interface DomainExtractResult {
   structured: Record<string, any>;
   /** Clean markdown representation of the content */
   cleanContent: string;
+  /** Raw HTML size in characters (from the actual HTML page fetched by the extractor) */
+  rawHtmlSize?: number;
 }
 
 /** An extractor receives the raw HTML and original URL, may make API calls. */
@@ -1202,6 +1204,7 @@ async function wikipediaExtractor(_html: string, url: string): Promise<DomainExt
 
     // For full article content, use the mobile-html endpoint (mobile-sections is deprecated)
     let fullContent = '';
+    let mobileHtmlSize: number | undefined;
     try {
       const fullUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/mobile-html/${encodeURIComponent(articleTitle)}`;
       const fullResult = await simpleFetch(fullUrl, undefined, 15000, {
@@ -1209,6 +1212,7 @@ async function wikipediaExtractor(_html: string, url: string): Promise<DomainExt
         'Accept': 'text/html',
       });
       if (fullResult?.html) {
+        mobileHtmlSize = fullResult.html.length;
         // Parse sections from the mobile HTML
         const sectionMatches = fullResult.html.match(/<section[^>]*>([\s\S]*?)<\/section>/gi) || [];
         for (const section of sectionMatches) {
@@ -1243,7 +1247,7 @@ async function wikipediaExtractor(_html: string, url: string): Promise<DomainExt
 
     const cleanContent = `# ${structured.title}\n\n${structured.description ? `*${structured.description}*\n\n` : ''}${fullContent || structured.extract}`;
 
-    return { domain: 'wikipedia.org', type: 'article', structured, cleanContent };
+    return { domain: 'wikipedia.org', type: 'article', structured, cleanContent, rawHtmlSize: mobileHtmlSize };
   } catch (e) {
     if (process.env.DEBUG) console.debug('[webpeel]', 'Wikipedia API failed:', e instanceof Error ? e.message : e);
     return null;
