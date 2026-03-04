@@ -1881,34 +1881,35 @@
     /* ══ HERO TWO-COLUMN GRID ═══════════════════════════ */
     .hero-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 48px;
+      grid-template-columns: 1fr;
+      gap: 32px;
       max-width: 1200px;
       margin: 0 auto;
     }
     .hero-grid .hero-content {
-      text-align: left !important;
+      text-align: center !important;
       padding-bottom: 0 !important;
       max-width: none !important;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      align-items: center;
     }
     .hero-grid .hero-sub {
-      max-width: 480px !important;
-      margin-left: 0 !important;
+      max-width: 600px !important;
+      margin: 0 auto !important;
     }
     .hero-grid .hero-content h1 {
-      text-align: left;
+      text-align: center;
     }
     .hero-grid .hero-ctas {
-      justify-content: flex-start !important;
+      justify-content: center !important;
     }
     .hero-grid .hero-cta-note {
-      text-align: left !important;
+      text-align: center !important;
     }
     .hero-grid .hero-trust {
-      justify-content: flex-start !important;
+      justify-content: center !important;
       font-size: 12px !important;
       opacity: 0.6;
       margin-top: 12px !important;
@@ -2206,9 +2207,9 @@
       }
     }
 
-    /* ── Hero grid ───────────────────────────────────────────── */
-    .hero-grid { align-items: start !important; }
-    .hero-grid .hero-content { justify-content: flex-start !important; padding-top: 0 !important; }
+    /* ── Hero grid (stacked centered layout) ────────────────── */
+    .hero-grid { align-items: center !important; }
+    .hero-grid .hero-content { justify-content: center !important; align-items: center !important; padding-top: 0 !important; }
 
     /* ── Badge / eyebrow (LOOP-8-FINAL strongest values) ──────── */
     .hero-eyebrow {
@@ -2526,11 +2527,12 @@
   .hero-grid::after {
     content: '';
     position: absolute;
-    top: -15%; right: -8%;
-    width: 60%; height: 130%;
-    background: radial-gradient(ellipse 65% 60% at 55% 45%,
-      rgba(88,101,242,0.40) 0%,
-      rgba(99,102,241,0.18) 35%,
+    top: 30%; left: 50%;
+    transform: translateX(-50%);
+    width: 80%; height: 60%;
+    background: radial-gradient(ellipse 70% 55% at 50% 50%,
+      rgba(88,101,242,0.30) 0%,
+      rgba(99,102,241,0.12) 40%,
       transparent 70%);
     pointer-events: none;
     z-index: 0;
@@ -3301,13 +3303,12 @@
     margin-bottom: 16px !important;
   }
 
-  /* 8. Desktop: hero content left column — align-items:start so terminal top
-        edge aligns with first text element. flex on .hero-grid already set via
-        .hero-grid .hero-content { justify-content: center } — override to flex-start */
+  /* 8. Desktop: hero content stacked layout — centered */
   @media (min-width: 769px) {
     .hero-grid .hero-content {
-      justify-content: flex-start !important;
-      padding-top: 24px !important;
+      justify-content: center !important;
+      align-items: center !important;
+      padding-top: 0 !important;
     }
   }
 
@@ -3377,11 +3378,12 @@
     }
   }
 
-  /* Desktop h1 line break fix: constrain width so "Your AI agent just" doesn't break at "AI" */
+  /* Desktop h1: wider max-width for centered stacked layout */
   @media (min-width: 769px) {
     .hero-grid .hero-content h1 {
-      max-width: 540px !important;
-      line-height: 1.12 !important;
+      max-width: 800px !important;
+      line-height: 1.08 !important;
+      text-align: center !important;
     }
   }
 
@@ -3976,20 +3978,20 @@
       line-height: 1.08 !important;
       letter-spacing: -0.025em !important;
       margin-bottom: 24px !important;
-      text-align: left !important;
+      text-align: center !important;
     }
     .hero-sub {
       font-size: 17px !important;
       line-height: 1.62 !important;
       color: rgba(255,255,255,0.65) !important;
-      max-width: 35ch !important;
-      margin-bottom: 36px !important;
-      text-align: left !important;
+      max-width: 600px !important;
+      margin: 0 auto 36px !important;
+      text-align: center !important;
     }
-    .hero-ctas { justify-content: flex-start !important; }
-    .hero-cta-note { text-align: left !important; margin-top: 10px !important; color: rgba(255,255,255,0.40) !important; font-size: 12px !important; }
+    .hero-ctas { justify-content: center !important; }
+    .hero-cta-note { text-align: center !important; margin-top: 10px !important; color: rgba(255,255,255,0.40) !important; font-size: 12px !important; }
     .hero-cta-note a { color: rgba(165,180,252,0.85) !important; font-weight: 500 !important; }
-    .hero-trust { justify-content: flex-start !important; opacity: 1 !important; margin-top: 14px !important; gap: 12px !important; display: flex !important; align-items: center !important; }
+    .hero-trust { justify-content: center !important; opacity: 1 !important; margin-top: 14px !important; gap: 12px !important; display: flex !important; align-items: center !important; }
     .hero-ctas .btn-primary { min-width: 220px !important; font-size: 15px !important; padding: 13px 28px !important; }
   }
 
@@ -3999,11 +4001,12 @@
       background: rgba(12,12,22,0.95) !important;
       /* border, box-shadow, transform set in ABSOLUTE-FINAL block */
       border-radius: 12px !important;
-      max-width: 100% !important;
-      margin: 0 !important;
+      max-width: 800px !important;
+      width: 100% !important;
+      margin: 0 auto !important;
     }
     .hero-grid {
-      gap: 48px !important;
+      gap: 32px !important;
       align-items: center !important;
       max-width: 1200px !important;
       margin: 0 auto !important;
@@ -6041,13 +6044,12 @@
 .hdw-clean-bar .savings { color: #34D399 !important; font-weight: 700 !important; }
 .hdw-clean-bar .cb-headline { font-size: 13px !important; font-weight: 700 !important; color: #34D399 !important; margin-bottom: 4px !important; }
 
-/* 51. Bigger terminal + left-side spacing (textbook 8px grid rhythm) */
-/* Terminal: wider + taller */
-.hero-demo-widget { min-width: 540px !important; }
-.hdw-body { min-height: 300px !important; padding: 20px 24px !important; }
+/* 51. Bigger terminal — centered, full-width up to 800px */
+.hero-demo-widget { max-width: 800px !important; width: 100% !important; margin: 0 auto !important; min-width: 0 !important; }
+.hdw-body { min-height: 380px !important; padding: 20px 24px !important; }
 
-/* Hero grid: more room between columns */
-.hero-grid { gap: 64px !important; max-width: 1240px !important; }
+/* Hero grid: stacked layout */
+.hero-grid { gap: 32px !important; max-width: 1200px !important; }
 
 /* Left side vertical rhythm — proper spacing between elements */
 .hero-kicker { margin-bottom: 16px !important; }
@@ -6061,6 +6063,62 @@
 /* 50b. Progress bar polish */
 .hdw-loading-bar { height: 4px !important; }
 .hdw-loading-bar-fill { background: linear-gradient(90deg, #6366F1, #818CF8, #6366F1) !important; background-size: 200% 100% !important; }
+
+/* 52. Hero try-chips (quick-pick URLs below terminal) */
+.hero-try-chips {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-try-chip {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  font-family: 'Inter', sans-serif;
+}
+.hero-try-chip:hover {
+  background: rgba(99,102,241,0.15);
+  border-color: rgba(99,102,241,0.4);
+  color: #818CF8;
+}
+
+/* === MOBILE HERO FIX (stacked layout) === */
+@media (max-width: 768px) {
+  .hero-try-chips {
+    display: flex !important;
+    gap: 6px !important;
+    margin-top: 10px !important;
+    padding: 0 12px !important;
+  }
+  .hero-try-chip {
+    font-size: 11px !important;
+    padding: 5px 10px !important;
+  }
+  /* Fix URL word-break in terminal output */
+  .hero .hdw-output, .hero .hdw-body {
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
+  /* Tighten mobile terminal */
+  .hero .hero-demo-widget .hdw-body {
+    min-height: 140px !important;
+  }
+  /* Impact counter stats: smaller on mobile */
+  .hdw-impact-row {
+    font-size: 11px !important;
+    gap: 6px !important;
+  }
+}
 
   </style>
 </head>
@@ -6145,6 +6203,13 @@
             <div id="hdw-output" class="hdw-output"></div>
           </div>
         </div>
+        <!-- Quick-pick try chips -->
+        <div class="hero-try-chips">
+          <button class="hero-try-chip" data-url="https://stripe.com">Stripe</button>
+          <button class="hero-try-chip" data-url="https://github.com/microsoft/vscode">GitHub</button>
+          <button class="hero-try-chip" data-url="https://arxiv.org/abs/2301.00001">arXiv</button>
+          <button class="hero-try-chip" data-url="https://www.bbc.com/news">BBC News</button>
+        </div>
       </div><!-- /hero-grid -->
 
       <div class="hero-stats-section">
@@ -6218,56 +6283,7 @@
     </div>
   </div>
 
-  <!-- DEMO -->
-  <section class="demo-section" id="demo">
-    <div class="container">
-      <div class="demo-inner reveal">
-        <div class="section-eyebrow" style="text-align:center;">LIVE DEMO</div>
-        <h2 class="section-h2" style="text-align:center;">See it work. <span class="accent">Right now.</span></h2>
-        <p class="demo-subtitle">Pick any URL and watch WebPeel extract clean, structured content in real time. No signup required.</p>
-        <div class="demo-card-wrap reveal">
-        <div class="demo-pills">
-          <button class="demo-pill active" data-demo="hn">Hacker News</button>
-          <button class="demo-pill" data-demo="wiki">Wikipedia</button>
-          <button class="demo-pill" data-demo="yt">YouTube</button>
-          <button class="demo-pill" data-demo="example">example.com</button>
-          <button class="demo-pill" data-demo="screenshot">Screenshot</button>
-          <button class="demo-pill" data-demo="search">Search</button>
-        </div>
-        <div class="demo-widget">
-          <div class="demo-input-row">
-            <div class="demo-url-display" id="demo-url-display">https://news.ycombinator.com</div>
-            <button class="demo-extract-btn" id="demo-extract-btn">
-              <span class="demo-btn-text">Extract ↗</span>
-              <span class="demo-spinner" style="display:none;">⟳</span>
-            </button>
-          </div>
-          <div class="demo-chips">
-            <span class="demo-chip-label">Try:</span>
-            <button class="demo-chip" data-url="https://stripe.com" type="button">Stripe</button>
-            <button class="demo-chip" data-url="https://openai.com" type="button">OpenAI</button>
-            <button class="demo-chip" data-url="https://github.com/microsoft/vscode" type="button">GitHub README</button>
-            <button class="demo-chip" data-url="https://en.wikipedia.org/wiki/Artificial_intelligence" type="button">Wikipedia</button>
-          </div>
-        </div>
-        <div class="demo-result" id="demo-result">
-          <div id="demo-result-header" style="display:none;">
-            <div class="demo-meta-chips" id="demo-meta-chips"></div>
-          </div>
-          <div class="demo-content-box" id="demo-content-box">
-            <div class="demo-placeholder">
-              <div class="demo-placeholder-text">Click "Extract" to see clean markdown output</div>
-            </div>
-          </div>
-        </div>
-        </div><!-- /demo-card-wrap -->
-        <div class="demo-post-cta reveal" data-delay="2" style="text-align:center;margin-top:24px;padding:28px 0 8px;border-top:1px solid rgba(255,255,255,0.06);">
-          <p style="color:rgba(255,255,255,0.60);font-size:15px;margin-bottom:28px;max-width:420px;margin-left:auto;margin-right:auto;">That's the product. ~2,000 free fetches/month — no credit card, no setup. Takes 30 seconds.</p>
-          <a href="https://app.webpeel.dev/signup" style="display:inline-flex;align-items:center;gap:8px;padding:16px 48px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(180deg,#6B73FF 0%,#5865F2 50%,#4752C4 100%);border-radius:8px;text-decoration:none;box-shadow:0 0 0 1px rgba(99,102,241,0.4),0 8px 24px rgba(99,102,241,0.5);transition:transform 150ms ease,box-shadow 150ms ease;">Start Extracting Free →</a>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- DEMO section removed — hero terminal is the only playground -->
 
   <!-- HOW IT WORKS -->
   <section class="how-section" id="features">
@@ -6699,137 +6715,7 @@ traffic. Advertisers are watching closely.
     <a href="https://app.webpeel.dev/signup" class="btn-primary">Start Extracting Free →</a>
   </div>
 
-  <script>
-  /* ── DEMO ─────────────────────────────────────────── */
-  (function() {
-    const demoData = {
-      hn: { url: 'https://news.ycombinator.com', title: 'Hacker News', words: 737, time: 396, content: "# Hacker News\n\n1. Show HN: I built an open-source alternative to Notion\n2. Why SQLite is taking over the embedded database market\n3. The unreasonable effectiveness of simple HTML\n4. Ask HN: What are you working on this weekend?\n5. Claude 3.5 Sonnet now supports long-context tasks\n6. How we reduced our AWS bill by 90%\n7. The death of the traditional resume\n8. Rust is eating the world, one rewrite at a time\n9. Why I left Google after 12 years\n10. Show HN: A terminal UI for managing Docker containers..." },
-      wiki: { url: 'https://en.wikipedia.org/wiki/Web_scraping', title: 'Web scraping - Wikipedia', words: 3994, time: 172, content: "# Web scraping\n\n**Web scraping**, **web harvesting**, or **web data extraction** is data scraping used for extracting data from websites. Web scraping software may directly access the World Wide Web using the Hypertext Transfer Protocol or a web browser.\n\nWhile web scraping can be done manually by a software user, the term typically refers to automated processes implemented using a bot or web crawler. It is a form of copying in which specific data is gathered and copied from the web...\n\n## Techniques\n\nWeb scraping is the process of automatically mining data or collecting information from the World Wide Web. It is a field with active developments sharing a common goal with the semantic web vision..." },
-      yt: { url: 'https://www.youtube.com/watch?v=aircAruvnKk', title: 'But what is a neural network? | Deep learning chapter 1', words: 3200, time: 3428, content: "# But what is a neural network? | Deep learning chapter 1\n\n**Channel:** 3Blue1Brown | **Duration:** 18:40\n\n## Transcript\n\nThis is a 3. It's sloppily written and rendered at an extremely low resolution of 28x28 pixels, but your brain has no trouble recognizing it as a 3. And I want you to take a moment to appreciate how crazy it is that brains can do this so effortlessly.\n\nI mean, this, this and this are also recognizable as 3s, even though the specific values of each pixel is very different from one image to the next..." },
-      example: { url: 'https://example.com', title: 'Example Domain', words: 23, time: 42, content: "# Example Domain\n\nThis domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.\n\n[More information...](https://www.iana.org/domains/example)" },
-      screenshot: { url: 'POST /v1/screenshot', type: 'screenshot' },
-      search: { url: 'https://api.webpeel.dev/v1/search?q=webpeel+vs+firecrawl', type: 'search', time: 310 }
-    };
-    let current = 'hn';
-    const pills = document.querySelectorAll('.demo-pill');
-    const urlDisplay = document.getElementById('demo-url-display');
-    const extractBtn = document.getElementById('demo-extract-btn');
-    const resultHeader = document.getElementById('demo-result-header');
-    const metaChips = document.getElementById('demo-meta-chips');
-    const contentBox = document.getElementById('demo-content-box');
-
-    if (!extractBtn) return;
-
-    pills.forEach(p => p.addEventListener('click', function() {
-      pills.forEach(x => x.classList.remove('active'));
-      this.classList.add('active');
-      current = this.dataset.demo;
-      urlDisplay.textContent = demoData[current].url;
-      contentBox.innerHTML = '<div class="demo-placeholder"><div class="demo-placeholder-text">Click "Extract" to see output</div></div>';
-      resultHeader.style.display = 'none';
-    }));
-
-    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-    function runExtract() {
-      const data = demoData[current];
-      const btnText = extractBtn.querySelector('.demo-btn-text');
-      const spinner = extractBtn.querySelector('.demo-spinner');
-      btnText.style.display = 'none'; spinner.style.display = 'inline-block';
-      extractBtn.disabled = true;
-      const delay = data.time ? Math.min(data.time, 700) : 400;
-      setTimeout(() => {
-        btnText.style.display = ''; spinner.style.display = 'none';
-        extractBtn.disabled = false;
-
-        if (data.type === 'screenshot') {
-          metaChips.innerHTML =
-            '<span class="demo-chip url">POST /v1/screenshot</span>' +
-            '<span class="demo-chip time">📸 Server-rendered PNG/JPEG</span>';
-          resultHeader.style.display = '';
-          contentBox.innerHTML =
-            '<div style="font-family:var(--font-mono);font-size:var(--text-xs);line-height:1.7;">' +
-            '<div style="color:#3F3F46;margin-bottom:6px;">// Response from api.webpeel.dev/v1/screenshot</div>' +
-            '<div><span style="color:#52525B;">{</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"url"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"https://stripe.com"</span><span style="color:#52525B;">,</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"format"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"png"</span><span style="color:#52525B;">,</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"width"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">1280</span><span style="color:#52525B;">,</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"height"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">800</span><span style="color:#52525B;">,</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"elapsed"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">1842</span><span style="color:#52525B;">,</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"image"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."</span></div>' +
-            '<div><span style="color:#52525B;">}</span></div>' +
-            '</div>' +
-            '<hr class="demo-json-sep">' +
-            '<div style="text-align:center;padding:20px 0;">' +
-            '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px;">Screenshots render full pages with JavaScript — fonts, animations, everything.</div>' +
-            '<a href="https://app.webpeel.dev/playground" target="_blank" rel="noopener" style="display:inline-block;padding:8px 20px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">Try it in the API Playground →</a>' +
-            '</div>';
-          return;
-        }
-
-        if (data.type === 'search') {
-          metaChips.innerHTML =
-            '<span class="demo-chip url">GET /v1/search</span>' +
-            '<span class="demo-chip words">🔍 5 results</span>' +
-            '<span class="demo-chip time">⚡ ' + data.time + 'ms</span>';
-          resultHeader.style.display = '';
-          contentBox.innerHTML =
-            '<div style="font-family:var(--font-mono);font-size:var(--text-xs);line-height:1.7;">' +
-            '<div style="color:#3F3F46;margin-bottom:6px;">// Response from api.webpeel.dev/v1/search?q=webpeel+vs+firecrawl</div>' +
-            '<div><span style="color:#52525B;">{</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"query"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"webpeel vs firecrawl"</span><span style="color:#52525B;">,</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"elapsed"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">' + data.time + '</span><span style="color:#52525B;">,</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"results"</span><span style="color:#52525B;">: [</span></div>' +
-            '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#52525B;">{</span> <span style="color:#818CF8;">"title"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"WebPeel vs Firecrawl: Which should you use?"</span><span style="color:#52525B;">,</span> <span style="color:#818CF8;">"url"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"https://dev.to/..."</span> <span style="color:#52525B;">},</span></div>' +
-            '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#52525B;">{</span> <span style="color:#818CF8;">"title"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"Open-source web scrapers compared in 2025"</span><span style="color:#52525B;">,</span> <span style="color:#818CF8;">"url"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"https://hackernews.com/..."</span> <span style="color:#52525B;">},</span></div>' +
-            '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#52525B;">{</span> <span style="color:#818CF8;">"title"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"WebPeel: AI-ready scraping for LLM agents"</span><span style="color:#52525B;">,</span> <span style="color:#818CF8;">"url"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"https://webpeel.dev/blog/..."</span> <span style="color:#52525B;">},</span></div>' +
-            '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#52525B;">{</span> <span style="color:#818CF8;">"title"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"Firecrawl GitHub – web crawling API"</span><span style="color:#52525B;">,</span> <span style="color:#818CF8;">"url"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"https://github.com/mendableai/firecrawl"</span> <span style="color:#52525B;">},</span></div>' +
-            '<div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#52525B;">{</span> <span style="color:#818CF8;">"title"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"Best web scraping tools for AI agents 2025"</span><span style="color:#52525B;">,</span> <span style="color:#818CF8;">"url"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"https://medium.com/..."</span> <span style="color:#52525B;">}</span></div>' +
-            '<div>&nbsp;&nbsp;<span style="color:#52525B;">]</span></div>' +
-            '<div><span style="color:#52525B;">}</span></div>' +
-            '</div>';
-          return;
-        }
-
-        metaChips.innerHTML =
-          '<span class="demo-chip url">' + esc(data.url) + '</span>' +
-          '<span class="demo-chip words">📝 ' + data.words.toLocaleString() + ' words</span>' +
-          '<span class="demo-chip time">⚡ ' + data.time + 'ms</span>';
-        resultHeader.style.display = '';
-        const snippet = esc(data.content.slice(0, 90).replace(/\n/g,' ')) + '...';
-        const jsonHtml =
-          '<div style="color:#3F3F46;font-size:var(--text-xs);margin-bottom:6px;">// Response from api.webpeel.dev</div>' +
-          '<div><span style="color:#52525B;">{</span></div>' +
-          '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"title"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"' + esc(data.title) + '"</span><span style="color:#52525B;">,</span></div>' +
-          '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"words"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">' + data.words + '</span><span style="color:#52525B;">,</span></div>' +
-          '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"elapsed"</span><span style="color:#52525B;">:</span> <span style="color:#FCD34D;">' + data.time + '</span><span style="color:#52525B;">,</span></div>' +
-          '<div>&nbsp;&nbsp;<span style="color:#818CF8;">"content"</span><span style="color:#52525B;">:</span> <span style="color:#86EFAC;">"' + snippet + '"</span></div>' +
-          '<div><span style="color:#52525B;">}</span></div>';
-        const mdLines = data.content.split('\n').map(l => l.replace(/</g,'&lt;')).join('\n');
-        const mdHtml = '<pre style="white-space:pre-wrap;font-family:var(--font-mono);font-size:var(--text-xs);line-height:1.6;color:#94A3B8;margin:0;">' + mdLines + '</pre>';
-        contentBox.innerHTML =
-          '<div style="font-family:var(--font-mono);font-size:var(--text-xs);line-height:1.7;">' + jsonHtml + '</div>' +
-          '<hr class="demo-json-sep">' +
-          '<div style="font-size:var(--text-xs);color:#52525B;margin-bottom:6px;font-family:var(--font-body);">// Extracted content (markdown)</div>' +
-          mdHtml;
-      }, delay);
-    }
-
-    extractBtn.addEventListener('click', runExtract);
-
-    // Demo chips — click to prefill URL and run
-    document.querySelectorAll('.demo-chip').forEach(function(chip) {
-      chip.addEventListener('click', function() {
-        if (urlDisplay) {
-          urlDisplay.textContent = chip.dataset.url;
-          runExtract();
-        }
-      });
-    });
-
-    setTimeout(runExtract, 600);
-  })();
-  </script>
+  <!-- DEMO script removed — hero terminal handles all demo functionality -->
 
   <script>
   /* ── INTERACTIONS ─────────────────────────────────── */
@@ -6839,7 +6725,7 @@ traffic. Advertisers are watching closely.
     /* ── Nav scroll toggle ─────────────────────────── */
     const nav = document.getElementById('nav');
     const heroSection = document.getElementById('hero-section');
-    const demoSection = document.getElementById('demo');
+    const demoSection = null; /* demo section removed */
     /* Track which dark sections are visible; nav is transparent when any are */
     const darkVisible = new Set();
     let pastTop = false;
@@ -7245,7 +7131,7 @@ traffic. Advertisers are watching closely.
           }
           var linkEl = document.createElement('a');
           linkEl.className = 'hdw-view-link';
-          linkEl.href = '#demo';
+          linkEl.href = 'https://app.webpeel.dev/playground';
           linkEl.textContent = 'View full response →';
           outEl.appendChild(linkEl);
           animTimer = setTimeout(function() { linkEl.classList.add('visible'); }, 200);
@@ -7460,6 +7346,19 @@ traffic. Advertisers are watching closely.
       }
     });
   })();
+
+  /* ── Hero try-chips ───────────────────────────────── */
+  document.querySelectorAll('.hero-try-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      var url = this.getAttribute('data-url');
+      var input = document.getElementById('hdw-url-input');
+      if (input) {
+        input.value = url;
+        var btn = document.getElementById('hdw-run-btn');
+        if (btn) btn.click();
+      }
+    });
+  });
 
   </script>
 </body>
