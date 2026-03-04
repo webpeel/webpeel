@@ -237,7 +237,17 @@ export function createApp(config: ServerConfig = {}): Express {
   });
 
   // Demo endpoint — unauthenticated, must be before auth middleware
-  app.use(createDemoRouter());
+  app.get('/v1/demo', async (req: Request, res: Response) => {
+    log.info('Demo endpoint hit');
+    res.json({ status: 'demo route works', query: req.query });
+  });
+  try {
+    const demoRouter = createDemoRouter();
+    app.use(demoRouter);
+    log.info('Demo router registered at /v1/demo');
+  } catch (err) {
+    log.error('Failed to register demo router:', err);
+  }
 
   // Apply auth middleware globally
   app.use(createAuthMiddleware(authStore));
