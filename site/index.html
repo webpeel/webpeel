@@ -6013,55 +6013,76 @@
 }
 
 /* 50. Cleaning stats footer bar — two lines */
-/* === Impact Card — Clean Terminal Style === */
+/* === Impact Card — Horizontal Dashboard Style === */
 .hdw-clean-bar {
-  padding: 10px 16px 10px !important;
+  padding: 12px 16px 10px !important;
   margin-top: 8px !important;
   border-top: 1px solid rgba(255,255,255,0.06) !important;
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace !important;
-  font-size: 11.5px !important;
-  line-height: 1.7 !important;
-  color: rgba(255,255,255,0.45) !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  text-align: center !important;
 }
 .hdw-clean-bar .cb-header {
+  font-size: 11px !important;
   color: #34D399 !important;
   font-weight: 600 !important;
-  font-size: 11.5px !important;
-  margin-bottom: 4px !important;
+  letter-spacing: 0.03em !important;
+  margin-bottom: 10px !important;
 }
-.hdw-clean-bar .cb-header .cb-check { color: #34D399 !important; }
-.hdw-clean-bar .cb-header .cb-count { color: rgba(255,255,255,0.8) !important; font-weight: 700 !important; }
-.hdw-clean-bar .cb-rows {
+.hdw-clean-bar .cb-header .cb-count { color: rgba(255,255,255,0.85) !important; font-weight: 700 !important; }
+.hdw-clean-bar .cb-stats {
   display: flex !important;
-  flex-direction: column !important;
+  justify-content: center !important;
   gap: 0 !important;
+  flex-wrap: wrap !important;
 }
-.hdw-clean-bar .cb-r {
-  display: flex !important;
-  align-items: baseline !important;
+.hdw-clean-bar .cb-stat {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  text-align: center !important;
+  padding: 0 8px !important;
+  position: relative !important;
 }
-.hdw-clean-bar .cb-k {
+.hdw-clean-bar .cb-stat + .cb-stat::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 2px !important;
+  bottom: 2px !important;
+  width: 1px !important;
+  background: rgba(255,255,255,0.06) !important;
+}
+.hdw-clean-bar .cb-num {
+  display: block !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.85) !important;
+  line-height: 1.2 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.hdw-clean-bar .cb-num.gr { color: #34D399 !important; }
+.hdw-clean-bar .cb-num.hl { color: #A5B4FC !important; }
+.hdw-clean-bar .cb-lbl {
+  display: block !important;
+  font-size: 10px !important;
   color: rgba(255,255,255,0.35) !important;
-  width: 10ch !important;
-  flex-shrink: 0 !important;
-  text-align: left !important;
-  display: inline-block !important;
+  margin-top: 2px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 500 !important;
 }
-.hdw-clean-bar .cb-v {
-  color: rgba(255,255,255,0.6) !important;
-}
-.hdw-clean-bar .cb-v .hl { color: #A5B4FC !important; font-weight: 600 !important; }
-.hdw-clean-bar .cb-v .gr { color: #34D399 !important; font-weight: 600 !important; }
-.hdw-clean-bar .cb-v .dm { color: rgba(255,255,255,0.25) !important; text-decoration: line-through !important; }
-.hdw-clean-bar .cb-v .mt { color: rgba(255,255,255,0.3) !important; font-size: 10.5px !important; }
 .hdw-clean-bar .cb-tag {
-  margin-top: 6px !important;
-  padding-top: 6px !important;
+  margin-top: 10px !important;
+  padding-top: 8px !important;
   border-top: 1px solid rgba(255,255,255,0.04) !important;
-  color: rgba(255,255,255,0.25) !important;
+  color: rgba(255,255,255,0.22) !important;
   font-size: 10.5px !important;
-  font-family: 'Inter', -apple-system, sans-serif !important;
   font-style: italic !important;
+}
+@media (max-width: 480px) {
+  .hdw-clean-bar .cb-stats { gap: 4px 0 !important; }
+  .hdw-clean-bar .cb-stat { padding: 0 4px !important; }
+  .hdw-clean-bar .cb-num { font-size: 15px !important; }
+  .hdw-clean-bar .cb-lbl { font-size: 8.5px !important; }
 }
 
 /* 51. Bigger terminal — centered, full-width up to 800px */
@@ -7091,21 +7112,19 @@ traffic. Advertisers are watching closely.
       return saved >= 0.01 ? '$' + saved.toFixed(2) : '<$0.01';
     }
     function buildImpactCard(adsTrackers, chromeNav, origKB, cleanKB, rawTokens, cleanTokens, savings, totalRemoved) {
-      var rawDisplay = (typeof rawTokens === 'string') ? rawTokens : formatTokens(rawTokens);
-      var cleanDisplay = (typeof cleanTokens === 'string') ? cleanTokens : formatTokens(cleanTokens);
       var rawNum = (typeof rawTokens === 'number') ? rawTokens : parseFloat(String(rawTokens).replace('K','')) * 1000;
       var cleanNum = (typeof cleanTokens === 'number') ? cleanTokens : parseFloat(String(cleanTokens).replace('K','')) * 1000;
       var sizeReduction = origKB > 0 ? Math.round((1 - cleanKB / origKB) * 100) : 0;
+      var costSaved = estimateCostSaved(rawNum, cleanNum);
 
-      var html = '<div class="cb-header"><span class="cb-check">✓</span> cleaned for ai — <span class="cb-count">' + totalRemoved + '</span> elements removed</div>';
-      html += '<div class="cb-rows">';
-      html += '<div class="cb-r"><span class="cb-k">blocked</span><span class="cb-v"><span class="hl">' + adsTrackers + '</span> ads & trackers</span></div>';
-      html += '<div class="cb-r"><span class="cb-k">stripped</span><span class="cb-v"><span class="hl">' + chromeNav + '</span> scripts, styles, nav</span></div>';
-      html += '<div class="cb-r"><span class="cb-k">size</span><span class="cb-v"><span class="dm">' + fmtKB(origKB) + ' KB</span> → <span class="hl">' + fmtKB(cleanKB) + ' KB</span> <span class="gr">(' + sizeReduction + '% smaller)</span></span></div>';
+      var html = '<div class="cb-header">✓ Cleaned for AI — <span class="cb-count">' + totalRemoved + '</span> elements removed</div>';
+      html += '<div class="cb-stats">';
+      html += '<div class="cb-stat"><span class="cb-num">' + adsTrackers + '</span><span class="cb-lbl">Ads blocked</span></div>';
+      html += '<div class="cb-stat"><span class="cb-num">' + chromeNav + '</span><span class="cb-lbl">Elements stripped</span></div>';
+      html += '<div class="cb-stat"><span class="cb-num gr">' + sizeReduction + '%</span><span class="cb-lbl">Smaller</span></div>';
       if (savings > 10) {
-        html += '<div class="cb-r"><span class="cb-k">tokens</span><span class="cb-v"><span class="dm">' + rawDisplay + '</span> → <span class="hl">' + cleanDisplay + '</span> <span class="gr">(' + savings + '% cheaper)</span></span></div>';
-        var costSaved = estimateCostSaved(rawNum, cleanNum);
-        html += '<div class="cb-r"><span class="cb-k">saved</span><span class="cb-v"><span class="gr">~' + costSaved + '</span>/page <span class="mt">at GPT-4o rates</span></span></div>';
+        html += '<div class="cb-stat"><span class="cb-num gr">' + savings + '%</span><span class="cb-lbl">Fewer tokens</span></div>';
+        html += '<div class="cb-stat"><span class="cb-num hl">' + costSaved + '</span><span class="cb-lbl">Saved / page</span></div>';
       }
       html += '</div>';
       html += '<div class="cb-tag">Your agent gets clean markdown. Not the internet\'s garbage.</div>';
