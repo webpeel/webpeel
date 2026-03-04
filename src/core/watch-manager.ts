@@ -52,6 +52,70 @@ export interface WatchDiff {
   addedText: string[];
   /** Paragraph-level text blocks present in old content but not in new. */
   removedText: string[];
+  /** Current fetched page content (markdown). */
+  content: string;
+  /** Previous content snapshot, if available. */
+  previousContent: string;
+}
+
+// ─── Line-level diff (for ?diff=true mode) ────────────────────────────────────
+
+export interface LineDiff {
+  /** Whether any lines changed between old and new content. */
+  changed: boolean;
+  /** Lines present in new content but not in old. */
+  added: string[];
+  /** Lines present in old content but not in new. */
+  removed: string[];
+  /** One-line human-readable description of the change. */
+  summary: string;
+  /** Percentage of lines that changed (0–100). */
+  changePercent: number;
+}
+
+/**
+ * Compute a simple Set-based line diff between two content strings.
+ *
+ * Splits both versions by newline, filters blank lines, then computes
+ * symmetric differences to find added/removed lines.  Change percentage
+ * is relative to the larger of the two line-count sets.
+ *
+ * @example
+ * ```typescript
+ * const d = computeLineDiff('line1\nline2', 'line1\nline2\nline3');
+ * d.added   // ['line3']
+ * d.removed // []
+ * d.changed // true
+ * ```
+ */
+export function computeLineDiff(oldContent: string, newContent: string): LineDiff {
+  const oldLines = new Set(oldContent.split('\n').filter(l => l.trim()));
+  const newLines = new Set(newContent.split('\n').filter(l => l.trim()));
+
+  const added = [...newLines].filter(l => !oldLines.has(l));
+  const removed = [...oldLines].filter(l => !newLines.has(l));
+
+  const maxLen = Math.max(oldLines.size, newLines.size);
+  const changePercent =
+    maxLen === 0 ? 0 : Math.min(100, Math.round(((added.length + removed.length) / maxLen) * 100));
+
+  const changed = added.length > 0 || removed.length > 0;
+
+  let summary: string;
+  if (!changed) {
+    summary = 'No changes detected.';
+  } else if (changePercent < 5) {
+    summary = `Minor wording changes (${changePercent}% changed)`;
+  } else {
+    const parts: string[] = [];
+    if (added.length > 0)
+      parts.push(`${added.length} line${added.length !== 1 ? 's' : ''} added`);
+    if (removed.length > 0)
+      parts.push(`${removed.length} line${removed.length !== 1 ? 's' : ''} removed`);
+    summary = parts.join(', ');
+  }
+
+  return { changed, added, removed, summary, changePercent };
 }
 
 // ─── Internal helpers ──────────────────────────────────────────────────────────
@@ -383,6 +447,8 @@ export class WatchManager {
         summary,
         addedText,
         removedText,
+        content: currentContent,
+        previousContent: prevSnapshot?.content ?? '',
       };
     } catch (error) {
       const errMsg = (error instanceof Error ? error.message : String(error)).slice(0, 500);

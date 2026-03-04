@@ -117,6 +117,8 @@ export interface PipelineContext {
   serverMarkdown?: boolean;
   /** Non-fatal warnings accumulated during the pipeline run */
   warnings: string[];
+  /** Raw HTML size in characters (measured from fetched content before any conversion) */
+  rawHtmlSize?: number;
 }
 
 /** Create the initial PipelineContext with defaults */
@@ -372,6 +374,10 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       if (ddResult && ddResult.cleanContent.length > 50) {
         ctx.domainData = ddResult;
         ctx.content = ddResult.cleanContent;
+        // Capture raw HTML size from the extractor (e.g. Wikipedia mobile-html size)
+        if (ddResult.rawHtmlSize && ddResult.rawHtmlSize > 0) {
+          ctx.rawHtmlSize = ddResult.rawHtmlSize;
+        }
         // Create minimal fetchResult so downstream stages don't crash
         ctx.fetchResult = {
           html: ddResult.cleanContent,
@@ -438,6 +444,9 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
           ctx.timer.end('fetch');
           ctx.domainData = ddResult;
           ctx.content = ddResult.cleanContent;
+          if (ddResult.rawHtmlSize && ddResult.rawHtmlSize > 0) {
+            ctx.rawHtmlSize = ddResult.rawHtmlSize;
+          }
           ctx.fetchResult = {
             html: ddResult.cleanContent,
             url: ctx.url,
@@ -517,6 +526,9 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       }
     }
   }
+
+  // Capture raw HTML size BEFORE any processing (accurate measurement of original content)
+  ctx.rawHtmlSize = fetchResult.html?.length || 0;
 
   ctx.fetchResult = fetchResult;
 
@@ -1239,6 +1251,13 @@ export function buildResult(ctx: PipelineContext): PeelResult {
   const tokens = estimateTokens(ctx.content);
   const fingerprint = createHash('sha256').update(ctx.content).digest('hex').slice(0, 16);
 
+  // Token savings metrics — only when raw HTML size was captured (from actual fetch or domain extractor)
+  const rawHtmlSize = ctx.rawHtmlSize ?? 0;
+  const rawTokenEstimate = rawHtmlSize > 0 ? Math.round(rawHtmlSize / 4) : undefined;
+  const tokenSavingsPercent = rawTokenEstimate !== undefined && rawTokenEstimate > 0
+    ? Math.max(0, Math.round((1 - tokens / rawTokenEstimate) * 100))
+    : undefined;
+
   // Build freshness from fetchResult response headers
   const freshness: PeelResult['freshness'] = {
     ...(fetchResult.responseHeaders?.['last-modified'] ? { lastModified: fetchResult.responseHeaders['last-modified'] } : {}),
@@ -1319,5 +1338,8 @@ export function buildResult(ctx: PipelineContext): PeelResult {
     ...(ctx.warnings.length > 0 ? { warnings: ctx.warnings } : {}),
     ...(ragChunks !== undefined ? { chunks: ragChunks } : {}),
     ...(ctx.serverMarkdown ? { serverMarkdown: true } : {}),
+    ...(rawTokenEstimate !== undefined ? { rawTokenEstimate } : {}),
+    ...(tokenSavingsPercent !== undefined ? { tokenSavingsPercent } : {}),
+    ...(fetchResult.autoInteract !== undefined ? { autoInteract: fetchResult.autoInteract } : {}),
   };
 }

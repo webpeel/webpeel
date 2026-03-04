@@ -429,6 +429,8 @@ export interface FetchResult {
   page?: import('playwright').Page;
   /** Playwright browser object (only available in browser/stealth mode, must be closed by caller) */
   browser?: import('playwright').Browser;
+  /** Auto-interact result: what cookie banners / overlays were dismissed before extraction */
+  autoInteract?: import('./auto-interact.js').AutoInteractResult;
 }
 
 // ── simpleFetch ───────────────────────────────────────────────────────────────

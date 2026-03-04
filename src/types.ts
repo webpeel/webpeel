@@ -329,6 +329,12 @@ export interface PeelResult {
   warnings?: string[];
   /** True when server returned pre-rendered markdown directly (Content-Type: text/markdown) */
   serverMarkdown?: boolean;
+  /** Auto-interact summary: cookie banners / overlays dismissed before content extraction (browser mode only) */
+  autoInteract?: import('./core/auto-interact.js').AutoInteractResult;
+  /** Estimated tokens if you fed the raw HTML to an LLM (~4 chars per token) */
+  rawTokenEstimate?: number;
+  /** Token savings percentage compared to raw HTML (how much cheaper WebPeel is) */
+  tokenSavingsPercent?: number;
   /** Content chunks (when chunk option is enabled) */
   chunks?: Array<{
     index: number;

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { computeFingerprint, computeParagraphDiff, WatchManager } from '../core/watch-manager.js';
+import { computeFingerprint, computeParagraphDiff, computeLineDiff, WatchManager } from '../core/watch-manager.js';
 import type { WatchEntry } from '../core/watch-manager.js';
 
 // ---------------------------------------------------------------------------
@@ -104,6 +104,109 @@ describe('computeParagraphDiff', () => {
     const { addedText, removedText } = computeParagraphDiff(old, next);
     expect(addedText[0].length).toBeLessThanOrEqual(500);
     expect(removedText[0].length).toBeLessThanOrEqual(500);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Line-level diff (computeLineDiff)
+// ---------------------------------------------------------------------------
+
+describe('computeLineDiff', () => {
+  it('detects added content', () => {
+    const old = 'line1\nline2\nline3';
+    const new_ = 'line1\nline2\nline3\nline4';
+    const diff = computeLineDiff(old, new_);
+    expect(diff.added).toContain('line4');
+    expect(diff.removed).toEqual([]);
+    expect(diff.changed).toBe(true);
+  });
+
+  it('detects removed content', () => {
+    const old = 'line1\nline2\nline3';
+    const new_ = 'line1\nline3';
+    const diff = computeLineDiff(old, new_);
+    expect(diff.removed).toContain('line2');
+    expect(diff.added).toEqual([]);
+    expect(diff.changed).toBe(true);
+  });
+
+  it('detects both added and removed lines', () => {
+    const old = 'line1\nline2\nline3';
+    const new_ = 'line1\nline3\nline4';
+    const diff = computeLineDiff(old, new_);
+    expect(diff.added).toContain('line4');
+    expect(diff.removed).toContain('line2');
+    expect(diff.changed).toBe(true);
+  });
+
+  it('returns changed=false for identical content', () => {
+    const text = 'line1\nline2\nline3';
+    const diff = computeLineDiff(text, text);
+    expect(diff.changed).toBe(false);
+    expect(diff.added).toEqual([]);
+    expect(diff.removed).toEqual([]);
+    expect(diff.changePercent).toBe(0);
+  });
+
+  it('returns a non-empty summary when changed', () => {
+    const diff = computeLineDiff('line1\nline2', 'line1\nline2\nline3');
+    expect(diff.summary).not.toBe('No changes detected.');
+    expect(diff.summary.length).toBeGreaterThan(0);
+  });
+
+  it('returns "No changes detected." summary when unchanged', () => {
+    const diff = computeLineDiff('same content', 'same content');
+    expect(diff.summary).toBe('No changes detected.');
+  });
+
+  it('calculates changePercent correctly', () => {
+    // 3 old lines, 3 new lines (1 added, 1 removed) → 2/3 * 100 ≈ 67%
+    const diff = computeLineDiff('a\nb\nc', 'a\nb\nd');
+    expect(diff.changePercent).toBeGreaterThan(0);
+    expect(diff.changePercent).toBeLessThanOrEqual(100);
+  });
+
+  it('handles empty old content (all lines are new)', () => {
+    const diff = computeLineDiff('', 'line1\nline2');
+    expect(diff.added).toContain('line1');
+    expect(diff.added).toContain('line2');
+    expect(diff.removed).toEqual([]);
+    expect(diff.changed).toBe(true);
+  });
+
+  it('handles empty new content (all lines removed)', () => {
+    const diff = computeLineDiff('line1\nline2', '');
+    expect(diff.removed).toContain('line1');
+    expect(diff.removed).toContain('line2');
+    expect(diff.added).toEqual([]);
+    expect(diff.changed).toBe(true);
+  });
+
+  it('ignores blank/whitespace-only lines', () => {
+    // Blank lines should not show up in added/removed
+    const old = 'line1\n\n\nline2';
+    const new_ = 'line1\n\nline2\n\n\n';
+    const diff = computeLineDiff(old, new_);
+    expect(diff.changed).toBe(false);
+    expect(diff.added).toEqual([]);
+    expect(diff.removed).toEqual([]);
+  });
+
+  it('generates minor-wording summary for small changes', () => {
+    // Create content with 100 lines and change only 1 (<5%)
+    const lines = Array.from({ length: 100 }, (_, i) => `line${i}`);
+    const old = lines.join('\n');
+    const newLines = [...lines];
+    newLines[99] = 'lineChanged';
+    const new_ = newLines.join('\n');
+    const diff = computeLineDiff(old, new_);
+    expect(diff.changePercent).toBeLessThan(5);
+    expect(diff.summary).toContain('Minor wording changes');
+  });
+
+  it('changePercent is capped at 100', () => {
+    const diff = computeLineDiff('a\nb\nc', 'd\ne\nf');
+    expect(diff.changePercent).toBeLessThanOrEqual(100);
   });
 });
 
