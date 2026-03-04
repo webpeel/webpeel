@@ -5557,7 +5557,13 @@
 /* 27. How It Works — reduce section-top void, boost card borders + ghost numbers */
 .how-section { padding-top: 80px !important; }
 .how-step { border-color: rgba(255,255,255,0.12) !important; }
-.how-step-num, .step-num, .how-step-number { opacity: 0.14 !important; }
+/* Step numbers: small ghost watermark, not dominating */
+.how-step-num, .step-num, .how-step-number {
+  font-size: 64px !important;
+  opacity: 0.06 !important;
+  top: 8px !important;
+  right: 16px !important;
+}
 
 /* 28. Features — LLM card desc was too dark, all feat-card-desc normalize */
 .feat-card-desc { color: rgba(255,255,255,0.70) !important; }
