@@ -4071,11 +4071,24 @@
     .hero-mobile-code { display: none !important; }
     .hero-cta-note { order: 7 !important; width: 100% !important; text-align: center !important; margin: 10px 0 0 !important; font-size: 11.5px !important; }
 
-    /* Show interactive widget on mobile */
-    .hero .hero-demo-widget { display: block !important; order: 6 !important; width: 100% !important; min-width: 0 !important; margin: 16px 0 0 !important; }
-    .hero .hero-demo-widget .hdw-body { min-height: 200px !important; }
+    /* Compact mobile: hide redundant elements to get widget above fold */
+    .hero-kicker { display: none !important; }
+    .hero-eyebrow { display: none !important; }
+    .hero h1 { font-size: 34px !important; margin-bottom: 6px !important; }
+    .hero-sub { font-size: 14px !important; margin-bottom: 8px !important; }
+    .hero-ctas { margin-top: 12px !important; gap: 8px !important; }
+    .hero-ctas .btn-primary { min-height: 48px !important; padding: 12px 20px !important; }
+    .hero-ctas .btn-ghost { display: none !important; }
+
+    /* Show interactive widget on mobile — order 6, right after CTAs */
+    .hero .hero-demo-widget { display: block !important; order: 6 !important; width: 100% !important; min-width: 0 !important; margin: 12px 0 0 !important; }
+    .hero .hero-demo-widget .hdw-body { min-height: 180px !important; padding: 12px !important; }
     .hero .hero-demo-widget .hdw-url-input { font-size: 14px !important; }
     .hero .hero-demo-widget .hdw-run-btn { font-size: 13px !important; min-height: 40px !important; padding: 0 14px !important; }
+    .hero .hero-demo-widget .hdw-impact-row { font-size: 12px !important; }
+    .hero .hero-demo-widget .hdw-impact-header { font-size: 10px !important; }
+    .hero-trust { order: 7 !important; margin-top: 8px !important; }
+    .hero-cta-note { order: 8 !important; }
 
     /* Decorative elements off on mobile */
     .hero-ambient-orb, .hero-card-bloom, .hero-terminal-glow { display: none !important; }
@@ -7238,7 +7251,7 @@ traffic. Advertisers are watching closely.
           runDemo(currentIdx);
         }
         scheduleCycle();
-      }, 8000);
+      }, 12000);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
