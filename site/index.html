@@ -6007,22 +6007,36 @@
   .hero-cta-note { font-size: 10.5px !important; margin-top: 4px !important; }
 }
 
-/* 50. Cleaning stats footer bar */
+/* 50. Cleaning stats footer bar — two lines */
 .hdw-clean-bar {
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 6px !important;
-  padding: 8px 0 4px !important;
+  padding: 8px 0 2px !important;
   margin-top: 8px !important;
   border-top: 1px solid rgba(255,255,255,0.08) !important;
   font-size: 11.5px !important;
   color: rgba(255,255,255,0.45) !important;
   font-family: 'Inter', -apple-system, sans-serif !important;
 }
+.hdw-clean-bar .cb-line1 {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  margin-bottom: 3px !important;
+}
+.hdw-clean-bar .cb-line2 {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  padding-left: 22px !important;
+  font-size: 11px !important;
+  color: rgba(255,255,255,0.35) !important;
+}
 .hdw-clean-bar .shield { font-size: 13px !important; }
-.hdw-clean-bar .sep { color: rgba(255,255,255,0.15) !important; }
-.hdw-clean-bar .old { text-decoration: line-through !important; color: rgba(255,255,255,0.25) !important; }
+.hdw-clean-bar .sep { color: rgba(255,255,255,0.12) !important; }
+.hdw-clean-bar .cb-num { color: #A5B4FC !important; font-weight: 700 !important; font-variant-numeric: tabular-nums !important; }
+.hdw-clean-bar .cb-label { color: rgba(255,255,255,0.3) !important; }
+.hdw-clean-bar .old { text-decoration: line-through !important; color: rgba(255,255,255,0.2) !important; }
 .hdw-clean-bar .new { color: #A5B4FC !important; font-weight: 600 !important; }
 .hdw-clean-bar .savings { color: #34D399 !important; font-weight: 700 !important; }
 
@@ -7112,27 +7126,23 @@ traffic. Advertisers are watching closely.
         cmd: '$ webpeel "wikipedia.org/wiki/AI"',
         url: 'https://en.wikipedia.org/wiki/Artificial_intelligence',
         lines: [
-          '{',
-          '  "title": "Artificial intelligence - Wikipedia",',
-          '  "content": "# Artificial Intelligence\\nAI, in its broadest sense, is intelligence exhibited by machines...",',
-          '  "wordCount": 18420,',
-          '  "fetchTimeMs": 380',
-          '}'
+          '"title": "Artificial intelligence - Wikipedia",',
+          '"content": "# Artificial Intelligence\\nAI, in its broadest sense, is intelligence exhibited by machines...",',
+          '"wordCount": 18420,',
+          '"fetchTimeMs": 380'
         ],
-        cleaned: { total: 52, origKB: 1007, cleanKB: 228, rawTokens: '257.8K', cleanTokens: '23.9K', savings: 91 }
+        cleaned: { total: 52, origKB: 1007, cleanKB: 228, rawTokens: '257.8K', cleanTokens: '23.9K', savings: 91, scripts: 6, styles: 17, ads: 5, tracking: 1, nav: 23 }
       },
       {
         cmd: '$ webpeel "news.ycombinator.com"',
         url: 'https://news.ycombinator.com',
         lines: [
-          '{',
-          '  "title": "Hacker News",',
-          '  "content": "# Hacker News\\n1. Show HN: I built an open-source...",',
-          '  "wordCount": 1204,',
-          '  "fetchTimeMs": 198',
-          '}'
+          '"title": "Hacker News",',
+          '"content": "# Hacker News\\n1. Show HN: I built an open-source...",',
+          '"wordCount": 1204,',
+          '"fetchTimeMs": 198'
         ],
-        cleaned: { total: 2, origKB: 34, cleanKB: 9, rawTokens: '8.7K', cleanTokens: '1.6K', savings: 82 }
+        cleaned: { total: 2, origKB: 34, cleanKB: 9, rawTokens: '8.7K', cleanTokens: '1.6K', savings: 82, scripts: 1, styles: 1, ads: 0, tracking: 0, nav: 0 }
       }
     ];
 
@@ -7146,6 +7156,10 @@ traffic. Advertisers are watching closely.
     // Syntax-highlight a JSON object for display
     function highlightJson(obj) {
       var json = JSON.stringify(obj, null, 2);
+      // Strip outer { } and leading/trailing whitespace
+      json = json.replace(/^\s*\{\s*\n?/, '').replace(/\n?\s*\}\s*$/, '');
+      // Remove trailing comma from last property
+      json = json.replace(/,\s*$/, '');
       var escaped = json
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
         .replace(/"/g,'&quot;');
@@ -7155,8 +7169,6 @@ traffic. Advertisers are watching closely.
       escaped = escaped.replace(/:\s*(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, ': <span class="t-str">$1</span>');
       // Numeric values
       escaped = escaped.replace(/:\s*(\d+)/g, ': <span class="t-num">$1</span>');
-      // Braces
-      escaped = escaped.replace(/^(\s*[{}]\s*)$/mg, '<span class="t-dim">$1</span>');
       return escaped;
     }
 
@@ -7194,15 +7206,19 @@ traffic. Advertisers are watching closely.
           // After JSON: add cleaning stats bar
           if (demo.cleaned) {
             var c = demo.cleaned;
+            // Line 1: individual breakdown
+            var parts = [];
+            if (c.scripts > 0) parts.push('<span class="cb-num">' + c.scripts + '</span> scripts');
+            if (c.styles > 0) parts.push('<span class="cb-num">' + c.styles + '</span> stylesheets');
+            if (c.ads > 0) parts.push('<span class="cb-num">' + c.ads + '</span> ads');
+            if (c.tracking > 0) parts.push('<span class="cb-num">' + c.tracking + '</span> trackers');
+            if (c.nav > 0) parts.push('<span class="cb-num">' + c.nav + '</span> nav');
             var bar = document.createElement('div');
             bar.className = 'hdw-clean-bar';
-            bar.innerHTML = '<span class="shield">🛡️</span> ' +
-              '<span>' + c.total + ' elements removed</span>' +
-              '<span class="sep">·</span>' +
-              '<span>' + c.origKB + 'KB → ' + c.cleanKB + 'KB</span>' +
-              '<span class="sep">·</span>' +
-              '<span>Tokens: <span class="old">' + c.rawTokens + '</span> → <span class="new">' + c.cleanTokens + '</span></span>' +
-              (c.savings > 0 ? ' <span class="savings">(' + c.savings + '% saved)</span>' : '');
+            bar.innerHTML = '<div class="cb-line1"><span class="shield">🛡️</span> ' + parts.join(' <span class="sep">·</span> ') + ' <span class="cb-label">removed</span></div>' +
+              '<div class="cb-line2">' + c.origKB + 'KB → ' + c.cleanKB + 'KB' +
+              ' <span class="sep">·</span> Tokens: <span class="old">' + c.rawTokens + '</span> → <span class="new">' + c.cleanTokens + '</span>' +
+              (c.savings > 0 ? ' <span class="savings">(' + c.savings + '% saved)</span>' : '') + '</div>';
             outEl.appendChild(bar);
           }
           var linkEl = document.createElement('a');
@@ -7300,15 +7316,22 @@ traffic. Advertisers are watching closely.
             var tokenSavings = rawTokens > 0 ? Math.round((1 - cleanTokens / rawTokens) * 100) : 0;
             function formatTokens(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString(); }
 
+            // Build individual breakdown
+            var parts = [];
+            if (cleaned.scripts > 0) parts.push('<span class="cb-num">' + cleaned.scripts + '</span> scripts');
+            if (cleaned.styles > 0) parts.push('<span class="cb-num">' + cleaned.styles + '</span> stylesheets');
+            if (cleaned.ads > 0) parts.push('<span class="cb-num">' + cleaned.ads + '</span> ads');
+            if (cleaned.tracking > 0) parts.push('<span class="cb-num">' + cleaned.tracking + '</span> trackers');
+            if (cleaned.navigation > 0) parts.push('<span class="cb-num">' + cleaned.navigation + '</span> nav');
+            if (cleaned.socialWidgets > 0) parts.push('<span class="cb-num">' + cleaned.socialWidgets + '</span> widgets');
+            if (cleaned.popups > 0) parts.push('<span class="cb-num">' + cleaned.popups + '</span> popups');
+
             var statsBar = document.createElement('div');
             statsBar.className = 'hdw-clean-bar';
-            statsBar.innerHTML = '<span class="shield">🛡️</span> ' +
-              '<span>' + cleaned.totalRemoved + ' elements removed</span>' +
-              '<span class="sep">·</span>' +
-              '<span>' + cleaned.originalSizeKB + 'KB → ' + cleaned.cleanedSizeKB + 'KB</span>' +
-              '<span class="sep">·</span>' +
-              '<span>Tokens: <span class="old">' + formatTokens(rawTokens) + '</span> → <span class="new">' + formatTokens(cleanTokens) + '</span></span>' +
-              (tokenSavings > 0 ? ' <span class="savings">(' + tokenSavings + '% saved)</span>' : '');
+            statsBar.innerHTML = '<div class="cb-line1"><span class="shield">🛡️</span> ' + parts.join(' <span class="sep">·</span> ') + ' <span class="cb-label">removed</span></div>' +
+              '<div class="cb-line2">' + cleaned.originalSizeKB + 'KB → ' + cleaned.cleanedSizeKB + 'KB' +
+              ' <span class="sep">·</span> Tokens: <span class="old">' + formatTokens(rawTokens) + '</span> → <span class="new">' + formatTokens(cleanTokens) + '</span>' +
+              (tokenSavings > 0 ? ' <span class="savings">(' + tokenSavings + '% saved)</span>' : '') + '</div>';
             outEl.appendChild(statsBar);
           }
 
