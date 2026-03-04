@@ -38,6 +38,7 @@ import { createDeepFetchRouter } from './routes/deep-fetch.js';
 import { createWatchRouter } from './routes/watch.js';
 import pg from 'pg';
 import { createScreenshotRouter } from './routes/screenshot.js';
+import { createDemoRouter } from './routes/demo.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
 import { createExtractRouter } from './routes/extract.js';
@@ -234,6 +235,9 @@ export function createApp(config: ServerConfig = {}): Express {
   app.get('/docs/api', (_req: Request, res: Response) => {
     res.redirect('/openapi.yaml');
   });
+
+  // Demo endpoint — unauthenticated, must be before auth middleware
+  app.use(createDemoRouter());
 
   // Apply auth middleware globally
   app.use(createAuthMiddleware(authStore));
