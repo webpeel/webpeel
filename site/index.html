@@ -5702,7 +5702,8 @@
 @media (max-width: 768px) {
   .hdw-cmd-line, .hdw-output, .ba-code, .install-code, pre, code {
     overflow-x: auto !important;
-    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
     white-space: pre-wrap !important;
   }
   .hero-stat-l {
@@ -5742,9 +5743,15 @@
   display: none !important;
 }
 
-/* 47. Pricing heading contrast boost */
+/* 47. Pricing heading contrast boost + section gap tightening */
 .pricing-sub {
   color: rgba(255,255,255,0.55) !important;
+}
+.pricing-section {
+  padding-bottom: 64px !important;
+}
+.faq-section {
+  padding-top: 64px !important;
 }
 
 /* 48. Hero trust links — bigger touch targets on mobile */
