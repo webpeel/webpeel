@@ -6051,7 +6051,15 @@
 .hdw-body { min-height: 380px !important; padding: 20px 24px !important; }
 
 /* Hero grid: stacked layout */
-.hero-grid { gap: 20px !important; max-width: 1200px !important; }
+.hero-grid { gap: 16px !important; max-width: 1200px !important; }
+/* Tighter hero for stacked layout — show terminal above fold */
+.hero { padding-top: 32px !important; }
+.hero h1 { font-size: clamp(40px, 5vw, 64px) !important; line-height: 1.1 !important; margin-bottom: 8px !important; }
+.hero-sub { margin-bottom: 12px !important; }
+.hero-ctas { margin-top: 12px !important; margin-bottom: 0 !important; }
+.hero-cta-note { margin-top: 6px !important; margin-bottom: 0 !important; }
+.hero-kicker { margin-bottom: 6px !important; }
+.hero-eyebrow { margin-bottom: 8px !important; }
 
 /* Left side vertical rhythm — proper spacing between elements */
 .hero-kicker { margin-bottom: 16px !important; }
