@@ -13,6 +13,10 @@ export function createQuickAnswerRouter(): Router {
   const router = Router();
 
   router.get('/v1/answer/quick', async (req: Request, res: Response) => {
+    // Deprecation notice — prefer /v1/fetch?question=... which is equivalent
+    res.setHeader('X-Deprecated', 'true');
+    res.setHeader('X-Deprecated-Use', '/v1/fetch?question=...');
+
     // AUTH: require authentication (global middleware sets req.auth)
     const qaAuthId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!qaAuthId) {

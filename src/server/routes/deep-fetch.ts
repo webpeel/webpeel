@@ -13,6 +13,10 @@ export function createDeepFetchRouter(): Router {
   const router = Router();
 
   router.post('/v1/deep-fetch', async (req: Request, res: Response) => {
+    // Deprecation notice — prefer /v1/search?depth=deep
+    res.setHeader('X-Deprecated', 'true');
+    res.setHeader('X-Deprecated-Use', '/v1/search?depth=deep');
+
     // AUTH: require authentication (global middleware sets req.auth)
     const dfAuthId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!dfAuthId) {

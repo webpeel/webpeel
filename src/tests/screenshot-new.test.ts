@@ -216,7 +216,7 @@ describe('POST /v1/screenshot/audit', () => {
   });
 });
 
-// ── POST /v1/screenshot/animation ────────────────────────────────────────────
+// ── POST /v1/screenshot/animation — DEPRECATED (410 Gone) ────────────────────
 
 describe('POST /v1/screenshot/animation', () => {
   let app: Express;
@@ -226,106 +226,32 @@ describe('POST /v1/screenshot/animation', () => {
     app = makeApp();
   });
 
-  it('returns animation frames for valid URL', async () => {
-    (mockTakeAnimation as any).mockResolvedValue(animationResult);
-
+  it('returns 410 Gone for any request (endpoint is deprecated)', async () => {
     const res = await request(app)
       .post('/v1/screenshot/animation')
       .send({ url: 'https://example.com', frames: 4, intervalMs: 500 });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.frameCount).toBe(4);
-    expect(res.body.data.frames).toHaveLength(4);
-    expect(res.body.data.frames[0].screenshot).toBe('frame0==');
-    expect(res.headers['x-fetch-type']).toBe('animation');
+    expect(res.status).toBe(410);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error).toContain('deprecated');
   });
 
-  it('passes frames and intervalMs through correctly', async () => {
-    (mockTakeAnimation as any).mockResolvedValue(animationResult);
-
-    await request(app)
-      .post('/v1/screenshot/animation')
-      .send({ url: 'https://example.com', frames: 10, intervalMs: 200, scrollTo: 500 });
-
-    expect(mockTakeAnimation).toHaveBeenCalledWith(
-      'https://example.com',
-      expect.objectContaining({ frames: 10, intervalMs: 200, scrollTo: 500 })
-    );
-  });
-
-  it('returns 400 for missing URL', async () => {
+  it('returns 410 for missing URL (endpoint is deprecated regardless)', async () => {
     const res = await request(app)
       .post('/v1/screenshot/animation')
       .send({});
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('url');
-  });
-
-  it('returns 400 for SSRF (localhost)', async () => {
-    const res = await request(app)
-      .post('/v1/screenshot/animation')
-      .send({ url: 'http://127.0.0.1/secret' });
-
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(410);
     expect(res.body.error).toBeDefined();
   });
 
-  it('returns 400 for invalid format', async () => {
-    const res = await request(app)
-      .post('/v1/screenshot/animation')
-      .send({ url: 'https://example.com', format: 'gif' });
-
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('format');
-  });
-
-  it('returns 400 for frames out of range — too low (0)', async () => {
-    const res = await request(app)
-      .post('/v1/screenshot/animation')
-      .send({ url: 'https://example.com', frames: 0 });
-
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('frames');
-  });
-
-  it('returns 400 for frames out of range — too high (31)', async () => {
+  it('returns 410 for any payload (endpoint fully gone)', async () => {
     const res = await request(app)
       .post('/v1/screenshot/animation')
       .send({ url: 'https://example.com', frames: 31 });
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('frames');
-  });
-
-  it('returns 400 for intervalMs too low (49ms)', async () => {
-    const res = await request(app)
-      .post('/v1/screenshot/animation')
-      .send({ url: 'https://example.com', intervalMs: 49 });
-
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('intervalMs');
-  });
-
-  it('returns 400 for intervalMs too high (10001ms)', async () => {
-    const res = await request(app)
-      .post('/v1/screenshot/animation')
-      .send({ url: 'https://example.com', intervalMs: 10001 });
-
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('intervalMs');
-  });
-
-  it('returns 500 on internal error', async () => {
-    (mockTakeAnimation as any).mockRejectedValue(new Error('Browser died'));
-
-    const res = await request(app)
-      .post('/v1/screenshot/animation')
-      .send({ url: 'https://example.com' });
-
-    expect(res.status).toBe(500);
-    expect(res.body.error).toBeDefined();
+    expect(res.status).toBe(410);
+    expect(res.body.error).toContain('deprecated');
   });
 });
 

@@ -13,6 +13,15 @@ import { AuthStore } from '../auth-store.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
 import { wantsEnvelope, successResponse } from '../utils/response.js';
 import { getSchemaTemplate } from '../../core/schema-templates.js';
+import { quickAnswer } from '../../core/quick-answer.js';
+
+// ── Helper: extract first N words as a summary string ────────────────────────
+function extractSummary(content: string, maxWords = 500): string {
+  if (!content) return '';
+  const words = content.split(/\s+/);
+  if (words.length <= maxWords) return content;
+  return words.slice(0, maxWords).join(' ') + '…';
+}
 
 const VALID_LLM_PROVIDERS: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
 
@@ -65,6 +74,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         cacheTtl,
         budget,
         question,
+        summary,
         readable,
         stealth,
         screenshot,
@@ -174,7 +184,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
 
       // Build cache key (include new parameters)
       const actionsKey = parsedActions ? JSON.stringify(parsedActions) : '';
-      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${stream}:${actionsKey}:${budget}:${question}:${readable}:${stealth}:${screenshot}:${maxTokens}:${selector}:${exclude}:${fullPage}:${raw}`;
+      const cacheKey = `fetch:${url}:${render}:${wait}:${format}:${includeTags}:${excludeTags}:${images}:${location}:${languages}:${onlyMainContent}:${stream}:${actionsKey}:${budget}:${question}:${summary}:${readable}:${stealth}:${screenshot}:${maxTokens}:${selector}:${exclude}:${fullPage}:${raw}`;
 
       // Cache bypass: ?noCache=true or Cache-Control: no-cache header
       const bypassCache = noCache === 'true' || req.headers['cache-control'] === 'no-cache';
@@ -428,14 +438,32 @@ export function createFetchRouter(authStore: AuthStore): Router {
         res.setHeader('X-Token-Estimate', tokenEstimate.toString());
       }
 
+      // --- question → answer field (GET) ---
+      // When ?question= is provided, run quickAnswer() on the fetched content
+      // and expose the result as an `answer` field in the response.
+      const getAnswerResult = (question && typeof question === 'string' && result.content)
+        ? quickAnswer({ question, content: result.content, url: result.url })
+        : undefined;
+
+      // --- summary field (GET) ---
+      // When ?summary=true, return a truncated 500-word summary in a `summary` field.
+      const getSummaryText = (summary === 'true' && result.content)
+        ? extractSummary(result.content)
+        : undefined;
+
       // Add usage headers (kept for backward compat; also surfaced in envelope metadata)
       res.setHeader('X-Cache', 'MISS');
       res.setHeader('X-Credits-Used', '1');
       res.setHeader('X-Processing-Time', elapsed.toString());
       res.setHeader('X-Fetch-Type', fetchType);
 
+      // Build response — extend result with optional answer/summary fields
+      const getResponseBody: any = { ...result };
+      if (getAnswerResult !== undefined) getResponseBody.answer = getAnswerResult.answer;
+      if (getSummaryText !== undefined) getResponseBody.summary = getSummaryText;
+
       if (wantsEnvelope(req)) {
-        successResponse(res, result, {
+        successResponse(res, getResponseBody, {
           requestId: req.requestId,
           processingTimeMs: elapsed,
           creditsUsed: 1,
@@ -443,7 +471,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
           fetchType,
         });
       } else {
-        res.json(result);
+        res.json(getResponseBody);
       }
     } catch (error: any) {
       const err = error as any;
@@ -559,6 +587,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         // Extended peel options
         budget,
         question,
+        summary: summaryParam,
         readable,
         stealth,
         screenshot,
@@ -602,6 +631,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         stream?: boolean;
         budget?: number;
         question?: string;
+        summary?: boolean;
         readable?: boolean;
         stealth?: boolean;
         screenshot?: boolean;
@@ -709,7 +739,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const postBypassCache = noCacheBody === true || req.headers['cache-control'] === 'no-cache';
       const postCacheTtlMs = typeof cacheTtlBody === 'number' ? cacheTtlBody * 1000 : 5 * 60 * 1000;
       const postActionsKey = postActions ? JSON.stringify(postActions) : '';
-      const postCacheKey = `fetch:${url}:${render}:${wait}:${format}:${JSON.stringify(includeTags)}:${JSON.stringify(excludeTags)}:${images}:${location}:${JSON.stringify(languages)}:${onlyMainContent}:${stream}:${postActionsKey}:${budget}:${question}:${readable}:${stealth}:${screenshot}:${maxTokens}:${selector}:${JSON.stringify(exclude)}:${fullPage}:${raw}`;
+      const postCacheKey = `fetch:${url}:${render}:${wait}:${format}:${JSON.stringify(includeTags)}:${JSON.stringify(excludeTags)}:${images}:${location}:${JSON.stringify(languages)}:${onlyMainContent}:${stream}:${postActionsKey}:${budget}:${question}:${summaryParam}:${readable}:${stealth}:${screenshot}:${maxTokens}:${selector}:${JSON.stringify(exclude)}:${fullPage}:${raw}`;
 
       if (!postBypassCache && !extract) {
         const cached = cache.get(postCacheKey);
@@ -994,6 +1024,19 @@ export function createFetchRouter(authStore: AuthStore): Router {
         cache.set(postCacheKey, { result, timestamp: Date.now() }, { ttl: postCacheTtlMs });
       }
 
+      // --- question → answer field (POST) ---
+      // When question is provided, run quickAnswer() on the fetched content
+      // and expose the result as an `answer` field in the response.
+      const postAnswerResult = (question && typeof question === 'string' && result.content)
+        ? quickAnswer({ question, content: result.content, url: result.url })
+        : undefined;
+
+      // --- summary field (POST) ---
+      // When summary: true, return a truncated 500-word summary in a `summary` field.
+      const postSummaryText = (summaryParam === true && result.content)
+        ? extractSummary(result.content)
+        : undefined;
+
       // --- Build response ------------------------------------------------------
       // Headers kept for backward compat; also surfaced in envelope metadata.
       res.setHeader('X-Cache', 'MISS');
@@ -1007,6 +1050,12 @@ export function createFetchRouter(authStore: AuthStore): Router {
       }
       if (extractTokensUsed) {
         responseBody.extractTokensUsed = extractTokensUsed;
+      }
+      if (postAnswerResult !== undefined) {
+        responseBody.answer = postAnswerResult.answer;
+      }
+      if (postSummaryText !== undefined) {
+        responseBody.summary = postSummaryText;
       }
 
       if (wantsEnvelope(req)) {
