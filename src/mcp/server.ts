@@ -2,7 +2,8 @@
 
 /**
  * MCP Server for WebPeel
- * Provides webpeel_fetch and webpeel_search tools for Claude Desktop / Cursor
+ * 7 consolidated tools (1 meta + 6 specific) with full backward compatibility.
+ * All 20 legacy tool names still work — they're just routed to the new handlers.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -13,7 +14,7 @@ import {
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { peel, peelBatch } from '../index.js';
-import type { PeelOptions } from '../types.js';
+import type { PeelOptions, PeelResult, ExtractOptions, PageAction } from '../types.js';
 import { normalizeActions } from '../core/actions.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -23,6 +24,7 @@ import { answerQuestion, type LLMProviderId } from '../core/answer.js';
 import { extractInlineJson, type LLMProvider as InlineLLMProvider } from '../core/extract-inline.js';
 import { quickAnswer } from '../core/quick-answer.js';
 import { runAgent } from '../core/agent.js';
+import { parseIntent } from './smart-router.js';
 
 // Read version from package.json
 let pkgVersion = '0.3.1';
@@ -32,25 +34,17 @@ try {
   pkgVersion = pkg.version;
 } catch { /* fallback */ }
 
-/**
- * Helper function to extract colors from content
- */
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
 function extractColorsFromContent(content: string): string[] {
-  const colors: string[] = [];
   const hexRegex = /#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g;
   const matches = content.match(hexRegex);
-  if (matches) {
-    colors.push(...[...new Set(matches)].slice(0, 10));
-  }
-  return colors;
+  return matches ? [...new Set(matches)].slice(0, 10) : [];
 }
 
-/**
- * Helper function to extract font information from content
- */
 function extractFontsFromContent(content: string): string[] {
-  const fonts: string[] = [];
   const fontRegex = /font-family:\s*([^;}"'\n]+)/gi;
+  const fonts: string[] = [];
   let match;
   while ((match = fontRegex.exec(content)) !== null) {
     fonts.push(match[1].trim());
@@ -58,27 +52,40 @@ function extractFontsFromContent(content: string): string[] {
   return [...new Set(fonts)].slice(0, 5);
 }
 
-const server = new Server(
+function safeJson(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return JSON.stringify({ error: 'serialization_error', message: 'Failed to serialize result' });
+  }
+}
+
+function textResponse(text: string) {
+  return { content: [{ type: 'text' as const, text }] };
+}
+
+function isYouTubeUrl(url: string): boolean {
+  return /(?:youtube\.com|youtu\.be)/i.test(url);
+}
+
+function timeout<T>(ms: number, label: string): Promise<T> {
+  return new Promise<T>((_, reject) =>
+    setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
+  );
+}
+
+// ── Tool definitions (7 public tools) ─────────────────────────────────────────
+
+const publicTools: Tool[] = [
   {
     name: 'webpeel',
-    version: pkgVersion,
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
-
-// Legacy searchWeb function removed — search logic now lives in
-// core/search-provider.ts (DuckDuckGoProvider / BraveSearchProvider).
-
-const tools: Tool[] = [
-  {
-    name: 'webpeel_fetch',
-    description: 'Fetch any URL and return clean markdown content. Use budget=4000 to get token-efficient output (strips boilerplate, compresses tables). Handles JavaScript rendering and bot detection automatically. Use readable=true for article-only content, question="..." for instant Q&A.',
+    description:
+      "Your complete web toolkit. Describe what you want in plain language. " +
+      "Examples: 'read https://stripe.com', 'screenshot bbc.com on mobile', " +
+      "'find best AI frameworks', 'extract prices from stripe.com/pricing', " +
+      "'watch stripe.com/pricing for changes'",
     annotations: {
-      title: 'Fetch Web Page',
+      title: 'WebPeel Smart Web Tool',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
@@ -87,177 +94,119 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        url: {
+        task: {
           type: 'string',
-          description: 'The URL to fetch',
+          description: 'Plain English description of what you want to do with the web.',
         },
-        render: {
-          type: 'boolean',
-          description: 'Force browser rendering (slower but handles JavaScript-heavy sites)',
-          default: false,
-        },
-        stealth: {
-          type: 'boolean',
-          description: 'Use stealth mode to bypass bot detection (auto-enables render=true)',
-          default: false,
-        },
-        wait: {
-          type: 'number',
-          description: 'Milliseconds to wait for dynamic content (only used with render=true)',
-          default: 0,
-        },
+      },
+      required: ['task'],
+    },
+  },
+  {
+    name: 'webpeel_read',
+    description:
+      'Read any URL and return clean markdown. Handles web pages, YouTube videos, and PDFs ' +
+      'automatically. Use question= for Q&A about the page, summary=true for a summary.',
+    annotations: {
+      title: 'Read Web Page',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'URL to fetch' },
         format: {
           type: 'string',
           enum: ['markdown', 'text', 'html'],
-          description: 'Output format: markdown (default), text, or html',
+          description: 'Output format (default: markdown)',
           default: 'markdown',
         },
-        screenshot: {
+        render: {
           type: 'boolean',
-          description: 'Capture a screenshot of the page (returns base64-encoded PNG)',
+          description: 'Force browser rendering for JS-heavy sites',
           default: false,
-        },
-        screenshotFullPage: {
-          type: 'boolean',
-          description: 'Full-page screenshot (default: viewport only)',
-          default: false,
-        },
-        selector: {
-          type: 'string',
-          description: 'CSS selector to extract specific content (e.g., "article", ".main-content")',
-        },
-        exclude: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          description: 'CSS selectors to exclude from content (e.g., [".sidebar", ".ads"])',
-        },
-        includeTags: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          description: 'Only include content from these HTML tags/classes (e.g., ["article", "main", ".content"])',
-        },
-        excludeTags: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          description: 'Remove these HTML tags/classes from content (e.g., ["nav", "footer", ".sidebar"])',
-        },
-        images: {
-          type: 'boolean',
-          description: 'Extract image URLs from the page (returns array of image objects with src, alt, title)',
-          default: false,
-        },
-        location: {
-          type: 'string',
-          description: 'ISO 3166-1 alpha-2 country code for geo-targeting (e.g., "US", "DE", "JP")',
-        },
-        headers: {
-          type: 'object',
-          description: 'Custom HTTP headers to send',
-        },
-        actions: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              type: { type: 'string', enum: ['click', 'type', 'fill', 'scroll', 'wait', 'press', 'hover', 'select', 'waitForSelector', 'screenshot'] },
-              selector: { type: 'string', description: 'CSS selector (for click, type, fill, select, hover, waitForSelector)' },
-              value: { type: 'string', description: 'Value for type/fill/select actions' },
-              text: { type: 'string', description: 'Alias for value (Firecrawl compat)' },
-              key: { type: 'string', description: 'Keyboard key for press action (e.g., "Enter")' },
-              milliseconds: { type: 'number', description: 'Wait duration in ms (for wait action)' },
-              ms: { type: 'number', description: 'Alias for milliseconds' },
-              direction: { type: 'string', enum: ['up', 'down', 'left', 'right'], description: 'Scroll direction' },
-              amount: { type: 'number', description: 'Scroll amount in pixels' },
-              timeout: { type: 'number', description: 'Per-action timeout override in ms (default 5000, max 30000 total)' },
-            },
-            required: ['type'],
-          },
-          description: 'Page actions to execute before extraction. Auto-enables browser rendering. Examples: [{type: "click", selector: ".load-more"}, {type: "wait", milliseconds: 2000}, {type: "scroll", direction: "down", amount: 500}]',
-        },
-        autoScroll: {
-          oneOf: [
-            { type: 'boolean', description: 'Use default auto-scroll settings (up to 20 scrolls, 30s timeout)' },
-            {
-              type: 'object',
-              description: 'Custom auto-scroll configuration',
-              properties: {
-                maxScrolls: { type: 'number', description: 'Maximum scroll iterations (default: 20)' },
-                scrollDelay: { type: 'number', description: 'Milliseconds to wait between scrolls (default: 1000)' },
-                timeout: { type: 'number', description: 'Total timeout in milliseconds (default: 30000)' },
-                waitForSelector: { type: 'string', description: 'CSS selector to wait for after each scroll' },
-              },
-            },
-          ],
-          description: 'Intelligently scroll the page to load all lazy/infinite-scroll content before extracting. Set to true for defaults or provide an object to customize. Auto-enables browser rendering.',
-        },
-        maxTokens: {
-          type: 'number',
-          description: 'Maximum token count for output (truncates if exceeded)',
-        },
-        extract: {
-          type: 'object',
-          description: 'Structured data extraction options: {selectors: {field: "css"}} or {schema: {...}}',
         },
         question: {
           type: 'string',
-          description: 'Ask a question about the content (BM25, no LLM needed). Returns the most relevant passages.',
+          description: 'Ask a question about the page content (BM25, no LLM needed)',
+        },
+        summary: {
+          type: 'boolean',
+          description: 'Return a summary instead of full content',
+          default: false,
         },
         budget: {
           type: 'number',
           description: 'Smart token budget — distill content to N tokens',
         },
-        lite: {
-          type: 'boolean',
-          description: 'Lite mode — minimal processing, maximum speed. Skips pruning, budget, metadata. Use for simple "just get me the text" tasks.',
-          default: false,
-        },
         readable: {
           type: 'boolean',
-          description: 'Reader mode — extract only article content, strip all noise',
+          description: 'Reader mode — extract only article content',
           default: false,
         },
-        inlineExtract: {
-          type: 'object',
-          description: 'Inline LLM-powered JSON extraction (BYOK). Provide schema and/or prompt, plus llmProvider & llmApiKey.',
-          properties: {
-            schema: {
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'webpeel_see',
+    description:
+      "See any page visually. Returns a screenshot. Use mode='design' for design analysis, " +
+      "mode='compare' with compare_url for visual comparison.",
+    annotations: {
+      title: 'See Page Visually',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'URL to screenshot' },
+        mode: {
+          type: 'string',
+          enum: ['screenshot', 'design', 'compare'],
+          description: "Mode: 'screenshot' (default), 'design' (analysis), 'compare' (visual diff)",
+          default: 'screenshot',
+        },
+        compare_url: {
+          type: 'string',
+          description: "Second URL to compare against (for mode='compare')",
+        },
+        viewport: {
+          description: "Viewport size: 'mobile' | 'tablet' | {width, height}",
+          oneOf: [
+            { type: 'string', enum: ['mobile', 'tablet', 'desktop'] },
+            {
               type: 'object',
-              description: 'JSON Schema describing the desired output structure',
+              properties: {
+                width: { type: 'number' },
+                height: { type: 'number' },
+              },
+              required: ['width', 'height'],
             },
-            prompt: {
-              type: 'string',
-              description: 'Natural language prompt describing what to extract',
-            },
-          },
+          ],
         },
-        llmProvider: {
-          type: 'string',
-          enum: ['openai', 'anthropic', 'google'],
-          description: 'LLM provider for inline extraction (required with inlineExtract)',
-        },
-        llmApiKey: {
-          type: 'string',
-          description: 'LLM API key for inline extraction — BYOK (required with inlineExtract)',
-        },
-        llmModel: {
-          type: 'string',
-          description: 'LLM model name (optional, uses provider default)',
+        full_page: {
+          type: 'boolean',
+          description: 'Capture the full scrollable page',
+          default: false,
         },
       },
       required: ['url'],
     },
   },
   {
-    name: 'webpeel_search',
-    description: 'Search the web and return structured results with titles, URLs, and snippets. No API key needed.',
+    name: 'webpeel_find',
+    description:
+      'Find anything on the web. Pass a query to search, or a url to discover all pages on ' +
+      "that domain. Use depth='deep' for multi-source research.",
     annotations: {
-      title: 'Search the Web',
+      title: 'Find on the Web',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
@@ -266,197 +215,27 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        query: {
+        query: { type: 'string', description: 'Search query' },
+        url: { type: 'string', description: 'Domain URL to map/discover all pages' },
+        depth: {
           type: 'string',
-          description: 'Search query',
+          enum: ['quick', 'deep'],
+          description: "Search depth: 'quick' = single search, 'deep' = multi-source research",
+          default: 'quick',
         },
-        count: {
+        limit: {
           type: 'number',
-          description: 'Number of results to return (1-10)',
+          description: 'Max results to return (default: 5)',
           default: 5,
-          minimum: 1,
-          maximum: 10,
-        },
-        provider: {
-          type: 'string',
-          enum: ['duckduckgo', 'brave', 'stealth', 'google'],
-          description: 'Search provider (default: duckduckgo). Use "brave" with a searchApiKey for better results.',
-          default: 'duckduckgo',
-        },
-        searchApiKey: {
-          type: 'string',
-          description: 'API key for Brave Search (required when provider is "brave")',
         },
       },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'webpeel_batch',
-    description: 'Fetch multiple URLs concurrently. Pass an array of URLs, get back an array of results.',
-    annotations: {
-      title: 'Batch Fetch URLs',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        urls: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          description: 'Array of URLs to fetch',
-        },
-        concurrency: {
-          type: 'number',
-          description: 'Max concurrent fetches (default: 3)',
-          default: 3,
-          minimum: 1,
-          maximum: 10,
-        },
-        render: {
-          type: 'boolean',
-          description: 'Force browser rendering for all URLs',
-          default: false,
-        },
-        format: {
-          type: 'string',
-          enum: ['markdown', 'text', 'html'],
-          description: 'Output format for all URLs',
-          default: 'markdown',
-        },
-        selector: {
-          type: 'string',
-          description: 'CSS selector to extract specific content',
-        },
-      },
-      required: ['urls'],
-    },
-  },
-  {
-    name: 'webpeel_crawl',
-    description: 'Crawl a website starting from a URL. Returns content for all discovered pages up to the specified depth/limit.',
-    annotations: {
-      title: 'Crawl Website',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-          description: 'Starting URL to crawl from',
-        },
-        maxPages: {
-          type: 'number',
-          description: 'Maximum number of pages to crawl (default: 10, max: 100)',
-          default: 10,
-          minimum: 1,
-          maximum: 100,
-        },
-        maxDepth: {
-          type: 'number',
-          description: 'Maximum depth to crawl (default: 2, max: 5)',
-          default: 2,
-          minimum: 1,
-          maximum: 5,
-        },
-        allowedDomains: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          description: 'Only crawl URLs from these domains (default: same domain as starting URL)',
-        },
-        excludePatterns: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          description: 'Exclude URLs matching these regex patterns',
-        },
-        respectRobotsTxt: {
-          type: 'boolean',
-          description: 'Respect robots.txt (default: true)',
-          default: true,
-        },
-        rateLimitMs: {
-          type: 'number',
-          description: 'Rate limit between requests in milliseconds (default: 1000)',
-          default: 1000,
-          minimum: 100,
-        },
-        sitemapFirst: {
-          type: 'boolean',
-          description: 'Discover URLs via sitemap.xml before crawling (default: false)',
-          default: false,
-        },
-        render: {
-          type: 'boolean',
-          description: 'Use browser rendering for all pages',
-          default: false,
-        },
-        stealth: {
-          type: 'boolean',
-          description: 'Use stealth mode for all pages',
-          default: false,
-        },
-      },
-      required: ['url'],
-    },
-  },
-  {
-    name: 'webpeel_map',
-    description: 'Discover all URLs on a domain via sitemap and link crawling. Returns a structured URL list.',
-    annotations: {
-      title: 'Map Website URLs',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-          description: 'Starting URL or domain to map',
-        },
-        maxUrls: {
-          type: 'number',
-          description: 'Maximum URLs to discover (default: 5000, max: 10000)',
-          default: 5000,
-          minimum: 1,
-          maximum: 10000,
-        },
-        includePatterns: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          description: 'Only include URLs matching these patterns (regex)',
-        },
-        excludePatterns: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          description: 'Exclude URLs matching these patterns (regex)',
-        },
-      },
-      required: ['url'],
     },
   },
   {
     name: 'webpeel_extract',
-    description: 'Extract structured data from a URL using CSS selectors, JSON Schema, or LLM. Returns typed key-value pairs.',
+    description:
+      "Extract structured data from any URL. Pass fields=['price','title'] for specific data, " +
+      'or omit for auto-detection. Returns typed JSON.',
     annotations: {
       title: 'Extract Structured Data',
       readOnlyHint: true,
@@ -467,403 +246,30 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        url: {
-          type: 'string',
-          description: 'URL to extract from',
-        },
-        selectors: {
-          type: 'object',
-          description: 'Map of field names to CSS selectors, e.g., {"title": "h1", "price": ".price"}',
-        },
-        schema: {
-          type: 'object',
-          description: 'JSON schema describing expected output structure',
-        },
-        prompt: {
-          type: 'string',
-          description: 'Natural language prompt for AI-powered extraction (requires llmApiKey)',
-        },
-        llmApiKey: {
-          type: 'string',
-          description: 'API key for LLM-powered extraction (OpenAI-compatible)',
-        },
-        llmModel: {
-          type: 'string',
-          description: 'LLM model to use (default: gpt-4o-mini)',
-          default: 'gpt-4o-mini',
-        },
-        llmBaseUrl: {
-          type: 'string',
-          description: 'LLM API base URL (default: https://api.openai.com/v1)',
-          default: 'https://api.openai.com/v1',
-        },
-        render: {
-          type: 'boolean',
-          description: 'Use browser rendering',
-          default: false,
-        },
-      },
-      required: ['url'],
-    },
-  },
-  {
-    name: 'webpeel_brand',
-    description: 'Extract branding assets from a URL: logo, colors, fonts, and social links.',
-    annotations: {
-      title: 'Extract Branding',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-          description: 'URL to extract branding from',
-        },
-        render: {
-          type: 'boolean',
-          description: 'Use browser rendering',
-          default: false,
-        },
-      },
-      required: ['url'],
-    },
-  },
-  {
-    name: 'webpeel_change_track',
-    description: 'Track content changes on a URL. First call saves a snapshot, subsequent calls show what changed.',
-    annotations: {
-      title: 'Track Page Changes',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-          description: 'URL to track for changes',
-        },
-        render: {
-          type: 'boolean',
-          description: 'Use browser rendering',
-          default: false,
-        },
-      },
-      required: ['url'],
-    },
-  },
-  {
-    name: 'webpeel_summarize',
-    description: 'Generate an AI summary of a URL\'s content. Requires an LLM API key (BYOK).',
-    annotations: {
-      title: 'Summarize Page',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-          description: 'URL to summarize',
-        },
-        llmApiKey: {
-          type: 'string',
-          description: 'API key for LLM (OpenAI-compatible)',
-        },
-        prompt: {
-          type: 'string',
-          description: 'Custom summary prompt (default: "Summarize this webpage in 2-3 sentences.")',
-          default: 'Summarize this webpage in 2-3 sentences.',
-        },
-        llmModel: {
-          type: 'string',
-          description: 'LLM model to use (default: gpt-4o-mini)',
-          default: 'gpt-4o-mini',
-        },
-        llmBaseUrl: {
-          type: 'string',
-          description: 'LLM API base URL (default: https://api.openai.com/v1)',
-          default: 'https://api.openai.com/v1',
-        },
-        render: {
-          type: 'boolean',
-          description: 'Use browser rendering',
-          default: false,
-        },
-      },
-      required: ['url', 'llmApiKey'],
-    },
-  },
-  {
-    name: 'webpeel_answer',
-    description: 'Ask a question about a URL and get an AI-generated answer with citations. Requires an LLM API key (BYOK). For LLM-free Q&A, use webpeel_quick_answer instead.',
-    annotations: {
-      title: 'Answer a Question',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        question: {
-          type: 'string',
-          description: 'The question to answer',
-        },
-        searchProvider: {
-          type: 'string',
-          enum: ['duckduckgo', 'brave', 'stealth', 'google'],
-          description: 'Search provider (default: duckduckgo)',
-          default: 'duckduckgo',
-        },
-        searchApiKey: {
-          type: 'string',
-          description: 'API key for Brave Search (required when searchProvider is "brave")',
-        },
-        llmProvider: {
-          type: 'string',
-          enum: ['openai', 'anthropic', 'google'],
-          description: 'LLM provider to use for answer generation',
-        },
-        llmApiKey: {
-          type: 'string',
-          description: 'API key for the LLM provider (BYOK)',
-        },
-        llmModel: {
-          type: 'string',
-          description: 'LLM model name (optional, uses provider default)',
-        },
-        maxSources: {
-          type: 'number',
-          description: 'Maximum number of sources to fetch (1-10, default 5)',
-          default: 5,
-          minimum: 1,
-          maximum: 10,
-        },
-      },
-      required: ['question', 'llmProvider', 'llmApiKey'],
-    },
-  },
-  {
-    name: 'webpeel_screenshot',
-    description: 'Take a screenshot of any URL. Returns a PNG image. Supports full-page capture and viewport sizing.',
-    annotations: {
-      title: 'Take Screenshot',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-          description: 'The URL to screenshot',
-        },
-        fullPage: {
-          type: 'boolean',
-          description: 'Capture the full scrollable page (default: viewport only)',
-          default: false,
-        },
-        width: {
-          type: 'number',
-          description: 'Viewport width in pixels (default: 1280)',
-          default: 1280,
-          minimum: 100,
-          maximum: 5000,
-        },
-        height: {
-          type: 'number',
-          description: 'Viewport height in pixels (default: 720)',
-          default: 720,
-          minimum: 100,
-          maximum: 5000,
+        url: { type: 'string', description: 'URL to extract from' },
+        schema: { type: 'object', description: 'JSON schema describing desired output structure' },
+        fields: {
+          type: 'array',
+          items: { type: 'string' },
+          description: "Specific fields to extract, e.g. ['price', 'title', 'description']",
         },
         format: {
           type: 'string',
-          enum: ['png', 'jpeg'],
-          description: 'Image format (default: png)',
-          default: 'png',
-        },
-        quality: {
-          type: 'number',
-          description: 'JPEG quality 1-100 (ignored for PNG)',
-          minimum: 1,
-          maximum: 100,
-        },
-        waitFor: {
-          type: 'number',
-          description: 'Milliseconds to wait after page load before screenshot',
-          default: 0,
-        },
-        stealth: {
-          type: 'boolean',
-          description: 'Use stealth mode to bypass bot detection',
-          default: false,
-        },
-        actions: {
-          type: 'array',
-          items: {
-            type: 'object',
-          },
-          description: 'Page actions to execute before screenshot (e.g., [{type: "click", selector: ".btn"}, {type: "wait", ms: 2000}])',
+          enum: ['json', 'markdown'],
+          description: 'Output format (default: json)',
+          default: 'json',
         },
       },
       required: ['url'],
     },
   },
   {
-    name: 'webpeel_research',
-    description: 'Multi-step web research: searches the web, fetches top sources, follows leads, and synthesizes findings into a report with citations.',
+    name: 'webpeel_monitor',
+    description:
+      'Watch a URL for changes. Returns diff on subsequent calls. ' +
+      'Add webhook= for persistent monitoring with notifications.',
     annotations: {
-      title: 'Deep Research Agent',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Research question or topic to investigate',
-        },
-        maxSources: {
-          type: 'number',
-          description: 'Maximum number of sources to consult (default: 5)',
-          default: 5,
-          minimum: 1,
-          maximum: 20,
-        },
-        maxDepth: {
-          type: 'number',
-          description: 'Link-following depth: 1 = search results only, 2+ = follow links within top sources (default: 1)',
-          default: 1,
-          minimum: 1,
-          maximum: 3,
-        },
-        llmApiKey: {
-          type: 'string',
-          description: 'LLM API key for synthesis (falls back to OPENAI_API_KEY env var)',
-        },
-        llmModel: {
-          type: 'string',
-          description: 'LLM model to use for synthesis (default: gpt-4o-mini)',
-        },
-        llmBaseUrl: {
-          type: 'string',
-          description: 'LLM API base URL (default: https://api.openai.com/v1)',
-        },
-        outputFormat: {
-          type: 'string',
-          enum: ['report', 'sources'],
-          description: 'Output format: "report" = synthesized markdown report (needs LLM key), "sources" = raw extracted source content (default: report)',
-          default: 'report',
-        },
-        timeout: {
-          type: 'number',
-          description: 'Maximum research time in milliseconds (default: 60000)',
-          default: 60000,
-        },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'webpeel_deep_fetch',
-    description: 'Search + fetch + analyze in one call. Fetches multiple sources for a query, scores by relevance, deduplicates facts, and merges into structured intelligence. No LLM key needed. Supports \'comparison\' format for vs-queries.',
-    annotations: {
-      title: 'Deep Fetch Research',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Search query to research' },
-        count: { type: 'number', description: 'Number of top results to fetch (default: 5, max: 10)', default: 5, minimum: 1, maximum: 10 },
-        format: { type: 'string', enum: ['markdown', 'text', 'comparison'], description: 'Content format (default: markdown). Use "comparison" for vs-queries to get a side-by-side structure.', default: 'markdown' },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'webpeel_youtube',
-    description: 'Extract the full transcript from a YouTube video. Returns timestamped segments and video metadata. No API key needed. Supports all YouTube URL formats.',
-    annotations: {
-      title: 'Extract YouTube Transcript',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'YouTube video URL (supports youtube.com/watch, youtu.be, embed, shorts, and mobile URLs)' },
-        language: { type: 'string', description: 'Preferred transcript language code (default: en). Falls back to any available language if not found.' },
-      },
-      required: ['url'],
-    },
-  },
-  {
-    name: 'webpeel_auto_extract',
-    description: 'Detect page type and extract structured JSON automatically. Supports pricing pages, product listings, contact info, articles, and API documentation. No LLM needed.',
-    annotations: {
-      title: 'Auto Extract Structured Data',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'URL to fetch and auto-extract structured data from' },
-      },
-      required: ['url'],
-    },
-  },
-  {
-    name: 'webpeel_quick_answer',
-    description: 'Ask a question about a URL\'s content — no LLM key needed. Uses BM25 relevance scoring to find and return the most relevant passages. Returns answer text with confidence score.',
-    annotations: {
-      title: 'Quick Answer (No LLM)',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'URL to fetch and search' },
-        question: { type: 'string', description: 'Question to answer from the page content' },
-        maxPassages: { type: 'number', description: 'Maximum number of relevant passages to return (default: 3)', default: 3, minimum: 1, maximum: 10 },
-        render: { type: 'boolean', description: 'Use browser rendering', default: false },
-      },
-      required: ['url', 'question'],
-    },
-  },
-  {
-    name: 'webpeel_watch',
-    description: 'Monitor a URL for changes with webhook notifications. Create persistent watchers that check on a schedule and alert when content changes.',
-    annotations: {
-      title: 'Watch URL for Changes',
+      title: 'Monitor URL for Changes',
       readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: false,
@@ -872,44 +278,32 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        action: { type: 'string', enum: ['create', 'list', 'check', 'delete'], description: 'Watch action to perform' },
-        url: { type: 'string', description: 'URL to monitor (for create)' },
-        id: { type: 'string', description: 'Watch ID (for check/delete)' },
-        webhookUrl: { type: 'string', description: 'Webhook URL to notify on changes (for create)' },
-        intervalMinutes: { type: 'number', description: 'Check interval in minutes (default: 60)' },
-        selector: { type: 'string', description: 'CSS selector to monitor specific content (optional)' },
+        url: { type: 'string', description: 'URL to monitor' },
+        webhook: {
+          type: 'string',
+          description: 'Webhook URL to notify when content changes',
+        },
+        interval: {
+          type: 'string',
+          description: "Check interval, e.g. '1h', '30m', '1d'",
+          default: '1h',
+        },
+        selector: {
+          type: 'string',
+          description: 'CSS selector to monitor a specific part of the page',
+        },
       },
-      required: ['action'],
+      required: ['url'],
     },
   },
   {
-    name: 'webpeel_hotels',
-    description: 'Search multiple travel sites for hotels in parallel. Returns sorted results from Kayak, Booking.com, Google Travel, and Expedia.',
+    name: 'webpeel_act',
+    description:
+      'Interact with a web page. Click buttons, fill forms, navigate. ' +
+      'Returns screenshot + extracted content after actions complete.',
     annotations: {
-      title: 'Hotel Search',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        destination: { type: 'string', description: 'Destination city or area (e.g., "Manhattan", "Paris")' },
-        checkin: { type: 'string', description: 'Check-in date (ISO format or natural language like "tomorrow", "next friday")' },
-        checkout: { type: 'string', description: 'Check-out date (ISO format or natural language). Defaults to day after checkin.' },
-        sort: { type: 'string', enum: ['price', 'rating', 'value'], description: 'Sort results by price, rating, or value (default: price)' },
-        limit: { type: 'number', description: 'Max results to return (default: 20)' },
-      },
-      required: ['destination'],
-    },
-  },
-  {
-    name: 'agent',
-    description: 'Web data agent — search, fetch, and extract structured data in one call. Give it a prompt and URLs or search query, get back clean structured results. Works without an LLM key using BM25 extraction.',
-    annotations: {
-      title: 'Web Data Agent',
-      readOnlyHint: true,
+      title: 'Act on Web Page',
+      readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: false,
       openWorldHint: true,
@@ -917,833 +311,606 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        prompt: { type: 'string', description: 'What data do you want? e.g. "Find the CEO and revenue for each company"' },
-        urls: { type: 'array', items: { type: 'string' }, description: 'URLs to fetch and extract from' },
-        search: { type: 'string', description: 'Search query to find relevant pages' },
-        schema: { type: 'object', description: 'Output schema as an object of field names to type strings (e.g. {"company":"string","ceo":"string"})' },
-        maxResults: { type: 'number', description: 'Max pages to process (default: 5)' },
-        budget: { type: 'number', description: 'Token budget per page (default: 4000)' },
-        llmApiKey: { type: 'string', description: 'Your LLM API key for AI extraction (optional — works without it using BM25)' },
-        llmProvider: { type: 'string', description: 'LLM provider: openai, anthropic, etc. (default: openai)' },
+        url: { type: 'string', description: 'URL to interact with' },
+        actions: {
+          type: 'array',
+          description:
+            'Actions to perform, e.g. [{type:"click",selector:".btn"}, {type:"type",selector:"#q",value:"hello"}]',
+          items: {
+            type: 'object',
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['click', 'type', 'fill', 'scroll', 'wait', 'press', 'hover', 'select'],
+              },
+              selector: { type: 'string' },
+              value: { type: 'string' },
+              key: { type: 'string' },
+              milliseconds: { type: 'number' },
+            },
+            required: ['type'],
+          },
+        },
+        extract_after: {
+          type: 'boolean',
+          description: 'Extract content after actions complete',
+          default: true,
+        },
+        screenshot_after: {
+          type: 'boolean',
+          description: 'Take screenshot after actions complete',
+          default: false,
+        },
       },
-      required: [],
+      required: ['url', 'actions'],
     },
   },
 ];
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools,
-}));
+// ── Server setup ───────────────────────────────────────────────────────────────
+
+const server = new Server(
+  { name: 'webpeel', version: pkgVersion },
+  { capabilities: { tools: {} } }
+);
+
+// ── Handlers ───────────────────────────────────────────────────────────────────
+
+/**
+ * webpeel_read: fetch a URL as clean markdown.
+ * Auto-detects YouTube URLs and extracts transcripts.
+ */
+async function handleRead(args: Record<string, unknown>) {
+  const url = args['url'] as string;
+  if (!url || typeof url !== 'string') throw new Error('url is required');
+  if (url.length > 2048) throw new Error('URL too long (max 2048 characters)');
+
+  const format = (args['format'] as string | undefined) || 'markdown';
+  const render = (args['render'] as boolean | undefined) || false;
+  const question = args['question'] as string | undefined;
+  const summary = (args['summary'] as boolean | undefined) || false;
+  const budgetArg = args['budget'] as number | undefined;
+  const readable = (args['readable'] as boolean | undefined) || false;
+
+  // YouTube auto-detection
+  if (isYouTubeUrl(url)) {
+    const { getYouTubeTranscript } = await import('../core/youtube.js');
+    const language = (args['language'] as string | undefined) || 'en';
+    const transcript = await Promise.race([
+      getYouTubeTranscript(url, { language }),
+      timeout<never>(60000, 'YouTube transcript'),
+    ]);
+    return textResponse(safeJson(transcript));
+  }
+
+  // Build summary prompt if requested
+  const extractOpts = summary
+    ? { prompt: 'Summarize this webpage in 2-3 concise sentences.' }
+    : undefined;
+
+  const options: PeelOptions = {
+    render,
+    format: format as 'markdown' | 'text' | 'html',
+    question,
+    budget: budgetArg ?? 4000,
+    readable,
+    ...(extractOpts ? { extract: extractOpts } : {}),
+  };
+
+  const result = await Promise.race([
+    peel(url, options),
+    timeout<never>(60000, 'MCP read'),
+  ]) as PeelResult;
+
+  const out: Record<string, unknown> = {
+    url: result.url || url,
+    title: result.title || '',
+    tokens: result.tokens || 0,
+    content: result.content,
+  };
+  if (result.metadata) out['metadata'] = result.metadata;
+  if (result.quickAnswer) out['quickAnswer'] = result.quickAnswer;
+  if (result.extracted) out['extracted'] = result.extracted;
+  if (result.images) out['images'] = result.images;
+
+  return textResponse(safeJson(out));
+}
+
+/**
+ * webpeel_see: take a screenshot, optionally with design analysis or comparison.
+ */
+async function handleSee(args: Record<string, unknown>) {
+  const url = args['url'] as string;
+  if (!url || typeof url !== 'string') throw new Error('url is required');
+  if (url.length > 2048) throw new Error('URL too long (max 2048 characters)');
+
+  const mode = (args['mode'] as string | undefined) || 'screenshot';
+  const compareUrl = args['compare_url'] as string | undefined;
+  const fullPage = (args['full_page'] as boolean | undefined) || false;
+  const viewportArg = args['viewport'];
+
+  // Resolve viewport
+  let width = 1280;
+  let height = 720;
+  if (viewportArg && typeof viewportArg === 'object' && !Array.isArray(viewportArg)) {
+    const vp = viewportArg as { width?: number; height?: number };
+    width = vp.width ?? 1280;
+    height = vp.height ?? 720;
+  } else if (viewportArg === 'mobile') {
+    width = 390; height = 844;
+  } else if (viewportArg === 'tablet') {
+    width = 768; height = 1024;
+  }
+  // Params from smart router viewport object
+  if (args['viewport'] && typeof args['viewport'] === 'object') {
+    const vp = args['viewport'] as { width?: number; height?: number };
+    if (vp.width) width = vp.width;
+    if (vp.height) height = vp.height;
+  }
+
+  if (mode === 'design') {
+    const { browserDesignAnalysis } = await import('../core/fetcher.js');
+    const result = await Promise.race([
+      browserDesignAnalysis(url, { width, height }),
+      timeout<never>(90000, 'Design analysis'),
+    ]) as { analysis: unknown; finalUrl: string };
+    return textResponse(safeJson({ url: result.finalUrl, mode: 'design', analysis: result.analysis }));
+  }
+
+  if (mode === 'compare' && compareUrl) {
+    const { browserDiff } = await import('../core/fetcher.js');
+    const diff = await Promise.race([
+      browserDiff(url, compareUrl, { width, height, fullPage }),
+      timeout<never>(90000, 'Design compare'),
+    ]) as { diffBuffer: Buffer; diffPixels: number; totalPixels: number; diffPercent: number };
+    return textResponse(safeJson({
+      url,
+      compare_url: compareUrl,
+      mode: 'compare',
+      diffPixels: diff.diffPixels,
+      totalPixels: diff.totalPixels,
+      diffPercent: diff.diffPercent,
+      screenshot: diff.diffBuffer.toString('base64'),
+    }));
+  }
+
+  // Default: screenshot
+  const { takeScreenshot } = await import('../core/screenshot.js');
+  const result = await Promise.race([
+    takeScreenshot(url, { fullPage, width, height, format: 'png' }),
+    timeout<never>(60000, 'Screenshot'),
+  ]) as { url: string; screenshot: string; format: string };
+
+  return textResponse(safeJson({ url: result.url, mode: 'screenshot', screenshot: result.screenshot, format: result.format }));
+}
+
+/**
+ * webpeel_find: search the web, discover domain URLs, or do deep research.
+ */
+async function handleFind(args: Record<string, unknown>) {
+  const query = args['query'] as string | undefined;
+  const url = args['url'] as string | undefined;
+  const depth = (args['depth'] as string | undefined) || 'quick';
+  const limit = Math.min(Math.max((args['limit'] as number | undefined) ?? 5, 1), 20);
+
+  // URL-based: map/discover pages on a domain
+  if (url && !query) {
+    const { mapDomain } = await import('../core/map.js');
+    const results = await Promise.race([
+      mapDomain(url, { maxUrls: limit * 100 }),
+      timeout<never>(600000, 'Map domain'),
+    ]);
+    return textResponse(safeJson(results));
+  }
+
+  if (!query) throw new Error('Either query or url is required');
+
+  // Deep research mode
+  if (depth === 'deep') {
+    const { provider, apiKey } = getBestSearchProvider();
+    const searchResults = await Promise.race([
+      provider.searchWeb(query, { count: limit, apiKey }),
+      timeout<never>(30000, 'Search'),
+    ]) as Array<{ url: string; title?: string; snippet?: string }>;
+
+    const results = Array.isArray(searchResults)
+      ? searchResults
+      : (searchResults as unknown as { results: Array<{ url: string; title?: string; snippet?: string }> }).results ?? [];
+    const topN = results.slice(0, limit);
+
+    if (topN.length === 0) {
+      return textResponse(safeJson({ query, sources: [], content: '', totalTokens: 0 }));
+    }
+
+    const urls = topN.map((r) => r.url).filter(Boolean);
+    const pages = await Promise.race([
+      peelBatch(urls, { concurrency: 5, format: 'markdown' }),
+      timeout<never>(120000, 'Batch fetch'),
+    ]) as PeelResult[];
+
+    const sources: Array<{ url: string; title: string; relevanceScore: number }> = [];
+    const contentParts: string[] = [];
+    let totalTokens = 0;
+
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      const sr = topN[i];
+      const pageUrl = urls[i];
+      const title = page.title || sr.title || pageUrl;
+      const relevanceScore = Math.round((1 - i / Math.max(pages.length, 1)) * 100) / 100;
+      sources.push({ url: pageUrl, title, relevanceScore });
+      if (page.content) {
+        contentParts.push(`## Source ${i + 1}: ${title}\n**URL:** ${pageUrl}\n\n${page.content}\n\n---\n`);
+        totalTokens += page.tokens || 0;
+      }
+    }
+
+    return textResponse(safeJson({ query, sources, content: contentParts.join('\n'), totalTokens }));
+  }
+
+  // Quick search (default)
+  const validProviders: SearchProviderId[] = ['duckduckgo', 'brave', 'stealth', 'google'];
+  const providerId: SearchProviderId = ((args['provider'] as string | undefined) && validProviders.includes(args['provider'] as SearchProviderId))
+    ? (args['provider'] as SearchProviderId)
+    : 'duckduckgo';
+
+  const searchProvider = getSearchProvider(providerId);
+  const results = await Promise.race([
+    searchProvider.searchWeb(query, { count: limit }),
+    timeout<never>(30000, 'Search'),
+  ]);
+
+  return textResponse(safeJson(results));
+}
+
+/**
+ * webpeel_extract: extract structured data from a URL.
+ * Supports auto-detection, field lists, schema, and brand presets.
+ */
+async function handleExtract(args: Record<string, unknown>) {
+  const url = args['url'] as string;
+  if (!url || typeof url !== 'string') throw new Error('url is required');
+  if (url.length > 2048) throw new Error('URL too long (max 2048 characters)');
+
+  const schema = args['schema'] as Record<string, any> | undefined;
+  const fields = args['fields'] as string[] | undefined;
+  const render = (args['render'] as boolean | undefined) || false;
+
+  // Brand preset: fields=['name','logo','colors','fonts','socials'] or brand flag
+  const isBrandPreset =
+    (args['_brand'] as boolean | undefined) ||
+    (Array.isArray(fields) &&
+      ['name', 'logo', 'colors', 'fonts', 'socials'].every((f) => fields.includes(f)));
+
+  if (isBrandPreset) {
+    const options: PeelOptions = {
+      render,
+      extract: {
+        selectors: {
+          primaryColor: 'meta[name="theme-color"]',
+          title: 'title',
+          logo: 'img[class*="logo"], img[alt*="logo"]',
+        },
+      },
+    };
+    const result = await Promise.race([
+      peel(url, options),
+      timeout<never>(60000, 'Brand extraction'),
+    ]) as PeelResult;
+
+    return textResponse(safeJson({
+      url: result.url,
+      title: result.title,
+      extracted: result.extracted,
+      metadata: result.metadata,
+      colors: extractColorsFromContent(result.content || ''),
+      fonts: extractFontsFromContent(result.content || ''),
+    }));
+  }
+
+  // Auto-extract when no schema provided
+  if (!schema && (!fields || fields.length === 0)) {
+    const htmlResult = await Promise.race([
+      peel(url, { format: 'html', render }),
+      timeout<never>(60000, 'Auto-extract fetch'),
+    ]) as PeelResult;
+
+    const { autoExtract } = await import('../core/auto-extract.js');
+    const extracted = autoExtract(htmlResult.content || '', url);
+    return textResponse(safeJson({ url, pageType: extracted.type, structured: extracted }));
+  }
+
+  // Field-based extraction (CSS selectors from field names)
+  if (fields && fields.length > 0 && !schema) {
+    const selectors: Record<string, string> = {};
+    for (const field of fields) {
+      // Map common field names to CSS selectors
+      const fieldSelectorMap: Record<string, string> = {
+        price: '[class*="price"], [data-price]',
+        title: 'h1, title',
+        description: '[class*="description"], [class*="summary"]',
+        image: 'img[class*="main"], img[class*="hero"]',
+        name: 'h1, [class*="name"]',
+        logo: 'img[class*="logo"], img[alt*="logo"]',
+        colors: 'meta[name="theme-color"]',
+        fonts: 'link[rel="stylesheet"]',
+        socials: 'a[href*="twitter.com"], a[href*="linkedin.com"], a[href*="github.com"]',
+      };
+      selectors[field] = fieldSelectorMap[field] || `[class*="${field}"], [id*="${field}"]`;
+    }
+    const options: PeelOptions = { render, extract: { selectors } };
+    const result = await Promise.race([
+      peel(url, options),
+      timeout<never>(60000, 'Field extraction'),
+    ]) as PeelResult;
+    return textResponse(safeJson(result));
+  }
+
+  // Schema-based extraction
+  const options: PeelOptions = {
+    render,
+    extract: { schema },
+  };
+  const result = await Promise.race([
+    peel(url, options),
+    timeout<never>(60000, 'Schema extraction'),
+  ]) as PeelResult;
+
+  return textResponse(safeJson(result));
+}
+
+/**
+ * webpeel_monitor: watch a URL for changes, with optional webhook.
+ */
+async function handleMonitor(args: Record<string, unknown>) {
+  const url = args['url'] as string;
+  if (!url || typeof url !== 'string') throw new Error('url is required');
+  if (url.length > 2048) throw new Error('URL too long (max 2048 characters)');
+
+  const webhook = args['webhook'] as string | undefined;
+  const selector = args['selector'] as string | undefined;
+  const render = (args['render'] as boolean | undefined) || false;
+
+  if (webhook) {
+    // Webhook-based persistent monitoring requires hosted API
+    return textResponse(safeJson({
+      message:
+        'Persistent webhook monitoring requires the hosted API (api.webpeel.dev). ' +
+        'Use webpeel_monitor without webhook= for one-time change detection.',
+      url,
+      webhook,
+    }));
+  }
+
+  // One-time change snapshot (change_track logic)
+  const options: PeelOptions = { render: render || false, ...(selector ? { selector } : {}) };
+  const result = await Promise.race([
+    peel(url, options),
+    timeout<never>(60000, 'Monitor'),
+  ]) as PeelResult;
+
+  return textResponse(safeJson({
+    url: result.url,
+    title: result.title,
+    fingerprint: result.fingerprint,
+    tokens: result.tokens,
+    contentType: result.contentType,
+    lastChecked: new Date().toISOString(),
+  }));
+}
+
+/**
+ * webpeel_act: stub — coming soon.
+ */
+function handleAct(_args: Record<string, unknown>) {
+  return textResponse(safeJson({ message: 'Coming soon — act feature in development' }));
+}
+
+// ── Full webpeel_fetch handler (backward compat + power users) ─────────────────
+
+async function handleFetch(args: Record<string, unknown>) {
+  const {
+    url,
+    render,
+    stealth,
+    wait,
+    format,
+    screenshot: ssFlag,
+    screenshotFullPage,
+    selector,
+    exclude,
+    includeTags,
+    excludeTags,
+    images,
+    location,
+    headers,
+    actions: rawActions,
+    autoScroll: autoScrollParam,
+    maxTokens,
+    extract,
+    inlineExtract,
+    llmProvider,
+    llmApiKey,
+    llmModel,
+    question,
+    budget: budgetArg,
+    readable,
+  } = args as {
+    url: string;
+    render?: boolean;
+    stealth?: boolean;
+    wait?: number;
+    format?: 'markdown' | 'text' | 'html';
+    screenshot?: boolean;
+    screenshotFullPage?: boolean;
+    selector?: string;
+    exclude?: string[];
+    includeTags?: string[];
+    excludeTags?: string[];
+    images?: boolean;
+    location?: string;
+    headers?: Record<string, string>;
+    actions?: unknown[];
+    autoScroll?: boolean | object;
+    maxTokens?: number;
+    extract?: ExtractOptions;
+    inlineExtract?: { schema?: Record<string, any>; prompt?: string };
+    llmProvider?: string;
+    llmApiKey?: string;
+    llmModel?: string;
+    question?: string;
+    budget?: number;
+    readable?: boolean;
+  };
+
+  if (!url || typeof url !== 'string') throw new Error('Invalid URL parameter');
+  if (url.length > 2048) throw new Error('URL too long (max 2048 characters)');
+
+  const normalizedActions = rawActions ? normalizeActions(rawActions as PageAction[]) : undefined;
+  const hasActions = normalizedActions && normalizedActions.length > 0;
+
+  const options: PeelOptions = {
+    render: render || hasActions || !!autoScrollParam || false,
+    stealth: stealth || false,
+    wait: wait || 0,
+    format: format || 'markdown',
+    screenshot: ssFlag || false,
+    screenshotFullPage: screenshotFullPage || false,
+    selector,
+    exclude,
+    includeTags,
+    excludeTags,
+    images,
+    location: location ? { country: location } : undefined,
+    headers,
+    actions: normalizedActions,
+    autoScroll: autoScrollParam,
+    maxTokens,
+    extract,
+    readable: readable || false,
+    lite: (args['lite'] as boolean) || false,
+    question,
+    budget: (args['lite'] as boolean) ? undefined : (budgetArg ?? (maxTokens === undefined ? 4000 : undefined)),
+  };
+
+    const peeled = await Promise.race([
+    peel(url, options),
+    timeout<never>(60000, 'MCP operation'),
+  ]) as PeelResult;
+
+  // For inline LLM extraction we need to attach extra fields; use a mutable wrapper
+  const result: PeelResult & { json?: Record<string, any>; extractTokensUsed?: { input: number; output: number } } = peeled;
+
+  // Inline LLM extraction
+  if (inlineExtract && (inlineExtract.schema || inlineExtract.prompt) && llmApiKey && llmProvider) {
+    const validProviders: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
+    if (validProviders.includes(llmProvider as InlineLLMProvider)) {
+      const extractResult = await extractInlineJson(result.content, {
+        schema: inlineExtract.schema,
+        prompt: inlineExtract.prompt,
+        llmProvider: llmProvider as InlineLLMProvider,
+        llmApiKey,
+        llmModel,
+      });
+      result.json = extractResult.data;
+      result.extractTokensUsed = extractResult.tokensUsed;
+    }
+  }
+
+  const out: Record<string, unknown> = {
+    url: result.url || url,
+    title: result.title || result.metadata?.title || '',
+    tokens: result.tokens || 0,
+    content: result.content,
+  };
+  if (result.metadata) out['metadata'] = result.metadata;
+  if (result.domainData) out['domainData'] = result.domainData;
+  if (result.readability) out['readability'] = { readingTime: result.readability.readingTime, wordCount: result.readability.wordCount };
+  if (result.quickAnswer) out['quickAnswer'] = result.quickAnswer;
+  if (result.json) out['json'] = result.json;
+  if (result.extracted) out['extracted'] = result.extracted;
+  if (result.images?.length) out['images'] = result.images;
+  if (result.screenshot) out['screenshot'] = result.screenshot;
+  if (result.fingerprint) out['fingerprint'] = result.fingerprint;
+  if (result.extractTokensUsed) out['extractTokensUsed'] = result.extractTokensUsed;
+  if (result.quality !== undefined) out['quality'] = result.quality;
+  if (result.timing) out['timing'] = result.timing;
+  if (result.method) out['method'] = result.method;
+
+  return textResponse(safeJson(out));
+}
+
+// ── ListToolsRequest — only the 7 public tools ─────────────────────────────────
+
+server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: publicTools }));
+
+// ── CallToolRequest — route to handlers ────────────────────────────────────────
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: rawArgs } = request.params;
-  const args = rawArgs || {};
+  const args = (rawArgs || {}) as Record<string, unknown>;
 
   try {
-    if (name === 'webpeel_fetch') {
-      const { 
-        url, 
-        render, 
-        stealth,
-        wait, 
-        format, 
-        screenshot, 
-        screenshotFullPage, 
-        selector, 
-        exclude, 
-        includeTags,
-        excludeTags,
-        images,
-        location,
-        headers,
-        actions,
-        maxTokens,
-        extract,
-        inlineExtract,
-        llmProvider,
-        llmApiKey,
-        llmModel,
-        autoScroll: autoScrollParam,
-        question,
-        budget: budgetArg,
-        readable,
-      } = args as {
-        url: string;
-        render?: boolean;
-        stealth?: boolean;
-        wait?: number;
-        format?: 'markdown' | 'text' | 'html';
-        screenshot?: boolean;
-        screenshotFullPage?: boolean;
-        selector?: string;
-        exclude?: string[];
-        includeTags?: string[];
-        excludeTags?: string[];
-        images?: boolean;
-        location?: string;
-        headers?: Record<string, string>;
-        actions?: any[];
-        autoScroll?: boolean | { maxScrolls?: number; scrollDelay?: number; timeout?: number; waitForSelector?: string };
-        maxTokens?: number;
-        extract?: any;
-        inlineExtract?: { schema?: Record<string, any>; prompt?: string };
-        llmProvider?: string;
-        llmApiKey?: string;
-        llmModel?: string;
-        question?: string;
-        budget?: number;
-        readable?: boolean;
-      };
+    // ── Meta tool ────────────────────────────────────────────────────────────
+    if (name === 'webpeel') {
+      const task = args['task'] as string;
+      if (!task || typeof task !== 'string') throw new Error('task is required');
 
-      // SECURITY: Validate input parameters
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL parameter');
+      const parsed = parseIntent(task);
+      const routedArgs: Record<string, unknown> = { ...parsed.params };
+      if (parsed.url) routedArgs['url'] = parsed.url;
+
+      switch (parsed.intent) {
+        case 'read':
+          return handleRead(routedArgs);
+        case 'see':
+          return handleSee(routedArgs);
+        case 'find':
+          if (parsed.query) routedArgs['query'] = parsed.query;
+          return handleFind(routedArgs);
+        case 'extract':
+          return handleExtract(routedArgs);
+        case 'monitor':
+          return handleMonitor(routedArgs);
+        case 'act':
+          return handleAct(routedArgs);
       }
-
-      if (url.length > 2048) {
-        throw new Error('URL too long (max 2048 characters)');
-      }
-
-      if (wait !== undefined) {
-        if (typeof wait !== 'number' || isNaN(wait) || wait < 0 || wait > 60000) {
-          throw new Error('Invalid wait parameter: must be between 0 and 60000ms');
-        }
-      }
-
-      if (format !== undefined && !['markdown', 'text', 'html'].includes(format)) {
-        throw new Error('Invalid format parameter: must be "markdown", "text", or "html"');
-      }
-
-      if (selector !== undefined && typeof selector !== 'string') {
-        throw new Error('Invalid selector parameter: must be a string');
-      }
-
-      if (exclude !== undefined && !Array.isArray(exclude)) {
-        throw new Error('Invalid exclude parameter: must be an array');
-      }
-
-      if (headers !== undefined && typeof headers !== 'object') {
-        throw new Error('Invalid headers parameter: must be an object');
-      }
-
-      if (actions !== undefined && !Array.isArray(actions)) {
-        throw new Error('Invalid actions parameter: must be an array');
-      }
-
-      if (maxTokens !== undefined) {
-        if (typeof maxTokens !== 'number' || isNaN(maxTokens) || maxTokens < 100) {
-          throw new Error('Invalid maxTokens parameter: must be at least 100');
-        }
-      }
-
-      if (extract !== undefined && typeof extract !== 'object') {
-        throw new Error('Invalid extract parameter: must be an object');
-      }
-
-      if (includeTags !== undefined && !Array.isArray(includeTags)) {
-        throw new Error('Invalid includeTags parameter: must be an array');
-      }
-
-      if (excludeTags !== undefined && !Array.isArray(excludeTags)) {
-        throw new Error('Invalid excludeTags parameter: must be an array');
-      }
-
-      if (images !== undefined && typeof images !== 'boolean') {
-        throw new Error('Invalid images parameter: must be a boolean');
-      }
-
-      if (location !== undefined && typeof location !== 'string') {
-        throw new Error('Invalid location parameter: must be a string');
-      }
-
-      // Normalize actions (handles Firecrawl-style aliases)
-      const normalizedActions = actions ? normalizeActions(actions) : undefined;
-      const hasActions = normalizedActions && normalizedActions.length > 0;
-
-      const options: PeelOptions = {
-        render: render || hasActions || !!autoScrollParam || false,
-        stealth: stealth || false,
-        wait: wait || 0,
-        format: format || 'markdown',
-        screenshot: screenshot || false,
-        screenshotFullPage: screenshotFullPage || false,
-        selector,
-        exclude,
-        includeTags,
-        excludeTags,
-        images,
-        location: location ? { country: location } : undefined,
-        headers,
-        actions: normalizedActions,
-        autoScroll: autoScrollParam,
-        maxTokens,
-        extract,
-        readable: readable || false,
-        lite: (args.lite as boolean) || false,
-        question,
-        // Agent-friendly default: cap tokens at 4000 when no explicit limit is set.
-        // User-supplied budget takes priority; fall back to default 4000.
-        // Lite mode disables auto-budget (lite = minimal processing).
-        budget: (args.lite as boolean) ? undefined : (budgetArg ?? (maxTokens === undefined ? 4000 : undefined)),
-      };
-
-      // SECURITY: Wrap in timeout (60 seconds max)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('MCP operation timed out after 60s')), 60000);
-      });
-
-      const result = await Promise.race([
-        peel(url, options),
-        timeoutPromise,
-      ]) as any;
-
-      // Inline LLM extraction (post-fetch, BYOK)
-      if (inlineExtract && (inlineExtract.schema || inlineExtract.prompt) && llmApiKey && llmProvider) {
-        const validProviders: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
-        if (validProviders.includes(llmProvider as InlineLLMProvider)) {
-          const extractResult = await extractInlineJson(result.content, {
-            schema: inlineExtract.schema,
-            prompt: inlineExtract.prompt,
-            llmProvider: llmProvider as InlineLLMProvider,
-            llmApiKey,
-            llmModel,
-          });
-          result.json = extractResult.data;
-          result.extractTokensUsed = extractResult.tokensUsed;
-        }
-      }
-
-      // Build consistent output — always include url, title, tokens
-      const fetchOutput: Record<string, any> = {
-        url: result.url || url,
-        title: result.title || result.metadata?.title || '',
-        tokens: result.tokens || 0,
-        content: result.content,
-      };
-      if (result.metadata && Object.keys(result.metadata).length > 0) fetchOutput.metadata = result.metadata;
-      if (result.domainData) fetchOutput.domainData = result.domainData;
-      if (result.readability) fetchOutput.readability = { readingTime: result.readability.readingTime, wordCount: result.readability.wordCount };
-      if (result.quickAnswer) fetchOutput.quickAnswer = result.quickAnswer;
-      if (result.json) fetchOutput.json = result.json;
-      if (result.extracted) fetchOutput.extracted = result.extracted;
-      if (result.images && result.images.length > 0) fetchOutput.images = result.images;
-      if (result.screenshot) fetchOutput.screenshot = result.screenshot;
-      if (result.fingerprint) fetchOutput.fingerprint = result.fingerprint;
-      if (result.extractTokensUsed) fetchOutput.extractTokensUsed = result.extractTokensUsed;
-      if (result.linkCount !== undefined) fetchOutput.linkCount = result.linkCount;
-      if (result.quality !== undefined) fetchOutput.quality = result.quality;
-      if (result.timing) fetchOutput.timing = result.timing;
-      if (result.method) fetchOutput.method = result.method;
-      if (result.freshness) fetchOutput.freshness = result.freshness;
-      if (result.prunedPercent !== undefined) fetchOutput.prunedPercent = result.prunedPercent;
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(fetchOutput, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize result',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
     }
 
-    if (name === 'webpeel_search') {
-      const { query, count, provider, searchApiKey: searchKey } = args as {
-        query: string;
-        count?: number;
-        provider?: string;
-        searchApiKey?: string;
-      };
+    // ── New public tools ─────────────────────────────────────────────────────
+    if (name === 'webpeel_read') return handleRead(args);
+    if (name === 'webpeel_see') return handleSee(args);
+    if (name === 'webpeel_find') return handleFind(args);
+    if (name === 'webpeel_extract') return handleExtract(args);
+    if (name === 'webpeel_monitor') return handleMonitor(args);
+    if (name === 'webpeel_act') return handleAct(args);
 
-      // SECURITY: Validate input parameters
-      if (!query || typeof query !== 'string') {
-        throw new Error('Invalid query parameter');
-      }
+    // ── Backward compatibility aliases ───────────────────────────────────────
 
-      if (query.length > 500) {
-        throw new Error('Query too long (max 500 characters)');
-      }
+    // webpeel_fetch → webpeel_read (full-featured)
+    if (name === 'webpeel_fetch') return handleFetch(args);
 
-      if (count !== undefined) {
-        if (typeof count !== 'number' || isNaN(count) || count < 1 || count > 10) {
-          throw new Error('Invalid count parameter: must be between 1 and 10');
-        }
-      }
-
-      const validProviders: SearchProviderId[] = ['duckduckgo', 'brave', 'stealth', 'google'];
-      const providerId: SearchProviderId = provider && validProviders.includes(provider as SearchProviderId)
-        ? (provider as SearchProviderId)
-        : 'duckduckgo';
-
-      const resultCount = Math.min(Math.max(count || 5, 1), 10);
-
-      // SECURITY: Wrap in timeout (30 seconds max)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Search operation timed out after 30s')), 30000);
-      });
-
-      const searchProvider = getSearchProvider(providerId);
-      const results = await Promise.race([
-        searchProvider.searchWeb(query, {
-          count: resultCount,
-          apiKey: searchKey || undefined,
-        }),
-        timeoutPromise,
-      ]) as any;
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(results, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize results',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
+    // webpeel_youtube → webpeel_read (YouTube auto-detected)
+    if (name === 'webpeel_youtube') {
+      const { getYouTubeTranscript } = await import('../core/youtube.js');
+      const url = args['url'] as string;
+      if (!url || typeof url !== 'string') throw new Error('url is required');
+      const language = (args['language'] as string | undefined) || 'en';
+      const transcript = await Promise.race([
+        getYouTubeTranscript(url, { language }),
+        timeout<never>(60000, 'YouTube transcript'),
+      ]);
+      return textResponse(safeJson(transcript));
     }
 
-    if (name === 'webpeel_batch') {
-      const { urls, concurrency, render, format, selector } = args as {
-        urls: string[];
-        concurrency?: number;
-        render?: boolean;
-        format?: 'markdown' | 'text' | 'html';
-        selector?: string;
-      };
-
-      // SECURITY: Validate input parameters
-      if (!urls || !Array.isArray(urls)) {
-        throw new Error('Invalid urls parameter: must be an array');
-      }
-
-      if (urls.length === 0) {
-        throw new Error('URLs array cannot be empty');
-      }
-
-      if (urls.length > 50) {
-        throw new Error('Too many URLs (max 50)');
-      }
-
-      for (const url of urls) {
-        if (!url || typeof url !== 'string') {
-          throw new Error('Invalid URL in array');
-        }
-        if (url.length > 2048) {
-          throw new Error('URL too long (max 2048 characters)');
-        }
-      }
-
-      if (concurrency !== undefined) {
-        if (typeof concurrency !== 'number' || isNaN(concurrency) || concurrency < 1 || concurrency > 10) {
-          throw new Error('Invalid concurrency parameter: must be between 1 and 10');
-        }
-      }
-
-      const options: PeelOptions & { concurrency?: number } = {
-        concurrency: concurrency || 3,
-        render: render || false,
-        format: format || 'markdown',
-        selector,
-      };
-
-      // SECURITY: Wrap in timeout (5 minutes max for batch)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Batch operation timed out after 5 minutes')), 300000);
-      });
-
-      const results = await Promise.race([
-        peelBatch(urls, options),
-        timeoutPromise,
-      ]) as any;
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(results, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize batch results',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
-    }
-
-    if (name === 'webpeel_crawl') {
-      const { crawl } = await import('../core/crawler.js');
-      
-      const {
-        url,
-        maxPages,
-        maxDepth,
-        allowedDomains,
-        excludePatterns,
-        respectRobotsTxt,
-        rateLimitMs,
-        sitemapFirst,
-        render,
-        stealth,
-      } = args as {
-        url: string;
-        maxPages?: number;
-        maxDepth?: number;
-        allowedDomains?: string[];
-        excludePatterns?: string[];
-        respectRobotsTxt?: boolean;
-        rateLimitMs?: number;
-        sitemapFirst?: boolean;
-        render?: boolean;
-        stealth?: boolean;
-      };
-
-      // SECURITY: Validate input parameters
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL parameter');
-      }
-
-      if (url.length > 2048) {
-        throw new Error('URL too long (max 2048 characters)');
-      }
-
-      if (maxPages !== undefined) {
-        if (typeof maxPages !== 'number' || isNaN(maxPages) || maxPages < 1 || maxPages > 100) {
-          throw new Error('Invalid maxPages parameter: must be between 1 and 100');
-        }
-      }
-
-      if (maxDepth !== undefined) {
-        if (typeof maxDepth !== 'number' || isNaN(maxDepth) || maxDepth < 1 || maxDepth > 5) {
-          throw new Error('Invalid maxDepth parameter: must be between 1 and 5');
-        }
-      }
-
-      if (allowedDomains !== undefined && !Array.isArray(allowedDomains)) {
-        throw new Error('Invalid allowedDomains parameter: must be an array');
-      }
-
-      if (excludePatterns !== undefined && !Array.isArray(excludePatterns)) {
-        throw new Error('Invalid excludePatterns parameter: must be an array');
-      }
-
-      if (rateLimitMs !== undefined) {
-        if (typeof rateLimitMs !== 'number' || isNaN(rateLimitMs) || rateLimitMs < 100) {
-          throw new Error('Invalid rateLimitMs parameter: must be at least 100ms');
-        }
-      }
-
-      // SECURITY: Wrap in timeout (10 minutes max for crawling)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Crawl operation timed out after 10 minutes')), 600000);
-      });
-
-      const results = await Promise.race([
-        crawl(url, {
-          maxPages,
-          maxDepth,
-          allowedDomains,
-          excludePatterns,
-          respectRobotsTxt,
-          rateLimitMs,
-          sitemapFirst,
-          render,
-          stealth,
-        }),
-        timeoutPromise,
-      ]) as any;
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(results, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize crawl results',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
-    }
-
-    if (name === 'webpeel_map') {
-      const { mapDomain } = await import('../core/map.js');
-      
-      const {
-        url,
-        maxUrls,
-        includePatterns,
-        excludePatterns,
-      } = args as {
-        url: string;
-        maxUrls?: number;
-        includePatterns?: string[];
-        excludePatterns?: string[];
-      };
-
-      // SECURITY: Validate input parameters
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL parameter');
-      }
-
-      if (url.length > 2048) {
-        throw new Error('URL too long (max 2048 characters)');
-      }
-
-      if (maxUrls !== undefined) {
-        if (typeof maxUrls !== 'number' || isNaN(maxUrls) || maxUrls < 1 || maxUrls > 10000) {
-          throw new Error('Invalid maxUrls parameter: must be between 1 and 10000');
-        }
-      }
-
-      if (includePatterns !== undefined && !Array.isArray(includePatterns)) {
-        throw new Error('Invalid includePatterns parameter: must be an array');
-      }
-
-      if (excludePatterns !== undefined && !Array.isArray(excludePatterns)) {
-        throw new Error('Invalid excludePatterns parameter: must be an array');
-      }
-
-      // SECURITY: Wrap in timeout (10 minutes max for mapping)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Map operation timed out after 10 minutes')), 600000);
-      });
-
-      const results = await Promise.race([
-        mapDomain(url, {
-          maxUrls,
-          includePatterns,
-          excludePatterns,
-        }),
-        timeoutPromise,
-      ]) as any;
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(results, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize map results',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
-    }
-
-    if (name === 'webpeel_extract') {
-      const {
-        url,
-        selectors,
-        schema,
-        prompt,
-        llmApiKey,
-        llmModel,
-        llmBaseUrl,
-        render,
-      } = args as {
-        url: string;
-        selectors?: Record<string, string>;
-        schema?: any;
-        prompt?: string;
-        llmApiKey?: string;
-        llmModel?: string;
-        llmBaseUrl?: string;
-        render?: boolean;
-      };
-
-      // SECURITY: Validate input parameters
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL parameter');
-      }
-
-      if (url.length > 2048) {
-        throw new Error('URL too long (max 2048 characters)');
-      }
-
-      if (selectors !== undefined && typeof selectors !== 'object') {
-        throw new Error('Invalid selectors parameter: must be an object');
-      }
-
-      if (schema !== undefined && typeof schema !== 'object') {
-        throw new Error('Invalid schema parameter: must be an object');
-      }
-
-      if (prompt !== undefined && typeof prompt !== 'string') {
-        throw new Error('Invalid prompt parameter: must be a string');
-      }
-
-      if (llmApiKey !== undefined && typeof llmApiKey !== 'string') {
-        throw new Error('Invalid llmApiKey parameter: must be a string');
-      }
-
-      if (llmModel !== undefined && typeof llmModel !== 'string') {
-        throw new Error('Invalid llmModel parameter: must be a string');
-      }
-
-      if (llmBaseUrl !== undefined && typeof llmBaseUrl !== 'string') {
-        throw new Error('Invalid llmBaseUrl parameter: must be a string');
-      }
-
-      if (!selectors && !schema && !prompt) {
-        throw new Error('Either selectors, schema, or prompt must be provided');
-      }
-
-      const options: PeelOptions = {
-        render: render || false,
-        extract: {
-          selectors,
-          schema,
-          prompt,
-          llmApiKey,
-          llmModel,
-          llmBaseUrl,
-        },
-      };
-
-      // SECURITY: Wrap in timeout (60 seconds max)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Extract operation timed out after 60s')), 60000);
-      });
-
-      const result = await Promise.race([
-        peel(url, options),
-        timeoutPromise,
-      ]) as any;
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(result, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize extract result',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
-    }
-
-    if (name === 'webpeel_brand') {
-      const { url, render } = args as {
-        url: string;
-        render?: boolean;
-      };
-
-      // SECURITY: Validate input parameters
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL parameter');
-      }
-
-      if (url.length > 2048) {
-        throw new Error('URL too long (max 2048 characters)');
-      }
-
-      const options: PeelOptions = {
-        render: render || false,
-        extract: {
-          selectors: {
-            primaryColor: 'meta[name="theme-color"]',
-            title: 'title',
-            logo: 'img[class*="logo"], img[alt*="logo"]',
-          },
-        },
-      };
-
-      // SECURITY: Wrap in timeout (60 seconds max)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Brand extraction timed out after 60s')), 60000);
-      });
-
-      const result = await Promise.race([
-        peel(url, options),
-        timeoutPromise,
-      ]) as any;
-
-      // Extract branding info
-      const branding = {
-        url: result.url,
-        title: result.title,
-        extracted: result.extracted,
-        metadata: result.metadata,
-        colors: extractColorsFromContent(result.content),
-        fonts: extractFontsFromContent(result.content),
-      };
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(branding, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize branding result',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
-    }
-
-    if (name === 'webpeel_change_track') {
-      const { url, render } = args as {
-        url: string;
-        render?: boolean;
-      };
-
-      // SECURITY: Validate input parameters
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL parameter');
-      }
-
-      if (url.length > 2048) {
-        throw new Error('URL too long (max 2048 characters)');
-      }
-
-      const options: PeelOptions = {
-        render: render || false,
-      };
-
-      // SECURITY: Wrap in timeout (60 seconds max)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Change tracking timed out after 60s')), 60000);
-      });
-
-      const result = await Promise.race([
-        peel(url, options),
-        timeoutPromise,
-      ]) as any;
-
-      // Return tracking info
-      const trackingInfo = {
-        url: result.url,
-        title: result.title,
-        fingerprint: result.fingerprint,
-        tokens: result.tokens,
-        contentType: result.contentType,
-        lastChecked: new Date().toISOString(),
-      };
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(trackingInfo, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize tracking result',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
-    }
-
+    // webpeel_summarize → webpeel_read(summary=true)
     if (name === 'webpeel_summarize') {
-      const {
-        url,
-        llmApiKey,
-        prompt,
-        llmModel,
-        llmBaseUrl,
-        render,
-      } = args as {
-        url: string;
-        llmApiKey: string;
-        prompt?: string;
-        llmModel?: string;
-        llmBaseUrl?: string;
-        render?: boolean;
+      const { url, llmApiKey, prompt, llmModel, llmBaseUrl, render } = args as {
+        url: string; llmApiKey: string; prompt?: string;
+        llmModel?: string; llmBaseUrl?: string; render?: boolean;
       };
-
-      // SECURITY: Validate input parameters
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL parameter');
-      }
-
-      if (url.length > 2048) {
-        throw new Error('URL too long (max 2048 characters)');
-      }
-
-      if (!llmApiKey || typeof llmApiKey !== 'string') {
-        throw new Error('Invalid llmApiKey parameter: must be a string');
-      }
-
-      if (prompt !== undefined && typeof prompt !== 'string') {
-        throw new Error('Invalid prompt parameter: must be a string');
-      }
-
-      if (llmModel !== undefined && typeof llmModel !== 'string') {
-        throw new Error('Invalid llmModel parameter: must be a string');
-      }
-
-      if (llmBaseUrl !== undefined && typeof llmBaseUrl !== 'string') {
-        throw new Error('Invalid llmBaseUrl parameter: must be a string');
-      }
-
+      if (!url) throw new Error('url is required');
+      if (!llmApiKey) throw new Error('llmApiKey is required');
       const options: PeelOptions = {
         render: render || false,
         extract: {
@@ -1753,498 +920,225 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           llmBaseUrl: llmBaseUrl || 'https://api.openai.com/v1',
         },
       };
-
-      // SECURITY: Wrap in timeout (60 seconds max)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Summarize operation timed out after 60s')), 60000);
-      });
-
-      const result = await Promise.race([
-        peel(url, options),
-        timeoutPromise,
-      ]) as any;
-
-      // Return summary
-      const summaryResult = {
-        url: result.url,
-        title: result.title,
-        summary: result.extracted,
-      };
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(summaryResult, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize summary result',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
+      const result = await Promise.race([peel(url, options), timeout<never>(60000, 'Summarize')]) as PeelResult;
+      return textResponse(safeJson({ url: result.url, title: result.title, summary: result.extracted }));
     }
 
+    // webpeel_answer → webpeel_read(question=...)
     if (name === 'webpeel_answer') {
-      const {
-        question,
-        searchProvider: sp,
-        searchApiKey: sak,
-        llmProvider: lp,
-        llmApiKey: lak,
-        llmModel: lm,
-        maxSources: ms,
-      } = args as {
-        question: string;
-        searchProvider?: string;
-        searchApiKey?: string;
-        llmProvider: string;
-        llmApiKey: string;
-        llmModel?: string;
-        maxSources?: number;
+      const { question: q, searchProvider: sp, searchApiKey: sak, llmProvider: lp, llmApiKey: lak, llmModel: lm, maxSources: ms } = args as {
+        question: string; searchProvider?: string; searchApiKey?: string;
+        llmProvider: string; llmApiKey: string; llmModel?: string; maxSources?: number;
       };
-
-      // SECURITY: Validate input parameters
-      if (!question || typeof question !== 'string') {
-        throw new Error('Invalid question parameter');
-      }
-
-      if (question.length > 2000) {
-        throw new Error('Question too long (max 2000 characters)');
-      }
-
-      const validLlmProviders: LLMProviderId[] = ['openai', 'anthropic', 'google'];
-      if (!lp || !validLlmProviders.includes(lp as LLMProviderId)) {
-        throw new Error('Invalid llmProvider parameter: must be openai, anthropic, or google');
-      }
-
-      if (!lak || typeof lak !== 'string') {
-        throw new Error('Invalid llmApiKey parameter: must be a string');
-      }
-
-      const validSearchProviders: SearchProviderId[] = ['duckduckgo', 'brave', 'stealth', 'google'];
-      const resolvedSp: SearchProviderId = sp && validSearchProviders.includes(sp as SearchProviderId)
-        ? (sp as SearchProviderId)
-        : 'duckduckgo';
-
-      const resolvedMs = typeof ms === 'number'
-        ? Math.min(Math.max(ms, 1), 10)
-        : 5;
-
-      // SECURITY: Wrap in timeout (3 minutes max)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Answer operation timed out after 3 minutes')), 180000);
-      });
-
+      if (!q) throw new Error('question is required');
+      if (!lp) throw new Error('llmProvider is required');
+      if (!lak) throw new Error('llmApiKey is required');
+      const validLlm: LLMProviderId[] = ['openai', 'anthropic', 'google'];
+      if (!validLlm.includes(lp as LLMProviderId)) throw new Error('Invalid llmProvider');
+      const validSp: SearchProviderId[] = ['duckduckgo', 'brave', 'stealth', 'google'];
+      const resolvedSp = (sp && validSp.includes(sp as SearchProviderId) ? sp : 'duckduckgo') as SearchProviderId;
       const result = await Promise.race([
         answerQuestion({
-          question,
-          searchProvider: resolvedSp,
-          searchApiKey: sak || undefined,
-          llmProvider: lp as LLMProviderId,
-          llmApiKey: lak,
-          llmModel: lm || undefined,
-          maxSources: resolvedMs,
-          stream: false,
+          question: q, searchProvider: resolvedSp, searchApiKey: sak,
+          llmProvider: lp as LLMProviderId, llmApiKey: lak, llmModel: lm,
+          maxSources: Math.min(Math.max(ms ?? 5, 1), 10), stream: false,
         }),
-        timeoutPromise,
-      ]) as any;
-
-      // SECURITY: Handle JSON serialization errors
-      let resultText: string;
-      try {
-        resultText = JSON.stringify(result, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize answer result',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
-    }
-
-    if (name === 'webpeel_screenshot') {
-      const { takeScreenshot } = await import('../core/screenshot.js');
-
-      const {
-        url,
-        fullPage,
-        width,
-        height,
-        format,
-        quality,
-        waitFor,
-        stealth,
-        actions,
-      } = args as {
-        url: string;
-        fullPage?: boolean;
-        width?: number;
-        height?: number;
-        format?: 'png' | 'jpeg';
-        quality?: number;
-        waitFor?: number;
-        stealth?: boolean;
-        actions?: any[];
-      };
-
-      // SECURITY: Validate input parameters
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL parameter');
-      }
-
-      if (url.length > 2048) {
-        throw new Error('URL too long (max 2048 characters)');
-      }
-
-      if (width !== undefined && (typeof width !== 'number' || width < 100 || width > 5000)) {
-        throw new Error('Invalid width: must be between 100 and 5000');
-      }
-
-      if (height !== undefined && (typeof height !== 'number' || height < 100 || height > 5000)) {
-        throw new Error('Invalid height: must be between 100 and 5000');
-      }
-
-      if (format !== undefined && !['png', 'jpeg'].includes(format)) {
-        throw new Error('Invalid format: must be png or jpeg');
-      }
-
-      if (quality !== undefined && (typeof quality !== 'number' || quality < 1 || quality > 100)) {
-        throw new Error('Invalid quality: must be between 1 and 100');
-      }
-
-      if (waitFor !== undefined && (typeof waitFor !== 'number' || waitFor < 0 || waitFor > 60000)) {
-        throw new Error('Invalid waitFor: must be between 0 and 60000');
-      }
-
-      // SECURITY: Wrap in timeout (60 seconds max)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Screenshot timed out after 60s')), 60000);
-      });
-
-      const result = await Promise.race([
-        takeScreenshot(url, {
-          fullPage: fullPage || false,
-          width,
-          height,
-          format: format || 'png',
-          quality,
-          waitFor,
-          stealth: stealth || false,
-          actions,
-        }),
-        timeoutPromise,
-      ]) as any;
-
-      let resultText: string;
-      try {
-        resultText = JSON.stringify({
-          url: result.url,
-          format: result.format,
-          contentType: result.contentType,
-          screenshot: result.screenshot,
-        }, null, 2);
-      } catch (jsonError) {
-        resultText = JSON.stringify({
-          error: 'serialization_error',
-          message: 'Failed to serialize screenshot result',
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: resultText,
-          },
-        ],
-      };
-    }
-
-    if (name === 'webpeel_research') {
-      const {
-        query,
-        maxSources,
-        maxDepth,
-        llmApiKey,
-        llmModel,
-        llmBaseUrl,
-        outputFormat,
-        timeout,
-      } = args as {
-        query: string;
-        maxSources?: number;
-        maxDepth?: number;
-        llmApiKey?: string;
-        llmModel?: string;
-        llmBaseUrl?: string;
-        outputFormat?: 'report' | 'sources';
-        timeout?: number;
-      };
-
-      const { research } = await import('../core/research.js');
-
-      const result = await research({
-        query,
-        maxSources: maxSources ?? 5,
-        maxDepth: maxDepth ?? 1,
-        apiKey: llmApiKey,
-        model: llmModel,
-        baseUrl: llmBaseUrl,
-        outputFormat: outputFormat ?? 'report',
-        timeout: timeout ?? 60000,
-      });
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              report: result.report,
-              sources: result.sources,
-              totalSourcesFound: result.totalSourcesFound,
-              sourcesConsulted: result.sourcesConsulted,
-              elapsed: result.elapsed,
-              tokensUsed: result.tokensUsed,
-              cost: result.cost,
-            }, null, 2),
-          },
-        ],
-      };
-    }
-
-    if (name === 'webpeel_deep_fetch') {
-      const { query, count: countArg, format: formatArg } = args as {
-        query: string;
-        count?: number;
-        format?: string;
-      };
-
-      if (!query || typeof query !== 'string') throw new Error('Invalid query parameter');
-
-      const count = Math.min(Math.max((countArg as number) || 5, 1), 10);
-      const rawFormat = formatArg || 'markdown';
-      const isComparison = rawFormat === 'comparison';
-      const format = (isComparison ? 'markdown' : rawFormat) as 'markdown' | 'text';
-
-      // Step 1: Search
-      const { provider, apiKey } = getBestSearchProvider();
-      const searchResults = await Promise.race([
-        provider.searchWeb(query, { count, apiKey }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Search timed out')), 30000)),
-      ]) as any;
-
-      const results = searchResults?.results ?? searchResults ?? [];
-      const topResults = Array.isArray(results) ? results.slice(0, count) : [];
-
-      if (topResults.length === 0) {
-        return {
-          content: [{ type: 'text', text: JSON.stringify({ query, sources: [], content: '', totalTokens: 0 }, null, 2) }],
-        };
-      }
-
-      // Step 2: Fetch all URLs in parallel
-      const urls = topResults.map((r: any) => r.url).filter(Boolean);
-      const pages = await Promise.race([
-        peelBatch(urls, { concurrency: 5, format }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Batch fetch timed out')), 120000)),
-      ]) as any[];
-
-      // Step 3: Merge content with source attribution
-      const sources: Array<{ url: string; title: string; relevanceScore: number; snippet?: string }> = [];
-      const contentParts: string[] = [];
-      let totalTokens = 0;
-
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i] as any;
-        const searchResult = topResults[i] as any;
-        const pageUrl = urls[i];
-        const title = page?.title || searchResult?.title || pageUrl;
-        const relevanceScore = Math.round((1 - i / Math.max(pages.length, 1)) * 100) / 100;
-
-        sources.push({ url: pageUrl, title, relevanceScore, ...(searchResult?.snippet ? { snippet: searchResult.snippet } : {}) });
-
-        if (page?.content) {
-          contentParts.push(`## Source ${i + 1}: ${title}\n**URL:** ${pageUrl}\n\n${page.content}\n\n---\n`);
-          totalTokens += page.tokens || 0;
-        } else if (page?.error) {
-          contentParts.push(`## Source ${i + 1}: ${title}\n**URL:** ${pageUrl}\n\n*(Failed to fetch: ${page.error})*\n\n---\n`);
-        }
-      }
-
-      const mergedContent = contentParts.join('\n');
-      const deepFetchOutput: Record<string, any> = { query, sources, content: mergedContent, totalTokens };
-      if (isComparison) {
-        deepFetchOutput.format = 'comparison';
-        deepFetchOutput.comparisonNote = 'Sources fetched and ranked by relevance. Review sources array and content sections for side-by-side comparison.';
-      }
-
-      return {
-        content: [{ type: 'text', text: JSON.stringify(deepFetchOutput, null, 2) }],
-      };
-    }
-
-    if (name === 'webpeel_youtube') {
-      const { url, language } = args as { url: string; language?: string };
-      if (!url || typeof url !== 'string') throw new Error('Invalid URL parameter');
-
-      const { getYouTubeTranscript } = await import('../core/youtube.js');
-      const transcript = await Promise.race([
-        getYouTubeTranscript(url, { language: language ?? 'en' }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('YouTube transcript extraction timed out')), 60000)),
+        timeout<never>(180000, 'Answer'),
       ]);
-
-      return {
-        content: [{ type: 'text', text: JSON.stringify(transcript, null, 2) }],
-      };
+      return textResponse(safeJson(result));
     }
 
-    if (name === 'webpeel_auto_extract') {
-      const { url } = args as { url: string };
-      if (!url || typeof url !== 'string') throw new Error('Invalid URL parameter');
-      if (url.length > 2048) throw new Error('URL too long (max 2048 characters)');
-
-      const { autoExtract } = await import('../core/auto-extract.js');
-      const result = await Promise.race([
-        peel(url, { format: 'html' }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Auto-extract timed out')), 60000)),
-      ]) as any;
-
-      const extracted = autoExtract(result.content || '', url);
-
-      return {
-        content: [{ type: 'text', text: JSON.stringify({ url, pageType: extracted.type, structured: extracted }, null, 2) }],
-      };
-    }
-
+    // webpeel_quick_answer → webpeel_read(question=...)
     if (name === 'webpeel_quick_answer') {
-      const { url, question, maxPassages: mpArg, render } = args as {
-        url: string;
-        question: string;
-        maxPassages?: number;
-        render?: boolean;
+      const { url, question: q, maxPassages: mpArg, render } = args as {
+        url: string; question: string; maxPassages?: number; render?: boolean;
       };
-
-      if (!url || typeof url !== 'string') throw new Error('Invalid URL parameter');
-      if (url.length > 2048) throw new Error('URL too long (max 2048 characters)');
-      if (!question || typeof question !== 'string') throw new Error('Invalid question parameter');
-      if (question.length > 1000) throw new Error('Question too long (max 1000 characters)');
-
+      if (!url) throw new Error('url is required');
+      if (!q) throw new Error('question is required');
       const maxPassages = typeof mpArg === 'number' ? Math.min(Math.max(mpArg, 1), 10) : 3;
-
       const peelResult = await Promise.race([
         peel(url, { render: render || false, format: 'markdown', budget: 8000 }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Quick answer fetch timed out')), 60000)),
-      ]) as any;
+        timeout<never>(60000, 'Quick answer fetch'),
+      ]) as PeelResult;
+      const qa = quickAnswer({ question: q, content: peelResult.content || '', url: peelResult.url || url, maxPassages });
+      return textResponse(safeJson({
+        url: peelResult.url || url, title: peelResult.title,
+        question: qa.question, answer: qa.answer, confidence: qa.confidence,
+        passages: qa.passages, method: qa.method,
+      }));
+    }
 
-      const { quickAnswer } = await import('../core/quick-answer.js');
-      const qa = quickAnswer({
-        question,
-        content: peelResult.content || '',
-        url: peelResult.url || url,
-        maxPassages,
+    // webpeel_screenshot → webpeel_see
+    if (name === 'webpeel_screenshot') {
+      const { takeScreenshot } = await import('../core/screenshot.js');
+      const { url, fullPage, width, height, format, quality, waitFor, stealth, actions } = args as {
+        url: string; fullPage?: boolean; width?: number; height?: number;
+        format?: 'png' | 'jpeg'; quality?: number; waitFor?: number;
+        stealth?: boolean; actions?: PageAction[];
+      };
+      if (!url) throw new Error('url is required');
+      const result = await Promise.race([
+        takeScreenshot(url, { fullPage: fullPage || false, width, height, format: format || 'png', quality, waitFor, stealth: stealth || false, actions }),
+        timeout<never>(60000, 'Screenshot'),
+      ]);
+      return textResponse(safeJson({ url: result.url, format: result.format, contentType: result.contentType, screenshot: result.screenshot }));
+    }
+
+    // webpeel_search → webpeel_find(quick)
+    if (name === 'webpeel_search') {
+      return handleFind({ ...args, depth: 'quick' });
+    }
+
+    // webpeel_research → webpeel_find(deep)
+    if (name === 'webpeel_research') {
+      const { query, maxSources, maxDepth, llmApiKey, llmModel, llmBaseUrl, outputFormat, timeout: resTimeout } = args as {
+        query: string; maxSources?: number; maxDepth?: number; llmApiKey?: string;
+        llmModel?: string; llmBaseUrl?: string; outputFormat?: 'report' | 'sources'; timeout?: number;
+      };
+      const { research } = await import('../core/research.js');
+      const result = await research({
+        query, maxSources: maxSources ?? 5, maxDepth: maxDepth ?? 1,
+        apiKey: llmApiKey, model: llmModel, baseUrl: llmBaseUrl,
+        outputFormat: outputFormat ?? 'report', timeout: resTimeout ?? 60000,
       });
-
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            url: peelResult.url || url,
-            title: peelResult.title,
-            question: qa.question,
-            answer: qa.answer,
-            confidence: qa.confidence,
-            passages: qa.passages,
-            method: qa.method,
-          }, null, 2),
-        }],
-      };
+      return textResponse(safeJson({
+        report: result.report, sources: result.sources,
+        totalSourcesFound: result.totalSourcesFound, sourcesConsulted: result.sourcesConsulted,
+        elapsed: result.elapsed, tokensUsed: result.tokensUsed, cost: result.cost,
+      }));
     }
 
+    // webpeel_deep_fetch → webpeel_find(depth='deep')
+    if (name === 'webpeel_deep_fetch') {
+      const { query, count: countArg, format: formatArg } = args as {
+        query: string; count?: number; format?: string;
+      };
+      if (!query) throw new Error('query is required');
+      return handleFind({ query, depth: 'deep', limit: Math.min(Math.max(countArg ?? 5, 1), 10), format: formatArg });
+    }
+
+    // webpeel_map → webpeel_find(url=...)
+    if (name === 'webpeel_map') {
+      const { url, maxUrls, includePatterns, excludePatterns } = args as {
+        url: string; maxUrls?: number; includePatterns?: string[]; excludePatterns?: string[];
+      };
+      if (!url) throw new Error('url is required');
+      const { mapDomain } = await import('../core/map.js');
+      const results = await Promise.race([
+        mapDomain(url, { maxUrls, includePatterns, excludePatterns }),
+        timeout<never>(600000, 'Map'),
+      ]);
+      return textResponse(safeJson(results));
+    }
+
+    // webpeel_brand → webpeel_extract(fields=['name','logo','colors','fonts','socials'])
+    if (name === 'webpeel_brand') {
+      return handleExtract({ ...args, _brand: true });
+    }
+
+    // webpeel_auto_extract → webpeel_extract (auto mode)
+    if (name === 'webpeel_auto_extract') {
+      return handleExtract(args);
+    }
+
+    // webpeel_extract (legacy — same as new)
+    if (name === 'webpeel_extract') {
+      return handleExtract(args);
+    }
+
+    // webpeel_change_track → webpeel_monitor
+    if (name === 'webpeel_change_track') return handleMonitor(args);
+
+    // webpeel_watch → webpeel_monitor
     if (name === 'webpeel_watch') {
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            message: 'URL watching requires the hosted API (api.webpeel.dev). Use webpeel_change_track for one-time change detection.',
-          }, null, 2),
-        }],
-      };
+      const action = args['action'] as string | undefined;
+      if (!action || action === 'list' || action === 'check' || action === 'delete') {
+        return textResponse(safeJson({
+          message: 'URL watching requires the hosted API (api.webpeel.dev). Use webpeel_monitor for one-time change detection.',
+        }));
+      }
+      if (action === 'create') {
+        return handleMonitor({ url: args['url'] as string, webhook: args['webhookUrl'] as string | undefined });
+      }
+      return textResponse(safeJson({ message: 'URL watching requires the hosted API (api.webpeel.dev).' }));
     }
 
+    // webpeel_batch — developer tool, keep as-is
+    if (name === 'webpeel_batch') {
+      const { urls, concurrency, render, format, selector } = args as {
+        urls: string[]; concurrency?: number; render?: boolean;
+        format?: 'markdown' | 'text' | 'html'; selector?: string;
+      };
+      if (!urls || !Array.isArray(urls)) throw new Error('urls must be an array');
+      if (urls.length === 0) throw new Error('urls cannot be empty');
+      if (urls.length > 50) throw new Error('Too many URLs (max 50)');
+      const options: PeelOptions & { concurrency?: number } = {
+        concurrency: concurrency || 3, render: render || false,
+        format: format || 'markdown', selector,
+      };
+      const results = await Promise.race([
+        peelBatch(urls, options),
+        timeout<never>(300000, 'Batch'),
+      ]);
+      return textResponse(safeJson(results));
+    }
+
+    // webpeel_crawl — developer tool, keep as-is
+    if (name === 'webpeel_crawl') {
+      const { crawl } = await import('../core/crawler.js');
+      const { url, maxPages, maxDepth, allowedDomains, excludePatterns, respectRobotsTxt, rateLimitMs, sitemapFirst, render, stealth } = args as {
+        url: string; maxPages?: number; maxDepth?: number; allowedDomains?: string[];
+        excludePatterns?: string[]; respectRobotsTxt?: boolean; rateLimitMs?: number;
+        sitemapFirst?: boolean; render?: boolean; stealth?: boolean;
+      };
+      if (!url) throw new Error('url is required');
+      const results = await Promise.race([
+        crawl(url, { maxPages, maxDepth, allowedDomains, excludePatterns, respectRobotsTxt, rateLimitMs, sitemapFirst, render, stealth }),
+        timeout<never>(600000, 'Crawl'),
+      ]);
+      return textResponse(safeJson(results));
+    }
+
+    // webpeel_hotels — deprecated
     if (name === 'webpeel_hotels') {
-      const { searchHotels, parseDate, addDays } = await import('../core/hotel-search.js');
-      const destination = args.destination as string;
-      if (!destination) throw new Error('Missing destination parameter');
-      const checkin = args.checkin ? parseDate(args.checkin as string) : parseDate('tomorrow');
-      const checkout = args.checkout ? parseDate(args.checkout as string) : addDays(checkin, 1);
-      const sort = (['price', 'rating', 'value'].includes(args.sort as string) ? args.sort : 'price') as 'price' | 'rating' | 'value';
-      const limit = Math.max(1, Math.min(50, (args.limit as number) || 20));
-      const result = await searchHotels({ destination, checkin, checkout, sort, limit, stealth: true });
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            destination,
-            checkin,
-            checkout,
-            sources: result.sources,
-            count: result.results.length,
-            results: result.results.slice(0, limit),
-          }, null, 2),
-        }],
-      };
+      return textResponse(safeJson({ message: 'This tool has been deprecated.' }));
     }
 
-    // agent — LLM-free data agent: search + fetch + BM25 extraction
+    // agent — deprecated
     if (name === 'agent') {
-      const llmApiKey = args.llmApiKey as string | undefined;
-
-      // LLM mode: delegate to existing runAgent
+      // Keep backward compat: if llmApiKey provided, run agent
+      const llmApiKey = args['llmApiKey'] as string | undefined;
       if (llmApiKey) {
-        const prompt = args.prompt as string;
-        if (!prompt || typeof prompt !== 'string') throw new Error('Missing prompt for LLM agent mode');
+        const promptArg = args['prompt'] as string;
+        if (!promptArg) throw new Error('prompt is required');
         const result = await runAgent({
-          prompt,
+          prompt: promptArg,
           llmApiKey,
-          urls: args.urls as string[] | undefined,
-          maxSources: (args.maxResults as number) || undefined,
+          urls: args['urls'] as string[] | undefined,
+          maxSources: (args['maxResults'] as number) || undefined,
         });
-        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+        return textResponse(safeJson(result));
       }
 
-      // LLM-free mode: search + fetch + BM25 quickAnswer
-      const urls = (args.urls as string[]) || [];
-      const search = args.search as string | undefined;
-      if ((!urls || urls.length === 0) && !search) {
-        throw new Error('Provide at least "urls" or "search". For LLM-powered research, also pass "llmApiKey".');
+      // LLM-free mode
+      const urlsArg = (args['urls'] as string[]) || [];
+      const searchArg = args['search'] as string | undefined;
+      if (urlsArg.length === 0 && !searchArg) {
+        return textResponse(safeJson({
+          message: 'This tool has been deprecated. Use the webpeel tool instead.',
+        }));
       }
 
-      const prompt = args.prompt as string | undefined;
-      const schema = args.schema as Record<string, string> | undefined;
-      const budget = (args.budget as number) || 4000;
-      const maxResults = Math.min((args.maxResults as number) || 5, 20);
+      const promptArg = args['prompt'] as string | undefined;
+      const schema = args['schema'] as Record<string, string> | undefined;
+      const budgetArg = (args['budget'] as number) || 4000;
+      const maxResults = Math.min((args['maxResults'] as number) || 5, 20);
 
-      const targetUrls: string[] = [...urls];
-      if (search) {
+      const targetUrls: string[] = [...urlsArg];
+      if (searchArg) {
         try {
           const { provider, apiKey } = getBestSearchProvider();
-          const searchResults = await provider.searchWeb(search, { count: Math.max(maxResults, 5), apiKey });
+          const searchResults = await provider.searchWeb(searchArg, { count: Math.max(maxResults, 5), apiKey });
           for (const r of searchResults) {
             if (!targetUrls.includes(r.url)) targetUrls.push(r.url);
           }
@@ -2252,13 +1146,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       const urlsToFetch = targetUrls.slice(0, maxResults);
-      const agentResults: Array<{ url: string; title: string; extracted: Record<string, string> | null; content: string; confidence: number }> = [];
+      const agentResults: Array<{
+        url: string; title: string;
+        extracted: Record<string, string> | null;
+        content: string; confidence: number;
+      }> = [];
 
-      await Promise.all(urlsToFetch.map(async (url) => {
+      await Promise.all(urlsToFetch.map(async (u) => {
         try {
-          const page = await peel(url, { budget, format: 'markdown' });
+          const page = await peel(u, { budget: budgetArg, format: 'markdown' }) as PeelResult;
           const content = page.content || '';
-          const title = page.title || url;
+          const title = page.title || u;
           let extracted: Record<string, string> | null = null;
           let confidence = 0;
 
@@ -2266,108 +1164,87 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             extracted = {};
             let total = 0;
             for (const [field] of Object.entries(schema)) {
-              const question = prompt ? `${prompt} — specifically: what is the ${field}?` : `What is the ${field}?`;
-              const qa = quickAnswer({ question, content, maxPassages: 1, url });
+              const q = promptArg ? `${promptArg} — specifically: what is the ${field}?` : `What is the ${field}?`;
+              const qa = quickAnswer({ question: q, content, maxPassages: 1, url: u });
               extracted[field] = qa.answer || '';
               total += qa.confidence;
             }
-            if ('source' in schema) extracted['source'] = url;
+            if ('source' in schema) extracted['source'] = u;
             confidence = Object.keys(schema).length > 0 ? total / Object.keys(schema).length : 0;
-          } else if (prompt) {
-            const qa = quickAnswer({ question: prompt, content, maxPassages: 3, url });
+          } else if (promptArg) {
+            const qa = quickAnswer({ question: promptArg, content, maxPassages: 3, url: u });
             confidence = qa.confidence;
           }
 
-          agentResults.push({ url, title, extracted, content: content.slice(0, 500) + (content.length > 500 ? '…' : ''), confidence });
-        } catch { /* skip */ }
+          agentResults.push({ url: u, title, extracted, content: content.slice(0, 500) + (content.length > 500 ? '…' : ''), confidence });
+        } catch { /* skip failed URLs */ }
       }));
 
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            success: true,
-            data: { results: agentResults, totalSources: agentResults.length },
-          }, null, 2),
-        }],
-      };
+      return textResponse(safeJson({
+        success: true,
+        data: { results: agentResults, totalSources: agentResults.length },
+      }));
     }
 
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) {
     const err = error as Error;
     return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify({
-            error: err.name || 'Error',
-            message: err.message || 'Unknown error occurred',
-          }, null, 2),
-        },
-      ],
+      content: [{ type: 'text' as const, text: safeJson({ error: err.name || 'Error', message: err.message || 'Unknown error' }) }],
       isError: true,
     };
   }
 });
 
+// ── Main ───────────────────────────────────────────────────────────────────────
+
 async function main() {
   const isHttpMode =
-    process.env.MCP_HTTP_MODE === 'true' ||
-    process.env.HTTP_STREAMABLE_SERVER === 'true';
+    process.env['MCP_HTTP_MODE'] === 'true' ||
+    process.env['HTTP_STREAMABLE_SERVER'] === 'true';
 
   if (isHttpMode) {
-    // HTTP Streamable transport — start a minimal Express server
-    const { StreamableHTTPServerTransport } = await import(
-      '@modelcontextprotocol/sdk/server/streamableHttp.js'
-    );
+    const { StreamableHTTPServerTransport } = await import('@modelcontextprotocol/sdk/server/streamableHttp.js');
     const express = await import('express');
     const httpApp = express.default();
-
-    // Parse JSON bodies so req.body is available for the transport
     httpApp.use(express.default.json({ limit: '1mb' }));
 
-    httpApp.post('/v2/mcp', async (req: any, res: any) => {
+    httpApp.post('/v2/mcp', async (req: unknown, res: unknown) => {
+      const r = req as import('express').Request;
+      const s = res as import('express').Response;
       try {
-        const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: undefined, // stateless
-        });
+        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
         await server.connect(transport);
-        await transport.handleRequest(req, res, req.body);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await transport.handleRequest(r as any, s as any, r.body);
         transport.close().catch(() => {});
       } catch (err) {
-        console.error('MCP HTTP error:', err);
-        if (!res.headersSent) {
-          res.status(500).json({
-            jsonrpc: '2.0',
-            error: { code: -32603, message: 'Internal error' },
-            id: null,
-          });
+        if (!s.headersSent) {
+          s.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal error' }, id: null });
         }
       }
     });
 
-    httpApp.get('/v2/mcp', (_req: any, res: any) => {
-      res.status(405).json({
+    httpApp.get('/v2/mcp', (_req: unknown, res: unknown) => {
+      (res as import('express').Response).status(405).json({
         jsonrpc: '2.0',
         error: { code: -32000, message: 'Use POST to send MCP messages.' },
         id: null,
       });
     });
 
-    const port = parseInt(process.env.MCP_PORT || '3100', 10);
+    const port = parseInt(process.env['MCP_PORT'] || '3100', 10);
     httpApp.listen(port, () => {
-      console.error(`WebPeel MCP server (HTTP) listening on port ${port}`);
+      process.stderr.write(`WebPeel MCP server (HTTP) listening on port ${port}\n`);
     });
   } else {
-    // Default: stdio transport
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error('WebPeel MCP server running on stdio');
+    process.stderr.write('WebPeel MCP server running on stdio\n');
   }
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  process.stderr.write(`Fatal error: ${error}\n`);
   process.exit(1);
 });
