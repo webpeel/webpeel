@@ -17,6 +17,10 @@ export function createAnswerRouter(): Router {
   const router = Router();
 
   router.post('/v1/answer', async (req: Request, res: Response) => {
+    // Deprecation notice — prefer /v1/fetch?question=... which is LLM-free
+    res.setHeader('X-Deprecated', 'true');
+    res.setHeader('X-Deprecated-Use', '/v1/fetch?question=...');
+
     // AUTH: require authentication (global middleware sets req.auth)
     const ansAuthId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ansAuthId) {
