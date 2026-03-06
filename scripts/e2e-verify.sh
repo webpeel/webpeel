@@ -76,7 +76,7 @@ check "wikipedia.org: $TOKENS tokens" "$([ "$TOKENS" -gt 500 ] && echo 0 || echo
 
 # Test 4: Search
 # Search outputs debug lines then multiline JSON — use node to extract count
-RESULTS_COUNT=$($CLI search "what is webpeel" --silent --json 2>&1 | node -e "
+RESULTS_COUNT=$($CLI search "what is webpeel" --silent --json 2>/dev/null | node -e "
   let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
     try { const m=d.match(/\{[\s\S]*\}/); const j=JSON.parse(m[0]); console.log(j.results?.length||j.count||0); }
     catch(e) { console.log(0); }
