@@ -86,7 +86,7 @@ const plans: Record<PlanTier, PlanMeta> = {
     popular: true,
     icon: Zap,
     iconColor: 'text-[#5865F2]',
-    iconBg: 'bg-indigo-100',
+    iconBg: 'bg-[#5865F2]/20',
   },
   max: {
     name: 'Max',
@@ -129,7 +129,7 @@ const plans: Record<PlanTier, PlanMeta> = {
     popular: false,
     icon: Crown,
     iconColor: 'text-[#5865F2]',
-    iconBg: 'bg-indigo-100',
+    iconBg: 'bg-[#5865F2]/20',
   },
 };
 
@@ -228,9 +228,9 @@ export default function BillingPage() {
           ? 'border-[#5865F2] shadow-[0_0_0_1px_rgba(88,101,242,0.15),0_4px_24px_rgba(88,101,242,0.12)]'
           : 'border-zinc-700 shadow-sm'
       }`}>
-        {/* Subtle blurple gradient wash for paid plans */}
+        {/* Subtle blurple wash for paid plans */}
         {(isPaid || isAdmin) && (
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/60 via-white to-white pointer-events-none" />
+          <div className="absolute inset-0 bg-[#5865F2]/10 pointer-events-none" />
         )}
 
         <div className="relative p-6 md:p-8">
@@ -290,7 +290,7 @@ export default function BillingPage() {
                   </a>
                 </Button>
               ) : isAdmin ? (
-                <Badge className="bg-indigo-100 text-[#5865F2] text-sm px-3 py-1.5">
+                <Badge className="bg-[#5865F2]/20 text-[#5865F2] text-sm px-3 py-1.5">
                   Admin Account
                 </Badge>
               ) : (
@@ -427,16 +427,16 @@ export default function BillingPage() {
           </div>
         </div>
 
-        {/* Free plan trial CTA banner (only for free users) */}
+        {/* Upgrade CTA banner (only for free users) */}
         {currentTier === 'free' && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5 py-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5 py-4 rounded-xl bg-[#5865F2]/10 border border-[#5865F2]/30">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-[#5865F2] flex items-center justify-center flex-shrink-0">
                 <Zap className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-zinc-100">Start your 7-day free trial of Pro</p>
-                <p className="text-xs text-zinc-500">No credit card required · Cancel anytime</p>
+                <p className="text-sm font-semibold text-zinc-100">Upgrade to Pro</p>
+                <p className="text-xs text-zinc-400">Get 1,250 fetches/week, browser rendering, and more.</p>
               </div>
             </div>
             <Button
@@ -449,8 +449,7 @@ export default function BillingPage() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Try Pro free
-                <ArrowRight className="h-3.5 w-3.5" />
+                Upgrade to Pro →
               </a>
             </Button>
           </div>
@@ -492,9 +491,9 @@ export default function BillingPage() {
                       : 'border-zinc-700 hover:border-zinc-300 hover:shadow-sm'
                   }`}
                 >
-                  {/* Subtle gradient for current */}
+                  {/* Subtle wash for current */}
                   {isCurrent && (
-                    <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/50 to-white pointer-events-none" />
+                    <div className="absolute inset-0 bg-[#5865F2]/10 pointer-events-none" />
                   )}
 
                   <div className="relative p-5 flex flex-col h-full">
@@ -544,7 +543,7 @@ export default function BillingPage() {
 
                     {/* CTA */}
                     {isCurrent ? (
-                      <div className="w-full py-2 text-center rounded-lg bg-indigo-50 border border-indigo-100 text-[#5865F2] text-sm font-medium">
+                      <div className="w-full py-2 text-center rounded-lg bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#5865F2] text-sm font-medium">
                         Current Plan
                       </div>
                     ) : isDowngrade || tier === 'free' ? (
@@ -573,39 +572,39 @@ export default function BillingPage() {
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Section 4: Payment Method (placeholder)                             */}
+      {/* Section 4: Manage Subscription                                      */}
       {/* ------------------------------------------------------------------ */}
       <Card className="border-zinc-700">
         <CardHeader>
           <div className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-zinc-400" />
-            <CardTitle className="text-base font-semibold text-zinc-100">Payment Method</CardTitle>
+            <CardTitle className="text-base font-semibold text-zinc-100">Manage Subscription</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-start gap-4 p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-            <div className="w-10 h-10 rounded-lg bg-zinc-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <CreditCard className="h-5 w-5 text-zinc-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-zinc-300">Stripe integration coming soon</p>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Payment methods and saved cards will be available once our Stripe checkout is connected.
-                For billing questions, email{' '}
-                <a
-                  href="mailto:support@webpeel.dev"
-                  className="text-[#5865F2] hover:underline"
-                >
-                  support@webpeel.dev
-                </a>
-              </p>
-            </div>
+          <div className="bg-card border border-zinc-800 rounded-lg p-6">
+            <h3 className="text-white font-semibold mb-1">Billing Portal</h3>
+            <p className="text-zinc-400 text-sm mb-4">
+              Update payment method, view invoices, and manage your billing details via the Stripe Customer Portal.
+            </p>
+            {/* TODO: Replace with real Stripe portal URL */}
+            <a
+              href="https://billing.stripe.com/p/login/test_placeholder"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-lg transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open Billing Portal →
+            </a>
+            <p className="text-zinc-500 text-xs mt-3">
+              You&apos;ll be redirected to Stripe&apos;s secure portal. Use your account email to authenticate.
+            </p>
           </div>
         </CardContent>
       </Card>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Section 5: Invoices (placeholder)                                   */}
+      {/* Section 5: Invoices                                                 */}
       {/* ------------------------------------------------------------------ */}
       <Card className="border-zinc-700">
         <CardHeader>
@@ -613,18 +612,21 @@ export default function BillingPage() {
             <Receipt className="h-5 w-5 text-zinc-400" />
             <CardTitle className="text-base font-semibold text-zinc-100">Invoices</CardTitle>
           </div>
-          <CardDescription className="text-xs">Your billing history will appear here</CardDescription>
+          <CardDescription className="text-xs">Access your billing history</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mb-3">
-              <Receipt className="h-6 w-6 text-zinc-400" />
-            </div>
-            <p className="text-sm font-medium text-zinc-600">No invoices yet</p>
-            <p className="text-xs text-zinc-400 mt-1 max-w-xs">
-              When you upgrade to a paid plan, your invoices will appear here.
-            </p>
-          </div>
+          <p className="text-zinc-400 text-sm">
+            Invoices are available in the{' '}
+            <a
+              href="https://billing.stripe.com/p/login/test_placeholder"
+              className="text-[#5865F2] hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Billing Portal
+            </a>
+            . Open the portal above to view and download your invoice history.
+          </p>
         </CardContent>
       </Card>
 

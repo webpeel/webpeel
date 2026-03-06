@@ -73,6 +73,18 @@ export default function DashboardPage() {
     }
     return false;
   });
+  const [cliDone, setCliDone] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gs-cli-done') === 'true';
+    }
+    return false;
+  });
+  const [mcpDone, setMcpDone] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gs-mcp-done') === 'true';
+    }
+    return false;
+  });
 
   useEffect(() => {
     const key = localStorage.getItem('webpeel_first_api_key');
@@ -336,23 +348,26 @@ print(r.json()['markdown'])`,
               {
                 label: 'Install the WebPeel CLI',
                 desc: 'Run: npm install -g webpeel',
-                done: false,
+                done: cliDone,
                 href: 'https://webpeel.dev/docs/cli',
                 external: true,
+                onOpen: () => { localStorage.setItem('gs-cli-done', 'true'); setCliDone(true); },
               },
               {
                 label: 'Set up MCP for AI coding',
                 desc: 'Use WebPeel in Claude, Cursor, or Windsurf',
-                done: false,
+                done: mcpDone,
                 href: 'https://webpeel.dev/docs/mcp',
                 external: true,
+                onOpen: () => { localStorage.setItem('gs-mcp-done', 'true'); setMcpDone(true); },
               },
-            ].map(({ label, desc, done, href, external }) => (
+            ].map(({ label, desc, done, href, external, onOpen }) => (
               <a
                 key={label}
                 href={href}
                 target={external ? '_blank' : undefined}
                 rel={external ? 'noopener noreferrer' : undefined}
+                onClick={onOpen}
                 className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
                   done
                     ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15'

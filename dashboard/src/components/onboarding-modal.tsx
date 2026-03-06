@@ -81,7 +81,7 @@ export function OnboardingBanner({ sessionApiKey }: OnboardingModalProps) {
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <a href="/docs" className="text-zinc-400 hover:text-zinc-200 underline underline-offset-2">
+            <a href="https://webpeel.dev/docs" className="text-zinc-400 hover:text-zinc-200 underline underline-offset-2">
               Read docs
             </a>
             <span className="text-zinc-600 hidden sm:inline">·</span>

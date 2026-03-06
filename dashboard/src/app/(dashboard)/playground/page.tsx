@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { apiClient, ApiKey } from '@/lib/api';
@@ -112,7 +113,8 @@ function countWords(text: string): number {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function PlaygroundPage() {
+function PlaygroundContent() {
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const token = (session as any)?.apiToken as string | undefined;
 
@@ -128,13 +130,26 @@ export default function PlaygroundPage() {
 
   // ── Fetch state ───────────────────────────────────────────────────────────
   const [fetchUrl, setFetchUrl] = useState('');
-  const [format, setFormat] = useState<Format>('markdown');
-  const [renderBrowser, setRenderBrowser] = useState(false);
-  const [stealthMode, setStealthMode] = useState(false);
+  const [format, setFormat] = useState<Format>(() => {
+    if (typeof window === 'undefined') return 'markdown';
+    const saved = localStorage.getItem('wp_pref_format');
+    return (saved as Format) || 'markdown';
+  });
+  const [renderBrowser, setRenderBrowser] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('wp-default-render') === 'browser';
+  });
+  const [stealthMode, setStealthMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('wp-default-render') === 'stealth';
+  });
   const [question, setQuestion] = useState('');
   const [summaryMode, setSummaryMode] = useState(false);
   const [budget, setBudget] = useState('');
-  const [readable, setReadable] = useState(false);
+  const [readable, setReadable] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('wp-default-readable') === 'true';
+  });
   const [fetchLoading, setFetchLoading] = useState(false);
   const [fetchResult, setFetchResult] = useState<FetchResult | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -155,6 +170,19 @@ export default function PlaygroundPage() {
   const [screenshotSrc, setScreenshotSrc] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [screenshotElapsed, setScreenshotElapsed] = useState<number | null>(null);
+
+  // ── Populate from URL search params on mount (Activity → Playground flow) ──
+  useEffect(() => {
+    const urlParam = searchParams.get('url');
+    if (urlParam) {
+      setFetchUrl(urlParam);
+      // Also prefill format if passed
+      const formatParam = searchParams.get('format');
+      if (formatParam && ['markdown', 'text', 'html'].includes(formatParam)) {
+        setFormat(formatParam as Format);
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch handler ─────────────────────────────────────────────────────────
 
@@ -1259,5 +1287,13 @@ export default function PlaygroundPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function PlaygroundPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-6xl py-8 text-zinc-500 text-sm">Loading playground…</div>}>
+      <PlaygroundContent />
+    </Suspense>
   );
 }
