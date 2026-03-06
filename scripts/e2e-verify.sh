@@ -110,21 +110,9 @@ check "Tests: ${TESTS_PASSED:-0} passed, ${TOTAL_FAILED} failed" "$([ "$TOTAL_FA
 echo ""
 
 # ── Summary ────────────────────────────────────────
-echo "╔══════════════════════════════════════════════╗"
-echo "║  Results: ${GREEN}$PASS passed${NC}  ${RED}$FAIL failed${NC}  ${YELLOW}$WARN warnings${NC}  ║"
-echo "╚══════════════════════════════════════════════╝"
-
-if [ "$FAIL" -gt 0 ]; then
-  echo -e "\n${RED}VERIFICATION FAILED${NC} — $FAIL checks need attention"
-  exit 1
-else
-  echo -e "\n${GREEN}ALL CHECKS PASSED${NC}"
-  exit 0
-fi
-
 # === Trending site tests (added 2026-03-06) ===
 echo ""
-echo "--- Trending Sites ---"
+echo "── Trending Sites ──"
 
 RESULT=$($CLI "https://reddit.com/r/programming" --silent --json 2>/dev/null || echo '{"error":true}')
 TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
@@ -150,3 +138,16 @@ check "arxiv.org paper: $TOKENS tokens" "$([ "$TOKENS" -gt 200 ] && echo 0 || ec
 RESULT=$($CLI "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --silent --json 2>/dev/null || echo '{"error":true}')
 TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
 check "youtube.com transcript: $TOKENS tokens" "$([ "$TOKENS" -gt 200 ] && echo 0 || echo 1)"
+
+echo ""
+echo "╔══════════════════════════════════════════════╗"
+echo "║  Results: ${GREEN}$PASS passed${NC}  ${RED}$FAIL failed${NC}  ${YELLOW}$WARN warnings${NC}  ║"
+echo "╚══════════════════════════════════════════════╝"
+
+if [ "$FAIL" -gt 0 ]; then
+  echo -e "\n${RED}VERIFICATION FAILED${NC} — $FAIL checks need attention"
+  exit 1
+else
+  echo -e "\n${GREEN}ALL CHECKS PASSED${NC}"
+  exit 0
+fi
