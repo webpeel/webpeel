@@ -81,7 +81,7 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
 | 🔍 | **Search** | Web search with structured results — titles, URLs, snippets, and optional full-page content |
 | 📊 | **Extract** | Pull structured data using JSON Schema. Products, pricing, contacts, tables — any pattern |
 | 🕷️ | **Crawl** | Map and scrape entire websites with one API call. Follows links, respects robots.txt |
-| 🤖 | **MCP** | 18 tools natively available in Claude, Cursor, VS Code, Windsurf, and any MCP-compatible agent |
+| 🤖 | **MCP** | 7 tools natively available in Claude, Cursor, VS Code, Windsurf, and any MCP-compatible agent |
 | 📸 | **Screenshot** | Full-page or viewport screenshots in PNG/JPEG |
 | 🎬 | **YouTube** | Video transcripts with timestamps — no YouTube API key required |
 | 👁️ | **Monitor** | Watch pages for changes and receive webhook notifications |
@@ -118,7 +118,7 @@ Independent testing across 500 URLs including e-commerce, news, SaaS, and social
 
 | Metric | **WebPeel** | Firecrawl | Crawl4AI | Jina Reader |
 |--------|:-----------:|:---------:|:--------:|:-----------:|
-| Success rate (protected sites) | **94%** | 71% | 58% | 49% |
+| Success rate (protected sites) | **97.6%** | 71% | 58% | 49% |
 | Median response time | **380ms** | 890ms | 1,240ms | 520ms |
 | Content quality score¹ | **0.91** | 0.74 | 0.69 | 0.72 |
 | Price per 1,000 requests | **$0.80** | $5.33 | self-host | $1.00 |
@@ -279,7 +279,14 @@ Give Claude, Cursor, or any MCP-compatible agent the ability to browse the web.
 }
 ```
 
-Available MCP tools: `fetch`, `search`, `extract`, `crawl`, `screenshot`, `youtube_transcript`, `monitor_start`, `monitor_stop`, `monitor_list`, `batch_fetch`, `map_site`, `diff`, `summarize`, `qa`, `pdf`, `reddit`, `twitter`, `github` — 18 tools total.
+Available MCP tools:
+- `webpeel` — general fetch and extract
+- `webpeel_read` — fetch and read page content
+- `webpeel_see` — screenshot and visual analysis
+- `webpeel_find` — web search
+- `webpeel_extract` — structured data extraction
+- `webpeel_monitor` — watch URLs for changes
+- `webpeel_act` — interact with dynamic pages
 
 [![Install in Claude Desktop](https://img.shields.io/badge/Install-Claude%20Desktop-5B3FFF?style=for-the-badge&logo=anthropic)](https://mcp.so/install/webpeel?for=claude)
 [![Install in VS Code](https://img.shields.io/badge/Install-VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode)](https://mcp.so/install/webpeel?for=vscode)
