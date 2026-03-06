@@ -2082,6 +2082,167 @@ program
     }
   });
 
+// auth command — set and verify API key in one step
+program
+  .command('auth [key]')
+  .description('Set and verify your WebPeel API key')
+  .option('--json', 'Output as JSON')
+  .action(async (key: string | undefined, opts: { json?: boolean }) => {
+    const config = loadConfig();
+
+    // If no key provided, show current auth status (or error if not set)
+    if (!key) {
+      const currentKey = config.apiKey;
+      if (!currentKey) {
+        if (opts.json) {
+          console.log(JSON.stringify({ authenticated: false, error: 'No API key set. Run: webpeel auth <key>' }));
+        } else {
+          console.error('No API key set. Run: webpeel auth <your-key>');
+          console.error('Get a free key at: https://app.webpeel.dev/keys');
+        }
+        process.exit(2);
+      }
+      // Fall through to verify current key
+      key = currentKey;
+    }
+
+    // Save the key first
+    config.apiKey = key;
+    saveConfig(config);
+
+    // Verify by calling the API
+    const apiUrl = (process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev');
+    try {
+      const res = await fetch(`${apiUrl}/v1/usage`, {
+        headers: { Authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (res.status === 401) {
+        if (opts.json) {
+          console.log(JSON.stringify({ authenticated: false, error: 'Invalid API key' }));
+        } else {
+          console.error('❌ Invalid API key. Get a valid key at: https://app.webpeel.dev/keys');
+        }
+        // Revert the key save
+        config.apiKey = undefined;
+        saveConfig(config);
+        process.exit(2);
+      }
+
+      if (res.ok) {
+        const data = await res.json() as any;
+        const plan = data.tier || (typeof data.plan === 'string' ? data.plan : data.plan?.tier) || 'free';
+        const used = data.used ?? data.totalRequests ?? data.weekly?.used ?? 0;
+        const limit = data.limit ?? data.weeklyLimit ?? data.weekly?.limit ?? 500;
+        const remaining = limit - used;
+
+        if (opts.json) {
+          console.log(JSON.stringify({
+            authenticated: true,
+            plan,
+            used,
+            limit,
+            remaining,
+            keyPrefix: key.slice(0, 12) + '...',
+          }));
+        } else {
+          console.log(`✅ API key verified`);
+          console.log(`   Plan: ${plan}`);
+          console.log(`   Usage: ${used} / ${limit} this week (${remaining} remaining)`);
+          console.log(`   Key: ${key.slice(0, 12)}...`);
+        }
+        process.exit(0);
+      }
+
+      // Non-200 non-401 — still save key but warn
+      if (opts.json) {
+        console.log(JSON.stringify({ authenticated: 'unknown', warning: `API returned ${res.status}` }));
+      } else {
+        console.log(`⚠️  Key saved but couldn't verify (API returned ${res.status})`);
+      }
+    } catch (e: any) {
+      if (opts.json) {
+        console.log(JSON.stringify({ authenticated: 'unknown', warning: 'Network error', error: e.message }));
+      } else {
+        console.log(`⚠️  Key saved but couldn't verify (network error: ${e.message})`);
+      }
+    }
+  });
+
+// status command — check auth status and API health
+program
+  .command('status')
+  .description('Check authentication status and API usage')
+  .option('--json', 'Output as JSON')
+  .action(async (opts: { json?: boolean }) => {
+    const config = loadConfig();
+    const key = config.apiKey;
+
+    if (!key) {
+      if (opts.json) {
+        console.log(JSON.stringify({ authenticated: false, error: 'No API key configured' }));
+      } else {
+        console.error('Not authenticated. Run: webpeel auth <your-key>');
+        console.error('Get a free key at: https://app.webpeel.dev/keys');
+      }
+      process.exit(2);
+    }
+
+    const apiUrl = (process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev');
+    try {
+      const [healthRes, usageRes] = await Promise.all([
+        fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(5000) }).catch(() => null),
+        fetch(`${apiUrl}/v1/usage`, {
+          headers: { Authorization: `Bearer ${key}` },
+          signal: AbortSignal.timeout(8000),
+        }),
+      ]);
+
+      const apiOnline = healthRes?.ok ?? false;
+
+      if (usageRes.status === 401) {
+        if (opts.json) {
+          console.log(JSON.stringify({ authenticated: false, apiOnline, error: 'API key is invalid or expired' }));
+        } else {
+          console.error('❌ API key is invalid. Run: webpeel auth <new-key>');
+        }
+        process.exit(2);
+      }
+
+      const usage = usageRes.ok ? await usageRes.json() as any : null;
+      const plan = usage?.tier || (typeof usage?.plan === 'string' ? usage?.plan : usage?.plan?.tier) || 'free';
+      const used = usage?.used ?? usage?.totalRequests ?? usage?.weekly?.used ?? 0;
+      const limit = usage?.limit ?? usage?.weeklyLimit ?? usage?.weekly?.limit ?? 500;
+      const remaining = limit - used;
+
+      if (opts.json) {
+        console.log(JSON.stringify({
+          authenticated: true,
+          apiOnline,
+          plan,
+          used,
+          limit,
+          remaining,
+          keyPrefix: key.slice(0, 12) + '...',
+        }));
+      } else {
+        console.log(`✅ Authenticated`);
+        console.log(`   API: ${apiOnline ? '🟢 online' : '🔴 offline'}`);
+        console.log(`   Plan: ${plan}`);
+        console.log(`   Usage: ${used} / ${limit} this week (${remaining} remaining)`);
+        console.log(`   Key: ${key.slice(0, 12)}...`);
+      }
+    } catch (e: any) {
+      if (opts.json) {
+        console.log(JSON.stringify({ authenticated: 'unknown', error: e.message }));
+      } else {
+        console.error(`❌ Could not reach API: ${e.message}`);
+      }
+      process.exit(1);
+    }
+  });
+
 program
   .command('login')
   .description('Authenticate the CLI with your API key')
@@ -2194,6 +2355,7 @@ program
     // Settable config keys (safe for user modification)
     // Supports dot-notation for nested keys (e.g., llm.apiKey)
     const SETTABLE_KEYS: Record<string, string> = {
+      apiKey: 'WebPeel API key (tip: use `webpeel auth <key>` to set and verify in one step)',
       braveApiKey: 'Brave Search API key',
       'llm.apiKey': 'LLM API key for AI-powered extraction (OpenAI-compatible)',
       'llm.model': 'LLM model name (default: gpt-4o-mini)',
@@ -2254,6 +2416,11 @@ program
       console.log('');
       console.log('  Settable keys: ' + Object.keys(SETTABLE_KEYS).join(', '));
       console.log('  Usage: webpeel config set <key> <value>');
+      if (!config.apiKey) {
+        console.log('');
+        console.log('  Tip: Run `webpeel auth <your-key>` to set and verify your API key.');
+        console.log('       Get a free key at: https://app.webpeel.dev/keys');
+      }
       process.exit(0);
     }
 
