@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="Get started with WebPeel — AI-ready web fetching in minutes. Install, get your API key, and make your first fetch.">
+  <link rel="canonical" href="https://webpeel.dev/docs/getting-started">
+  <meta property="og:title" content="Getting Started — WebPeel">
+  <meta property="og:description" content="Get started with WebPeel — AI-ready web fetching in minutes. Install, get your API key, and make your first fetch.">
+  <meta property="og:url" content="https://webpeel.dev/docs/getting-started">
+  <meta property="og:type" content="website">
+  <title>Getting Started — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/getting-started" class="sidebar-link active">Getting Started</a>
+        <a href="/docs/authentication" class="sidebar-link">Authentication</a>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">API</div>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshot</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl</a>
+        <a href="/docs/extract" class="sidebar-link">Extract</a>
+        <a href="/docs/batch" class="sidebar-link">Batch</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Getting Started</span>
+      </div>
+
+      <h1>Getting Started with WebPeel</h1>
+      <p class="lead">WebPeel is an AI-ready web fetching API that turns any URL into clean, structured content — markdown, text, HTML, screenshots, or structured JSON — so your AI apps and agents can work with the web without the noise.</p>
+
+      <h2 id="what-is-webpeel">What is WebPeel?</h2>
+      <p>WebPeel handles the messy parts of web fetching: JavaScript rendering, bot detection, content extraction, and token optimization. Instead of writing Playwright scripts or fighting with HTML parsers, you make one API call and get back clean content your LLM can actually use. It works as a REST API, Node.js/Python SDK, CLI tool, and MCP server for AI assistants.</p>
+
+      <h2 id="install">Install</h2>
+      <p>Pick your preferred integration:</p>
+
+      <h3>Node.js SDK</h3>
+      <pre><code class="language-bash">npm install webpeel</code></pre>
+
+      <h3>Python SDK</h3>
+      <pre><code class="language-bash">pip install webpeel</code></pre>
+
+      <h3>CLI (no install required)</h3>
+      <pre><code class="language-bash">npx webpeel fetch https://example.com</code></pre>
+
+      <h2 id="your-first-fetch">Your First Fetch</h2>
+      <p>Here's a complete example fetching a page and getting back clean markdown:</p>
+
+      <h3>curl</h3>
+      <pre><code class="language-bash">curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
+  -H "Authorization: Bearer wp_live_xxxx"</code></pre>
+
+      <h3>Node.js</h3>
+      <pre><code class="language-javascript">import { WebPeel } from 'webpeel';
+
+const wp = new WebPeel({ apiKey: 'wp_live_xxxx' });
+
+const result = await wp.fetch('https://example.com');
+console.log(result.content); // Clean markdown
+console.log(result.title);   // Page title
+console.log(result.tokens);  // Token count</code></pre>
+
+      <h3>Python</h3>
+      <pre><code class="language-python">from webpeel import WebPeel
+
+wp = WebPeel(api_key="wp_live_xxxx")
+
+result = wp.fetch("https://example.com")
+print(result.content)  # Clean markdown
+print(result.title)    # Page title
+print(result.tokens)   # Token count</code></pre>
+
+      <h2 id="get-api-key">Get Your API Key</h2>
+      <p>You'll need an API key to authenticate requests.</p>
+      <ol>
+        <li>Sign up (free) at <a href="https://app.webpeel.dev/signup"><strong>app.webpeel.dev/signup</strong></a></li>
+        <li>Navigate to <a href="https://app.webpeel.dev/keys"><strong>app.webpeel.dev/keys</strong></a></li>
+        <li>Click <strong>Create Key</strong> — copy and save it immediately (shown once)</li>
+      </ol>
+      <p>Your key starts with <code>wp_live_</code> for production or <code>wp_test_</code> for sandbox. Pass it in the <code>Authorization</code> header on every request.</p>
+
+      <h2 id="next-steps">Next Steps</h2>
+      <ul>
+        <li><a href="/docs/authentication"><strong>Authentication</strong></a> — Key formats, scopes, rate limits per tier</li>
+        <li><a href="/docs/fetch"><strong>Fetch API</strong></a> — Full parameter reference: <code>question=</code>, <code>summary=</code>, <code>render</code>, <code>stealth</code>, and more</li>
+        <li><a href="/docs/screenshot"><strong>Screenshot API</strong></a> — Capture pages with design analysis mode</li>
+        <li><a href="/docs/mcp"><strong>MCP Server</strong></a> — Use WebPeel directly inside Claude, Cursor, or any MCP client</li>
+        <li><a href="/docs/sdks"><strong>SDKs</strong></a> — Full Node.js and Python SDK reference</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+</body>
+</html>

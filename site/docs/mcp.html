@@ -11,10 +11,10 @@
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="description" content="Connect WebPeel to Claude, Cursor, VS Code, and other MCP-compatible AI tools. 18 tools for web scraping.">
+  <meta name="description" content="Connect WebPeel to Claude, Cursor, VS Code, and other MCP-compatible AI tools. 7 tools for web scraping.">
   <link rel="canonical" href="https://webpeel.dev/docs/mcp">
   <meta property="og:title" content="MCP Server — WebPeel">
-  <meta property="og:description" content="Connect WebPeel to Claude, Cursor, VS Code, and other MCP-compatible AI tools. 18 tools for web scraping.">
+  <meta property="og:description" content="Connect WebPeel to Claude, Cursor, VS Code, and other MCP-compatible AI tools. 7 tools for web scraping.">
   <meta property="og:url" content="https://webpeel.dev/docs/mcp">
   <meta property="og:type" content="website">
   <title>MCP Server — WebPeel</title>
@@ -257,218 +257,114 @@
       <pre><code class="language-bash">npx @smithery/cli install @webpeel/mcp</code></pre>
 
       <h2 id="available-tools">Available Tools</h2>
-      <p>WebPeel provides 18 MCP tools: <code>webpeel_fetch</code>, <code>webpeel_search</code>, <code>webpeel_crawl</code>, <code>webpeel_map</code>, <code>webpeel_extract</code>, <code>webpeel_batch</code>, <code>webpeel_agent</code>, <code>webpeel_research</code>, <code>webpeel_screenshot</code>, <code>webpeel_brand</code>, <code>webpeel_summarize</code>, <code>webpeel_answer</code>, <code>webpeel_hotels</code>, <code>webpeel_youtube</code>, <code>webpeel_quick_answer</code>, <code>webpeel_deep_fetch</code>, <code>webpeel_auto_extract</code>, <code>webpeel_watch</code>.</p>
-      <p>The local MCP server may expose additional tools depending on your WebPeel version.</p>
+      <p>WebPeel provides 7 MCP tools covering all common web tasks. Describe your goal in plain English — the smart NL intent parser routes to the right tool automatically.</p>
+      <p>All 20 legacy tool names are still routed for backward compatibility.</p>
 
-      <h3 id="webpeel_fetch">webpeel_fetch</h3>
-      <p>Fetch a URL and return clean, AI-ready markdown content.</p>
+      <h3 id="webpeel">webpeel</h3>
+      <p>General fetch and extract from any URL. The main entry point — give it a URL and a task description and it handles the rest.</p>
 
       <h4>Parameters</h4>
       <ul>
         <li><code>url</code> (string, <strong>required</strong>) — The URL to fetch</li>
+        <li><code>task</code> (string) — Plain-English description of what you want (e.g., "get the article text", "find all prices")</li>
         <li><code>format</code> (string) — Output format: <code>markdown</code>, <code>text</code>, or <code>html</code> (default: <code>markdown</code>)</li>
-        <li><code>render</code> (boolean) — Force browser rendering for JavaScript-heavy sites (default: <code>false</code>)</li>
+        <li><code>question</code> (string) — Ask a question, get an AI answer about the page</li>
+        <li><code>summary</code> (boolean) — Return a concise extractive summary</li>
+        <li><code>render</code> (boolean) — Force browser rendering (default: <code>false</code>)</li>
         <li><code>stealth</code> (boolean) — Use stealth mode to bypass bot detection (default: <code>false</code>)</li>
-        <li><code>wait</code> (number) — Milliseconds to wait for dynamic content (only with <code>render=true</code>)</li>
-        <li><code>selector</code> (string) — CSS selector to extract specific content (e.g., <code>"article"</code>)</li>
-        <li><code>exclude</code> (array) — CSS selectors to exclude (e.g., <code>[".sidebar", ".ads"]</code>)</li>
-        <li><code>includeTags</code> (array) — Only include these HTML tags/classes</li>
-        <li><code>excludeTags</code> (array) — Remove these HTML tags/classes</li>
-        <li><code>images</code> (boolean) — Extract image URLs (default: <code>false</code>)</li>
-        <li><code>maxTokens</code> (number) — Maximum token count (truncates if exceeded)</li>
-        <li><code>screenshot</code> (boolean) — Capture page screenshot (returns base64 PNG)</li>
-        <li><code>screenshotFullPage</code> (boolean) — Full-page screenshot (default: viewport only)</li>
-        <li><code>location</code> (string) — ISO country code for geo-targeting (e.g., <code>"US"</code>, <code>"DE"</code>)</li>
-        <li><code>headers</code> (object) — Custom HTTP headers</li>
-        <li><code>actions</code> (array) — Page actions to execute before extraction</li>
-        <li><code>extract</code> (object) — Structured data extraction options</li>
       </ul>
 
       <h4>Example</h4>
       <pre><code class="language-javascript">// Ask your AI assistant:
-"Fetch https://example.com and extract the main article"
+"Use webpeel to get the main article from https://example.com"
+"Fetch https://shop.com/product and tell me the price"</code></pre>
 
-// With stealth mode:
-"Fetch https://protected-site.com with stealth mode enabled"
+      <h3 id="webpeel_read">webpeel_read</h3>
+      <p>Fetch and read page content as clean text or markdown. Optimized for articles, documentation, and long-form content.</p>
 
-// Extract specific content:
-"Fetch https://news.com and only show me the article content, excluding nav and ads"</code></pre>
+      <h4>Parameters</h4>
+      <ul>
+        <li><code>url</code> (string, <strong>required</strong>) — The URL to read</li>
+        <li><code>format</code> (string) — <code>markdown</code> or <code>text</code> (default: <code>markdown</code>)</li>
+        <li><code>readable</code> (boolean) — Apply reader mode to strip nav/ads (default: <code>true</code>)</li>
+        <li><code>budget</code> (number) — Max token budget for returned content</li>
+      </ul>
 
-      <h3 id="webpeel_search">webpeel_search</h3>
-      <p>Search the web (DuckDuckGo by default, or Brave Search with a BYOK API key) and return results with titles, URLs, and snippets.</p>
+      <h4>Example</h4>
+      <pre><code class="language-javascript">// Ask your AI assistant:
+"Read https://docs.example.com/getting-started and summarize the setup steps"</code></pre>
+
+      <h3 id="webpeel_see">webpeel_see</h3>
+      <p>Take a screenshot and analyze visuals. Returns a base64 image plus optional design analysis (colors, fonts, layout).</p>
+
+      <h4>Parameters</h4>
+      <ul>
+        <li><code>url</code> (string, <strong>required</strong>) — URL to screenshot</li>
+        <li><code>mode</code> (string) — <code>basic</code>, <code>browser</code>, or <code>design-analysis</code> (default: <code>browser</code>)</li>
+        <li><code>fullPage</code> (boolean) — Capture full scrollable page (default: <code>false</code>)</li>
+        <li><code>width</code> (number) — Viewport width in pixels (default: <code>1280</code>)</li>
+      </ul>
+
+      <h4>Example</h4>
+      <pre><code class="language-javascript">// Ask your AI assistant:
+"Screenshot https://stripe.com and tell me what colors they use"
+"Take a full-page screenshot of https://example.com"</code></pre>
+
+      <h3 id="webpeel_find">webpeel_find</h3>
+      <p>Web search — returns titles, URLs, and snippets for a query.</p>
 
       <h4>Parameters</h4>
       <ul>
         <li><code>query</code> (string, <strong>required</strong>) — Search query</li>
-        <li><code>count</code> (number) — Number of results (1-10, default: 5)</li>
-        <li><code>provider</code> (string) — <code>duckduckgo</code> (default) or <code>brave</code></li>
-        <li><code>searchApiKey</code> (string) — Brave Search API key (required when <code>provider="brave"</code>)</li>
+        <li><code>count</code> (number) — Number of results (1–10, default: <code>5</code>)</li>
       </ul>
 
       <h4>Example</h4>
       <pre><code class="language-javascript">// Ask your AI assistant:
-"Search for 'docker containers best practices'"
-
-// Then fetch the top result:
-"Fetch the first result and summarize it"</code></pre>
-
-      <h3 id="webpeel_crawl">webpeel_crawl</h3>
-      <p>Crawl a website starting from a URL, following links and extracting content. Perfect for documentation sites or building knowledge bases.</p>
-
-      <h4>Parameters</h4>
-      <ul>
-        <li><code>url</code> (string, <strong>required</strong>) — Starting URL</li>
-        <li><code>maxPages</code> (number) — Max pages to crawl (1-100, default: 10)</li>
-        <li><code>maxDepth</code> (number) — Max crawl depth (1-5, default: 2)</li>
-        <li><code>allowedDomains</code> (array) — Only crawl these domains</li>
-        <li><code>excludePatterns</code> (array) — Exclude URLs matching these regex patterns</li>
-        <li><code>respectRobotsTxt</code> (boolean) — Respect robots.txt (default: <code>true</code>)</li>
-        <li><code>rateLimitMs</code> (number) — Rate limit between requests (default: 1000ms)</li>
-        <li><code>sitemapFirst</code> (boolean) — Discover URLs via sitemap first (default: <code>false</code>)</li>
-        <li><code>render</code> (boolean) — Use browser rendering for all pages</li>
-        <li><code>stealth</code> (boolean) — Use stealth mode for all pages</li>
-      </ul>
-
-      <h4>Example</h4>
-      <pre><code class="language-javascript">// Ask your AI assistant:
-"Crawl https://docs.example.com up to 50 pages and build a summary"</code></pre>
-
-      <h3 id="webpeel_map">webpeel_map</h3>
-      <p>Discover all URLs on a domain using sitemap.xml and link crawling. Returns URLs without fetching content.</p>
-
-      <h4>Parameters</h4>
-      <ul>
-        <li><code>url</code> (string, <strong>required</strong>) — Starting URL or domain</li>
-        <li><code>maxUrls</code> (number) — Max URLs to discover (1-10000, default: 5000)</li>
-        <li><code>includePatterns</code> (array) — Only include URLs matching these patterns (regex)</li>
-        <li><code>excludePatterns</code> (array) — Exclude URLs matching these patterns (regex)</li>
-      </ul>
-
-      <h4>Example</h4>
-      <pre><code class="language-javascript">// Ask your AI assistant:
-"Map all URLs on https://example.com/docs/"</code></pre>
+"Search for 'best Node.js web scraping libraries 2025'"</code></pre>
 
       <h3 id="webpeel_extract">webpeel_extract</h3>
-      <p>Extract structured data from a webpage using CSS selectors, JSON schema, or AI-powered extraction.</p>
+      <p>Structured data extraction with CSS selectors or a JSON schema. Returns typed fields instead of raw text.</p>
 
       <h4>Parameters</h4>
       <ul>
         <li><code>url</code> (string, <strong>required</strong>) — URL to extract from</li>
         <li><code>selectors</code> (object) — Map field names to CSS selectors (e.g., <code>{"title": "h1", "price": ".price"}</code>)</li>
         <li><code>schema</code> (object) — JSON schema describing expected output</li>
-        <li><code>prompt</code> (string) — Natural language prompt for AI extraction (requires <code>llmApiKey</code>)</li>
-        <li><code>llmApiKey</code> (string) — API key for LLM-powered extraction</li>
-        <li><code>llmModel</code> (string) — LLM model (default: <code>gpt-4o-mini</code>)</li>
-        <li><code>llmBaseUrl</code> (string) — LLM API base URL (default: OpenAI)</li>
         <li><code>render</code> (boolean) — Use browser rendering</li>
       </ul>
 
       <h4>Example</h4>
       <pre><code class="language-javascript">// Ask your AI assistant:
-"Extract the product title, price, and rating from https://shop.com/product/123"
+"Extract the product name, price, and rating from https://shop.com/item/123"</code></pre>
 
-// With AI extraction:
-"Extract all the features mentioned on https://example.com/product as a bullet list"</code></pre>
-
-      <h3 id="webpeel_batch">webpeel_batch</h3>
-      <p>Fetch multiple URLs in batch with concurrency control.</p>
+      <h3 id="webpeel_monitor">webpeel_monitor</h3>
+      <p>Watch a URL for changes — generates a content fingerprint you can poll to detect updates.</p>
 
       <h4>Parameters</h4>
       <ul>
-        <li><code>urls</code> (array, <strong>required</strong>) — Array of URLs to fetch</li>
-        <li><code>concurrency</code> (number) — Max concurrent fetches (1-10, default: 3)</li>
-        <li><code>render</code> (boolean) — Use browser rendering for all URLs</li>
-        <li><code>format</code> (string) — Output format for all URLs</li>
-        <li><code>selector</code> (string) — CSS selector for content extraction</li>
-      </ul>
-
-      <h4>Example</h4>
-      <pre><code class="language-javascript">// Ask your AI assistant:
-"Fetch these 5 URLs and compare their main content: [url1, url2, url3, url4, url5]"</code></pre>
-
-      <h3 id="webpeel_agent">webpeel_agent</h3>
-      <p>Run WebPeel’s research agent: search → fetch → analyze → answer. Supports streaming and structured output via JSON Schema.</p>
-
-      <h4>Parameters</h4>
-      <ul>
-        <li><code>prompt</code> (string, <strong>required</strong>) — Research task prompt</li>
-        <li><code>llmApiKey</code> (string, <strong>required</strong>) — LLM API key (BYOK)</li>
-        <li><code>llmModel</code> (string) — Model name (optional)</li>
-        <li><code>depth</code> (string) — <code>basic</code> or <code>thorough</code></li>
-        <li><code>topic</code> (string) — <code>general</code>, <code>news</code>, <code>technical</code>, <code>academic</code></li>
-        <li><code>maxSources</code> (number) — Max sources to fetch (1-20)</li>
-        <li><code>outputSchema</code> (object) — JSON Schema for structured output</li>
-        <li><code>stream</code> (boolean) — Stream progress + chunks via SSE</li>
-      </ul>
-
-      <h4>Example</h4>
-      <pre><code class="language-javascript">// Ask your AI assistant:
-"Use webpeel_agent to research the current best practices for SSE in Node.js.\nDepth: thorough. Topic: technical. Return JSON with fields: summary, pitfalls, and examples."</code></pre>
-
-      <h3 id="webpeel_research">webpeel_research</h3>
-      <p>Multi-source deep research with BM25 relevance ranking. Searches the web, fetches top sources, filters by relevance, and optionally synthesizes with LLM. No API key needed for sources mode.</p>
-
-      <h4>Parameters</h4>
-      <ul>
-        <li><code>query</code> (string, <strong>required</strong>) — Research question</li>
-        <li><code>maxSources</code> (number) — Max sources to fetch (default: 5)</li>
-        <li><code>maxDepth</code> (number) — Link follow depth (1=no follow, default: 2)</li>
-        <li><code>outputFormat</code> (string) — <code>report</code> (LLM synthesis) or <code>sources</code> (raw)</li>
-        <li><code>apiKey</code> (string) — OpenAI API key for synthesis</li>
-        <li><code>model</code> (string) — LLM model for synthesis</li>
-        <li><code>timeout</code> (number) — Total timeout in ms</li>
-      </ul>
-
-      <h4>Example</h4>
-      <pre><code class="language-javascript">// Ask your AI assistant:
-"Use webpeel_research to find the best practices for web scraping in 2025.
-Max 5 sources. Return sources with relevance scores."</code></pre>
-
-      <hr style="margin: 32px 0; border: none; border-top: 1px solid #E0DDD8;" />
-      <p style="color: #8A8A82; font-size: 14px;">Additional tools (local MCP server only, if enabled):</p>
-
-      <h3 id="webpeel_brand">webpeel_brand</h3>
-      <p>Extract branding and design system from a URL. Returns colors, fonts, and visual identity.</p>
-
-      <h4>Parameters</h4>
-      <ul>
-        <li><code>url</code> (string, <strong>required</strong>) — URL to extract branding from</li>
+        <li><code>url</code> (string, <strong>required</strong>) — URL to monitor</li>
+        <li><code>selector</code> (string) — CSS selector to scope monitoring to a specific element</li>
         <li><code>render</code> (boolean) — Use browser rendering</li>
       </ul>
 
       <h4>Example</h4>
       <pre><code class="language-javascript">// Ask your AI assistant:
-"What colors and fonts does https://stripe.com use?"</code></pre>
+"Monitor https://example.com/pricing for changes and tell me when the price section updates"</code></pre>
 
-      <h3 id="webpeel_change_track">webpeel_change_track</h3>
-      <p>Track changes on a URL by generating a content fingerprint.</p>
+      <h3 id="webpeel_act">webpeel_act</h3>
+      <p>Interact with dynamic pages — click buttons, fill forms, scroll, and extract after interaction.</p>
 
       <h4>Parameters</h4>
       <ul>
-        <li><code>url</code> (string, <strong>required</strong>) — URL to track</li>
-        <li><code>render</code> (boolean) — Use browser rendering</li>
+        <li><code>url</code> (string, <strong>required</strong>) — URL to interact with</li>
+        <li><code>actions</code> (array, <strong>required</strong>) — Array of actions: <code>click</code>, <code>fill</code>, <code>scroll</code>, <code>wait</code></li>
+        <li><code>extract</code> (object) — What to extract after actions complete</li>
       </ul>
 
       <h4>Example</h4>
       <pre><code class="language-javascript">// Ask your AI assistant:
-"Generate a fingerprint for https://example.com so I can detect changes later"</code></pre>
-
-      <h3 id="webpeel_summarize">webpeel_summarize</h3>
-      <p>Generate an AI-powered summary of a webpage using an LLM.</p>
-
-      <h4>Parameters</h4>
-      <ul>
-        <li><code>url</code> (string, <strong>required</strong>) — URL to summarize</li>
-        <li><code>llmApiKey</code> (string, <strong>required</strong>) — API key for LLM</li>
-        <li><code>prompt</code> (string) — Custom summary prompt (default: "Summarize this webpage in 2-3 sentences.")</li>
-        <li><code>llmModel</code> (string) — LLM model (default: <code>gpt-4o-mini</code>)</li>
-        <li><code>llmBaseUrl</code> (string) — LLM API base URL</li>
-        <li><code>render</code> (boolean) — Use browser rendering</li>
-      </ul>
-
-      <h4>Example</h4>
-      <pre><code class="language-javascript">// Ask your AI assistant:
-"Summarize https://longform-article.com in a few sentences"</code></pre>
+"Go to https://example.com/search, type 'TypeScript' into the search box, click Search, and return the results"</code></pre>
 
       <h2 id="usage-tips">Usage Tips</h2>
 

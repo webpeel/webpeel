@@ -134,8 +134,43 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.17.16</div>
+              <div class="release-version mono">v0.18.1</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">March 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>NEW:</strong> Real-time email alerts when API usage crosses configurable threshold</li>
+            <li><strong>NEW:</strong> Token count now stored and displayed in Activity log for every request</li>
+            <li><strong>NEW:</strong> Usage alert threshold setting in Dashboard Settings</li>
+            <li><strong>NEW:</strong> Alert preferences API endpoints (<code>GET/PUT /v1/user/alert-preferences</code>)</li>
+            <li><strong>FIX:</strong> Playground stats row now correctly shows tokens and savings from API response</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.18.0</div>
+            </div>
+            <div class="release-meta">March 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>NEW:</strong> MCP server consolidated from 20 tools to 7 clean public tools</li>
+            <li><strong>NEW:</strong> <code>webpeel</code>, <code>webpeel_read</code>, <code>webpeel_see</code>, <code>webpeel_find</code>, <code>webpeel_extract</code>, <code>webpeel_monitor</code>, <code>webpeel_act</code></li>
+            <li><strong>NEW:</strong> Smart NL intent parser — describe your task in plain English, MCP routes automatically</li>
+            <li><strong>NEW:</strong> <code>question=</code> param on <code>/v1/fetch</code> — ask a question, get an AI answer about the page</li>
+            <li><strong>NEW:</strong> <code>summary=</code> param on <code>/v1/fetch</code> — get a concise extractive summary</li>
+            <li><strong>NEW:</strong> <code>POST /v1/screenshot</code> dispatch — <code>mode</code> param selects basic, browser, or design-analysis</li>
+            <li><strong>DEPRECATED:</strong> <code>POST /v1/agent</code> → now returns 410 Gone (use <code>/v1/fetch</code> instead)</li>
+            <li>All 20 legacy MCP tool names still routed for backward compatibility</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.17.16</div>
             </div>
             <div class="release-meta">February 28, 2026</div>
           </div>

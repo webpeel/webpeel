@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="WebPeel Fetch API — GET and POST /v1/fetch. Parameters, response format, and code examples for web content extraction.">
+  <link rel="canonical" href="https://webpeel.dev/docs/fetch">
+  <meta property="og:title" content="Fetch API — WebPeel">
+  <meta property="og:description" content="WebPeel Fetch API — GET and POST /v1/fetch. Parameters, response format, and code examples for web content extraction.">
+  <meta property="og:url" content="https://webpeel.dev/docs/fetch">
+  <meta property="og:type" content="website">
+  <title>Fetch API — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/getting-started" class="sidebar-link">Getting Started</a>
+        <a href="/docs/authentication" class="sidebar-link">Authentication</a>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">API</div>
+        <a href="/docs/fetch" class="sidebar-link active">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshot</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl</a>
+        <a href="/docs/extract" class="sidebar-link">Extract</a>
+        <a href="/docs/batch" class="sidebar-link">Batch</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Fetch API</span>
+      </div>
+
+      <h1>Fetch API</h1>
+      <p class="lead">Fetch any URL and get back clean, AI-ready content. Supports markdown, text, and HTML output, with optional browser rendering, stealth mode, AI Q&amp;A, and extractive summaries.</p>
+
+      <h2 id="get-fetch">GET /v1/fetch</h2>
+      <p>Fetch a URL via query parameters.</p>
+
+      <pre><code class="language-bash">GET https://api.webpeel.dev/v1/fetch?url=https://example.com
+Authorization: Bearer wp_live_xxxx</code></pre>
+
+      <h3>Basic Parameters</h3>
+      <table>
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>url</code></td><td>string</td><td><em>required</em></td><td>The URL to fetch</td></tr>
+          <tr><td><code>format</code></td><td>string</td><td><code>markdown</code></td><td>Output format: <code>markdown</code>, <code>text</code>, or <code>html</code></td></tr>
+          <tr><td><code>render</code></td><td>boolean</td><td><code>false</code></td><td>Use browser rendering for JS-heavy pages</td></tr>
+          <tr><td><code>stealth</code></td><td>boolean</td><td><code>false</code></td><td>Bypass bot detection (Cloudflare, etc.)</td></tr>
+          <tr><td><code>readable</code></td><td>boolean</td><td><code>false</code></td><td>Apply reader mode — strips nav, ads, sidebars</td></tr>
+          <tr><td><code>budget</code></td><td>number</td><td>—</td><td>Max token budget; trims content to fit</td></tr>
+        </tbody>
+      </table>
+
+      <h3>AI Parameters (New in v0.18.0)</h3>
+      <table>
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>question</code></td><td>string</td><td>Ask a question about the page — returns an AI-generated <code>answer</code> field in the response</td></tr>
+          <tr><td><code>summary</code></td><td>boolean</td><td>Return a concise extractive summary of the page content</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="post-fetch">POST /v1/fetch</h2>
+      <p>Same parameters as GET, but passed as a JSON body. Useful for long URLs or complex configurations.</p>
+
+      <pre><code class="language-bash">POST https://api.webpeel.dev/v1/fetch
+Authorization: Bearer wp_live_xxxx
+Content-Type: application/json
+
+{
+  "url": "https://example.com",
+  "format": "markdown",
+  "question": "What are the main features?"
+}</code></pre>
+
+      <h2 id="response">Response Format</h2>
+      <pre><code class="language-json">{
+  "content": "# Example Domain\n\nThis domain is for use in...",
+  "title": "Example Domain",
+  "url": "https://example.com",
+  "tokens": 142,
+  "elapsed": 312,
+  "tokenSavingsPercent": 73,
+  "answer": "The main features include..." // only if question= was set
+}</code></pre>
+
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>content</code></td><td>string</td><td>Extracted page content in requested format</td></tr>
+          <tr><td><code>title</code></td><td>string</td><td>Page title</td></tr>
+          <tr><td><code>url</code></td><td>string</td><td>Final URL after redirects</td></tr>
+          <tr><td><code>tokens</code></td><td>number</td><td>Approximate token count of <code>content</code></td></tr>
+          <tr><td><code>elapsed</code></td><td>number</td><td>Request time in milliseconds</td></tr>
+          <tr><td><code>tokenSavingsPercent</code></td><td>number</td><td>% reduction vs raw HTML token count</td></tr>
+          <tr><td><code>answer</code></td><td>string</td><td>AI answer to your <code>question</code> (if provided)</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="examples">Code Examples</h2>
+
+      <h3>curl — Basic fetch</h3>
+      <pre><code class="language-bash">curl "https://api.webpeel.dev/v1/fetch?url=https://news.ycombinator.com&format=markdown" \
+  -H "Authorization: Bearer wp_live_xxxx"</code></pre>
+
+      <h3>curl — Ask a question</h3>
+      <pre><code class="language-bash">curl "https://api.webpeel.dev/v1/fetch?url=https://example.com&question=What+is+this+site+about%3F" \
+  -H "Authorization: Bearer wp_live_xxxx"</code></pre>
+
+      <h3>Node.js — With summary</h3>
+      <pre><code class="language-javascript">import { WebPeel } from 'webpeel';
+
+const wp = new WebPeel({ apiKey: 'wp_live_xxxx' });
+
+const result = await wp.fetch('https://techcrunch.com/article/example', {
+  summary: true,
+  readable: true
+});
+
+console.log(result.content);  // Clean article text
+console.log(result.tokens);   // Token count
+console.log(result.tokenSavingsPercent); // e.g. 71</code></pre>
+
+      <h3>Python — Browser rendering + question</h3>
+      <pre><code class="language-python">import requests
+
+response = requests.post(
+    'https://api.webpeel.dev/v1/fetch',
+    headers={'Authorization': 'Bearer wp_live_xxxx'},
+    json={
+        'url': 'https://twitter.com/example',
+        'render': True,
+        'question': 'What was the last tweet about?'
+    }
+)
+data = response.json()
+print(data['answer'])</code></pre>
+
+      <h2 id="next-steps">See Also</h2>
+      <ul>
+        <li><a href="/docs/api-reference">Full API Reference</a> — all parameters and error codes</li>
+        <li><a href="/docs/screenshot">Screenshot API</a> — capture page visuals</li>
+        <li><a href="/docs/extract">Extract API</a> — structured data extraction with schemas</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+</body>
+</html>
