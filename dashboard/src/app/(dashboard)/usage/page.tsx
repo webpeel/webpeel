@@ -495,7 +495,7 @@ function ResponseTimeSection({ stats }: { stats: Stats | undefined }) {
       {/* Distribution bar */}
       {avg > 0 && (
         <div className="space-y-2.5">
-          <p className="text-xs font-medium text-zinc-500">Response time distribution</p>
+          <p className="text-xs font-medium text-zinc-500">Response time estimate <span className="text-zinc-600">(estimated from avg response time)</span></p>
           <div className="h-3 w-full rounded-full overflow-hidden flex">
             <div
               className="bg-emerald-500 transition-all duration-700"
@@ -813,7 +813,7 @@ export default function UsagePage() {
           <div className="flex items-center gap-2 text-sm min-w-0">
             <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
             <span>
-              ⚠️ You&apos;ve used <strong>{usagePct}%</strong> of your monthly limit. Consider upgrading to avoid interruptions.
+              ⚠️ You&apos;ve used <strong>{usagePct}%</strong> of your weekly limit. Consider upgrading to avoid interruptions.
             </span>
           </div>
           <div className="flex items-center gap-3 shrink-0">
