@@ -1607,7 +1607,9 @@ program
       }
 
       const searchData = await searchRes.json() as any;
-      let results: Array<{ title: string; url: string; snippet: string }> = searchData.results || [];
+      // API returns { success: true, data: { web: [...] } } or { results: [...] }
+      let results: Array<{ title: string; url: string; snippet: string }> =
+        searchData.data?.web || searchData.data?.results || searchData.results || [];
 
       if (spinner) {
         spinner.succeed(`Found ${results.length} results`);
