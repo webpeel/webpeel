@@ -134,8 +134,74 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.18.1</div>
+              <div class="release-version mono">v0.18.5</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">March 6, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Usage counter fix</strong>: Dashboard now correctly counts playground/session fetches (was showing 0)</li>
+            <li><strong>Product Hunt extractor</strong>: RSS-based extraction returning 2,000+ tokens (was 101 via search snippet)</li>
+            <li><strong>Substack handler</strong>: Helpful guidance for root URL, individual posts extract cleanly</li>
+            <li><strong>Plan badge fix</strong>: Correctly capitalized everywhere (Free Plan, Pro Plan, Max Plan)</li>
+            <li><strong>CLI <code>webpeel auth</code> command</strong>: Set and verify API key in one step</li>
+            <li><strong>CLI <code>webpeel status</code> command</strong>: Machine-readable auth + usage check for AI agents</li>
+            <li><strong><code>apiKey</code> settable via config</strong>: <code>webpeel config set apiKey &lt;key&gt;</code> now works</li>
+            <li><strong>E2E test suite expanded</strong>: 17 tests including 8 trending sites</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.18.4</div>
+            </div>
+            <div class="release-meta">March 6, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li>Session recovery after API deploy restarts (email-based fallback)</li>
+            <li>Stripe Customer Portal: <code>POST /v1/billing/portal</code> endpoint</li>
+            <li>Email alerts: Nodemailer (free SMTP) replacing Resend</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.18.3</div>
+            </div>
+            <div class="release-meta">March 6, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li>Stripe billing portal backend endpoint</li>
+            <li>Replaced Resend with Nodemailer for free email alerts</li>
+            <li>Dashboard billing page now calls real Stripe portal API</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.18.2</div>
+            </div>
+            <div class="release-meta">March 6, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>WebPeel class</strong>: <code>new WebPeel({ apiKey })</code> OOP wrapper with <code>fetch</code>, <code>search</code>, <code>crawl</code>, <code>map</code>, <code>extract</code> methods</li>
+            <li><strong>MCP parity fix</strong>: Hosted and local MCP servers now match (6 tools each)</li>
+            <li><strong>Extractive summarization</strong>: TF-IDF sentence scoring instead of naive word truncation</li>
+            <li><strong>4 new doc pages</strong>: Getting Started, Authentication, Fetch, Screenshot</li>
+            <li><strong>Changelog page created</strong>: v0.18.0 and v0.18.1 entries</li>
+            <li><strong>Dashboard dark mode audit fixes</strong>: Billing page, onboarding banner, Getting Started tracking</li>
+            <li><strong>API fixes</strong>: Watch interval aliases, usage API key auth, CORS credentials conditional, generic 404, health no version</li>
+            <li><strong>Landing page</strong>: Dead Discord link → support email, upgrade buttons → billing page, pricing card accuracy</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.18.1</div>
             </div>
             <div class="release-meta">March 2026</div>
           </div>
