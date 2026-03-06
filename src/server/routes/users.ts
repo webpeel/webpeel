@@ -1346,5 +1346,77 @@ export function createUserRouter(): Router {
     }
   });
 
+  /**
+   * GET /v1/user/alert-preferences
+   * Returns current alert threshold and email
+   */
+  router.get('/v1/user/alert-preferences', jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = (req as any).user as JwtPayload;
+
+      const result = await pool.query(
+        'SELECT alert_threshold, alert_email FROM users WHERE id = $1',
+        [userId]
+      );
+
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        return;
+      }
+
+      res.json({
+        threshold: result.rows[0].alert_threshold,
+        email: result.rows[0].alert_email,
+      });
+    } catch (error) {
+      console.error('Get alert preferences error:', error);
+      res.status(500).json({ error: 'get_prefs_failed', message: 'Failed to get alert preferences' });
+    }
+  });
+
+  /**
+   * PUT /v1/user/alert-preferences
+   * Save alert threshold and/or email
+   * Body: { threshold: number | null, email: string | null }
+   */
+  router.put('/v1/user/alert-preferences', jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = (req as any).user as JwtPayload;
+      const { threshold, email } = req.body;
+
+      // Validate threshold: must be null or a number between 1 and 100
+      if (threshold !== null && threshold !== undefined) {
+        if (typeof threshold !== 'number' || threshold < 1 || threshold > 100) {
+          res.status(400).json({
+            error: 'invalid_threshold',
+            message: 'Threshold must be a number between 1 and 100, or null to disable',
+          });
+          return;
+        }
+      }
+
+      // Validate email if provided
+      if (email !== null && email !== undefined) {
+        if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          res.status(400).json({
+            error: 'invalid_email',
+            message: 'Email must be a valid email address, or null to use account email',
+          });
+          return;
+        }
+      }
+
+      await pool.query(
+        'UPDATE users SET alert_threshold = $1, alert_email = $2, updated_at = now() WHERE id = $3',
+        [threshold ?? null, email ?? null, userId]
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Save alert preferences error:', error);
+      res.status(500).json({ error: 'save_prefs_failed', message: 'Failed to save alert preferences' });
+    }
+  });
+
   return router;
 }

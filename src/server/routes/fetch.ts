@@ -14,6 +14,7 @@ import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
 import { wantsEnvelope, successResponse } from '../utils/response.js';
 import { getSchemaTemplate } from '../../core/schema-templates.js';
 import { quickAnswer } from '../../core/quick-answer.js';
+import { sendUsageAlertEmail } from '../email-service.js';
 
 // ── Helper: extract first N words as a summary string ────────────────────────
 function extractSummary(content: string, maxWords = 500): string {
@@ -21,6 +22,64 @@ function extractSummary(content: string, maxWords = 500): string {
   const words = content.split(/\s+/);
   if (words.length <= maxWords) return content;
   return words.slice(0, maxWords).join(' ') + '…';
+}
+
+// ── Helper: check usage and determine if alert email should be sent ───────────
+async function checkAndTriggerAlert(pgStore: any, userId: string): Promise<{
+  shouldSendAlert: boolean;
+  usagePercent?: number;
+  used?: number;
+  total?: number;
+  userEmail?: string;
+  userName?: string;
+  userTier?: string;
+  alertEmail?: string;
+}> {
+  const getCurrentWeek = () => {
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const jan4 = new Date(Date.UTC(year, 0, 4));
+    const weekNum = Math.ceil(((now.getTime() - jan4.getTime()) / 86400000 + jan4.getUTCDay() + 1) / 7);
+    return `${year}-W${String(weekNum).padStart(2, '0')}`;
+  };
+
+  const currentWeek = getCurrentWeek();
+
+  const result = await pgStore.pool.query(
+    `SELECT u.email, u.name, u.tier, u.alert_threshold, u.alert_email, u.alert_sent_at,
+            u.weekly_limit,
+            COALESCE(SUM(wu.total_count), 0) AS total_used,
+            u.weekly_limit + COALESCE(MAX(wu.rollover_credits), 0) AS total_available
+     FROM users u
+     LEFT JOIN api_keys ak ON ak.user_id = u.id
+     LEFT JOIN weekly_usage wu ON wu.api_key_id = ak.id AND wu.week = $2
+     WHERE u.id = $1
+     GROUP BY u.id, u.email, u.name, u.tier, u.alert_threshold, u.alert_email, u.alert_sent_at, u.weekly_limit`,
+    [userId, currentWeek]
+  );
+
+  const row = result.rows[0];
+  if (!row || !row.alert_threshold) return { shouldSendAlert: false };
+
+  const used = parseInt(row.total_used, 10) || 0;
+  const total = parseInt(row.total_available, 10) || row.weekly_limit || 999;
+  const usagePercent = total > 0 ? Math.round((used / total) * 100) : 0;
+
+  // Only alert if: crosses threshold AND haven't sent alert this week
+  const lastAlert = row.alert_sent_at ? new Date(row.alert_sent_at) : null;
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const alreadySentThisWeek = lastAlert !== null && lastAlert > oneWeekAgo;
+
+  return {
+    shouldSendAlert: usagePercent >= row.alert_threshold && !alreadySentThisWeek,
+    usagePercent,
+    used,
+    total,
+    userEmail: row.email,
+    userName: row.name || undefined,
+    userTier: row.tier,
+    alertEmail: row.alert_email || undefined,
+  };
 }
 
 const VALID_LLM_PROVIDERS: InlineLLMProvider[] = ['openai', 'anthropic', 'google'];
@@ -407,6 +466,31 @@ export function createFetchRouter(authStore: AuthStore): Router {
           await pgStore.trackUsage(req.auth.keyInfo.key, fetchType);
         }
         // If soft-limited WITHOUT extra usage, don't track (already over quota)
+      }
+
+      // Check usage alert (fire-and-forget, never block the response)
+      if (req.auth?.keyInfo?.accountId && typeof pgStore.pool !== 'undefined') {
+        try {
+          const alertResult = await checkAndTriggerAlert(pgStore, req.auth.keyInfo.accountId);
+          if (alertResult.shouldSendAlert && alertResult.usagePercent !== undefined) {
+            await sendUsageAlertEmail({
+              toEmail: alertResult.alertEmail || alertResult.userEmail!,
+              userName: alertResult.userName,
+              usagePercent: alertResult.usagePercent,
+              used: alertResult.used!,
+              total: alertResult.total!,
+              tier: alertResult.userTier!,
+            });
+            // Mark alert as sent so we don't spam (rate-limited to once/week)
+            await pgStore.pool.query(
+              'UPDATE users SET alert_sent_at = NOW() WHERE id = $1',
+              [req.auth.keyInfo.accountId]
+            );
+          }
+        } catch (alertErr) {
+          // Never let alert errors affect the main response
+          console.warn('[alert] Failed to check/send alert:', alertErr);
+        }
       }
 
       // Cache result (unless storeInCache is explicitly false or cache bypass requested)
