@@ -515,46 +515,6 @@
     .why-section .section-h2 { font-size: clamp(44px, 6vw, 72px); line-height: 1.15; }
     .section-h2 .accent { color: var(--accent-pale); }
 
-    /* ── TRUSTED BY STRIP ──────────────────────────── */
-    .trusted-strip {
-      padding: 40px 0;
-      background: #050507;
-      border-top: 1px solid rgba(255,255,255,0.04);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .trusted-label {
-      text-align: center;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: rgba(255,255,255,0.35);
-      margin-bottom: 20px;
-    }
-    .trusted-logos {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 40px;
-      flex-wrap: wrap;
-    }
-    .trusted-logo {
-      font-size: 15px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.5);
-      letter-spacing: 0.01em;
-      transition: color 200ms ease;
-    }
-    .trusted-logo:hover { color: rgba(255,255,255,0.8); }
-    @media (max-width: 768px) {
-      .trusted-logos { gap: 24px; }
-    }
-    @media (max-width: 480px) {
-      .trusted-strip { padding: 28px 0; }
-      .trusted-logos { gap: 16px; }
-      .trusted-logo { font-size: 13px; }
-    }
-
     /* ── DEMO SECTION ───────────────────────────────── */
     .demo-section {
       padding: var(--space-section) 0;
@@ -6643,13 +6603,13 @@ traffic. Advertisers are watching closely.
           <hr class="price-divider">
           <ul class="price-features">
             <li>Everything in Free</li>
-            <li>Deep research agent</li>
-            <li>Structured extraction (3 modes)</li>
-            <li>Crawl + sitemap generation</li>
-            <li>Priority support</li>
+            <li>1,250 fetches/week (vs 500 on Free)</li>
             <li>Webhook notifications</li>
+            <li>Priority support</li>
+            <li>Higher burst rate limits</li>
+            <li>Watch mode alerts</li>
           </ul>
-          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-filled">Upgrade to Pro →</a>
+          <a href="https://app.webpeel.dev/billing" class="price-btn price-btn-filled">Upgrade to Pro →</a>
         </div>
         <div class="price-card reveal" data-delay="3">
           <div class="price-plan">Max</div>
@@ -6664,7 +6624,7 @@ traffic. Advertisers are watching closely.
             <li>Dedicated support channel</li>
             <li>Custom domain allowlist</li>
           </ul>
-          <a href="https://app.webpeel.dev/signup" class="price-btn price-btn-outline">Upgrade to Max →</a>
+          <a href="https://app.webpeel.dev/billing" class="price-btn price-btn-outline">Upgrade to Max →</a>
         </div>
       </div>
       <p class="reveal" data-delay="4" style="text-align:center;color:rgba(255,255,255,0.45);font-size:14px;margin-top:36px;">Need more? <a href="mailto:jake@webpeel.dev" style="color:#818CF8;text-decoration:underline;text-decoration-color:rgba(129,140,248,0.4);text-underline-offset:3px;">Contact us</a> for custom volume pricing.</p>
@@ -6715,7 +6675,7 @@ traffic. Advertisers are watching closely.
         </div>
         <div class="faq-item">
           <button class="faq-q"><span>How do I migrate from Firecrawl?</span><span class="faq-icon">+</span></button>
-          <div class="faq-answer"><div class="faq-answer-inner">WebPeel offers a Firecrawl-compatible API endpoint — change your base URL and you're done. The <code>/v1/scrape</code> and <code>/v1/crawl</code> endpoints accept the same request format. Most migrations take under 5 minutes. See the <a href="/docs/migration" style="color:#818CF8;">migration guide</a> for details.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">WebPeel offers a Firecrawl-compatible API endpoint — change your base URL and you're done. The <code>/v1/scrape</code> and <code>/v1/crawl</code> endpoints accept the same request format. Most migrations take under 5 minutes. See the <a href="/docs" style="color:#818CF8;">documentation</a> for details.</div></div>
         </div>
       </div>
     </div>
@@ -6764,7 +6724,7 @@ traffic. Advertisers are watching closely.
         <div class="footer-col">
           <h3>Company</h3>
           <a href="https://github.com/webpeel/webpeel" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://discord.gg/webpeel">Discord</a>
+          <a href="mailto:support@webpeel.dev">Support</a>
           <a href="mailto:support@webpeel.dev">Contact</a>
         </div>
       </div>
