@@ -17,6 +17,9 @@ import {
   ExternalLink,
   Filter,
   Globe,
+  ChevronDown,
+  ChevronRight,
+  ArrowRight,
 } from 'lucide-react';
 
 const fetcher = async <T,>(url: string, token: string): Promise<T> => {
@@ -31,6 +34,8 @@ interface ApiRequest {
   mode: 'basic' | 'stealth';
   timestamp: string;
   statusCode?: number;
+  tokenCount?: number;
+  contentPreview?: string;
 }
 
 interface ActivityData {
@@ -64,6 +69,87 @@ function extractDomain(url: string): string {
   }
 }
 
+function ExpandedRowContent({ req }: { req: ApiRequest }) {
+  const playgroundUrl = `/playground?url=${encodeURIComponent(req.url)}`;
+
+  return (
+    <div className="px-4 py-4 bg-zinc-950 border-t border-zinc-800 space-y-4">
+      {/* Metadata grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+          <p className="text-xs text-zinc-500 mb-1">HTTP Status</p>
+          <p className="text-sm font-semibold text-zinc-100">
+            {req.statusCode ? (
+              <span className={req.statusCode < 400 ? 'text-emerald-400' : 'text-red-400'}>
+                {req.statusCode}
+              </span>
+            ) : (
+              <span className="text-zinc-400 italic">N/A</span>
+            )}
+          </p>
+        </div>
+        <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+          <p className="text-xs text-zinc-500 mb-1">Response Time</p>
+          <p className={`text-sm font-semibold ${
+            req.responseTime < 1000 ? 'text-emerald-400' :
+            req.responseTime < 3000 ? 'text-amber-400' : 'text-red-400'
+          }`}>
+            {req.responseTime}ms
+          </p>
+        </div>
+        <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+          <p className="text-xs text-zinc-500 mb-1">Mode</p>
+          <p className="text-sm font-semibold text-zinc-100 capitalize">{req.mode}</p>
+        </div>
+        <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+          <p className="text-xs text-zinc-500 mb-1">Tokens</p>
+          <p className="text-sm font-semibold text-zinc-100">
+            {req.tokenCount != null
+              ? req.tokenCount.toLocaleString()
+              : <span className="text-zinc-400 italic">N/A</span>
+            }
+          </p>
+        </div>
+      </div>
+
+      {/* Content preview */}
+      <div>
+        <p className="text-xs font-semibold text-zinc-400 mb-2">Response Preview</p>
+        {req.contentPreview ? (
+          <pre className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs font-mono text-zinc-300 overflow-x-auto whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
+            {req.contentPreview.slice(0, 300)}{req.contentPreview.length > 300 ? '…' : ''}
+          </pre>
+        ) : (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-500 italic">
+            Response body not stored — use the Playground to re-fetch this URL.
+          </div>
+        )}
+      </div>
+
+      {/* Full URL + re-fetch */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Globe className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+          <span className="text-xs text-zinc-400 truncate">{req.url}</span>
+          <a href={req.url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+            <ExternalLink className="h-3 w-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
+          </a>
+        </div>
+        <a href={playgroundUrl}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[#5865F2] hover:text-white hover:bg-[#5865F2] gap-1.5 text-xs h-7 px-3 whitespace-nowrap"
+          >
+            Re-fetch in Playground
+            <ArrowRight className="h-3 w-3" />
+          </Button>
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function ActivityPage() {
   const { data: session } = useSession();
   const token = (session as any)?.apiToken as string | undefined;
@@ -71,6 +157,7 @@ export default function ActivityPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   const { data, isLoading, error, mutate } = useSWR<ActivityData>(
     token ? ['/v1/activity?limit=100', token] : null,
@@ -100,6 +187,10 @@ export default function ActivityPage() {
     ? Math.round(requests.reduce((sum, r) => sum + r.responseTime, 0) / requests.length)
     : 0;
   const hasActivityData = totalCount > 0;
+
+  const toggleRow = (id: string) => {
+    setExpandedRowId((prev) => (prev === id ? null : id));
+  };
 
   if (error) {
     return (
@@ -217,6 +308,9 @@ export default function ActivityPage() {
                   ? 'Loading...'
                   : `${filteredRequests.length} ${filteredRequests.length === 1 ? 'request' : 'requests'}`
                   + (filteredRequests.length !== totalCount ? ` (filtered from ${totalCount})` : '')}
+                {filteredRequests.length > 0 && (
+                  <span className="text-zinc-500"> · click any row to expand details</span>
+                )}
               </CardDescription>
             </div>
           </div>
@@ -265,46 +359,52 @@ export default function ActivityPage() {
               {/* Mobile: Card view */}
               <div className="space-y-2 md:hidden">
                 {filteredRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    className={`border rounded-lg p-3 space-y-2 ${
-                      req.status === 'success' ? 'border-l-4 border-l-emerald-400' : 'border-l-4 border-l-red-400'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <Globe className="h-3 w-3 text-zinc-400 flex-shrink-0" />
-                          <span className="text-xs text-zinc-500 truncate">{extractDomain(req.url)}</span>
+                  <div key={req.id} className="rounded-lg overflow-hidden border border-zinc-800">
+                    <button
+                      onClick={() => toggleRow(req.id)}
+                      className={`w-full text-left border rounded-lg p-3 space-y-2 transition-colors ${
+                        req.status === 'success' ? 'border-l-4 border-l-emerald-400' : 'border-l-4 border-l-red-400'
+                      } ${expandedRowId === req.id ? 'bg-zinc-900' : 'hover:bg-zinc-900/50'}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <Globe className="h-3 w-3 text-zinc-400 flex-shrink-0" />
+                            <span className="text-xs text-zinc-500 truncate">{extractDomain(req.url)}</span>
+                          </div>
+                          <span className="text-sm text-zinc-100 truncate block font-medium">
+                            {req.url}
+                          </span>
                         </div>
-                        <a
-                          href={req.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-zinc-100 hover:text-zinc-200 transition-colors truncate block font-medium"
-                        >
-                          {req.url}
-                        </a>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <Badge
+                            className={req.status === 'success'
+                              ? 'bg-emerald-500/20 text-emerald-400 border-0'
+                              : 'bg-red-500/20 text-red-400 border-0'
+                            }
+                          >
+                            {req.status}
+                          </Badge>
+                          {expandedRowId === req.id
+                            ? <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+                            : <ChevronRight className="h-3.5 w-3.5 text-zinc-500" />
+                          }
+                        </div>
                       </div>
-                      <Badge
-                        className={req.status === 'success'
-                          ? 'bg-emerald-500/20 text-emerald-400 border-0 flex-shrink-0'
-                          : 'bg-red-500/20 text-red-400 border-0 flex-shrink-0'
-                        }
-                      >
-                        {req.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-zinc-400">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {req.responseTime}ms
-                      </span>
-                      <Badge variant="secondary" className="bg-zinc-800 text-zinc-600 text-xs px-1.5 py-0">
-                        {req.mode}
-                      </Badge>
-                      <span className="ml-auto">{timeAgo(req.timestamp)}</span>
-                    </div>
+                      <div className="flex items-center gap-3 text-xs text-zinc-400">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {req.responseTime}ms
+                        </span>
+                        <Badge variant="secondary" className="bg-zinc-800 text-zinc-600 text-xs px-1.5 py-0">
+                          {req.mode}
+                        </Badge>
+                        <span className="ml-auto">{timeAgo(req.timestamp)}</span>
+                      </div>
+                    </button>
+                    {expandedRowId === req.id && (
+                      <ExpandedRowContent req={req} />
+                    )}
                   </div>
                 ))}
               </div>
@@ -314,6 +414,7 @@ export default function ActivityPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-zinc-700">
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wide w-6"></th>
                       <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wide">URL</th>
                       <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Status</th>
                       <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Time</th>
@@ -323,56 +424,80 @@ export default function ActivityPage() {
                   </thead>
                   <tbody>
                     {filteredRequests.map((req) => (
-                      <tr
-                        key={req.id}
-                        className="border-b border-zinc-800 last:border-0 hover:bg-zinc-900 transition-colors group"
-                      >
-                        <td className="py-3 px-4 max-w-xs">
-                          <div className="flex items-center gap-2">
-                            <a
-                              href={req.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-zinc-100 hover:text-zinc-200 transition-colors truncate block"
-                              title={req.url}
-                            >
-                              {req.url}
-                            </a>
-                            <ExternalLink className="h-3 w-3 text-zinc-300 group-hover:text-zinc-600 flex-shrink-0 transition-colors" />
-                          </div>
-                          <span className="text-xs text-zinc-400">{extractDomain(req.url)}</span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge
-                            className={req.status === 'success'
-                              ? 'bg-emerald-500/20 text-emerald-400 border-0'
-                              : 'bg-red-500/20 text-red-400 border-0'
+                      <>
+                        <tr
+                          key={req.id}
+                          onClick={() => toggleRow(req.id)}
+                          className={`border-b border-zinc-800 last:border-0 transition-colors group cursor-pointer select-none ${
+                            expandedRowId === req.id
+                              ? 'bg-zinc-900 border-b-0'
+                              : 'hover:bg-zinc-900/60'
+                          }`}
+                        >
+                          <td className="py-3 px-4 w-6">
+                            {expandedRowId === req.id
+                              ? <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+                              : <ChevronRight className="h-3.5 w-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
                             }
-                          >
-                            {req.statusCode ? `${req.statusCode} ` : ''}{req.status}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`text-sm font-medium ${
-                            req.responseTime < 1000 ? 'text-emerald-600' :
-                            req.responseTime < 3000 ? 'text-amber-600' : 'text-red-600'
-                          }`}>
-                            {req.responseTime}ms
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge variant="secondary" className={`${
-                            req.mode === 'stealth'
-                              ? 'bg-zinc-800 text-zinc-200'
-                              : 'bg-zinc-800 text-zinc-600'
-                          }`}>
-                            {req.mode}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <span className="text-xs text-zinc-400">{timeAgo(req.timestamp)}</span>
-                        </td>
-                      </tr>
+                          </td>
+                          <td className="py-3 px-4 max-w-xs">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="text-sm text-zinc-100 truncate block"
+                                title={req.url}
+                              >
+                                {req.url}
+                              </span>
+                              <a
+                                href={req.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3 w-3 text-zinc-300 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity hover:text-zinc-100" />
+                              </a>
+                            </div>
+                            <span className="text-xs text-zinc-400">{extractDomain(req.url)}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge
+                              className={req.status === 'success'
+                                ? 'bg-emerald-500/20 text-emerald-400 border-0'
+                                : 'bg-red-500/20 text-red-400 border-0'
+                              }
+                            >
+                              {req.statusCode ? `${req.statusCode} ` : ''}{req.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`text-sm font-medium ${
+                              req.responseTime < 1000 ? 'text-emerald-600' :
+                              req.responseTime < 3000 ? 'text-amber-600' : 'text-red-600'
+                            }`}>
+                              {req.responseTime}ms
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge variant="secondary" className={`${
+                              req.mode === 'stealth'
+                                ? 'bg-zinc-800 text-zinc-200'
+                                : 'bg-zinc-800 text-zinc-600'
+                            }`}>
+                              {req.mode}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="text-xs text-zinc-400">{timeAgo(req.timestamp)}</span>
+                          </td>
+                        </tr>
+                        {expandedRowId === req.id && (
+                          <tr key={`${req.id}-expanded`} className="border-b border-zinc-800">
+                            <td colSpan={6} className="p-0">
+                              <ExpandedRowContent req={req} />
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     ))}
                   </tbody>
                 </table>

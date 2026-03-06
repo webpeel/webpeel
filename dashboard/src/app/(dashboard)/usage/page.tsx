@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiClient, Usage } from '@/lib/api';
 
@@ -22,6 +22,20 @@ interface Stats {
   totalRequests: number;
   successRate: number;
   avgResponseTime: number;
+}
+
+interface ApiRequest {
+  id: string;
+  url: string;
+  status: 'success' | 'error';
+  responseTime: number;
+  mode: 'basic' | 'stealth';
+  timestamp: string;
+  statusCode?: number;
+}
+
+interface ActivityData {
+  requests: ApiRequest[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -355,8 +369,12 @@ function EndpointBreakdown({ usage }: { usage: Usage | undefined }) {
 
   if (totalUsed === 0) {
     return (
-      <div className="py-8 text-center text-sm text-zinc-400">
-        No requests this week yet.
+      <div className="py-8 text-center">
+        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+          <span className="text-zinc-500 text-lg">📊</span>
+        </div>
+        <p className="text-sm text-zinc-400 font-medium">No requests this week</p>
+        <p className="text-xs text-zinc-500 mt-1">Start making API calls to see endpoint stats here.</p>
       </div>
     );
   }
@@ -438,6 +456,18 @@ function ResponseTimeSection({ stats }: { stats: Stats | undefined }) {
       : avg < 2000
       ? 'bg-amber-500/10 text-amber-400'
       : 'bg-red-500/10 text-red-400';
+
+  if (stats.totalRequests === 0) {
+    return (
+      <div className="py-8 text-center">
+        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+          <span className="text-zinc-500 text-lg">⚡</span>
+        </div>
+        <p className="text-sm text-zinc-400 font-medium">No performance data yet</p>
+        <p className="text-xs text-zinc-500 mt-1">Response time metrics appear after your first request.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -571,6 +601,97 @@ function DailyHistoryRow({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Section 5 — Top Domains
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TopDomainsSection({ activity }: { activity: ActivityData | undefined; isLoading: boolean }) {
+  if (!activity) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-8 animate-pulse rounded-lg bg-zinc-800" />
+        ))}
+      </div>
+    );
+  }
+
+  const requests = activity.requests || [];
+
+  if (requests.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+          <Globe className="h-5 w-5 text-zinc-500" />
+        </div>
+        <p className="text-sm text-zinc-400 font-medium">No domain data yet</p>
+        <p className="text-xs text-zinc-500 mt-1">Top fetched domains will appear here after your first request.</p>
+      </div>
+    );
+  }
+
+  // Count domains
+  const domainCounts: Record<string, number> = {};
+  for (const req of requests) {
+    try {
+      const hostname = new URL(req.url).hostname;
+      domainCounts[hostname] = (domainCounts[hostname] || 0) + 1;
+    } catch {
+      // skip malformed URLs
+    }
+  }
+
+  const sorted = Object.entries(domainCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  if (sorted.length === 0) {
+    return (
+      <div className="py-8 text-center text-sm text-zinc-400">
+        No domain data available.
+      </div>
+    );
+  }
+
+  const maxCount = sorted[0][1];
+
+  return (
+    <div className="space-y-2">
+      {sorted.map(([domain, count]) => {
+        const barPct = Math.round((count / maxCount) * 100);
+        return (
+          <div key={domain} className="flex items-center gap-3 group">
+            {/* Domain name */}
+            <div className="w-44 shrink-0 min-w-0">
+              <span className="text-sm text-zinc-300 truncate block font-mono" title={domain}>
+                {domain}
+              </span>
+            </div>
+            {/* Bar */}
+            <div className="flex-1 min-w-0">
+              <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+                <div
+                  className="h-full bg-[#5865F2] rounded-full transition-all duration-700"
+                  style={{ width: `${barPct}%` }}
+                />
+              </div>
+            </div>
+            {/* Count */}
+            <div className="w-20 text-right shrink-0">
+              <span className="text-xs text-zinc-400 tabular-nums">
+                {count} {count === 1 ? 'request' : 'requests'}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+      <p className="text-xs text-zinc-500 pt-2">
+        Based on last {requests.length} requests
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -610,11 +731,22 @@ export default function UsagePage() {
     { refreshInterval: 60_000 }
   );
 
+  const {
+    data: activity,
+    error: activityError,
+    mutate: mutateActivity,
+  } = useSWR<ActivityData>(
+    token ? ['/v1/activity?limit=100', token] : null,
+    ([url, tok]: [string, string]) => fetcher<ActivityData>(url, tok),
+    { refreshInterval: 60_000 }
+  );
+
   const pageError = usageError || historyError || statsError;
   const pageMutate = () => {
     void mutateUsage();
     void mutateHistory();
     void mutateStats();
+    void mutateActivity();
   };
 
   const allHistory = history?.history ?? [];
@@ -734,6 +866,15 @@ export default function UsagePage() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* ── Section 5: Top Domains ── */}
+      <div className="rounded-xl border border-zinc-700 p-6">
+        <h2 className="text-lg font-semibold text-zinc-100">Top Domains</h2>
+        <p className="text-sm text-zinc-500 mt-0.5 mb-5">
+          Most fetched domains this period
+        </p>
+        <TopDomainsSection activity={activity} isLoading={!activity} />
       </div>
     </div>
   );
