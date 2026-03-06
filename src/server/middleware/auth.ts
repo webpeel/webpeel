@@ -45,7 +45,6 @@ export function createAuthMiddleware(authStore: AuthStore) {
         req.path === '/v1/webhooks/stripe' ||
         req.path === '/v1/me' ||
         req.path.startsWith('/v1/keys') ||
-        req.path === '/v1/usage' ||
         req.path.startsWith('/v1/extra-usage');
 
       if (isPublicEndpoint) {

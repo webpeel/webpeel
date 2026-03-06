@@ -5,23 +5,8 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 
 const startTime = Date.now();
-
-// Read version from package.json at startup
-let version = '0.0.0';
-try {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  // Walk up from dist/server/routes/ to project root
-  const pkgPath = join(__dirname, '..', '..', '..', 'package.json');
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-  version = pkg.version;
-} catch (e) {
-  if (process.env.DEBUG) console.debug('[webpeel]', 'package.json read failed:', e instanceof Error ? e.message : e);
-}
 
 export function createHealthRouter(): Router {
   const router = Router();
@@ -31,7 +16,6 @@ export function createHealthRouter(): Router {
     
     res.json({
       status: 'healthy',
-      version,
       uptime,
       timestamp: new Date().toISOString(),
     });

@@ -247,3 +247,53 @@ export { applyStealthPatches, applyAcceptLanguageHeader } from './core/stealth-p
 // Google Cache fallback — fetch cached copies of blocked pages
 export { fetchGoogleCache, isGoogleCacheAvailable, type GoogleCacheResult } from './core/google-cache.js';
 export { cfWorkerFetch, isCfWorkerAvailable, type CfWorkerProxyOptions, type CfWorkerProxyResult } from './core/cf-worker-proxy.js';
+
+/**
+ * WebPeel client class — alternative OOP interface over the functional API.
+ * Provides the same capabilities as the standalone functions but with
+ * a configured client instance.
+ *
+ * @example
+ * import { WebPeel } from 'webpeel';
+ * const wp = new WebPeel({ apiKey: process.env.WEBPEEL_API_KEY });
+ * const result = await wp.fetch('https://stripe.com');
+ */
+export class WebPeel {
+  private readonly apiKey: string;
+  constructor(config: { apiKey: string; apiUrl?: string }) {
+    if (!config.apiKey) throw new Error('WebPeel: apiKey is required');
+    this.apiKey = config.apiKey;
+    // apiUrl reserved for future use (remote API proxy mode)
+    void config.apiUrl;
+  }
+
+  /** Fetch and extract content from a URL */
+  async fetch(url: string, options: PeelOptions = {}): Promise<PeelResult> {
+    return peel(url, { ...options });
+  }
+
+  /** Search the web */
+  async search(query: string, options: Record<string, unknown> = {}): Promise<unknown> {
+    const { getSearchProvider } = await import('./core/search-provider.js');
+    const provider = getSearchProvider({ ...options as any });
+    return provider.searchWeb(query, options as any);
+  }
+
+  /** Crawl a site */
+  async crawl(startUrl: string, options: Record<string, unknown> = {}): Promise<unknown> {
+    const { crawl: crawlFn } = await import('./core/crawler.js');
+    return crawlFn(startUrl, { ...options as any, apiKey: this.apiKey });
+  }
+
+  /** Map a domain's pages */
+  async map(url: string, options: Record<string, unknown> = {}): Promise<unknown> {
+    const { mapDomain } = await import('./core/map.js');
+    return mapDomain(url, { ...options as any });
+  }
+
+  /** Extract structured data */
+  async extract(url: string, _schema: Record<string, unknown>, options: PeelOptions = {}): Promise<unknown> {
+    const result = await peel(url, { ...options });
+    return result;
+  }
+}

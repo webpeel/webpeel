@@ -63,12 +63,16 @@ export function createWatchRouter(pool: pg.Pool): Router {
     const accountId = requireAuth(req, res);
     if (!accountId) return;
 
-    const { url, webhookUrl, checkIntervalMinutes, selector } = req.body as {
+    const { url, webhookUrl, checkIntervalMinutes, intervalMinutes: intervalMinutesAlias, interval, selector } = req.body as {
       url?: unknown;
       webhookUrl?: unknown;
       checkIntervalMinutes?: unknown;
+      intervalMinutes?: unknown;
+      interval?: unknown;
       selector?: unknown;
     };
+    // Accept interval aliases: checkIntervalMinutes (canonical), intervalMinutes, interval
+    const resolvedIntervalInput = checkIntervalMinutes ?? intervalMinutesAlias ?? interval;
 
     if (!url || typeof url !== 'string') {
       res.status(400).json({
@@ -96,7 +100,7 @@ export function createWatchRouter(pool: pg.Pool): Router {
     }
 
     const intervalMinutes =
-      checkIntervalMinutes !== undefined ? Number(checkIntervalMinutes) : 60;
+      resolvedIntervalInput !== undefined ? Number(resolvedIntervalInput) : 60;
     if (!Number.isFinite(intervalMinutes) || intervalMinutes < 1 || intervalMinutes > 44640) {
       res.status(400).json({
         error: 'invalid_request',
@@ -226,12 +230,16 @@ export function createWatchRouter(pool: pg.Pool): Router {
     if (!accountId) return;
     const watchId = req.params['id'] as string;
 
-    const { status, webhookUrl, checkIntervalMinutes, selector } = req.body as {
+    const { status, webhookUrl, checkIntervalMinutes, intervalMinutes: patchIntervalMinutesAlias, interval: patchInterval, selector } = req.body as {
       status?: unknown;
       webhookUrl?: unknown;
       checkIntervalMinutes?: unknown;
+      intervalMinutes?: unknown;
+      interval?: unknown;
       selector?: unknown;
     };
+    // Accept interval aliases
+    const resolvedPatchInterval = checkIntervalMinutes ?? patchIntervalMinutesAlias ?? patchInterval;
 
     try {
       const existing = await manager.get(watchId);
@@ -257,8 +265,8 @@ export function createWatchRouter(pool: pg.Pool): Router {
       if (webhookUrl !== undefined) {
         updates.webhookUrl = typeof webhookUrl === 'string' ? webhookUrl : undefined;
       }
-      if (checkIntervalMinutes !== undefined) {
-        const n = Number(checkIntervalMinutes);
+      if (resolvedPatchInterval !== undefined) {
+        const n = Number(resolvedPatchInterval);
         if (!Number.isFinite(n) || n < 1 || n > 44640) {
           res.status(400).json({
             error: 'invalid_request',

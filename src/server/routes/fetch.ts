@@ -16,12 +16,40 @@ import { getSchemaTemplate } from '../../core/schema-templates.js';
 import { quickAnswer } from '../../core/quick-answer.js';
 import { sendUsageAlertEmail } from '../email-service.js';
 
-// ── Helper: extract first N words as a summary string ────────────────────────
-function extractSummary(content: string, maxWords = 500): string {
+// ── Helper: extractive summarizer (TF-IDF-like sentence scoring) ─────────────
+function extractSummary(content: string, maxWords = 150): string {
   if (!content) return '';
-  const words = content.split(/\s+/);
-  if (words.length <= maxWords) return content;
-  return words.slice(0, maxWords).join(' ') + '…';
+  const sentences = content
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 40 && s.length < 600);
+  if (sentences.length === 0) {
+    const words = content.split(/\s+/);
+    return words.slice(0, maxWords).join(' ') + (words.length > maxWords ? '\u2026' : '');
+  }
+  if (sentences.length <= 3) return sentences.join(' ');
+  const allWords = content.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+  const wordFreq: Record<string, number> = {};
+  for (const w of allWords) wordFreq[w] = (wordFreq[w] || 0) + 1;
+  const maxFreq = Math.max(1, ...Object.values(wordFreq));
+  const scored = sentences.map((sentence, idx) => {
+    const words = sentence.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+    const score = words.reduce((sum, w) => sum + (wordFreq[w] || 0) / maxFreq, 0) / Math.max(1, words.length);
+    const posBonus = idx === 0 ? 0.3 : idx === sentences.length - 1 ? 0.1 : 0;
+    return { sentence, score: score + posBonus, idx };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const selected: Array<{sentence: string; score: number; idx: number}> = [];
+  let wc = 0;
+  for (const item of scored) {
+    const itemWc = item.sentence.split(/\s+/).length;
+    if (wc + itemWc > maxWords * 1.3) break;
+    selected.push(item);
+    wc += itemWc;
+    if (selected.length >= 5) break;
+  }
+  selected.sort((a, b) => a.idx - b.idx);
+  return selected.map(s => s.sentence).join(' ');
 }
 
 // ── Helper: check usage and determine if alert email should be sent ───────────

@@ -86,362 +86,132 @@ function extractFontsFromContent(content: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Tool definitions (subset of the full MCP server tools, used for hosted mode)
+// Tool definitions — 7 consolidated tools (matches src/mcp/server.ts)
 // ---------------------------------------------------------------------------
 
 function getTools(): Tool[] {
   return [
     {
-      name: 'webpeel_fetch',
-      description: 'Fetch any URL and return clean markdown content. Use budget=4000 to get token-efficient output (strips boilerplate, compresses tables). Handles JavaScript rendering and bot detection automatically. Use readable=true for article-only content, question="..." for instant Q&A.',
-      annotations: { title: 'Fetch Web Page', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      name: 'webpeel',
+      description:
+        "Your complete web toolkit. Describe what you want in plain language. " +
+        "Examples: 'read https://stripe.com', 'screenshot bbc.com on mobile', " +
+        "'find best AI frameworks', 'extract prices from stripe.com/pricing', " +
+        "'watch stripe.com/pricing for changes'",
+      annotations: { title: 'WebPeel Smart Web Tool', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       inputSchema: {
-        type: 'object',
+        type: 'object' as const,
+        properties: {
+          task: { type: 'string', description: 'Plain English description of what you want to do with the web.' },
+        },
+        required: ['task'],
+      },
+    },
+    {
+      name: 'webpeel_read',
+      description: 'Read any URL and return clean markdown. Handles web pages, YouTube videos, and PDFs automatically. Use question= for Q&A about the page, summary=true for a summary.',
+      annotations: { title: 'Read Web Page', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      inputSchema: {
+        type: 'object' as const,
         properties: {
           url: { type: 'string', description: 'URL to fetch' },
-          format: { type: 'string', enum: ['markdown', 'html', 'text'], description: 'Output format (default: markdown)', default: 'markdown' },
-          render: { type: 'boolean', description: 'Use browser rendering for JavaScript-heavy sites', default: false },
-          stealth: { type: 'boolean', description: 'Stealth mode for bot-protected sites (Amazon, LinkedIn, etc.)', default: false },
-          readable: { type: 'boolean', description: 'Reader mode — extract only article content, strip all noise', default: false },
-          question: { type: 'string', description: 'Ask a question about the content (BM25, no LLM needed). Returns the most relevant passages.' },
+          format: { type: 'string', enum: ['markdown', 'text', 'html'], description: 'Output format (default: markdown)', default: 'markdown' },
+          render: { type: 'boolean', description: 'Force browser rendering for JS-heavy sites', default: false },
+          question: { type: 'string', description: 'Ask a question about the page content (BM25, no LLM needed)' },
+          summary: { type: 'boolean', description: 'Return a summary instead of full content', default: false },
           budget: { type: 'number', description: 'Smart token budget — distill content to N tokens' },
-          lite: { type: 'boolean', description: 'Lite mode — minimal processing, maximum speed', default: false },
-          selector: { type: 'string', description: 'CSS selector to extract specific content' },
-          screenshot: { type: 'boolean', description: 'Also take a screenshot', default: false },
-          wait: { type: 'number', description: 'Milliseconds to wait for dynamic content', default: 0 },
-          maxTokens: { type: 'number', description: 'Maximum token count for output' },
-          images: { type: 'boolean', description: 'Extract image URLs', default: false },
-          inlineExtract: {
-            type: 'object',
-            description: 'Inline LLM-powered JSON extraction (BYOK). Provide schema and/or prompt.',
-            properties: {
-              schema: { type: 'object', description: 'JSON Schema for desired output' },
-              prompt: { type: 'string', description: 'Extraction prompt' },
-            },
-          },
-          llmProvider: { type: 'string', enum: ['openai', 'anthropic', 'google'], description: 'LLM provider for inline extraction' },
-          llmApiKey: { type: 'string', description: 'LLM API key (BYOK) for inline extraction' },
-          llmModel: { type: 'string', description: 'LLM model name (optional)' },
-          actions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                type: { type: 'string', enum: ['click', 'type', 'fill', 'scroll', 'wait', 'press', 'hover', 'select', 'waitForSelector', 'screenshot'] },
-                selector: { type: 'string' },
-                value: { type: 'string' },
-                text: { type: 'string' },
-                key: { type: 'string' },
-                milliseconds: { type: 'number' },
-                ms: { type: 'number' },
-                direction: { type: 'string', enum: ['up', 'down', 'left', 'right'] },
-                amount: { type: 'number' },
-                timeout: { type: 'number' },
-              },
-              required: ['type'],
-            },
-            description: 'Page actions to execute before extraction (auto-enables browser rendering)',
-          },
+          readable: { type: 'boolean', description: 'Reader mode — extract only article content', default: false },
         },
         required: ['url'],
       },
     },
     {
-      name: 'webpeel_search',
-      description: 'Search the web and return structured results with titles, URLs, and snippets. No API key needed.',
-      annotations: { title: 'Search the Web', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      name: 'webpeel_see',
+      description: "See any page visually. Returns a screenshot. Use mode='design' for design analysis, mode='compare' with compare_url for visual comparison.",
+      annotations: { title: 'See Page Visually', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       inputSchema: {
-        type: 'object',
+        type: 'object' as const,
+        properties: {
+          url: { type: 'string', description: 'URL to screenshot' },
+          mode: { type: 'string', enum: ['screenshot', 'design', 'compare'], description: "Mode: 'screenshot' (default), 'design' (analysis), 'compare' (visual diff)", default: 'screenshot' },
+          compare_url: { type: 'string', description: "Second URL to compare against (for mode='compare')" },
+          viewport: { type: 'string', enum: ['mobile', 'tablet', 'desktop'], description: 'Viewport size preset' },
+          full_page: { type: 'boolean', description: 'Capture the full scrollable page', default: false },
+        },
+        required: ['url'],
+      },
+    },
+    {
+      name: 'webpeel_find',
+      description: "Find anything on the web. Pass a query to search, or a url to discover all pages on that domain. Use depth='deep' for multi-source research.",
+      annotations: { title: 'Find on the Web', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      inputSchema: {
+        type: 'object' as const,
         properties: {
           query: { type: 'string', description: 'Search query' },
-          count: { type: 'number', description: 'Number of results (1-10)', default: 5 },
+          url: { type: 'string', description: 'Domain URL to map/discover all pages' },
+          depth: { type: 'string', enum: ['quick', 'deep'], description: "Search depth: 'quick' = single search, 'deep' = multi-source research", default: 'quick' },
+          limit: { type: 'number', description: 'Max results to return (default: 5)', default: 5 },
         },
-        required: ['query'],
-      },
-    },
-    {
-      name: 'webpeel_crawl',
-      description: 'Crawl a website starting from a URL. Returns content for all discovered pages up to the specified depth/limit.',
-      annotations: { title: 'Crawl Website', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', description: 'Starting URL' },
-          maxPages: { type: 'number', default: 10, minimum: 1, maximum: 100 },
-          maxDepth: { type: 'number', default: 2, minimum: 1, maximum: 5 },
-          render: { type: 'boolean', default: false },
-        },
-        required: ['url'],
-      },
-    },
-    {
-      name: 'webpeel_map',
-      description: 'Discover all URLs on a domain via sitemap and link crawling. Returns a structured URL list.',
-      annotations: { title: 'Map Website URLs', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', description: 'Starting URL or domain' },
-          maxUrls: { type: 'number', default: 5000, minimum: 1, maximum: 10000 },
-        },
-        required: ['url'],
       },
     },
     {
       name: 'webpeel_extract',
-      description: 'Extract structured data from a URL using CSS selectors, JSON Schema, or LLM. Returns typed key-value pairs.',
+      description: "Extract structured data from any URL. Pass fields=['price','title'] for specific data, or omit for auto-detection. Returns typed JSON.",
       annotations: { title: 'Extract Structured Data', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
       inputSchema: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           url: { type: 'string', description: 'URL to extract from' },
-          selectors: { type: 'object', description: 'Map of field names to CSS selectors' },
-          prompt: { type: 'string', description: 'Natural language prompt for AI extraction' },
-          llmApiKey: { type: 'string', description: 'API key for LLM extraction' },
+          schema: { type: 'object', description: 'JSON schema describing desired output structure' },
+          fields: { type: 'array', items: { type: 'string' }, description: "Specific fields to extract, e.g. ['price', 'title', 'description']" },
+          format: { type: 'string', enum: ['json', 'markdown'], description: 'Output format (default: json)', default: 'json' },
         },
         required: ['url'],
       },
     },
     {
-      name: 'webpeel_batch',
-      description: 'Fetch multiple URLs concurrently. Pass an array of URLs, get back an array of results.',
-      annotations: { title: 'Batch Fetch URLs', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          urls: { type: 'array', items: { type: 'string' }, description: 'URLs to fetch' },
-          concurrency: { type: 'number', default: 3, minimum: 1, maximum: 10 },
-          format: { type: 'string', enum: ['markdown', 'text', 'html'], default: 'markdown' },
-        },
-        required: ['urls'],
-      },
-    },
-    {
-      name: 'webpeel_research',
-      description: 'Multi-step web research: searches the web, fetches top sources, follows leads, and synthesizes findings into a report with citations.',
-      annotations: { title: 'Deep Research Agent', readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'Research question or topic to investigate' },
-          maxSources: { type: 'number', description: 'Maximum number of sources to consult (default: 5)', default: 5, minimum: 1, maximum: 20 },
-          maxDepth: { type: 'number', description: 'Link-following depth: 1 = search results only, 2+ = follow links within top sources (default: 1)', default: 1, minimum: 1, maximum: 3 },
-          llmApiKey: { type: 'string', description: 'LLM API key for synthesis (falls back to OPENAI_API_KEY env var)' },
-          llmModel: { type: 'string', description: 'LLM model to use for synthesis (default: gpt-4o-mini)' },
-          llmBaseUrl: { type: 'string', description: 'LLM API base URL (default: https://api.openai.com/v1)' },
-          outputFormat: { type: 'string', enum: ['report', 'sources'], description: 'Output format: "report" = synthesized markdown report (needs LLM key), "sources" = raw extracted source content', default: 'report' },
-          timeout: { type: 'number', description: 'Maximum research time in milliseconds (default: 60000)', default: 60000 },
-        },
-        required: ['query'],
-      },
-    },
-    {
-      name: 'webpeel_screenshot',
-      description: 'Take a screenshot of any URL. Returns a PNG image. Supports full-page capture and viewport sizing.',
-      annotations: { title: 'Take Screenshot', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', description: 'The URL to screenshot' },
-          fullPage: { type: 'boolean', description: 'Capture the full scrollable page (default: viewport only)', default: false },
-          width: { type: 'number', description: 'Viewport width in pixels (default: 1280)', default: 1280, minimum: 100, maximum: 5000 },
-          height: { type: 'number', description: 'Viewport height in pixels (default: 720)', default: 720, minimum: 100, maximum: 5000 },
-          format: { type: 'string', enum: ['png', 'jpeg'], description: 'Image format (default: png)', default: 'png' },
-          quality: { type: 'number', description: 'JPEG quality 1-100 (ignored for PNG)', minimum: 1, maximum: 100 },
-          waitFor: { type: 'number', description: 'Milliseconds to wait after page load before screenshot', default: 0 },
-          stealth: { type: 'boolean', description: 'Use stealth mode to bypass bot detection', default: false },
-          actions: { type: 'array', items: { type: 'object' }, description: 'Page actions to execute before screenshot' },
-        },
-        required: ['url'],
-      },
-    },
-    {
-      name: 'webpeel_design_analysis',
-      description: 'Extract visual design intelligence from a URL — palette, typography, layout, quality signals.',
-      annotations: { title: 'Analyze Visual Design', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', description: 'URL to analyze' },
-        },
-        required: ['url'],
-      },
-    },
-    {
-      name: 'webpeel_design_compare',
-      description: 'Compare the visual design of two URLs — returns structured gap analysis.',
-      annotations: { title: 'Compare Visual Design', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url1: { type: 'string', description: 'First URL to compare (subject)' },
-          url2: { type: 'string', description: 'Second URL to compare (reference)' },
-        },
-        required: ['url1', 'url2'],
-      },
-    },
-    {
-      name: 'webpeel_summarize',
-      description: 'Generate an AI summary of a URL\'s content. Requires an LLM API key (BYOK).',
-      annotations: { title: 'Summarize Page', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', description: 'URL to summarize' },
-          llmApiKey: { type: 'string', description: 'API key for LLM (OpenAI-compatible)' },
-          prompt: { type: 'string', description: 'Custom summary prompt (default: "Summarize this webpage in 2-3 sentences.")', default: 'Summarize this webpage in 2-3 sentences.' },
-          llmModel: { type: 'string', description: 'LLM model to use (default: gpt-4o-mini)', default: 'gpt-4o-mini' },
-          llmBaseUrl: { type: 'string', description: 'LLM API base URL (default: https://api.openai.com/v1)', default: 'https://api.openai.com/v1' },
-          render: { type: 'boolean', description: 'Use browser rendering', default: false },
-        },
-        required: ['url', 'llmApiKey'],
-      },
-    },
-    {
-      name: 'webpeel_answer',
-      description: 'Ask a question about a URL and get an AI-generated answer with citations. Requires an LLM API key (BYOK). For LLM-free Q&A, use webpeel_quick_answer instead.',
-      annotations: { title: 'Answer a Question', readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          question: { type: 'string', description: 'The question to answer' },
-          searchProvider: { type: 'string', enum: ['duckduckgo', 'brave', 'stealth', 'google'], description: 'Search provider (default: duckduckgo)', default: 'duckduckgo' },
-          searchApiKey: { type: 'string', description: 'API key for Brave Search (required when searchProvider is "brave")' },
-          llmProvider: { type: 'string', enum: ['openai', 'anthropic', 'google'], description: 'LLM provider to use for answer generation' },
-          llmApiKey: { type: 'string', description: 'API key for the LLM provider (BYOK)' },
-          llmModel: { type: 'string', description: 'LLM model name (optional, uses provider default)' },
-          maxSources: { type: 'number', description: 'Maximum number of sources to fetch (1-10, default 5)', default: 5, minimum: 1, maximum: 10 },
-        },
-        required: ['question', 'llmProvider', 'llmApiKey'],
-      },
-    },
-    {
-      name: 'webpeel_brand',
-      description: 'Extract branding assets from a URL: logo, colors, fonts, and social links.',
-      annotations: { title: 'Extract Branding', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', description: 'URL to extract branding from' },
-          render: { type: 'boolean', description: 'Use browser rendering', default: false },
-        },
-        required: ['url'],
-      },
-    },
-    {
-      name: 'webpeel_change_track',
-      description: 'Track content changes on a URL. First call saves a snapshot, subsequent calls show what changed.',
-      annotations: { title: 'Track Page Changes', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', description: 'URL to track for changes' },
-          render: { type: 'boolean', description: 'Use browser rendering', default: false },
-        },
-        required: ['url'],
-      },
-    },
-    {
-      name: 'webpeel_deep_fetch',
-      description: 'Search + fetch + analyze in one call. Fetches multiple sources for a query, scores by relevance, deduplicates facts, and merges into structured intelligence. No LLM key needed. Supports \'comparison\' format for vs-queries.',
-      annotations: { title: 'Deep Fetch Research', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'Search query to research' },
-          count: { type: 'number', description: 'Number of top results to fetch (default: 5, max: 10)', default: 5, minimum: 1, maximum: 10 },
-          format: { type: 'string', enum: ['markdown', 'text', 'comparison'], description: 'Content format (default: markdown). Use "comparison" for vs-queries to get a side-by-side structure.', default: 'markdown' },
-        },
-        required: ['query'],
-      },
-    },
-    {
-      name: 'webpeel_youtube',
-      description: 'Extract the full transcript from a YouTube video. Returns timestamped segments and video metadata. No API key needed. Supports all YouTube URL formats.',
-      annotations: { title: 'Extract YouTube Transcript', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      name: 'webpeel_monitor',
+      description: 'Watch a URL for changes. Returns diff on subsequent calls. Add webhook= for persistent monitoring with notifications.',
+      annotations: { title: 'Monitor URL for Changes', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       inputSchema: {
         type: 'object' as const,
         properties: {
-          url: { type: 'string', description: 'YouTube video URL (supports youtube.com/watch, youtu.be, embed, shorts, and mobile URLs)' },
-          language: { type: 'string', description: 'Preferred transcript language code (default: en). Falls back to any available language if not found.' },
+          url: { type: 'string', description: 'URL to monitor' },
+          webhook: { type: 'string', description: 'Webhook URL to notify when content changes' },
+          interval: { type: 'string', description: "Check interval, e.g. '1h', '30m', '1d'", default: '1h' },
+          selector: { type: 'string', description: 'CSS selector to monitor a specific part of the page' },
         },
         required: ['url'],
       },
     },
     {
-      name: 'webpeel_auto_extract',
-      description: 'Detect page type and extract structured JSON automatically. Supports pricing pages, product listings, contact info, articles, and API documentation. No LLM needed.',
+      name: 'webpeel_act',
+      description: 'Interact with a web page. Click buttons, fill forms, navigate. Returns screenshot + extracted content after actions complete.',
+      annotations: { title: 'Act on Web Page', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
       inputSchema: {
         type: 'object' as const,
         properties: {
-          url: { type: 'string', description: 'URL to fetch and auto-extract structured data from' },
+          url: { type: 'string', description: 'URL to interact with' },
+          actions: {
+            type: 'array',
+            description: 'Actions to perform, e.g. [{type:"click",selector:".btn"}, {type:"type",selector:"#q",value:"hello"}]',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string', enum: ['click', 'type', 'fill', 'scroll', 'wait', 'press', 'hover', 'select'] },
+                selector: { type: 'string' },
+                value: { type: 'string' },
+                key: { type: 'string' },
+                milliseconds: { type: 'number' },
+              },
+              required: ['type'],
+            },
+          },
+          extract_after: { type: 'boolean', description: 'Extract content after actions complete', default: true },
+          screenshot_after: { type: 'boolean', description: 'Take screenshot after actions complete', default: false },
         },
-        required: ['url'],
-      },
-    },
-    {
-      name: 'webpeel_quick_answer',
-      description: 'Ask a question about a URL\'s content — no LLM key needed. Uses BM25 relevance scoring to find and return the most relevant passages. Returns answer text with confidence score.',
-      annotations: { title: 'Quick Answer (No LLM)', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          url: { type: 'string', description: 'URL to fetch and search' },
-          question: { type: 'string', description: 'Question to answer from the page content' },
-          maxPassages: { type: 'number', description: 'Maximum number of relevant passages to return (default: 3)', default: 3, minimum: 1, maximum: 10 },
-          render: { type: 'boolean', description: 'Use browser rendering', default: false },
-        },
-        required: ['url', 'question'],
-      },
-    },
-    {
-      name: 'webpeel_watch',
-      description: 'Monitor a URL for changes with webhook notifications. Create persistent watchers that check on a schedule and alert when content changes.',
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          action: { type: 'string', enum: ['create', 'list', 'check', 'delete'], description: 'Watch action to perform' },
-          url: { type: 'string', description: 'URL to monitor (for create)' },
-          id: { type: 'string', description: 'Watch ID (for check/delete)' },
-          webhookUrl: { type: 'string', description: 'Webhook URL to notify on changes (for create)' },
-          intervalMinutes: { type: 'number', description: 'Check interval in minutes (default: 60)' },
-          selector: { type: 'string', description: 'CSS selector to monitor specific content (optional)' },
-        },
-        required: ['action'],
-      },
-    },
-    {
-      name: 'webpeel_hotels',
-      description: 'Search multiple travel sites for hotels in parallel. Returns sorted results from Kayak, Booking.com, Google Travel, and Expedia.',
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          destination: { type: 'string', description: 'Destination city or area (e.g., "Manhattan", "Paris")' },
-          checkin: { type: 'string', description: 'Check-in date (ISO or natural language like "tomorrow")' },
-          checkout: { type: 'string', description: 'Check-out date. Defaults to day after checkin.' },
-          sort: { type: 'string', enum: ['price', 'rating', 'value'], description: 'Sort order (default: price)' },
-          limit: { type: 'number', description: 'Max results (default: 20)' },
-        },
-        required: ['destination'],
-      },
-    },
-    {
-      name: 'agent',
-      description: 'Web data agent — search, fetch, and extract structured data in one call. Give it a prompt and URLs or search query, get back clean structured results. Works without an LLM key using BM25 extraction.',
-      annotations: { title: 'Web Data Agent', readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          prompt: { type: 'string', description: 'What data do you want? e.g. "Find the CEO and revenue for each company"' },
-          urls: { type: 'array', items: { type: 'string' }, description: 'URLs to fetch and extract from' },
-          search: { type: 'string', description: 'Search query to find relevant pages' },
-          schema: { type: 'object', description: 'Output schema as an object of field names to type strings (e.g. {"company":"string","ceo":"string"})' },
-          maxResults: { type: 'number', description: 'Max pages to process (default: 5)' },
-          budget: { type: 'number', description: 'Token budget per page (default: 4000)' },
-          llmApiKey: { type: 'string', description: 'Your LLM API key for AI extraction (optional — works without it using BM25)' },
-          llmProvider: { type: 'string', description: 'LLM provider: openai, anthropic, etc. (default: openai)' },
-        },
-        required: [],
+        required: ['url', 'actions'],
       },
     },
   ];

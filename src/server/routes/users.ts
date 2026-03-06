@@ -829,9 +829,18 @@ export function createUserRouter(): Router {
    * GET /v1/usage
    * Get current week usage + limits + burst + extra usage
    */
-  router.get('/v1/usage', jwtAuth, async (req: Request, res: Response) => {
+  router.get('/v1/usage', async (req: Request, res: Response) => {
     try {
-      const { userId } = (req as any).user as JwtPayload;
+      // Accept both JWT session tokens and API keys
+      const userId = (req as any).user?.userId || req.auth?.keyInfo?.accountId;
+      if (!userId) {
+        // Fall back to jwtAuth behavior for informative error
+        res.status(401).json({
+          error: 'unauthorized',
+          message: 'Authentication required. Provide a JWT token or API key.',
+        });
+        return;
+      }
 
       // Helper: Get current ISO week
       const getCurrentWeek = () => {
@@ -1000,9 +1009,13 @@ export function createUserRouter(): Router {
    * GET /v1/usage/history
    * Get daily usage history for the past N days (default 7)
    */
-  router.get('/v1/usage/history', jwtAuth, async (req: Request, res: Response) => {
+  router.get('/v1/usage/history', async (req: Request, res: Response) => {
     try {
-      const { userId } = (req as any).user as JwtPayload;
+      const userId = (req as any).user?.userId || req.auth?.keyInfo?.accountId;
+      if (!userId) {
+        res.status(401).json({ error: 'unauthorized', message: 'Authentication required.' });
+        return;
+      }
       const days = Math.min(Math.max(parseInt(req.query.days as string) || 7, 1), 90);
 
       // Get daily usage from usage_logs table

@@ -149,9 +149,24 @@ export function createApp(config: ServerConfig = {}): Express {
   const corsOrigins = config.corsOrigins || [...new Set([...defaultOrigins, ...envOrigins])];
   
   app.use(cors({
-    origin: corsOrigins,
-    credentials: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (corsOrigins.includes(origin)) return callback(null, origin);
+      // Unknown origins: allow (API key clients need cross-origin access) but no credentials
+      return callback(null, true);
+    },
+    // credentials: set conditionally via post-cors middleware below
+    credentials: false,
   }));
+  // Set Access-Control-Allow-Credentials only for trusted origins
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin = req.headers.origin;
+    if (origin && corsOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    next();
+  });
 
   // SECURITY: Security headers
   app.disable('x-powered-by');
@@ -272,7 +287,7 @@ export function createApp(config: ServerConfig = {}): Express {
       success: false,
       error: {
         type: 'not_found',
-        message: `Route not found: ${req.method} ${req.path}`,
+        message: 'Not found',
         docs: 'https://webpeel.dev/docs/api-reference',
       },
       requestId: req.requestId,
