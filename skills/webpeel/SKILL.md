@@ -106,7 +106,7 @@ Or use the hosted MCP server (no local install):
 }
 ```
 
-**20 MCP tools available:** `webpeel_fetch`, `webpeel_search`, `webpeel_crawl`, `webpeel_map`, `webpeel_extract`, `webpeel_batch`, `webpeel_research`, `webpeel_screenshot`, `webpeel_summarize`, `webpeel_answer`, `webpeel_brand`, `webpeel_change_track`, `webpeel_deep_fetch`, `webpeel_youtube`, `webpeel_auto_extract`, `webpeel_quick_answer`, `webpeel_watch`, `webpeel_hotels`, `webpeel_design_analysis`, `webpeel_design_compare`
+**7 MCP tools:** `webpeel`, `webpeel_read`, `webpeel_see`, `webpeel_find`, `webpeel_extract`, `webpeel_monitor`, `webpeel_act`
 
 ### Node.js Library
 ```typescript
