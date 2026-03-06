@@ -42,6 +42,7 @@ export function createActivityRouter(authStore: AuthStore): Router {
           method,
           status_code,
           processing_time_ms,
+          tokens_used,
           created_at
         FROM usage_logs
         WHERE user_id = $1
@@ -59,6 +60,7 @@ export function createActivityRouter(authStore: AuthStore): Router {
         responseTime: row.processing_time_ms || 0,
         mode: row.method || 'basic',
         timestamp: row.created_at,
+        tokensUsed: row.tokens_used || null,
       }));
 
       res.json({ requests });
