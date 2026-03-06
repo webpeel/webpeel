@@ -21,6 +21,66 @@ const TIER_LIMITS = {
 };
 
 /**
+ * Create Stripe Billing Portal router
+ * POST /v1/billing/portal — create a Stripe Customer Portal session
+ * Requires global auth middleware to already have run (req.user or req.auth set).
+ */
+export function createBillingPortalRouter(pool: pg.Pool | null): Router {
+  const router = Router();
+
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    log.warn('STRIPE_SECRET_KEY not configured - billing portal disabled');
+    return router;
+  }
+
+  const stripe = new Stripe(stripeSecretKey);
+
+  router.post('/v1/billing/portal', async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.userId || (req as any).auth?.keyInfo?.accountId;
+      if (!userId) {
+        res.status(401).json({ error: 'unauthorized' });
+        return;
+      }
+
+      if (!pool) {
+        res.status(503).json({ error: 'db_unavailable', message: 'Database not configured' });
+        return;
+      }
+
+      // Get user's stripe_customer_id from DB
+      const result = await pool.query(
+        'SELECT stripe_customer_id FROM users WHERE id = $1',
+        [userId]
+      );
+      const stripeCustomerId = result.rows[0]?.stripe_customer_id;
+
+      if (!stripeCustomerId) {
+        res.status(400).json({
+          error: 'no_subscription',
+          message: 'No active subscription found. Upgrade to Pro or Max to manage billing.',
+        });
+        return;
+      }
+
+      // Create portal session
+      const session = await stripe.billingPortal.sessions.create({
+        customer: stripeCustomerId,
+        return_url: 'https://app.webpeel.dev/billing',
+      });
+
+      res.json({ url: session.url });
+    } catch (err: any) {
+      log.error('Failed to create portal session:', err);
+      res.status(500).json({ error: 'portal_failed', message: 'Failed to create billing portal session' });
+    }
+  });
+
+  return router;
+}
+
+/**
  * Create Stripe webhook router
  */
 export function createStripeRouter(): Router {

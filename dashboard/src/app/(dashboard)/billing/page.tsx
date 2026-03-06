@@ -587,15 +587,28 @@ export default function BillingPage() {
             <p className="text-zinc-400 text-sm mb-4">
               Update payment method, view invoices, and manage your billing details via the Stripe Customer Portal.
             </p>
-            {/* TODO: Replace with real Stripe portal URL */}
-            <a
-              href="https://billing.stripe.com/p/login/test_placeholder"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-lg transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={async () => {
+                try {
+                  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
+                  const res = await fetch(`${API_URL}/v1/billing/portal`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  const data = await res.json();
+                  if (data.url) {
+                    window.open(data.url, '_blank');
+                  } else if (data.message) {
+                    alert(data.message);
+                  }
+                } catch (e) {
+                  alert('Could not open billing portal. Please try again.');
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-lg transition-colors cursor-pointer"
             >
               Open Billing Portal →
-            </a>
+            </button>
             <p className="text-zinc-500 text-xs mt-3">
               You&apos;ll be redirected to Stripe&apos;s secure portal. Use your account email to authenticate.
             </p>
@@ -617,14 +630,28 @@ export default function BillingPage() {
         <CardContent>
           <p className="text-zinc-400 text-sm">
             Invoices are available in the{' '}
-            <a
-              href="https://billing.stripe.com/p/login/test_placeholder"
-              className="text-[#5865F2] hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={async () => {
+                try {
+                  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
+                  const res = await fetch(`${API_URL}/v1/billing/portal`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  const data = await res.json();
+                  if (data.url) {
+                    window.open(data.url, '_blank');
+                  } else if (data.message) {
+                    alert(data.message);
+                  }
+                } catch (e) {
+                  alert('Could not open billing portal. Please try again.');
+                }
+              }}
+              className="text-[#5865F2] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit"
             >
               Billing Portal
-            </a>
+            </button>
             . Open the portal above to view and download your invoice history.
           </p>
         </CardContent>

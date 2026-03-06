@@ -22,7 +22,7 @@ import { createHealthRouter } from './routes/health.js';
 import { createFetchRouter } from './routes/fetch.js';
 import { createSearchRouter } from './routes/search.js';
 import { createUserRouter } from './routes/users.js';
-import { createStripeRouter } from './routes/stripe.js';
+import { createStripeRouter, createBillingPortalRouter } from './routes/stripe.js';
 import { createOAuthRouter } from './routes/oauth.js';
 import { createStatsRouter } from './routes/stats.js';
 import { createActivityRouter } from './routes/activity.js';
@@ -268,6 +268,7 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createFetchRouter(authStore));
   app.use(createScreenshotRouter(authStore));
   app.use(createSearchRouter(authStore));
+  app.use(createBillingPortalRouter(pool));
   app.use(createUserRouter());
   app.use(createOAuthRouter());
   app.use(createStatsRouter(authStore));
