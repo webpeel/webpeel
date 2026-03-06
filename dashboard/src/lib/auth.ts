@@ -197,6 +197,46 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               delete token.oauthCredentials;
               delete token.apiRetryAt;
               console.log('Auto-recovered API session for:', token.email);
+            } else if (res.status === 401) {
+              // OAuth token expired/invalid — clear credentials so email-based recovery can take over
+              delete token.oauthCredentials;
+              delete token.apiRetryAt;
+            }
+          } catch {
+            // Still failing — will retry on next session check
+          }
+        }
+      }
+
+      // ---------------------------------------------------------------
+      // Secondary recovery: oauthCredentials cleared (OAuth token expired)
+      // but apiError still set — fall back to email-based recovery.
+      // Throttled to once per minute to avoid hammering.
+      // ---------------------------------------------------------------
+      if (token.apiError && !token.oauthCredentials && !token.apiToken && token.email) {
+        const now = Date.now();
+        const lastRetry = (token.apiRetryAt as number) || 0;
+
+        if (now - lastRetry > 60_000) {
+          token.apiRetryAt = now;
+          try {
+            const recoverySecret = process.env.NEXTAUTH_SECRET || '';
+            const res = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/recover`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: token.email, secret: recoverySecret }),
+              }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              token.apiToken = data.token;
+              token.tier = data.user.tier;
+              token.userId = data.user.id;
+              delete token.apiError;
+              delete token.apiRetryAt;
+              console.log('Email-based recovery succeeded for:', token.email);
             }
           } catch {
             // Still failing — will retry on next session check

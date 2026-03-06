@@ -387,5 +387,61 @@ export function createOAuthRouter(): Router {
     }
   });
 
+  /**
+   * POST /v1/auth/recover
+   * Email-based session recovery — used by the dashboard when the OAuth token
+   * has expired but the user is still authenticated via NextAuth.
+   * Trusts the email from the NextAuth JWT and verifies via shared secret.
+   */
+  router.post('/v1/auth/recover', async (req: Request, res: Response) => {
+    try {
+      const { email, secret } = req.body;
+
+      if (!email || !secret) {
+        return res.status(400).json({ error: 'missing_fields', message: 'email and secret required' });
+      }
+
+      // Verify the shared secret — proves the request comes from our own dashboard
+      const expectedSecret = process.env.DASHBOARD_RECOVER_SECRET || process.env.NEXTAUTH_SECRET;
+      if (!expectedSecret || secret !== expectedSecret) {
+        return res.status(401).json({ error: 'unauthorized', message: 'Invalid recovery secret' });
+      }
+
+      // Look up user by email
+      const result = await pool.query(
+        'SELECT id, email, tier, weekly_limit FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'user_not_found', message: 'No account found for this email' });
+      }
+
+      const user = result.rows[0];
+      const jwtSecret = process.env.JWT_SECRET || '';
+
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, tier: user.tier } as JwtPayload,
+        jwtSecret,
+        { expiresIn: '30d' }
+      );
+
+      // Get an active API key prefix for the user (if any)
+      const keyResult = await pool.query(
+        'SELECT key_prefix FROM api_keys WHERE user_id = $1 AND is_active = true LIMIT 1',
+        [user.id]
+      );
+
+      return res.json({
+        token,
+        user: { id: user.id, email: user.email, tier: user.tier },
+        apiKey: keyResult.rows[0]?.key_prefix ? `${keyResult.rows[0].key_prefix}...` : null,
+      });
+    } catch (err) {
+      console.error('Recovery endpoint error:', err);
+      return res.status(500).json({ error: 'server_error' });
+    }
+  });
+
   return router;
 }
