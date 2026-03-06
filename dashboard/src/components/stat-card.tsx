@@ -7,6 +7,7 @@ interface StatCardProps {
   icon: LucideIcon;
   label: string;
   value: string | number;
+  subtitle?: string;
   trend?: {
     value: string;
     isPositive: boolean;
@@ -20,6 +21,7 @@ export function StatCard({
   icon: Icon,
   label,
   value,
+  subtitle,
   trend,
   iconColor = 'text-zinc-300',
   iconBg = 'bg-zinc-800',
@@ -49,6 +51,9 @@ export function StatCard({
               </span>
             )}
           </div>
+          {subtitle && (
+            <p className="text-[10px] text-zinc-600 mt-1.5 leading-tight">{subtitle}</p>
+          )}
         </div>
         <div className={cn(
           "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",

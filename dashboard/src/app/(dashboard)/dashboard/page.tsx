@@ -67,14 +67,16 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const token = (session as any)?.apiToken as string | undefined;
   const [storedApiKey, setStoredApiKey] = useState<string | null>(null);
-  const [gettingStartedDismissed, setGettingStartedDismissed] = useState(false);
+  const [gettingStartedDismissed, setGettingStartedDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gs-dismissed') === 'true';
+    }
+    return false;
+  });
 
   useEffect(() => {
     const key = localStorage.getItem('webpeel_first_api_key');
     if (key) setStoredApiKey(key);
-    if (localStorage.getItem('webpeel-getting-started-dismissed') === 'true') {
-      setGettingStartedDismissed(true);
-    }
   }, []);
 
   // SWR config: limit retries to avoid thundering herd on failures
@@ -140,12 +142,20 @@ export default function DashboardPage() {
   const userName = session?.user?.name?.split(' ')[0] || session?.user?.email?.split('@')[0] || 'there';
 
   // Stats
+  const weeklyUsed = usage?.weekly?.totalUsed || 0;
   const totalRequests = stats?.totalRequests || 0;
   const remaining = usage?.weekly ? usage.weekly.totalAvailable - usage.weekly.totalUsed : 0;
   const successRate = stats?.successRate ?? 100;
   const avgResponseTime = stats?.avgResponseTime || 0;
+  const hasWeeklyData = weeklyUsed > 0;
   const hasData = totalRequests > 0;
   const weeklyPercentage = usage?.weekly ? (usage.weekly.totalUsed / usage.weekly.totalAvailable) * 100 : 0;
+
+  // Getting started auto-completion detection
+  const hasApiKey = !!(keys?.keys && keys.keys.length > 0);
+  const hasMadeRequest = hasData; // stats.totalRequests > 0
+  const gettingStartedComplete = hasApiKey && hasMadeRequest;
+  const showGettingStarted = !gettingStartedDismissed && !gettingStartedComplete;
 
   // Usage chart data
   const dailyHistory = history?.history || [];
@@ -206,13 +216,26 @@ print(r.json()['markdown'])`,
           </>
         ) : (
           <>
-            <StatCard icon={Activity} label="Total Requests" value={totalRequests.toLocaleString()} delay={0} />
+            <StatCard icon={Activity} label="This Week" value={weeklyUsed.toLocaleString()} delay={0} />
             <StatCard icon={Zap} label="Remaining" value={remaining.toLocaleString()} iconColor="text-emerald-400" iconBg="bg-emerald-500/10" delay={100} />
-            <StatCard icon={CheckCircle2} label="Success Rate" value={hasData ? `${successRate.toFixed(1)}%` : '—'} iconColor="text-blue-400" iconBg="bg-blue-500/10" delay={200} />
-            <StatCard icon={Clock} label="Avg Response" value={hasData ? `${avgResponseTime}ms` : '—'} iconColor="text-amber-400" iconBg="bg-amber-500/10" delay={300} />
+            <StatCard icon={CheckCircle2} label="Success Rate" value={hasWeeklyData ? `${successRate.toFixed(1)}%` : '—'} iconColor="text-blue-400" iconBg="bg-blue-500/10" delay={200} />
+            <StatCard
+              icon={Clock}
+              label="Avg Response"
+              value={hasData ? `${avgResponseTime}ms` : '—'}
+              subtitle={hasData ? 'Avg across all modes. Basic: ~300ms. Browser: ~3s' : undefined}
+              iconColor="text-amber-400"
+              iconBg="bg-amber-500/10"
+              delay={300}
+            />
           </>
         )}
       </div>
+      {usage?.weekly?.resetsAt && (
+        <p className="text-xs text-zinc-500 -mt-4">
+          Stats reset every Sunday · Resets {new Date(usage.weekly.resetsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </p>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -225,7 +248,7 @@ print(r.json()['markdown'])`,
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-zinc-100">Fetch a URL</p>
-            <p className="text-xs text-zinc-500 truncate">Try the playground</p>
+            <p className="text-xs text-zinc-500 truncate">Playground →</p>
           </div>
           <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
         </a>
@@ -239,7 +262,7 @@ print(r.json()['markdown'])`,
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-zinc-100">Manage Keys</p>
-            <p className="text-xs text-zinc-500 truncate">Create & rotate API keys</p>
+            <p className="text-xs text-zinc-500 truncate">API Keys →</p>
           </div>
           <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
         </a>
@@ -253,7 +276,7 @@ print(r.json()['markdown'])`,
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-zinc-100">View Usage</p>
-            <p className="text-xs text-zinc-500 truncate">Charts & quota breakdown</p>
+            <p className="text-xs text-zinc-500 truncate">Usage →</p>
           </div>
           <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
         </a>
@@ -269,14 +292,14 @@ print(r.json()['markdown'])`,
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-zinc-100">Set up MCP</p>
-            <p className="text-xs text-zinc-500 truncate">Claude / Cursor / Windsurf</p>
+            <p className="text-xs text-zinc-500 truncate">Docs →</p>
           </div>
           <ExternalLink className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
         </a>
       </div>
 
       {/* Getting Started Checklist */}
-      {!gettingStartedDismissed && <Card>
+      {showGettingStarted && <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
@@ -285,7 +308,7 @@ print(r.json()['markdown'])`,
             </div>
             <button
               onClick={() => {
-                localStorage.setItem('webpeel-getting-started-dismissed', 'true');
+                localStorage.setItem('gs-dismissed', 'true');
                 setGettingStartedDismissed(true);
               }}
               className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
@@ -301,13 +324,13 @@ print(r.json()['markdown'])`,
               {
                 label: 'Create an API key',
                 desc: 'Generate a key from the Keys page',
-                done: !!(keys?.keys && keys.keys.length > 0),
+                done: hasApiKey,
                 href: '/keys',
               },
               {
                 label: 'Make your first API request',
                 desc: 'Fetch any URL via the API or playground',
-                done: !!(usage?.weekly && usage.weekly.totalUsed > 0),
+                done: hasMadeRequest,
                 href: '/playground',
               },
               {
