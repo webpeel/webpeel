@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { AlertCircle, Globe } from 'lucide-react';
@@ -741,6 +741,33 @@ export default function UsagePage() {
     { refreshInterval: 60_000 }
   );
 
+  // --- Usage alert banner ---
+  const [alertDismissed, setAlertDismissed] = useState<boolean>(false);
+  const [usageAlertThreshold, setUsageAlertThreshold] = useState<string>('disabled');
+
+  useEffect(() => {
+    const threshold = localStorage.getItem('wp-usage-alert');
+    if (threshold) setUsageAlertThreshold(threshold);
+    const dismissed = sessionStorage.getItem('wp-usage-alert-dismissed');
+    if (dismissed === 'true') setAlertDismissed(true);
+  }, []);
+
+  const usagePct =
+    usage?.weekly?.totalAvailable && usage.weekly.totalAvailable > 0
+      ? Math.round((usage.weekly.totalUsed / usage.weekly.totalAvailable) * 100)
+      : 0;
+
+  const showAlertBanner =
+    !alertDismissed &&
+    usageAlertThreshold !== 'disabled' &&
+    usage?.weekly != null &&
+    usagePct >= parseInt(usageAlertThreshold, 10);
+
+  const dismissAlert = () => {
+    setAlertDismissed(true);
+    sessionStorage.setItem('wp-usage-alert-dismissed', 'true');
+  };
+
   const pageError = usageError || historyError || statsError;
   const pageMutate = () => {
     void mutateUsage();
@@ -779,6 +806,33 @@ export default function UsagePage() {
           Your API usage at a glance · auto-refreshes every 30 s
         </p>
       </div>
+
+      {/* ── Usage Alert Banner ── */}
+      {showAlertBanner && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-800/50 bg-amber-950/50 px-4 py-3 text-amber-200">
+          <div className="flex items-center gap-2 text-sm min-w-0">
+            <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
+            <span>
+              ⚠️ You&apos;ve used <strong>{usagePct}%</strong> of your monthly limit. Consider upgrading to avoid interruptions.
+            </span>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <a
+              href="/billing"
+              className="text-xs font-semibold text-amber-300 hover:text-amber-100 underline underline-offset-2 whitespace-nowrap"
+            >
+              Upgrade Plan →
+            </a>
+            <button
+              onClick={dismissAlert}
+              className="text-amber-400 hover:text-amber-200 transition-colors"
+              aria-label="Dismiss alert"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Section 1: Weekly Usage Bar ── */}
       <WeeklyUsageBar usage={usage} isLoading={isLoading} />

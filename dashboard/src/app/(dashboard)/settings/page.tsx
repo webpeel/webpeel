@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,38 @@ function Toggle({
         }`}
       />
     </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Styled select for dark-theme dropdowns
+// ---------------------------------------------------------------------------
+function StyledSelect({
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      className={`rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#5865F2]/40 focus:border-[#5865F2] ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+      }`}
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -181,12 +213,44 @@ export default function SettingsPage() {
     toast.success(`Default detail level set to ${v}`);
   };
 
-  // --- Notifications (placeholder) ---
-  const notifications = [
-    { key: 'api_expiry', label: 'Email me when API key expires', description: 'Get notified 7 days before your API key expires.' },
-    { key: 'usage_80', label: 'Email me at 80% usage', description: "We'll warn you when you've used 80% of your plan limit." },
-    { key: 'weekly_digest', label: 'Weekly usage digest', description: 'A weekly summary of your API usage and stats.' },
-  ];
+  // --- Default Request Settings + Notifications (localStorage) ---
+  const [defaultRender, setDefaultRender] = useState<string>('basic');
+  const [articleMode, setArticleMode] = useState<boolean>(false);
+  const [usageAlertThreshold, setUsageAlertThreshold] = useState<string>('80');
+  const [alertEmail, setAlertEmail] = useState<string>('');
+
+  useEffect(() => {
+    const render = localStorage.getItem('wp-default-render');
+    const readable = localStorage.getItem('wp-default-readable');
+    const alert = localStorage.getItem('wp-usage-alert');
+    if (render) setDefaultRender(render);
+    if (readable) setArticleMode(readable === 'true');
+    if (alert) setUsageAlertThreshold(alert);
+  }, []);
+
+  const saveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleSaveToast = () => {
+    if (saveToastTimer.current) clearTimeout(saveToastTimer.current);
+    saveToastTimer.current = setTimeout(() => toast.success('Settings saved'), 500);
+  };
+
+  const handleRenderChange = (v: string) => {
+    setDefaultRender(v);
+    localStorage.setItem('wp-default-render', v);
+    scheduleSaveToast();
+  };
+
+  const handleArticleModeChange = (v: boolean) => {
+    setArticleMode(v);
+    localStorage.setItem('wp-default-readable', String(v));
+    scheduleSaveToast();
+  };
+
+  const handleUsageAlertChange = (v: string) => {
+    setUsageAlertThreshold(v);
+    localStorage.setItem('wp-usage-alert', v);
+    scheduleSaveToast();
+  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 md:space-y-8">
@@ -375,27 +439,113 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* ── Section 3: Notifications ── */}
-      <Card className="border-zinc-700">
+      {/* ── Section 3: Default Request Settings ── */}
+      <Card className="border-zinc-800 bg-[#111116]">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Notifications</CardTitle>
-          <CardDescription>Control how WebPeel communicates with you</CardDescription>
+          <CardTitle className="text-lg font-semibold text-white">Default Request Settings</CardTitle>
+          <CardDescription className="text-zinc-400">
+            Pre-fill the Playground and set defaults for API requests
+          </CardDescription>
         </CardHeader>
-        <CardContent className="divide-y divide-zinc-100">
-          {notifications.map((notif) => (
-            <div key={notif.key} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-zinc-100">{notif.label}</p>
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                    Coming soon
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-400">{notif.description}</p>
-              </div>
-              <Toggle checked={false} onChange={() => {}} disabled />
+        <CardContent className="space-y-6">
+          {/* Default render mode */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-zinc-100">Default Render Mode</p>
+              <p className="text-xs text-zinc-400">
+                Sets how pages are fetched when no explicit mode is specified
+              </p>
             </div>
-          ))}
+            <StyledSelect
+              value={defaultRender}
+              onChange={handleRenderChange}
+              options={[
+                { value: 'basic', label: 'Basic (Fast)' },
+                { value: 'browser', label: 'Browser (JS-heavy sites)' },
+                { value: 'stealth', label: 'Stealth (Bot detection)' },
+              ]}
+            />
+          </div>
+
+          <Separator className="bg-zinc-800" />
+
+          {/* Article mode toggle */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-zinc-100">Article Mode</p>
+              <p className="text-xs text-zinc-400">
+                Extract article content only by default
+              </p>
+            </div>
+            <Toggle checked={articleMode} onChange={handleArticleModeChange} />
+          </div>
+
+          {/* Helper text */}
+          <p className="text-xs text-zinc-500 border-t border-zinc-800 pt-4">
+            These defaults pre-fill the Playground and are used when no explicit params are set.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* ── Section 4: Notifications ── */}
+      <Card className="border-zinc-800 bg-[#111116]">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-white">Notifications</CardTitle>
+          <CardDescription className="text-zinc-400">
+            Control how WebPeel alerts you about your usage
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Usage alert threshold */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-zinc-100">Usage Alert Threshold</p>
+              <p className="text-xs text-zinc-400">
+                Get notified when your monthly API usage reaches this threshold.
+              </p>
+            </div>
+            <StyledSelect
+              value={usageAlertThreshold}
+              onChange={handleUsageAlertChange}
+              options={[
+                { value: 'disabled', label: 'Disabled' },
+                { value: '50', label: '50%' },
+                { value: '75', label: '75%' },
+                { value: '80', label: '80%' },
+                { value: '90', label: '90%' },
+              ]}
+            />
+          </div>
+
+          {/* Info note */}
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-xs text-zinc-400 space-y-1">
+            <p>Email notifications coming soon. Alerts currently show as dashboard banners.</p>
+          </div>
+
+          <Separator className="bg-zinc-800" />
+
+          {/* Email input (disabled) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="alert-email" className="text-sm font-medium text-zinc-300">
+                Alert Email
+              </Label>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                Coming soon
+              </span>
+            </div>
+            <Input
+              id="alert-email"
+              type="email"
+              value={alertEmail}
+              onChange={(e) => setAlertEmail(e.target.value)}
+              disabled
+              placeholder="jake@example.com"
+              title="Email alerts coming soon"
+              className="bg-zinc-900 border-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
+            />
+            <p className="text-xs text-zinc-500">Email alerts coming soon.</p>
+          </div>
         </CardContent>
       </Card>
 
