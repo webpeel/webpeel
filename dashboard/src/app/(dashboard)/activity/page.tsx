@@ -35,6 +35,7 @@ interface ApiRequest {
   timestamp: string;
   statusCode?: number;
   tokenCount?: number;
+  tokensUsed?: number;
   contentPreview?: string;
 }
 
@@ -104,8 +105,8 @@ function ExpandedRowContent({ req }: { req: ApiRequest }) {
         <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
           <p className="text-xs text-zinc-500 mb-1">Tokens</p>
           <p className="text-sm font-semibold text-zinc-100">
-            {req.tokenCount != null
-              ? req.tokenCount.toLocaleString()
+            {(req.tokensUsed ?? req.tokenCount) != null
+              ? (req.tokensUsed ?? req.tokenCount)!.toLocaleString()
               : <span className="text-zinc-400 italic">N/A</span>
             }
           </p>

@@ -361,8 +361,8 @@ export function createFetchRouter(authStore: AuthStore): Router {
       if (logUserId && typeof pgStore.pool !== 'undefined') {
         pgStore.pool.query(
           `INSERT INTO usage_logs 
-            (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent, tokens_used)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             logUserId,
             'fetch',
@@ -372,6 +372,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
             200,
             req.ip || req.socket.remoteAddress,
             req.get('user-agent'),
+            result?.tokens || null,
           ]
         ).catch((err: any) => {
           console.error('Failed to log request to usage_logs:', err);
@@ -485,8 +486,8 @@ export function createFetchRouter(authStore: AuthStore): Router {
         
         pgStore.pool.query(
           `INSERT INTO usage_logs 
-            (user_id, endpoint, url, method, status_code, error, ip_address, user_agent)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            (user_id, endpoint, url, method, status_code, error, ip_address, user_agent, tokens_used)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             req.auth.keyInfo.accountId,
             'fetch',
@@ -496,6 +497,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
             err.message || 'Unknown error',
             req.ip || req.socket.remoteAddress,
             req.get('user-agent'),
+            null,
           ]
         ).catch((logErr: any) => {
           console.error('Failed to log error to usage_logs:', logErr);
@@ -980,8 +982,8 @@ export function createFetchRouter(authStore: AuthStore): Router {
       if (req.auth?.keyInfo?.accountId && typeof pgStore.pool !== 'undefined') {
         pgStore.pool.query(
           `INSERT INTO usage_logs
-            (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            (user_id, endpoint, url, method, processing_time_ms, status_code, ip_address, user_agent, tokens_used)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             req.auth.keyInfo.accountId,
             'fetch',
@@ -991,6 +993,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
             200,
             req.ip || req.socket.remoteAddress,
             req.get('user-agent'),
+            result?.tokens || null,
           ]
         ).catch((err: any) => {
           console.error('Failed to log request to usage_logs:', err);
