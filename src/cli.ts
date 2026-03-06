@@ -439,6 +439,55 @@ program.configureHelp({
   },
 });
 
+// ============================================================
+// API-based fetch (routes through WebPeel API, no local Playwright)
+// ============================================================
+async function fetchViaApi(url: string, options: PeelOptions, apiKey: string, apiUrl: string): Promise<any> {
+  const params = new URLSearchParams({ url, format: options.format || 'markdown' });
+  if (options.render) params.set('render', 'true');
+  if (options.stealth) params.set('stealth', 'true');
+  if (options.wait) params.set('wait', String(options.wait));
+  if (options.selector) params.set('selector', options.selector as string);
+  if (options.readable) params.set('readable', 'true');
+  if (options.summary) params.set('summary', 'true');
+  if (options.budget) params.set('budget', String(options.budget));
+  if ((options as any).question) params.set('question', (options as any).question);
+
+  const res = await fetch(`${apiUrl}/v1/fetch?${params}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    signal: AbortSignal.timeout(60000),
+  });
+
+  if (res.status === 401) {
+    throw Object.assign(new Error('API key invalid or expired. Run: webpeel auth <new-key>'), { code: 'AUTH_FAILED' });
+  }
+  if (res.status === 429) {
+    throw Object.assign(new Error('Rate limit exceeded. Check your plan at https://app.webpeel.dev/billing'), { code: 'RATE_LIMITED' });
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  // Map API response to PeelResult shape that the CLI already handles
+  return {
+    url: data.url || url,
+    title: data.metadata?.title || data.title || '',
+    content: data.content || '',
+    method: data.method || 'simple',
+    tokens: data.tokenCount || data.tokens || 0,
+    elapsed: data.fetchTimeMs || data.elapsed || 0,
+    tokenSavingsPercent: data.tokenSavingsPercent,
+    rawTokenEstimate: data.rawTokenEstimate,
+    metadata: data.metadata || {},
+    links: data.links || [],
+    answer: data.answer,
+    summary: data.summary,
+    format: options.format || 'markdown',
+  };
+}
+
 // Main fetch handler — shared with the `pipe` subcommand
 async function runFetch(url: string | undefined, options: any): Promise<void> {
     // Smart defaults: when piped (not a TTY), default to silent JSON + budget
@@ -941,8 +990,23 @@ async function runFetch(url: string | undefined, options: any): Promise<void> {
         peelOptions.format = 'markdown';
       }
 
-      // Fetch the page
-      const result = await peel(url, peelOptions);
+      // Fetch the page — route through API if key is configured, otherwise require auth
+      const fetchCfg = loadConfig();
+      const fetchApiKey = fetchCfg.apiKey || process.env.WEBPEEL_API_KEY;
+      const fetchApiUrl = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
+
+      let result: any;
+      if (fetchApiKey) {
+        // Use the WebPeel API — no local Playwright needed
+        result = await fetchViaApi(url, peelOptions, fetchApiKey, fetchApiUrl);
+      } else {
+        // No API key — show helpful message instead of trying local mode
+        if (spinner) spinner.fail('Authentication required');
+        console.error('No API key configured. Run: webpeel auth <your-key>');
+        console.error('Get a free key at: https://app.webpeel.dev/keys');
+        await cleanup();
+        process.exit(2);
+      }
 
       // Update lastUsed timestamp for named profiles
       if (resolvedProfileName) {
@@ -1506,42 +1570,47 @@ program
     const spinner = isSilent ? null : ora('Searching...').start();
 
     try {
-      const { getSearchProvider } = await import('./core/search-provider.js');
-      type SearchProviderId = import('./core/search-provider.js').SearchProviderId;
+      // Route search through the WebPeel API when a key is configured
+      const searchCfg = loadConfig();
+      const searchApiKey = searchCfg.apiKey || process.env.WEBPEEL_API_KEY;
+      const searchApiUrl = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
 
-      // Resolve provider
-      const providerId = (options.provider || 'duckduckgo') as SearchProviderId;
-      const config = loadConfig();
-      const apiKey = options.searchApiKey
-        || process.env.WEBPEEL_BRAVE_API_KEY
-        || config.braveApiKey
-        || undefined;
-
-      const provider = getSearchProvider(providerId);
-
-      let results = await provider.searchWeb(query, {
-        count: Math.min(Math.max(count, 1), 10),
-        apiKey,
-      });
-
-      // Apply budget to search results if requested (trim results to fit token budget)
-      if (options.budget && options.budget > 0 && results.length > 0) {
-        let totalTokens = 0;
-        let maxResults = 0;
-        for (const r of results) {
-          // Estimate ~4 chars per token for title + url + snippet
-          const resultTokens = Math.ceil(
-            (`${r.title || ''}\n${r.url || ''}\n${r.snippet || ''}`).length / 4
-          );
-          if (totalTokens + resultTokens > options.budget) break;
-          totalTokens += resultTokens;
-          maxResults++;
-        }
-        results = results.slice(0, Math.max(maxResults, 1));
+      if (!searchApiKey) {
+        if (spinner) spinner.fail('Authentication required');
+        console.error('No API key configured. Run: webpeel auth <your-key>');
+        console.error('Get a free key at: https://app.webpeel.dev/keys');
+        process.exit(2);
       }
 
+      const searchParams = new URLSearchParams({ q: query });
+      searchParams.set('limit', String(Math.min(Math.max(count, 1), 10)));
+      if (options.budget) searchParams.set('budget', String(options.budget));
+
+      const searchRes = await fetch(`${searchApiUrl}/v1/search?${searchParams}`, {
+        headers: { Authorization: `Bearer ${searchApiKey}` },
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (searchRes.status === 401) {
+        if (spinner) spinner.fail('Authentication failed');
+        console.error('API key invalid or expired. Run: webpeel auth <new-key>');
+        process.exit(1);
+      }
+      if (searchRes.status === 429) {
+        if (spinner) spinner.fail('Rate limited');
+        console.error('Rate limit exceeded. Check your plan at https://app.webpeel.dev/billing');
+        process.exit(1);
+      }
+      if (!searchRes.ok) {
+        const body = await searchRes.text().catch(() => '');
+        throw new Error(`Search API error ${searchRes.status}: ${body.slice(0, 200)}`);
+      }
+
+      const searchData = await searchRes.json() as any;
+      let results: Array<{ title: string; url: string; snippet: string }> = searchData.results || [];
+
       if (spinner) {
-        spinner.succeed(`Found ${results.length} results (${providerId})`);
+        spinner.succeed(`Found ${results.length} results`);
       }
 
       // Show usage footer for free/anonymous users
