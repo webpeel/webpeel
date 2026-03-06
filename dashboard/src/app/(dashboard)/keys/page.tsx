@@ -39,14 +39,22 @@ const fetcher = async <T,>(url: string, token: string): Promise<T> => {
 
 function CurlExample({ keyPrefix }: { keyPrefix: string }) {
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const curlCmd = `curl "${API_URL}/v1/fetch?url=https://example.com" \\
   -H "Authorization: Bearer ${keyPrefix}..."`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(curlCmd);
+    setCopied(true);
+    toast.success('Curl command copied!');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="mt-2">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+        className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
       >
         <Globe className="h-3 w-3" />
         {expanded ? 'Hide' : 'Show'} example
@@ -54,12 +62,19 @@ function CurlExample({ keyPrefix }: { keyPrefix: string }) {
       </button>
       {expanded && (
         <div className="mt-2 relative">
-          <pre className="p-3 bg-zinc-900 text-zinc-100 rounded-lg text-xs overflow-x-auto pr-16">
-            <code>{curlCmd}</code>
+          <pre className="p-3 bg-zinc-900 rounded-lg text-xs font-mono text-emerald-300 overflow-x-auto pr-20">
+            {curlCmd}
           </pre>
-          <div className="absolute top-2 right-2">
-            <CopyButton text={curlCmd} size="sm" variant="ghost" />
-          </div>
+          <button
+            onClick={handleCopy}
+            className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              copied
+                ? 'bg-emerald-600 text-white'
+                : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600 hover:text-white'
+            }`}
+          >
+            {copied ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+          </button>
         </div>
       )}
     </div>
@@ -100,6 +115,9 @@ export default function ApiKeysPage() {
   const [saving, setSaving] = useState(false);
   const editInputRef = useRef<HTMLInputElement>(null);
 
+  // Per-key prefix copy state
+  const [copiedPrefixId, setCopiedPrefixId] = useState<string | null>(null);
+
   const startEdit = (id: string, currentName: string) => {
     setEditingId(id);
     setEditingName(currentName);
@@ -128,6 +146,13 @@ export default function ApiKeysPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCopyPrefix = (id: string, prefix: string) => {
+    navigator.clipboard.writeText(prefix + '...');
+    setCopiedPrefixId(id);
+    toast.success('Prefix copied');
+    setTimeout(() => setCopiedPrefixId(null), 2000);
   };
 
   // Compute preview date for selected expiry option
@@ -332,8 +357,8 @@ export default function ApiKeysPage() {
                 <div className="space-y-1.5">
                   <p className="text-xs font-semibold text-zinc-300">Try it right now:</p>
                   <div className="relative group">
-                    <pre className="p-3 pb-10 bg-zinc-900 text-zinc-100 rounded-lg text-[11px] sm:text-xs overflow-x-auto whitespace-pre-wrap break-all">
-                      <code>{`curl "${API_URL}/v1/fetch?url=https://example.com" \\\n  -H "Authorization: Bearer ${newKey}"`}</code>
+                    <pre className="p-3 pb-10 bg-zinc-900 text-emerald-300 rounded-lg text-[11px] sm:text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
+                      {`curl "${API_URL}/v1/fetch?url=https://example.com" \\\n  -H "Authorization: Bearer ${newKey}"`}
                     </pre>
                     <div className="absolute bottom-2 right-2">
                       <CopyButton
@@ -501,11 +526,11 @@ export default function ApiKeysPage() {
                         <div className="flex items-center gap-1">
                           <code className="text-xs text-muted-foreground">{key.prefix}...</code>
                           <button
-                            onClick={() => { navigator.clipboard.writeText(key.prefix + '...'); toast.success('Prefix copied'); }}
-                            className="p-0.5 text-zinc-400 hover:text-zinc-600 transition-colors"
+                            onClick={() => handleCopyPrefix(key.id, key.prefix)}
+                            className={`p-0.5 transition-colors ${copiedPrefixId === key.id ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}
                             title="Copy prefix"
                           >
-                            <Copy className="h-3 w-3" />
+                            {copiedPrefixId === key.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           </button>
                         </div>
                       </div>
@@ -545,7 +570,7 @@ export default function ApiKeysPage() {
                           <DialogHeader>
                             <DialogTitle>Revoke API Key</DialogTitle>
                             <DialogDescription>
-                              Are you sure you want to revoke "{key.name}"? Any app using this key will lose access immediately.
+                              Are you sure you want to revoke &quot;{key.name}&quot;? Any app using this key will lose access immediately.
                             </DialogDescription>
                           </DialogHeader>
                           <DialogFooter className="flex-col sm:flex-row gap-2">
@@ -610,14 +635,21 @@ export default function ApiKeysPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <code className="text-sm bg-zinc-800 px-2 py-0.5 rounded">{key.prefix}...</code>
                             <button
-                              onClick={() => { navigator.clipboard.writeText(key.prefix + '...'); toast.success('Prefix copied'); }}
-                              className="p-0.5 text-zinc-400 hover:text-zinc-600 transition-colors opacity-0 group-hover:opacity-100"
+                              onClick={() => handleCopyPrefix(key.id, key.prefix)}
+                              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                copiedPrefixId === key.id
+                                  ? 'bg-emerald-600/20 text-emerald-400'
+                                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                              }`}
                               title="Copy prefix"
                             >
-                              <Copy className="h-3.5 w-3.5" />
+                              {copiedPrefixId === key.id
+                                ? <><Check className="h-3 w-3" /> Copied</>
+                                : <><Copy className="h-3 w-3" /> Copy</>
+                              }
                             </button>
                           </div>
                         </TableCell>
@@ -657,7 +689,7 @@ export default function ApiKeysPage() {
                                 <DialogHeader>
                                   <DialogTitle>Revoke API Key</DialogTitle>
                                   <DialogDescription>
-                                    Are you sure you want to revoke "{key.name}"? Any app using this key will lose access immediately. This action cannot be undone.
+                                    Are you sure you want to revoke &quot;{key.name}&quot;? Any app using this key will lose access immediately. This action cannot be undone.
                                   </DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
