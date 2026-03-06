@@ -44,8 +44,10 @@ interface FetchResult {
   statusCode?: number;
   responseTime?: number;
   tokenCount?: number;
+  tokens?: number;
   wordCount?: number;
   savings?: number;
+  tokenSavingsPercent?: number;
   fetchTimeMs?: number;
   links?: string[];
   error?: string;
@@ -376,9 +378,9 @@ export default function PlaygroundPage() {
 
   const outputContent = getFetchContent();
   const displayWordCount = fetchResult?.wordCount ?? (outputContent ? countWords(outputContent) : null);
-  const displayTokens = fetchResult?.tokenCount ?? null;
-  const displayTime = fetchResult?.fetchTimeMs ?? fetchElapsed ?? null;
-  const displaySavings = fetchResult?.savings ?? null;
+  const displayTokens = fetchResult?.tokenCount ?? fetchResult?.tokens ?? null;
+  const displayTime = fetchResult?.fetchTimeMs ?? (fetchResult as any)?.elapsed ?? fetchElapsed ?? null;
+  const displaySavings = fetchResult?.tokenSavingsPercent ?? fetchResult?.savings ?? null;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
