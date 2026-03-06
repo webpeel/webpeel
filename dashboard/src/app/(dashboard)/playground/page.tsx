@@ -230,6 +230,7 @@ function PlaygroundContent() {
       const data = await response.json();
       setFetchResult(data);
       toast.success('Page fetched successfully');
+      window.dispatchEvent(new Event('webpeel:fetch-completed'));
     } catch (err: any) {
       setFetchElapsed(Date.now() - startTime);
       const msg = err.message || 'An unexpected error occurred';
@@ -289,6 +290,7 @@ function PlaygroundContent() {
       };
       setSearchResult(data);
       toast.success(`Found ${data.results?.length ?? 0} results`);
+      window.dispatchEvent(new Event('webpeel:fetch-completed'));
     } catch (err: any) {
       setSearchElapsed(Date.now() - startTime);
       const msg = err.message || 'An unexpected error occurred';
@@ -351,6 +353,7 @@ function PlaygroundContent() {
       }
       setScreenshotSrc(dataUrl);
       toast.success('Screenshot captured');
+      window.dispatchEvent(new Event('webpeel:fetch-completed'));
     } catch (err: any) {
       setScreenshotElapsed(Date.now() - startTime);
       const msg = err.message || 'An unexpected error occurred';

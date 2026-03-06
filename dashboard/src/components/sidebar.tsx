@@ -1,9 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { LayoutDashboard, Key, CreditCard, Settings, ExternalLink, BookOpen, X, Zap, Play, Activity, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiClient, Usage } from '@/lib/api';
@@ -23,6 +24,7 @@ const navigation = [
 // ---------------------------------------------------------------------------
 function UsageWidget({ collapsed }: { collapsed?: boolean }) {
   const { data: session } = useSession();
+  const { mutate } = useSWRConfig();
   const token = (session as any)?.apiToken as string | undefined;
 
   const { data: usage } = useSWR<Usage>(
@@ -30,6 +32,15 @@ function UsageWidget({ collapsed }: { collapsed?: boolean }) {
     ([url, tok]: [string, string]) => apiClient<Usage>(url, { token: tok }),
     { refreshInterval: 60_000 }
   );
+
+  // Refresh usage immediately after a playground fetch/search/screenshot
+  useEffect(() => {
+    const handler = () => {
+      if (token) mutate(['/v1/usage', token]);
+    };
+    window.addEventListener('webpeel:fetch-completed', handler);
+    return () => window.removeEventListener('webpeel:fetch-completed', handler);
+  }, [token, mutate]);
 
   const used = usage?.weekly?.totalUsed ?? 0;
   const total = usage?.weekly?.totalAvailable ?? 0;

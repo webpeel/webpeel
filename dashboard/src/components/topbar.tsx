@@ -68,7 +68,7 @@ export function Topbar({ user, tier = 'free', onMenuClick }: TopbarProps) {
         {/* Plan badge - clickable */}
         <Link href="/billing">
           <div className="flex items-center gap-1.5 rounded-full bg-zinc-800 px-2.5 py-1 hover:bg-zinc-700 transition-colors cursor-pointer">
-            <span className="text-[11px] font-semibold text-zinc-200 uppercase">{tier} Plan</span>
+            <span className="text-[11px] font-semibold text-zinc-200">{tier.charAt(0).toUpperCase() + tier.slice(1)} Plan</span>
           </div>
         </Link>
       </div>

@@ -124,6 +124,8 @@ const REGISTRY: Array<{
   { match: (h) => h === 'twitch.tv' || h === 'www.twitch.tv' || h === 'clips.twitch.tv', extractor: twitchExtractor },
   { match: (h) => h === 'soundcloud.com' || h === 'www.soundcloud.com', extractor: soundcloudExtractor },
   { match: (h) => h === 'instagram.com' || h === 'www.instagram.com', extractor: instagramExtractor },
+  { match: (h) => h === 'www.producthunt.com' || h === 'producthunt.com', extractor: productHuntExtractor },
+  { match: (h) => h === 'substack.com' || h === 'www.substack.com', extractor: substackRootExtractor },
   { match: (_h, url = '') => /\.pdf(\?|$|#)/i.test(url) || /\/pdf\//i.test(url), extractor: pdfExtractor },
 ];
 

@@ -121,3 +121,32 @@ else
   echo -e "\n${GREEN}ALL CHECKS PASSED${NC}"
   exit 0
 fi
+
+# === Trending site tests (added 2026-03-06) ===
+echo ""
+echo "--- Trending Sites ---"
+
+RESULT=$($CLI "https://reddit.com/r/programming" --silent --json 2>/dev/null || echo '{"error":true}')
+TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
+check "reddit.com/r/programming: $TOKENS tokens" "$([ "$TOKENS" -gt 100 ] && echo 0 || echo 1)"
+
+RESULT=$($CLI "https://github.com/trending" --silent --json 2>/dev/null || echo '{"error":true}')
+TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
+check "github.com/trending: $TOKENS tokens" "$([ "$TOKENS" -gt 50 ] && echo 0 || echo 1)"
+
+RESULT=$($CLI "https://techcrunch.com" --silent --json 2>/dev/null || echo '{"error":true}')
+TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
+check "techcrunch.com: $TOKENS tokens" "$([ "$TOKENS" -gt 200 ] && echo 0 || echo 1)"
+
+RESULT=$($CLI "https://www.producthunt.com" --silent --json 2>/dev/null || echo '{"error":true}')
+TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
+METHOD=$(echo "$RESULT" | jq -r '.method // "unknown"')
+check "producthunt.com ($METHOD): $TOKENS tokens" "$([ "$TOKENS" -gt 100 ] && echo 0 || echo 1)"
+
+RESULT=$($CLI "https://arxiv.org/abs/2308.08155" --silent --json 2>/dev/null || echo '{"error":true}')
+TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
+check "arxiv.org paper: $TOKENS tokens" "$([ "$TOKENS" -gt 200 ] && echo 0 || echo 1)"
+
+RESULT=$($CLI "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --silent --json 2>/dev/null || echo '{"error":true}')
+TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
+check "youtube.com transcript: $TOKENS tokens" "$([ "$TOKENS" -gt 200 ] && echo 0 || echo 1)"
