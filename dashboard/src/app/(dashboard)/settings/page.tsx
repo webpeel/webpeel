@@ -216,17 +216,68 @@ export default function SettingsPage() {
   // --- Default Request Settings + Notifications (localStorage) ---
   const [defaultRender, setDefaultRender] = useState<string>('basic');
   const [articleMode, setArticleMode] = useState<boolean>(false);
-  const [usageAlertThreshold, setUsageAlertThreshold] = useState<string>('80');
+  const [usageAlertThreshold, setUsageAlertThreshold] = useState<string>('disabled');
   const [alertEmail, setAlertEmail] = useState<string>('');
+  const [alertEmailSaving, setAlertEmailSaving] = useState<boolean>(false);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
+
+  // Helper: save alert preferences to API
+  const saveAlertPreferences = async (threshold: string, email: string) => {
+    if (!token) return;
+    const numericThreshold = threshold === 'disabled' ? null : parseInt(threshold, 10);
+    try {
+      await fetch(`${API_URL}/v1/user/alert-preferences`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          threshold: numericThreshold,
+          email: email.trim() || null,
+        }),
+      });
+    } catch (err) {
+      // Non-blocking: silently fail if API is unreachable
+      console.warn('[settings] Failed to sync alert preferences to API:', err);
+    }
+  };
 
   useEffect(() => {
     const render = localStorage.getItem('wp-default-render');
     const readable = localStorage.getItem('wp-default-readable');
-    const alert = localStorage.getItem('wp-usage-alert');
+    const localAlert = localStorage.getItem('wp-usage-alert');
     if (render) setDefaultRender(render);
     if (readable) setArticleMode(readable === 'true');
-    if (alert) setUsageAlertThreshold(alert);
-  }, []);
+
+    // Load alert preferences from API (source of truth), fall back to localStorage
+    if (token) {
+      fetch(`${API_URL}/v1/user/alert-preferences`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.threshold !== undefined && data.threshold !== null) {
+            const thresh = String(data.threshold);
+            setUsageAlertThreshold(thresh);
+            localStorage.setItem('wp-usage-alert', thresh);
+          } else if (localAlert) {
+            setUsageAlertThreshold(localAlert);
+          }
+          if (data.email) {
+            setAlertEmail(data.email);
+          }
+        })
+        .catch(() => {
+          // Fall back to localStorage if API is unreachable
+          if (localAlert) setUsageAlertThreshold(localAlert);
+        });
+    } else if (localAlert) {
+      setUsageAlertThreshold(localAlert);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const saveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleSaveToast = () => {
@@ -249,7 +300,21 @@ export default function SettingsPage() {
   const handleUsageAlertChange = (v: string) => {
     setUsageAlertThreshold(v);
     localStorage.setItem('wp-usage-alert', v);
+    // Sync to API
+    saveAlertPreferences(v, alertEmail);
     scheduleSaveToast();
+  };
+
+  const handleAlertEmailSave = async () => {
+    setAlertEmailSaving(true);
+    try {
+      await saveAlertPreferences(usageAlertThreshold, alertEmail);
+      toast.success('Alert email saved');
+    } catch {
+      toast.error('Failed to save alert email');
+    } finally {
+      setAlertEmailSaving(false);
+    }
   };
 
   return (
@@ -501,7 +566,7 @@ export default function SettingsPage() {
             <div className="space-y-0.5">
               <p className="text-sm font-medium text-zinc-100">Usage Alert Threshold</p>
               <p className="text-xs text-zinc-400">
-                Get notified when your monthly API usage reaches this threshold.
+                Get an email when your weekly API usage reaches this percentage.
               </p>
             </div>
             <StyledSelect
@@ -517,34 +582,36 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* Info note */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-xs text-zinc-400 space-y-1">
-            <p>Email notifications coming soon. Alerts currently show as dashboard banners.</p>
-          </div>
-
           <Separator className="bg-zinc-800" />
 
-          {/* Email input (disabled) */}
+          {/* Alert email input */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="alert-email" className="text-sm font-medium text-zinc-300">
-                Alert Email
-              </Label>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                Coming soon
-              </span>
+            <Label htmlFor="alert-email" className="text-sm font-medium text-zinc-300">
+              Alert Email
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="alert-email"
+                type="email"
+                value={alertEmail}
+                onChange={(e) => setAlertEmail(e.target.value)}
+                placeholder={session?.user?.email || 'your@email.com'}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAlertEmailSave}
+                disabled={alertEmailSaving}
+                className="shrink-0 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              >
+                {alertEmailSaving ? 'Saving…' : 'Save'}
+              </Button>
             </div>
-            <Input
-              id="alert-email"
-              type="email"
-              value={alertEmail}
-              onChange={(e) => setAlertEmail(e.target.value)}
-              disabled
-              placeholder="jake@example.com"
-              title="Email alerts coming soon"
-              className="bg-zinc-900 border-zinc-700 text-zinc-500 cursor-not-allowed opacity-60"
-            />
-            <p className="text-xs text-zinc-500">Email alerts coming soon.</p>
+            <p className="text-xs text-zinc-500">
+              Leave blank to use your account email. Alerts are sent at most once per week.
+            </p>
           </div>
         </CardContent>
       </Card>
