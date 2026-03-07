@@ -26,6 +26,15 @@ import { estimateTokens } from './core/markdown.js';
 import { distillToBudget, budgetListings } from './core/budget.js';
 import { SCHEMA_TEMPLATES, getSchemaTemplate, listSchemaTemplates } from './core/schema-templates.js';
 
+// Intercept verb-first syntax before Commander parses
+// "webpeel fetch <url>" → "webpeel <url>"
+// Note: 'read' is intentionally excluded — it's a registered subcommand with its own behavior.
+const VERB_ALIASES = new Set(['fetch', 'get', 'scrape', 'peel']);
+if (process.argv.length >= 3 && VERB_ALIASES.has(process.argv[2]?.toLowerCase())) {
+  // Remove the verb, shift URL to its position
+  process.argv.splice(2, 1);
+}
+
 const program = new Command();
 
 // Read version from package.json dynamically
@@ -259,6 +268,7 @@ program
   .option('--wait-until <event>', 'Page load event: domcontentloaded, networkidle, load, commit (auto-enables --render)')
   .option('--wait-selector <css>', 'Wait for CSS selector before extracting (auto-enables --render)')
   .option('--block-resources <types>', 'Block resource types, comma-separated: image,stylesheet,font,media,script (auto-enables --render)')
+  .option('--format <type>', 'Output format: markdown (default), text, html, json')
 
 // ─── Help System ─────────────────────────────────────────────────────────────
 
@@ -443,7 +453,11 @@ program.configureHelp({
 // API-based fetch (routes through WebPeel API, no local Playwright)
 // ============================================================
 async function fetchViaApi(url: string, options: PeelOptions, apiKey: string, apiUrl: string): Promise<any> {
-  const params = new URLSearchParams({ url, format: options.format || 'markdown' });
+  // --format is a CLI output flag; API format is always the content extraction format
+  const apiFormat = (['text', 'html', 'markdown', 'md'].includes((options.format || '').toLowerCase()))
+    ? (options.format!.toLowerCase() === 'md' ? 'markdown' : options.format!.toLowerCase())
+    : ((options as any).html ? 'html' : (options as any).text ? 'text' : 'markdown');
+  const params = new URLSearchParams({ url, format: apiFormat });
   if (options.render) params.set('render', 'true');
   if (options.stealth) params.set('stealth', 'true');
   if (options.wait) params.set('wait', String(options.wait));
@@ -490,9 +504,24 @@ async function fetchViaApi(url: string, options: PeelOptions, apiKey: string, ap
 
 // Main fetch handler — shared with the `pipe` subcommand
 async function runFetch(url: string | undefined, options: any): Promise<void> {
+    // Handle --format flag: maps to existing boolean flags
+    if (options.format) {
+      const fmt = options.format.toLowerCase();
+      if (fmt === 'text') options.text = true;
+      else if (fmt === 'html') options.html = true;
+      else if (fmt === 'json') options.json = true;
+      else if (fmt === 'markdown' || fmt === 'md') { /* default, do nothing */ }
+      else {
+        console.error(`Unknown format: ${options.format}. Use: text, markdown, html, or json`);
+        process.exit(1);
+      }
+    }
+
     // Smart defaults: when piped (not a TTY), default to silent JSON + budget
+    // BUT respect explicit --format flag (user chose the output format)
     const isPiped = !process.stdout.isTTY;
-    if (isPiped && !options.html && !options.text) {
+    const hasExplicitFormat = options.format && ['text', 'html', 'markdown', 'md'].includes(options.format.toLowerCase());
+    if (isPiped && !options.html && !options.text && !hasExplicitFormat) {
       if (!options.json) options.json = true;
       if (!options.silent) options.silent = true;
       // Auto-enable readability for AI consumers — clean content by default
@@ -605,7 +634,19 @@ async function runFetch(url: string | undefined, options: any): Promise<void> {
         exitWithJsonError('Only HTTP and HTTPS protocols are allowed', 'INVALID_URL');
       }
     } catch {
-      exitWithJsonError(`Invalid URL format: ${url}`, 'INVALID_URL');
+      // Check if it looks like a command/verb the user typed by mistake
+      const commonVerbs = ['fetch', 'get', 'scrape', 'read', 'download', 'curl', 'wget', 'peel'];
+      if (commonVerbs.includes(url.toLowerCase())) {
+        exitWithJsonError(
+          `Did you mean: webpeel "${program.args[1] || '<url>'}"?\nThe URL goes directly after webpeel — no verb needed.\nExample: webpeel "https://example.com" --json`,
+          'INVALID_URL'
+        );
+      } else {
+        exitWithJsonError(
+          `Invalid URL: "${url}"\nMake sure to include the protocol (https://)\nExample: webpeel "https://${url}" --json`,
+          'INVALID_URL'
+        );
+      }
     }
 
     const useStealth = options.stealth || false;
@@ -2312,6 +2353,96 @@ program
       }
       process.exit(1);
     }
+  });
+
+program
+  .command('doctor')
+  .description('Diagnose WebPeel installation (API key, connectivity, fetch test)')
+  .action(async () => {
+    const cfg = loadConfig();
+    const apiKey = cfg.apiKey || process.env.WEBPEEL_API_KEY;
+    const apiUrl = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
+
+    console.log('WebPeel Doctor\n');
+    console.log(`Version:    ${cliVersion}`);
+    console.log(`API URL:    ${apiUrl}`);
+    console.log(`API Key:    ${apiKey ? apiKey.slice(0, 12) + '...' : '❌ Not configured'}`);
+
+    if (!apiKey) {
+      console.log('\n❌ No API key. Run: webpeel auth <your-key>');
+      console.log('   Get a free key at: https://app.webpeel.dev/keys');
+      process.exit(1);
+    }
+
+    // Check API connectivity
+    console.log('\nChecking API connectivity...');
+    try {
+      const healthRes = await fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(10000) });
+      const health = await healthRes.json() as any;
+      console.log(`API Health:  ✅ ${health.status || 'ok'} (uptime: ${Math.round((health.uptime || 0) / 60)}min)`);
+    } catch (err: any) {
+      console.log(`API Health:  ❌ Cannot reach ${apiUrl} (${err.message})`);
+    }
+
+    // Check API key validity
+    console.log('Checking API key...');
+    try {
+      const usageRes = await fetch(`${apiUrl}/v1/usage`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (usageRes.ok) {
+        const usage = await usageRes.json() as any;
+        const plan = usage?.tier || (typeof usage?.plan === 'string' ? usage?.plan : usage?.plan?.tier) || 'free';
+        const used = usage?.used ?? usage?.totalRequests ?? usage?.weekly?.used ?? 0;
+        const limit = usage?.limit ?? usage?.weeklyLimit ?? usage?.weekly?.limit ?? 500;
+        console.log(`API Key:     ✅ Valid (${plan} plan, ${used}/${limit} used this week)`);
+      } else if (usageRes.status === 401) {
+        console.log('API Key:     ❌ Invalid or expired. Run: webpeel auth <new-key>');
+      } else {
+        console.log(`API Key:     ⚠️  Unexpected response (${usageRes.status})`);
+      }
+    } catch (err: any) {
+      console.log(`API Key:     ❌ Check failed (${err.message})`);
+    }
+
+    // Quick fetch test
+    console.log('Testing fetch...');
+    try {
+      const testRes = await fetch(`${apiUrl}/v1/fetch?url=https://example.com`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (testRes.ok) {
+        const data = await testRes.json() as any;
+        console.log(`Fetch Test:  ✅ OK (${data.tokenCount || data.tokens || '?'} tokens, ${data.fetchTimeMs || data.elapsed || '?'}ms)`);
+      } else {
+        console.log(`Fetch Test:  ❌ Failed (${testRes.status})`);
+      }
+    } catch (err: any) {
+      console.log(`Fetch Test:  ❌ Failed (${err.message})`);
+    }
+
+    // Check YouTube
+    console.log('Testing YouTube...');
+    try {
+      const ytRes = await fetch(`${apiUrl}/v1/fetch?url=${encodeURIComponent('https://www.youtube.com/watch?v=dQw4w9WgXcQ')}`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (ytRes.ok) {
+        const data = await ytRes.json() as any;
+        const hasContent = (data.content || '').length > 100;
+        console.log(`YouTube:     ${hasContent ? '✅' : '⚠️'} ${hasContent ? `Content extracted (${data.tokenCount || data.tokens || '?'} tokens)` : 'Content limited'}`);
+      } else {
+        console.log(`YouTube:     ⚠️  Response ${ytRes.status}`);
+      }
+    } catch (err: any) {
+      console.log(`YouTube:     ⚠️  ${err.message}`);
+    }
+
+    console.log('\n✅ WebPeel is ready to use!');
+    console.log('   Try: webpeel "https://news.ycombinator.com" --json');
   });
 
 program
