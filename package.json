@@ -65,7 +65,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "bash scripts/pre-publish.sh",
     "serve": "node dist/server/app.js",
     "mcp": "node dist/mcp/server.js"
   },
