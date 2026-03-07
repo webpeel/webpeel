@@ -49,7 +49,13 @@
 
 **Why:** On 2026-03-07, an agent added CI/npm/MIT badges to README.md without checking that npm/PyPI/stars badges already existed 5 lines below. Result: duplicate badge blocks.
 
-### 7. Test with Real URLs, Not Mocks
+### 7. Dockerfile.api Installs from npm — dist/server MUST Be in Package
+- `Dockerfile.api` runs `npm install webpeel@X.Y.Z` then `node node_modules/webpeel/dist/server/app.js`
+- If you remove `dist/server` from `package.json` `files[]`, the Docker container will crash on start
+- On 2026-03-07: Removing dist/server from files[] to shrink npm package broke ALL Render deploys (5 consecutive failures)
+- **Rule:** `dist/server` MUST stay in `package.json` `files[]`. The npm package serves both CLI users AND the Docker API server.
+
+### 8. Test with Real URLs, Not Mocks
 - Unit tests with mocks prove the code compiles. They don't prove it works.
 - After your changes, test with at least 2 real URLs manually
 - The e2e script is `bash scripts/e2e-verify.sh` — run it
