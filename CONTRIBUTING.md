@@ -1,143 +1,128 @@
-# Contributing to WebPeel
+# CONTRIBUTING.md — Architecture Rules for Sub-Agents
 
-Thanks for your interest in contributing! WebPeel is open source under the AGPL-3.0 license, and we welcome contributions from everyone.
+**Read this FIRST before writing any code.** This file contains hard-won lessons from production bugs. Every rule exists because we shipped a broken release without it.
 
-## Getting Started
+---
 
-### Prerequisites
-- Node.js 18+
-- pnpm (recommended) or npm
+## Architecture Traps (Must Know)
 
-### Setup
+### 1. TWO MCP Code Paths — Touch One, Touch Both
+- **Standalone:** `src/mcp/server.ts` — runs locally via `npx webpeel-mcp`
+- **HTTP route:** `src/server/routes/mcp.ts` — runs on the API server (`api.webpeel.dev/mcp`)
+- **If you add a tool to one, you MUST add it to the other.**
+- **If you modify a tool in one, verify the other matches.**
+- Run `bash scripts/mcp-parity-check.sh` before committing — it catches mismatches.
 
-```bash
-# Fork and clone
-git clone https://github.com/YOUR_USERNAME/webpeel.git
-cd webpeel
+**Why:** On 2026-03-06, `webpeel_act` was added to the standalone server but not the HTTP route. Shipped 3 broken releases before catching it.
 
-# Install dependencies
-pnpm install
+### 2. CLI is a Pure API Client — No Local Playwright
+- The CLI (`src/cli.ts`) routes ALL requests through `https://api.webpeel.dev`
+- It does NOT import `peel()` locally or use Playwright
+- Function `fetchViaApi()` is the core — it builds query params and calls the API
+- If you need browser rendering, set `render=true` in the API call, not locally
 
-# Install Playwright (needed for browser-based tests)
-npx playwright install chromium
+**Why:** CLI must be <2MB install. Playwright is 150MB. Users install the CLI; the server does the heavy lifting.
 
-# Build
-pnpm build
+### 3. Render Has a 30-Second Timeout
+- Render's load balancer kills requests after 30 seconds
+- Any endpoint that might take >25s needs internal timeout handling
+- Browser-heavy operations (screenshot, session, act) are the main risk
+- Dynamic `await import()` on cold start adds 5-10s — use static imports
 
-# Run tests
-pnpm test
-```
+**Why:** On 2026-03-06, `webpeel_act` had a redundant dynamic import that added cold-start latency, causing 502s.
 
-### Environment Variables
+### 4. CLI Pipe Auto-JSON
+- When stdout is not a TTY (piped), the CLI auto-switches to JSON output
+- If you add a new output flag (like `--format`), test in BOTH TTY and pipe mode
+- The `isPiped` detection is in `runFetch()` around line 518
 
-Copy `.env.example` to `.env` and fill in any needed values. Most features work without any API keys — only LLM-based extraction requires an external key.
+### 5. PeelResult Fields
+- Token count: `result.tokens` (NOT `result.tokenCount`)
+- Design analysis: `takeDesignAnalysis` is in `src/core/screenshot.js` (NOT `design-analysis.js`)
+- No `viewport` property on `PeelOptions` — set width/height through the render pipeline
 
-## Project Structure
+### 6. Test with Real URLs, Not Mocks
+- Unit tests with mocks prove the code compiles. They don't prove it works.
+- After your changes, test with at least 2 real URLs manually
+- The e2e script is `bash scripts/e2e-verify.sh` — run it
 
-```
-webpeel/
-├── src/
-│   ├── core/           # Core library — fetcher, strategies, cache, cleaning
-│   │   ├── fetcher.ts          # HTTP + browser fetch implementations
-│   │   ├── strategies.ts       # Smart escalation (simple → browser → stealth)
-│   │   ├── strategy-hooks.ts   # Plugin interface for strategy extensions
-│   │   ├── cleaner.ts          # HTML → clean markdown conversion
-│   │   ├── cache.ts            # LRU + SWR caching
-│   │   ├── dns-cache.ts        # DNS pre-resolution
-│   │   ├── crawler.ts          # Multi-page crawl engine
-│   │   └── search.ts           # DuckDuckGo + Brave search
-│   ├── mcp/            # MCP (Model Context Protocol) server — 11 tools
-│   │   └── server.ts           # All MCP tool definitions
-│   ├── server/         # Express API server (hosted version)
-│   │   ├── app.ts              # Server setup + routes
-│   │   ├── middleware/         # Auth, rate limiting, CORS, security
-│   │   └── premium/           # Server-only premium features
-│   ├── tests/          # Vitest test suites
-│   └── types/          # Shared TypeScript types
-├── site/               # Marketing website (webpeel.dev)
-│   ├── blog/           # Blog posts (static HTML)
-│   └── docs/           # Documentation pages
-├── dashboard/          # Next.js dashboard app (app.webpeel.dev)
-├── sdk/                # Python SDK
-├── benchmarks/         # Performance benchmark suite
-├── scripts/            # Build and release scripts
-└── .github/            # CI workflows + issue templates
-```
+---
 
-### Key Concepts
+## Pre-Commit Checklist (MANDATORY)
 
-- **Smart Escalation**: WebPeel tries the fastest method first (HTTP fetch), then automatically escalates to browser rendering, then stealth mode if needed.
-- **Strategy Hooks**: A plugin system (`src/core/strategy-hooks.ts`) that lets the server layer add premium strategies without modifying core code.
-- **MCP Tools**: 11 tools exposed via the Model Context Protocol for AI assistants.
-
-## Making Changes
-
-### Workflow
-
-1. **Fork** the repo and create a feature branch from `main`
-2. **Make your changes** with clear, focused commits
-3. **Add tests** if you're adding features or fixing bugs
-4. **Run the test suite**: `pnpm test`
-5. **Run type checking**: `pnpm build` (includes `tsc`)
-6. **Submit a PR** against `main`
-
-### Code Style
-
-- TypeScript for all source code
-- Use existing patterns — look at similar code before writing new code
-- Keep functions focused and well-named
-- Add JSDoc comments for public APIs
-- No magic numbers — use named constants
-
-### Tests
-
-Tests use Vitest. Run them with:
+Before every `git commit`:
 
 ```bash
-pnpm test              # Run all tests
-pnpm test -- --watch   # Watch mode
+# 1. Build clean
+npm run build
+
+# 2. All tests pass
+npm test
+
+# 3. MCP parity (if you touched anything in mcp/ or server/routes/mcp)
+bash scripts/mcp-parity-check.sh
+
+# 4. CLI DX (if you touched cli.ts)
+bash scripts/cli-dx-test.sh
+
+# 5. E2E with real URLs
+bash scripts/e2e-verify.sh
 ```
 
-Some tests require network access (integration tests). These are skipped in CI. If you're adding a test that hits external services, use the `skipInCI` pattern from existing tests.
+---
 
-### Commit Messages
+## How to Add a New MCP Tool
 
-Use conventional commits:
+1. Define the tool schema in BOTH:
+   - `src/mcp/server.ts` (standalone) — in the `tools` array
+   - `src/server/routes/mcp.ts` (HTTP) — in the `mcpTools` array
+
+2. Add the handler in BOTH:
+   - Standalone: `if (name === 'your_tool') return handleYourTool(args);`
+   - HTTP route: `if (name === 'your_tool') { ... }`
+
+3. If it's a consolidated tool (one of the 7 public tools), it should also handle legacy name routing.
+
+4. Run `bash scripts/mcp-parity-check.sh` — must pass.
+
+5. Test via both paths:
+   - Standalone: `echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"your_tool","arguments":{...}}}' | node dist/mcp/server.js`
+   - HTTP: `curl -X POST https://api.webpeel.dev/mcp ...`
+
+---
+
+## How to Add a CLI Command
+
+1. Check if it conflicts with existing commands: `grep "\.command(" src/cli.ts | head -30`
+2. Check if it conflicts with verb aliases: `VERB_ALIASES = ['fetch', 'get', 'scrape', 'peel']`
+3. Test backward compatibility: old flags (`--json`, `--text`, `--html`) must still work
+4. Run `bash scripts/cli-dx-test.sh` — must pass
+
+---
+
+## File Map (Key Files)
 
 ```
-feat: add new content extraction strategy
-fix: handle timeout in browser fetch
-docs: update API reference for /v1/crawl
-test: add tests for stealth mode bypass
-chore: update dependencies
+src/cli.ts                    — CLI entry point (4500+ lines)
+src/index.ts                  — Library entry: peel(), peelBatch(), WebPeel class
+src/types.ts                  — PeelResult, PeelOptions, all interfaces
+src/mcp/server.ts             — Standalone MCP server (npx webpeel-mcp)
+src/server/app.ts             — Express app, route registration
+src/server/routes/mcp.ts      — HTTP MCP endpoint (/mcp)
+src/server/routes/ask.ts      — /v1/ask (LLM-free Q&A)
+src/server/routes/session.ts  — /v1/session (stateful browser)
+src/core/pipeline.ts          — Core fetch pipeline
+src/core/quick-answer.ts      — BM25 sentence scoring (quickAnswer)
+src/core/screenshot.js        — takeDesignAnalysis, takeDesignComparison
+src/core/search-provider.ts   — getBestSearchProvider(), search providers
+src/core/map.ts               — mapDomain()
+src/core/youtube.ts           — getYouTubeTranscript()
+scripts/mcp-parity-check.sh   — MCP tool sync verification
+scripts/cli-dx-test.sh        — CLI new-user experience test
+scripts/pre-publish.sh        — Pre-publish quality gate
+scripts/e2e-verify.sh         — End-to-end real-URL verification
 ```
 
-## What to Work On
+---
 
-Check the [issues page](https://github.com/webpeel/webpeel/issues) for:
-- 🏷️ `good first issue` — great starting points
-- 🏷️ `help wanted` — we'd love help with these
-- 🏷️ `enhancement` — feature requests
-
-If you want to work on something not listed, open an issue first to discuss the approach.
-
-## Pull Request Guidelines
-
-- Keep PRs focused — one feature or fix per PR
-- Include a clear description of what changed and why
-- Link to the related issue if one exists
-- Make sure CI passes before requesting review
-- Be open to feedback — we review carefully
-
-## Reporting Bugs
-
-Use the [bug report template](https://github.com/webpeel/webpeel/issues/new?template=bug_report.md) and include:
-- Steps to reproduce
-- Expected vs actual behavior
-- Your environment (Node version, OS)
-
-## License
-
-By contributing, you agree that your contributions will be licensed under the AGPL-3.0 license. See [LICENSE](LICENSE) for details.
-
-For commercial licensing inquiries: support@webpeel.dev
+_This file is updated after every production bug. If you find a new trap, add it here._
