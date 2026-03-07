@@ -85,14 +85,22 @@ export function createWatchRouter(pool: pg.Pool): Router {
     }
 
     if (url.length > 2048) {
-      res.status(400).json({ error: 'invalid_url', message: 'URL too long (max 2048 characters).' });
+      res.status(400).json({
+        success: false,
+        error: { type: 'invalid_url', message: 'URL too long (max 2048 characters).' },
+        requestId: req.requestId,
+      });
       return;
     }
 
     try {
       new URL(url);
     } catch {
-      res.status(400).json({ error: 'invalid_url', message: 'URL format is invalid.' });
+      res.status(400).json({
+        success: false,
+        error: { type: 'invalid_url', message: 'URL format is invalid.', hint: 'Ensure the URL includes a scheme (https://) and a valid hostname.' },
+        requestId: req.requestId,
+      });
       return;
     }
 
@@ -121,7 +129,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
       res.status(201).json({ ok: true, watch: entry });
     } catch (err) {
       console.error('[watch] create error:', err);
-      res.status(500).json({ error: 'internal_error', message: 'Failed to create watch.' });
+      res.status(500).json({
+        success: false,
+        error: { type: 'internal_error', message: 'Failed to create watch.' },
+        requestId: req.requestId,
+      });
     }
   });
 
@@ -136,7 +148,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
       res.json({ ok: true, watches });
     } catch (err) {
       console.error('[watch] list error:', err);
-      res.status(500).json({ error: 'internal_error', message: 'Failed to list watches.' });
+      res.status(500).json({
+        success: false,
+        error: { type: 'internal_error', message: 'Failed to list watches.' },
+        requestId: req.requestId,
+      });
     }
   });
 
@@ -150,7 +166,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
     try {
       const entry = await manager.get(watchId);
       if (!entry) {
-        res.status(404).json({ error: 'not_found', message: 'Watch not found.' });
+        res.status(404).json({
+          success: false,
+          error: { type: 'not_found', message: 'Watch not found.' },
+          requestId: req.requestId,
+        });
         return;
       }
       if (entry.accountId !== accountId) {
@@ -160,7 +180,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
       res.json({ ok: true, watch: entry });
     } catch (err) {
       console.error('[watch] get error:', err);
-      res.status(500).json({ error: 'internal_error', message: 'Failed to get watch.' });
+      res.status(500).json({
+        success: false,
+        error: { type: 'internal_error', message: 'Failed to get watch.' },
+        requestId: req.requestId,
+      });
     }
   });
 
@@ -180,7 +204,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
     try {
       const entry = await manager.get(watchId);
       if (!entry) {
-        res.status(404).json({ error: 'not_found', message: 'Watch not found.' });
+        res.status(404).json({
+          success: false,
+          error: { type: 'not_found', message: 'Watch not found.' },
+          requestId: req.requestId,
+        });
         return;
       }
       if (entry.accountId !== accountId) {
@@ -220,8 +248,13 @@ export function createWatchRouter(pool: pg.Pool): Router {
     } catch (err) {
       console.error('[watch] manual check error:', err);
       res.status(500).json({
-        error: 'check_failed',
-        message: err instanceof Error ? err.message : 'Check failed.',
+        success: false,
+        error: {
+          type: 'check_failed',
+          message: err instanceof Error ? err.message : 'Check failed.',
+          docs: 'https://webpeel.dev/docs/errors#check_failed',
+        },
+        requestId: req.requestId,
       });
     }
   });
@@ -247,7 +280,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
     try {
       const existing = await manager.get(watchId);
       if (!existing) {
-        res.status(404).json({ error: 'not_found', message: 'Watch not found.' });
+        res.status(404).json({
+          success: false,
+          error: { type: 'not_found', message: 'Watch not found.' },
+          requestId: req.requestId,
+        });
         return;
       }
       if (existing.accountId !== accountId) {
@@ -288,7 +325,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
       res.json({ ok: true, watch: updated ?? existing });
     } catch (err) {
       console.error('[watch] update error:', err);
-      res.status(500).json({ error: 'internal_error', message: 'Failed to update watch.' });
+      res.status(500).json({
+        success: false,
+        error: { type: 'internal_error', message: 'Failed to update watch.' },
+        requestId: req.requestId,
+      });
     }
   });
 
@@ -302,7 +343,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
     try {
       const existing = await manager.get(watchId);
       if (!existing) {
-        res.status(404).json({ error: 'not_found', message: 'Watch not found.' });
+        res.status(404).json({
+          success: false,
+          error: { type: 'not_found', message: 'Watch not found.' },
+          requestId: req.requestId,
+        });
         return;
       }
       if (existing.accountId !== accountId) {
@@ -314,7 +359,11 @@ export function createWatchRouter(pool: pg.Pool): Router {
       res.json({ ok: true, deleted: watchId });
     } catch (err) {
       console.error('[watch] delete error:', err);
-      res.status(500).json({ error: 'internal_error', message: 'Failed to delete watch.' });
+      res.status(500).json({
+        success: false,
+        error: { type: 'internal_error', message: 'Failed to delete watch.' },
+        requestId: req.requestId,
+      });
     }
   });
 

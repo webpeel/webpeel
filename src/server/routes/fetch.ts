@@ -136,8 +136,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const userId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!userId) {
         res.status(401).json({
-          error: 'unauthorized',
-          message: 'API key required. Get one free at https://app.webpeel.dev/keys',
+          success: false,
+          error: {
+            type: 'unauthorized',
+            message: 'API key required. Get one free at https://app.webpeel.dev/keys',
+            hint: 'Get a free API key at https://app.webpeel.dev/keys',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -668,8 +674,14 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const postUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!postUserId) {
         res.status(401).json({
-          error: 'unauthorized',
-          message: 'API key required. Get one free at https://app.webpeel.dev/keys',
+          success: false,
+          error: {
+            type: 'unauthorized',
+            message: 'API key required. Get one free at https://app.webpeel.dev/keys',
+            hint: 'Get a free API key at https://app.webpeel.dev/keys',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: req.requestId,
         });
         return;
       }

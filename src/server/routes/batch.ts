@@ -3,6 +3,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { peel } from '../../index.js';
 import type { PeelOptions } from '../../index.js';
 import type { IJobQueue } from '../job-queue.js';
@@ -22,8 +23,14 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
       // Validate required parameters
       if (!urls || !Array.isArray(urls) || urls.length === 0) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Missing or invalid "urls" parameter (must be non-empty array)',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Missing or invalid "urls" parameter (must be non-empty array)',
+            hint: 'Pass a non-empty array of URL strings in the "urls" field.',
+            docs: 'https://webpeel.dev/docs/errors#invalid_request',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -31,8 +38,14 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
       // Limit batch size
       if (urls.length > 100) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Batch size too large (max 100 URLs)',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Batch size too large (max 100 URLs)',
+            hint: 'Split your request into batches of 100 URLs or fewer.',
+            docs: 'https://webpeel.dev/docs/errors#invalid_request',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -41,8 +54,14 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
       for (const url of urls) {
         if (typeof url !== 'string') {
           res.status(400).json({
-            error: 'invalid_request',
-            message: 'All URLs must be strings',
+            success: false,
+            error: {
+              type: 'invalid_request',
+              message: 'All URLs must be strings',
+              hint: 'Each element in the "urls" array must be a string.',
+              docs: 'https://webpeel.dev/docs/errors#invalid_request',
+            },
+            requestId: crypto.randomUUID(),
           });
           return;
         }
@@ -51,8 +70,14 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
           new URL(url);
         } catch {
           res.status(400).json({
-            error: 'invalid_url',
-            message: `Invalid URL format: ${url}`,
+            success: false,
+            error: {
+              type: 'invalid_url',
+              message: `Invalid URL format: ${url}`,
+              hint: 'Ensure each URL includes a scheme (https://) and a valid hostname.',
+              docs: 'https://webpeel.dev/docs/errors#invalid_url',
+            },
+            requestId: crypto.randomUUID(),
           });
           return;
         }
@@ -339,8 +364,13 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
     } catch (error: any) {
       console.error('Batch scrape creation error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to create batch scrape job',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to create batch scrape job',
+          docs: 'https://webpeel.dev/docs/errors#internal_error',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -355,8 +385,13 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
 
       if (!job) {
         res.status(404).json({
-          error: 'not_found',
-          message: 'Job not found',
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'Job not found',
+            docs: 'https://webpeel.dev/docs/errors#not_found',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -365,16 +400,26 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
       const requestOwnerId = req.auth?.keyInfo?.accountId;
       if (job.ownerId && requestOwnerId && job.ownerId !== requestOwnerId) {
         res.status(404).json({
-          error: 'not_found',
-          message: 'Job not found',
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'Job not found',
+            docs: 'https://webpeel.dev/docs/errors#not_found',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
 
       if (job.type !== 'batch') {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Job is not a batch scrape job',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Job is not a batch scrape job',
+            docs: 'https://webpeel.dev/docs/errors#invalid_request',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -393,8 +438,13 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
     } catch (error: any) {
       console.error('Get batch scrape error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to retrieve job',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve job',
+          docs: 'https://webpeel.dev/docs/errors#internal_error',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -409,8 +459,13 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
 
       if (!job) {
         res.status(404).json({
-          error: 'not_found',
-          message: 'Job not found',
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'Job not found',
+            docs: 'https://webpeel.dev/docs/errors#not_found',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -419,16 +474,26 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
       const requestOwnerId = req.auth?.keyInfo?.accountId;
       if (job.ownerId && requestOwnerId && job.ownerId !== requestOwnerId) {
         res.status(404).json({
-          error: 'not_found',
-          message: 'Job not found',
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'Job not found',
+            docs: 'https://webpeel.dev/docs/errors#not_found',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
 
       if (job.type !== 'batch') {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Job is not a batch scrape job',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Job is not a batch scrape job',
+            docs: 'https://webpeel.dev/docs/errors#invalid_request',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -437,8 +502,14 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
 
       if (!cancelled) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Job cannot be cancelled (already completed or failed)',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Job cannot be cancelled (already completed or failed)',
+            hint: 'Only pending or processing jobs can be cancelled.',
+            docs: 'https://webpeel.dev/docs/errors#invalid_request',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -450,8 +521,13 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
     } catch (error: any) {
       console.error('Cancel batch scrape error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to cancel job',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to cancel job',
+          docs: 'https://webpeel.dev/docs/errors#internal_error',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });

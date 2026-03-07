@@ -233,7 +233,7 @@ describe('POST /v1/screenshot/animation', () => {
 
     expect(res.status).toBe(410);
     expect(res.body.error).toBeDefined();
-    expect(res.body.error).toContain('deprecated');
+    expect(res.body.error.type).toBe('deprecated');
   });
 
   it('returns 410 for missing URL (endpoint is deprecated regardless)', async () => {
@@ -251,7 +251,7 @@ describe('POST /v1/screenshot/animation', () => {
       .send({ url: 'https://example.com', frames: 31 });
 
     expect(res.status).toBe(410);
-    expect(res.body.error).toContain('deprecated');
+    expect(res.body.error.type).toBe('deprecated');
   });
 });
 

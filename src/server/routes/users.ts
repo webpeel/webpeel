@@ -41,9 +41,15 @@ function loginRateLimiter(req: Request, res: Response, next: NextFunction): void
   if (attempt && now < attempt.resetAt) {
     if (attempt.count >= 5) {
       res.status(429).json({
-        error: 'too_many_attempts',
-        message: 'Too many login attempts. Please try again in 15 minutes.',
+        success: false,
+        error: {
+          type: 'too_many_attempts',
+          message: 'Too many login attempts. Please try again in 15 minutes.',
+          hint: 'Wait 15 minutes before trying again.',
+          docs: 'https://webpeel.dev/docs/errors#too_many_attempts',
+        },
         retryAfter: Math.ceil((attempt.resetAt - now) / 1000),
+        requestId: crypto.randomUUID(),
       });
       return;
     }
@@ -81,9 +87,15 @@ function refreshRateLimiter(req: Request, res: Response, next: NextFunction): vo
   if (attempt && now < attempt.resetAt) {
     if (attempt.count >= 10) {
       res.status(429).json({
-        error: 'too_many_attempts',
-        message: 'Too many refresh attempts. Please try again in 15 minutes.',
+        success: false,
+        error: {
+          type: 'too_many_attempts',
+          message: 'Too many refresh attempts. Please try again in 15 minutes.',
+          hint: 'Wait 15 minutes before trying again.',
+          docs: 'https://webpeel.dev/docs/errors#too_many_attempts',
+        },
         retryAfter: Math.ceil((attempt.resetAt - now) / 1000),
+        requestId: crypto.randomUUID(),
       });
       return;
     }
@@ -136,8 +148,14 @@ function jwtAuth(req: Request, res: Response, next: NextFunction) {
     
     if (!authHeader?.startsWith('Bearer ')) {
       res.status(401).json({
-        error: 'missing_token',
-        message: 'JWT token required. Provide via Authorization: Bearer <token>',
+        success: false,
+        error: {
+          type: 'missing_token',
+          message: 'JWT token required. Provide via Authorization: Bearer <token>',
+          hint: 'Include your JWT in the Authorization header: Bearer <token>',
+          docs: 'https://webpeel.dev/docs/errors#unauthorized',
+        },
+        requestId: crypto.randomUUID(),
       });
       return;
     }
@@ -158,15 +176,26 @@ function jwtAuth(req: Request, res: Response, next: NextFunction) {
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       res.status(401).json({
-        error: 'invalid_token',
-        message: 'Invalid or expired JWT token',
+        success: false,
+        error: {
+          type: 'invalid_token',
+          message: 'Invalid or expired JWT token',
+          hint: 'Log in again to get a new token.',
+          docs: 'https://webpeel.dev/docs/errors#unauthorized',
+        },
+        requestId: crypto.randomUUID(),
       });
       return;
     }
     
     res.status(500).json({
-      error: 'auth_error',
-      message: 'Authentication failed',
+      success: false,
+      error: {
+        type: 'auth_error',
+        message: 'Authentication failed',
+        docs: 'https://webpeel.dev/docs/errors#auth_error',
+      },
+      requestId: crypto.randomUUID(),
     });
   }
 }
@@ -237,24 +266,42 @@ export function createUserRouter(): Router {
       // Input validation
       if (!email || !password) {
         res.status(400).json({
-          error: 'missing_fields',
-          message: 'Email and password are required',
+          success: false,
+          error: {
+            type: 'missing_fields',
+            message: 'Email and password are required',
+            hint: 'Provide both email and password in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#missing_fields',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
 
       if (!isValidEmail(email)) {
         res.status(400).json({
-          error: 'invalid_email',
-          message: 'Invalid email format',
+          success: false,
+          error: {
+            type: 'invalid_email',
+            message: 'Invalid email format',
+            hint: 'Provide a valid email address (e.g. user@example.com).',
+            docs: 'https://webpeel.dev/docs/errors#invalid_email',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
 
       if (!isValidPassword(password)) {
         res.status(400).json({
-          error: 'weak_password',
-          message: 'Password must be at least 8 characters',
+          success: false,
+          error: {
+            type: 'weak_password',
+            message: 'Password must be at least 8 characters',
+            hint: 'Choose a password with at least 8 characters.',
+            docs: 'https://webpeel.dev/docs/errors#weak_password',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -327,16 +374,27 @@ export function createUserRouter(): Router {
     } catch (error: any) {
       if (error.code === '23505') { // Unique violation
         res.status(409).json({
-          error: 'email_exists',
-          message: 'Email already registered',
+          success: false,
+          error: {
+            type: 'email_exists',
+            message: 'Email already registered',
+            hint: 'Try logging in instead, or use a different email.',
+            docs: 'https://webpeel.dev/docs/errors#email_exists',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
 
       console.error('Registration error:', error);
       res.status(500).json({
-        error: 'registration_failed',
-        message: 'Failed to register user',
+        success: false,
+        error: {
+          type: 'registration_failed',
+          message: 'Failed to register user',
+          docs: 'https://webpeel.dev/docs/errors#registration_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -351,8 +409,14 @@ export function createUserRouter(): Router {
 
       if (!email || !password) {
         res.status(400).json({
-          error: 'missing_fields',
-          message: 'Email and password are required',
+          success: false,
+          error: {
+            type: 'missing_fields',
+            message: 'Email and password are required',
+            hint: 'Provide both email and password in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#missing_fields',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -372,8 +436,14 @@ export function createUserRouter(): Router {
 
       if (!user || !passwordValid) {
         res.status(401).json({
-          error: 'invalid_credentials',
-          message: 'Invalid email or password',
+          success: false,
+          error: {
+            type: 'invalid_credentials',
+            message: 'Invalid email or password',
+            hint: 'Check your email and password and try again.',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -414,8 +484,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({
-        error: 'login_failed',
-        message: 'Failed to login',
+        success: false,
+        error: {
+          type: 'login_failed',
+          message: 'Failed to login',
+          docs: 'https://webpeel.dev/docs/errors#login_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -430,8 +505,14 @@ export function createUserRouter(): Router {
 
       if (!refreshToken) {
         res.status(400).json({
-          error: 'missing_token',
-          message: 'refreshToken is required',
+          success: false,
+          error: {
+            type: 'missing_token',
+            message: 'refreshToken is required',
+            hint: 'Include the refreshToken from your previous login response.',
+            docs: 'https://webpeel.dev/docs/errors#missing_token',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -447,8 +528,14 @@ export function createUserRouter(): Router {
         payload = jwt.verify(refreshToken, jwtSecret) as RefreshTokenPayload;
       } catch {
         res.status(401).json({
-          error: 'invalid_token',
-          message: 'Invalid or expired refresh token',
+          success: false,
+          error: {
+            type: 'invalid_token',
+            message: 'Invalid or expired refresh token',
+            hint: 'Log in again to get a new refresh token.',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -461,8 +548,14 @@ export function createUserRouter(): Router {
 
       if (tokenResult.rows.length === 0 || tokenResult.rows[0].revoked_at !== null) {
         res.status(401).json({
-          error: 'token_revoked',
-          message: 'Refresh token has been revoked',
+          success: false,
+          error: {
+            type: 'token_revoked',
+            message: 'Refresh token has been revoked',
+            hint: 'Log in again to get a new refresh token.',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -475,8 +568,13 @@ export function createUserRouter(): Router {
 
       if (userResult.rows.length === 0) {
         res.status(401).json({
-          error: 'user_not_found',
-          message: 'User no longer exists',
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User no longer exists',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -510,8 +608,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Refresh token error:', error);
       res.status(500).json({
-        error: 'refresh_failed',
-        message: 'Failed to refresh token',
+        success: false,
+        error: {
+          type: 'refresh_failed',
+          message: 'Failed to refresh token',
+          docs: 'https://webpeel.dev/docs/errors#refresh_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -533,8 +636,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Revoke tokens error:', error);
       res.status(500).json({
-        error: 'revoke_failed',
-        message: 'Failed to revoke tokens',
+        success: false,
+        error: {
+          type: 'revoke_failed',
+          message: 'Failed to revoke tokens',
+          docs: 'https://webpeel.dev/docs/errors#revoke_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -558,8 +666,13 @@ export function createUserRouter(): Router {
 
       if (result.rows.length === 0) {
         res.status(404).json({
-          error: 'user_not_found',
-          message: 'User not found',
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -579,8 +692,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Get profile error:', error);
       res.status(500).json({
-        error: 'profile_failed',
-        message: 'Failed to get profile',
+        success: false,
+        error: {
+          type: 'profile_failed',
+          message: 'Failed to get profile',
+          docs: 'https://webpeel.dev/docs/errors#profile_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -594,11 +712,28 @@ export function createUserRouter(): Router {
       const { userId } = (req as any).user as JwtPayload;
       const { name } = req.body;
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        res.status(400).json({ error: 'name_required', message: 'Name is required' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'name_required',
+            message: 'Name is required',
+            hint: 'Provide a non-empty "name" field in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#name_required',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
       if (name.length > 100) {
-        res.status(400).json({ error: 'invalid_name', message: 'Name must be 100 characters or less' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_name',
+            message: 'Name must be 100 characters or less',
+            docs: 'https://webpeel.dev/docs/errors#invalid_name',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
       const result = await pool.query(
@@ -606,13 +741,29 @@ export function createUserRouter(): Router {
         [name.trim(), userId]
       );
       if (result.rows.length === 0) {
-        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        res.status(404).json({
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
       res.json({ user: result.rows[0] });
     } catch (error) {
       console.error('Update me error:', error);
-      res.status(500).json({ error: 'update_failed', message: 'Failed to update profile' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'update_failed',
+          message: 'Failed to update profile',
+          docs: 'https://webpeel.dev/docs/errors#update_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
     }
   });
 
@@ -674,8 +825,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Create key error:', error);
       res.status(500).json({
-        error: 'key_creation_failed',
-        message: 'Failed to create API key',
+        success: false,
+        error: {
+          type: 'key_creation_failed',
+          message: 'Failed to create API key',
+          docs: 'https://webpeel.dev/docs/errors#key_creation_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -734,8 +890,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('List keys error:', error);
       res.status(500).json({
-        error: 'list_keys_failed',
-        message: 'Failed to list API keys',
+        success: false,
+        error: {
+          type: 'list_keys_failed',
+          message: 'Failed to list API keys',
+          docs: 'https://webpeel.dev/docs/errors#list_keys_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -751,12 +912,29 @@ export function createUserRouter(): Router {
       const { name } = req.body;
 
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        res.status(400).json({ error: 'invalid_name', message: 'Key name is required' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_name',
+            message: 'Key name is required',
+            hint: 'Provide a non-empty "name" field in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#invalid_name',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
       if (name.length > 64) {
-        res.status(400).json({ error: 'invalid_name', message: 'Key name must be 64 characters or less' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_name',
+            message: 'Key name must be 64 characters or less',
+            docs: 'https://webpeel.dev/docs/errors#invalid_name',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
@@ -766,7 +944,15 @@ export function createUserRouter(): Router {
       );
 
       if (result.rowCount === 0) {
-        res.status(404).json({ error: 'not_found', message: 'API key not found' });
+        res.status(404).json({
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'API key not found',
+            docs: 'https://webpeel.dev/docs/errors#not_found',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
@@ -782,7 +968,15 @@ export function createUserRouter(): Router {
       });
     } catch (error) {
       console.error('Update key error:', error);
-      res.status(500).json({ error: 'update_failed', message: 'Failed to update API key' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'update_failed',
+          message: 'Failed to update API key',
+          docs: 'https://webpeel.dev/docs/errors#update_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
     }
   });
 
@@ -806,8 +1000,13 @@ export function createUserRouter(): Router {
 
       if (result.rows.length === 0) {
         res.status(404).json({
-          error: 'key_not_found',
-          message: 'API key not found or access denied',
+          success: false,
+          error: {
+            type: 'key_not_found',
+            message: 'API key not found or access denied',
+            docs: 'https://webpeel.dev/docs/errors#not_found',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -819,8 +1018,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Delete key error:', error);
       res.status(500).json({
-        error: 'delete_key_failed',
-        message: 'Failed to delete API key',
+        success: false,
+        error: {
+          type: 'delete_key_failed',
+          message: 'Failed to delete API key',
+          docs: 'https://webpeel.dev/docs/errors#delete_key_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -836,8 +1040,14 @@ export function createUserRouter(): Router {
       if (!userId) {
         // Fall back to jwtAuth behavior for informative error
         res.status(401).json({
-          error: 'unauthorized',
-          message: 'Authentication required. Provide a JWT token or API key.',
+          success: false,
+          error: {
+            type: 'unauthorized',
+            message: 'Authentication required. Provide a JWT token or API key.',
+            hint: 'Get a free API key at https://app.webpeel.dev/keys',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -892,8 +1102,13 @@ export function createUserRouter(): Router {
 
       if (planResult.rows.length === 0) {
         res.status(404).json({
-          error: 'user_not_found',
-          message: 'User not found',
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -1022,8 +1237,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Get usage error:', error);
       res.status(500).json({
-        error: 'usage_failed',
-        message: 'Failed to get usage',
+        success: false,
+        error: {
+          type: 'usage_failed',
+          message: 'Failed to get usage',
+          docs: 'https://webpeel.dev/docs/errors#usage_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -1036,7 +1256,16 @@ export function createUserRouter(): Router {
     try {
       const userId = (req as any).user?.userId || req.auth?.keyInfo?.accountId;
       if (!userId) {
-        res.status(401).json({ error: 'unauthorized', message: 'Authentication required.' });
+        res.status(401).json({
+          success: false,
+          error: {
+            type: 'unauthorized',
+            message: 'Authentication required.',
+            hint: 'Get a free API key at https://app.webpeel.dev/keys',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
       const days = Math.min(Math.max(parseInt(req.query.days as string) || 7, 1), 90);
@@ -1076,8 +1305,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Get usage history error:', error);
       res.status(500).json({
-        error: 'history_failed',
-        message: 'Failed to get usage history',
+        success: false,
+        error: {
+          type: 'history_failed',
+          message: 'Failed to get usage history',
+          docs: 'https://webpeel.dev/docs/errors#history_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -1093,8 +1327,14 @@ export function createUserRouter(): Router {
 
       if (typeof enabled !== 'boolean') {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'enabled must be a boolean',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'enabled must be a boolean',
+            hint: 'Pass enabled: true or enabled: false in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#invalid_request',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -1111,8 +1351,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Toggle extra usage error:', error);
       res.status(500).json({
-        error: 'toggle_failed',
-        message: 'Failed to toggle extra usage',
+        success: false,
+        error: {
+          type: 'toggle_failed',
+          message: 'Failed to toggle extra usage',
+          docs: 'https://webpeel.dev/docs/errors#toggle_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -1128,8 +1373,14 @@ export function createUserRouter(): Router {
 
       if (typeof limit !== 'number' || limit < 10 || limit > 500) {
         res.status(400).json({
-          error: 'invalid_limit',
-          message: 'Limit must be a number between 10 and 500',
+          success: false,
+          error: {
+            type: 'invalid_limit',
+            message: 'Limit must be a number between 10 and 500',
+            hint: 'Pass a numeric limit between 10 and 500 in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#invalid_limit',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -1146,8 +1397,13 @@ export function createUserRouter(): Router {
     } catch (error) {
       console.error('Set limit error:', error);
       res.status(500).json({
-        error: 'limit_failed',
-        message: 'Failed to set spending limit',
+        success: false,
+        error: {
+          type: 'limit_failed',
+          message: 'Failed to set spending limit',
+          docs: 'https://webpeel.dev/docs/errors#limit_failed',
+        },
+        requestId: crypto.randomUUID(),
       });
     }
   });
@@ -1159,8 +1415,14 @@ export function createUserRouter(): Router {
   router.post('/v1/extra-usage/buy', jwtAuth, async (_req: Request, res: Response) => {
     // DISABLED: Stripe integration in progress
     res.status(501).json({
-      error: 'not_implemented',
-      message: 'Extra usage purchases are available through our billing portal. Visit https://app.webpeel.dev/billing',
+      success: false,
+      error: {
+        type: 'not_implemented',
+        message: 'Extra usage purchases are available through our billing portal. Visit https://app.webpeel.dev/billing',
+        hint: 'Visit https://app.webpeel.dev/billing to manage your usage.',
+        docs: 'https://webpeel.dev/docs/errors#not_implemented',
+      },
+      requestId: crypto.randomUUID(),
     });
   });
 
@@ -1175,30 +1437,79 @@ export function createUserRouter(): Router {
 
       // Validate inputs
       if (name && typeof name !== 'string') {
-        res.status(400).json({ error: 'invalid_name', message: 'Name must be a string' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_name',
+            message: 'Name must be a string',
+            docs: 'https://webpeel.dev/docs/errors#invalid_name',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
       if (name && name.length > 100) {
-        res.status(400).json({ error: 'invalid_name', message: 'Name too long (max 100 characters)' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_name',
+            message: 'Name too long (max 100 characters)',
+            docs: 'https://webpeel.dev/docs/errors#invalid_name',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
       if (avatarUrl && typeof avatarUrl !== 'string') {
-        res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL must be a string' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_avatar',
+            message: 'Avatar URL must be a string',
+            docs: 'https://webpeel.dev/docs/errors#invalid_avatar',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
       if (avatarUrl && avatarUrl.length > 500) {
-        res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL too long (max 500 characters)' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_avatar',
+            message: 'Avatar URL too long (max 500 characters)',
+            docs: 'https://webpeel.dev/docs/errors#invalid_avatar',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
       if (avatarUrl) {
         try {
           const parsed = new URL(avatarUrl);
           if (!['http:', 'https:'].includes(parsed.protocol)) {
-            res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL must use http or https protocol' });
+            res.status(400).json({
+              success: false,
+              error: {
+                type: 'invalid_avatar',
+                message: 'Avatar URL must use http or https protocol',
+                docs: 'https://webpeel.dev/docs/errors#invalid_avatar',
+              },
+              requestId: crypto.randomUUID(),
+            });
             return;
           }
         } catch {
-          res.status(400).json({ error: 'invalid_avatar', message: 'Avatar URL must be a valid URL' });
+          res.status(400).json({
+            success: false,
+            error: {
+              type: 'invalid_avatar',
+              message: 'Avatar URL must be a valid URL',
+              hint: 'Provide a fully-qualified URL starting with https://',
+              docs: 'https://webpeel.dev/docs/errors#invalid_avatar',
+            },
+            requestId: crypto.randomUUID(),
+          });
           return;
         }
       }
@@ -1218,7 +1529,16 @@ export function createUserRouter(): Router {
       }
 
       if (updates.length === 0) {
-        res.status(400).json({ error: 'no_updates', message: 'No fields to update' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'no_updates',
+            message: 'No fields to update',
+            hint: 'Provide at least one of: name, avatarUrl.',
+            docs: 'https://webpeel.dev/docs/errors#no_updates',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
@@ -1231,7 +1551,15 @@ export function createUserRouter(): Router {
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        res.status(404).json({
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
@@ -1246,7 +1574,15 @@ export function createUserRouter(): Router {
       });
     } catch (error) {
       console.error('Update profile error:', error);
-      res.status(500).json({ error: 'update_failed', message: 'Failed to update profile' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'update_failed',
+          message: 'Failed to update profile',
+          docs: 'https://webpeel.dev/docs/errors#update_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
     }
   });
 
@@ -1260,12 +1596,30 @@ export function createUserRouter(): Router {
       const { currentPassword, newPassword } = req.body;
 
       if (!currentPassword || !newPassword) {
-        res.status(400).json({ error: 'missing_fields', message: 'Current and new passwords are required' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'missing_fields',
+            message: 'Current and new passwords are required',
+            hint: 'Provide both currentPassword and newPassword in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#missing_fields',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
       if (!isValidPassword(newPassword)) {
-        res.status(400).json({ error: 'weak_password', message: 'Password must be at least 8 characters' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'weak_password',
+            message: 'Password must be at least 8 characters',
+            hint: 'Choose a password with at least 8 characters.',
+            docs: 'https://webpeel.dev/docs/errors#weak_password',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
@@ -1276,15 +1630,29 @@ export function createUserRouter(): Router {
       );
 
       if (userResult.rows.length === 0) {
-        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        res.status(404).json({
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
       // OAuth users don't have passwords
       if (!userResult.rows[0].password_hash) {
-        res.status(400).json({ 
-          error: 'oauth_user', 
-          message: 'OAuth users cannot set passwords. Please use your OAuth provider to manage your account.' 
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'oauth_user',
+            message: 'OAuth users cannot set passwords. Please use your OAuth provider to manage your account.',
+            hint: 'Manage your account through your OAuth provider (e.g. Google, GitHub).',
+            docs: 'https://webpeel.dev/docs/errors#oauth_user',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -1292,7 +1660,16 @@ export function createUserRouter(): Router {
       // Verify current password
       const passwordValid = await bcrypt.compare(currentPassword, userResult.rows[0].password_hash);
       if (!passwordValid) {
-        res.status(401).json({ error: 'invalid_password', message: 'Current password is incorrect' });
+        res.status(401).json({
+          success: false,
+          error: {
+            type: 'invalid_password',
+            message: 'Current password is incorrect',
+            hint: 'Double-check your current password and try again.',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
@@ -1308,7 +1685,15 @@ export function createUserRouter(): Router {
       res.json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
       console.error('Change password error:', error);
-      res.status(500).json({ error: 'update_failed', message: 'Failed to change password' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'update_failed',
+          message: 'Failed to change password',
+          docs: 'https://webpeel.dev/docs/errors#update_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
     }
   });
 
@@ -1328,7 +1713,15 @@ export function createUserRouter(): Router {
       );
 
       if (userResult.rows.length === 0) {
-        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        res.status(404).json({
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
@@ -1336,9 +1729,15 @@ export function createUserRouter(): Router {
 
       // Verify email confirmation
       if (confirmEmail !== user.email) {
-        res.status(400).json({ 
-          error: 'email_mismatch', 
-          message: 'Email confirmation does not match account email' 
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'email_mismatch',
+            message: 'Email confirmation does not match account email',
+            hint: 'Provide your exact account email in the confirmEmail field.',
+            docs: 'https://webpeel.dev/docs/errors#email_mismatch',
+          },
+          requestId: crypto.randomUUID(),
         });
         return;
       }
@@ -1346,13 +1745,31 @@ export function createUserRouter(): Router {
       // Verify password (if user has one - OAuth users might not)
       if (user.password_hash) {
         if (!password) {
-          res.status(400).json({ error: 'missing_password', message: 'Password is required' });
+          res.status(400).json({
+            success: false,
+            error: {
+              type: 'missing_password',
+              message: 'Password is required',
+              hint: 'Provide your account password to confirm account deletion.',
+              docs: 'https://webpeel.dev/docs/errors#missing_password',
+            },
+            requestId: crypto.randomUUID(),
+          });
           return;
         }
 
         const passwordValid = await bcrypt.compare(password, user.password_hash);
         if (!passwordValid) {
-          res.status(401).json({ error: 'invalid_password', message: 'Password is incorrect' });
+          res.status(401).json({
+            success: false,
+            error: {
+              type: 'invalid_password',
+              message: 'Password is incorrect',
+              hint: 'Double-check your password and try again.',
+              docs: 'https://webpeel.dev/docs/errors#unauthorized',
+            },
+            requestId: crypto.randomUUID(),
+          });
           return;
         }
       }
@@ -1378,7 +1795,15 @@ export function createUserRouter(): Router {
       });
     } catch (error) {
       console.error('Delete account error:', error);
-      res.status(500).json({ error: 'delete_failed', message: 'Failed to delete account' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'delete_failed',
+          message: 'Failed to delete account',
+          docs: 'https://webpeel.dev/docs/errors#delete_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
     }
   });
 
@@ -1396,7 +1821,15 @@ export function createUserRouter(): Router {
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        res.status(404).json({
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
+        });
         return;
       }
 
@@ -1406,7 +1839,15 @@ export function createUserRouter(): Router {
       });
     } catch (error) {
       console.error('Get alert preferences error:', error);
-      res.status(500).json({ error: 'get_prefs_failed', message: 'Failed to get alert preferences' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'get_prefs_failed',
+          message: 'Failed to get alert preferences',
+          docs: 'https://webpeel.dev/docs/errors#get_prefs_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
     }
   });
 
@@ -1424,8 +1865,14 @@ export function createUserRouter(): Router {
       if (threshold !== null && threshold !== undefined) {
         if (typeof threshold !== 'number' || threshold < 1 || threshold > 100) {
           res.status(400).json({
-            error: 'invalid_threshold',
-            message: 'Threshold must be a number between 1 and 100, or null to disable',
+            success: false,
+            error: {
+              type: 'invalid_threshold',
+              message: 'Threshold must be a number between 1 and 100, or null to disable',
+              hint: 'Pass a number between 1 and 100, or null to disable alerts.',
+              docs: 'https://webpeel.dev/docs/errors#invalid_threshold',
+            },
+            requestId: crypto.randomUUID(),
           });
           return;
         }
@@ -1435,8 +1882,14 @@ export function createUserRouter(): Router {
       if (email !== null && email !== undefined) {
         if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           res.status(400).json({
-            error: 'invalid_email',
-            message: 'Email must be a valid email address, or null to use account email',
+            success: false,
+            error: {
+              type: 'invalid_email',
+              message: 'Email must be a valid email address, or null to use account email',
+              hint: 'Provide a valid email address (e.g. user@example.com), or null.',
+              docs: 'https://webpeel.dev/docs/errors#invalid_email',
+            },
+            requestId: crypto.randomUUID(),
           });
           return;
         }
@@ -1450,7 +1903,15 @@ export function createUserRouter(): Router {
       res.json({ success: true });
     } catch (error) {
       console.error('Save alert preferences error:', error);
-      res.status(500).json({ error: 'save_prefs_failed', message: 'Failed to save alert preferences' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'save_prefs_failed',
+          message: 'Failed to save alert preferences',
+          docs: 'https://webpeel.dev/docs/errors#save_prefs_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
     }
   });
 
