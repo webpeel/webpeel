@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="WebPeel /v1/session — stateful browser sessions for login flows, multi-step scraping, and interactive automation.">
+  <link rel="canonical" href="https://webpeel.dev/docs/sessions">
+  <meta property="og:title" content="/v1/session — Browser Sessions — WebPeel">
+  <meta property="og:description" content="WebPeel /v1/session — stateful browser sessions for login flows, multi-step scraping, and interactive automation.">
+  <meta property="og:url" content="https://webpeel.dev/docs/sessions">
+  <meta property="og:type" content="website">
+  <title>/v1/session — Browser Sessions — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/getting-started" class="sidebar-link">Getting Started</a>
+        <a href="/docs/authentication" class="sidebar-link">Authentication</a>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+        <a href="/docs/changelog" class="sidebar-link">Changelog</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">API</div>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshot</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl</a>
+        <a href="/docs/extract" class="sidebar-link">Extract</a>
+        <a href="/docs/batch" class="sidebar-link">Batch</a>
+        <a href="/docs/ask" class="sidebar-link">/v1/ask — Web Q&amp;A</a>
+        <a href="/docs/sessions" class="sidebar-link active">/v1/session — Browser Sessions</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>/v1/session</span>
+      </div>
+
+      <h1>/v1/session — Stateful Browser Sessions</h1>
+      <p class="lead">Create persistent browser sessions that maintain state across multiple requests. Navigate pages, interact with UI elements, take screenshots, and extract content — all within a single authenticated browser context.</p>
+
+      <div style="padding: 16px 20px; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; margin-bottom: 32px; font-size: 14px; color: #1E40AF;">
+        <strong>🖥️ Stateful sessions.</strong> Unlike a single /v1/fetch call, sessions keep the browser alive between requests — so you can log in, navigate, fill forms, and scrape authenticated content across multiple steps. Added in <a href="/docs/changelog#v0.19.0" style="color: #1E40AF; font-weight: 600;">v0.19.0</a>.
+      </div>
+
+      <h2 id="use-cases">Use Cases</h2>
+      <ul>
+        <li><strong>Login flows</strong> — Authenticate once, then scrape protected pages across the session</li>
+        <li><strong>Multi-step scraping</strong> — Navigate through pagination, search results, or wizard flows</li>
+        <li><strong>Form interaction</strong> — Fill and submit forms, then capture the result</li>
+        <li><strong>SPA navigation</strong> — Navigate within a single-page app while preserving JS state</li>
+        <li><strong>Visual debugging</strong> — Screenshot at each step to verify automation is on track</li>
+      </ul>
+
+      <h2 id="create-session">Create a Session</h2>
+      <p>Start a new browser session at a given URL. Returns a session ID you'll use for all subsequent calls.</p>
+
+      <pre><code class="language-bash">POST /v1/session</code></pre>
+
+      <h3>Request Body</h3>
+      <pre><code class="language-json">{
+  "url": "https://example.com"
+}</code></pre>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl -X POST "https://api.webpeel.dev/v1/session" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://example.com" }'</code></pre>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "id": "sess_abc123xyz",
+  "url": "https://example.com",
+  "status": "ready",
+  "created": "2026-03-07T10:00:00Z"
+}</code></pre>
+
+      <h2 id="get-content">Get Content</h2>
+      <p>Retrieve the current page content as clean markdown (or another format).</p>
+
+      <pre><code class="language-bash">GET /v1/session/:id</code></pre>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl "https://api.webpeel.dev/v1/session/sess_abc123xyz" \
+  -H "Authorization: Bearer wp_live_xxxx"</code></pre>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "id": "sess_abc123xyz",
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "content": "# Example Domain\n\nThis domain is for use in illustrative examples...",
+  "status": "ready"
+}</code></pre>
+
+      <h2 id="navigate">Navigate</h2>
+      <p>Navigate the session browser to a new URL, maintaining all cookies and session state.</p>
+
+      <pre><code class="language-bash">POST /v1/session/:id/navigate</code></pre>
+
+      <h3>Request Body</h3>
+      <pre><code class="language-json">{
+  "url": "https://example.com/dashboard"
+}</code></pre>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl -X POST "https://api.webpeel.dev/v1/session/sess_abc123xyz/navigate" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://example.com/dashboard" }'</code></pre>
+
+      <h2 id="act">Interact (Act)</h2>
+      <p>Perform browser actions — click, type, scroll, wait — on the current page. Optionally take a screenshot after the actions complete.</p>
+
+      <pre><code class="language-bash">POST /v1/session/:id/act</code></pre>
+
+      <h3>Request Body</h3>
+      <pre><code class="language-json">{
+  "actions": [
+    { "type": "click", "selector": "#login-button" },
+    { "type": "type", "selector": "#email", "value": "user@example.com" },
+    { "type": "type", "selector": "#password", "value": "secret" },
+    { "type": "click", "selector": "[type=submit]" },
+    { "type": "wait", "ms": 2000 }
+  ],
+  "screenshot": true
+}</code></pre>
+
+      <h3>Action Types</h3>
+      <div class="params-table">
+        <table>
+          <thead>
+            <tr><th>Action Type</th><th>Fields</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>click</code></td><td><code>selector</code></td><td>Click an element matching the CSS selector</td></tr>
+            <tr><td><code>type</code></td><td><code>selector</code>, <code>value</code></td><td>Type text into an input field</td></tr>
+            <tr><td><code>scroll</code></td><td><code>to</code> ("top" | "bottom" | px)</td><td>Scroll the page</td></tr>
+            <tr><td><code>wait</code></td><td><code>ms</code></td><td>Pause for N milliseconds</td></tr>
+            <tr><td><code>hover</code></td><td><code>selector</code></td><td>Hover over an element</td></tr>
+            <tr><td><code>select</code></td><td><code>selector</code>, <code>value</code></td><td>Select an option in a &lt;select&gt; element</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl -X POST "https://api.webpeel.dev/v1/session/sess_abc123xyz/act" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "actions": [
+      { "type": "click", "selector": ".load-more" },
+      { "type": "wait", "ms": 1500 }
+    ],
+    "screenshot": true
+  }'</code></pre>
+
+      <h3>Response</h3>
+      <pre><code class="language-json">{
+  "id": "sess_abc123xyz",
+  "url": "https://example.com/results",
+  "actionsCompleted": 2,
+  "screenshot": "data:image/png;base64,iVBORw0KGgo..."
+}</code></pre>
+
+      <h2 id="screenshot">Screenshot</h2>
+      <p>Capture a screenshot of the current state of the session browser.</p>
+
+      <pre><code class="language-bash">GET /v1/session/:id/screenshot</code></pre>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl "https://api.webpeel.dev/v1/session/sess_abc123xyz/screenshot" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  --output screenshot.png</code></pre>
+
+      <p>Returns a PNG image directly (Content-Type: image/png).</p>
+
+      <h2 id="close-session">Close Session</h2>
+      <p>Terminate the session and free server-side resources. Sessions auto-expire after inactivity, but it's best practice to close them explicitly.</p>
+
+      <pre><code class="language-bash">DELETE /v1/session/:id</code></pre>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl -X DELETE "https://api.webpeel.dev/v1/session/sess_abc123xyz" \
+  -H "Authorization: Bearer wp_live_xxxx"</code></pre>
+
+      <h2 id="full-example">Full Example: Login Flow</h2>
+      <p>A complete multi-step example: create a session, log in, navigate to a protected page, and extract content.</p>
+
+      <pre><code class="language-bash"># 1. Create session
+SESSION=$(curl -s -X POST "https://api.webpeel.dev/v1/session" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://app.example.com/login" }' \
+  | jq -r '.id')
+
+echo "Session: $SESSION"
+
+# 2. Log in
+curl -X POST "https://api.webpeel.dev/v1/session/$SESSION/act" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "actions": [
+      { "type": "type", "selector": "#email", "value": "user@example.com" },
+      { "type": "type", "selector": "#password", "value": "mypassword" },
+      { "type": "click", "selector": "[type=submit]" },
+      { "type": "wait", "ms": 3000 }
+    ]
+  }'
+
+# 3. Navigate to protected content
+curl -X POST "https://api.webpeel.dev/v1/session/$SESSION/navigate" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://app.example.com/reports" }'
+
+# 4. Get the content
+curl "https://api.webpeel.dev/v1/session/$SESSION" \
+  -H "Authorization: Bearer wp_live_xxxx"
+
+# 5. Close session
+curl -X DELETE "https://api.webpeel.dev/v1/session/$SESSION" \
+  -H "Authorization: Bearer wp_live_xxxx"</code></pre>
+
+      <h2 id="mcp">MCP Tool: webpeel_act</h2>
+      <p>The <code>webpeel_act</code> MCP tool exposes browser session interaction directly to AI assistants like Claude and Cursor. When you configure the WebPeel MCP server, Claude can create sessions, navigate pages, and interact with UI elements on your behalf.</p>
+
+      <pre><code class="language-bash"># Set up MCP (see MCP docs for full setup)
+npx webpeel-mcp</code></pre>
+
+      <p>See the <a href="/docs/mcp">MCP Server documentation</a> for setup instructions.</p>
+
+      <h2 id="next-steps">Related</h2>
+      <ul>
+        <li><a href="/docs/ask"><strong>/v1/ask</strong></a> — LLM-free web Q&amp;A without needing a session</li>
+        <li><a href="/docs/fetch"><strong>Fetch API</strong></a> — Single-request page fetching with action support</li>
+        <li><a href="/docs/screenshot"><strong>Screenshot API</strong></a> — Standalone screenshot capture</li>
+        <li><a href="/docs/mcp"><strong>MCP Server</strong></a> — Use <code>webpeel_act</code> directly inside Claude and Cursor</li>
+        <li><a href="/docs/changelog"><strong>Changelog</strong></a> — Sessions shipped in v0.19.0</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+</body>
+</html>
