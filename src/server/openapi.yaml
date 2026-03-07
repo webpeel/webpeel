@@ -148,6 +148,27 @@ tags:
       User registration, login, and API key management. These endpoints use JWT
       tokens for session management, separate from the API key auth used by all
       other endpoints.
+  - name: Ask
+    description: |
+      LLM-free web question answering using BM25 relevance scoring. No external API key
+      required. Replaces the deprecated /v1/answer endpoint.
+  - name: Browser Sessions
+    description: |
+      Stateful browser sessions powered by Playwright. Create persistent browser contexts,
+      navigate, perform actions, and extract content. Sessions expire after 5 minutes
+      of inactivity (max 3 concurrent per account).
+  - name: Account
+    description: |
+      User account management: profile, API keys, billing portal, activity log, and
+      background jobs. Most endpoints require JWT auth from POST /v1/auth/login.
+  - name: Intent
+    description: |
+      Intent-based routing. Describe what you want in natural language and WebPeel routes
+      to the right tool automatically.
+  - name: Demo
+    description: |
+      Demo endpoints with no auth required for allowlisted domains. Useful for testing
+      and integration examples.
   - name: MCP
     description: |
       Model Context Protocol (MCP) endpoints for AI assistant integration.
@@ -586,6 +607,207 @@ components:
           example: "Welcome to the tutorial."
 
     # -------------------------------------------------------------------------
+    # Ask / Do / Session / Account schemas
+    # -------------------------------------------------------------------------
+
+    AskResult:
+      type: object
+      description: Result from LLM-free BM25 web question answering.
+      required: [question, answer, confidence, sources, method, elapsed]
+      properties:
+        question:
+          type: string
+          description: The question that was asked.
+          example: "What is the price of Stripe?"
+        answer:
+          type: string
+          nullable: true
+          description: Best answer extracted from top web sources using BM25 ranking.
+          example: "Stripe charges 2.9% + 30c per successful card charge."
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Confidence score for the answer (0-1).
+          example: 0.91
+        sources:
+          type: array
+          description: Top sources used to generate the answer.
+          items:
+            type: object
+            required: [url, title, snippet, confidence]
+            properties:
+              url:
+                type: string
+                format: uri
+              title:
+                type: string
+              snippet:
+                type: string
+              confidence:
+                type: number
+                format: float
+        method:
+          type: string
+          const: bm25
+          description: Scoring method (always bm25).
+          example: bm25
+        elapsed:
+          type: integer
+          description: Total processing time in milliseconds.
+          example: 1840
+
+    DoResult:
+      type: object
+      description: Result from intent-based routing.
+      required: [task, intent, result, elapsed]
+      properties:
+        task:
+          type: string
+          description: The original natural language task.
+          example: "fetch the homepage of stripe.com"
+        intent:
+          type: string
+          description: Detected intent (fetch, search, screenshot, etc.).
+          example: fetch
+        url:
+          type: string
+          format: uri
+          description: Target URL parsed from the task (if applicable).
+          example: https://stripe.com
+        query:
+          type: string
+          description: Search query parsed from the task (if applicable).
+        result:
+          type: object
+          additionalProperties: true
+          description: Result from the routed tool.
+        elapsed:
+          type: integer
+          description: Total processing time in milliseconds.
+          example: 423
+
+    SessionInfo:
+      type: object
+      description: Browser session metadata.
+      required: [sessionId, url, createdAt, expiresAt]
+      properties:
+        sessionId:
+          type: string
+          description: Unique session ID.
+          example: "sess_a1b2c3d4"
+        url:
+          type: string
+          format: uri
+          description: Current page URL.
+          example: https://example.com
+        createdAt:
+          type: string
+          format: date-time
+          description: When the session was created.
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the session will expire (5 minutes after last use).
+
+    SessionContent:
+      type: object
+      description: Content extracted from the session current page.
+      required: [sessionId, url]
+      properties:
+        sessionId:
+          type: string
+          description: Session ID.
+          example: "sess_a1b2c3d4"
+        url:
+          type: string
+          format: uri
+          description: Current page URL.
+          example: https://example.com
+        title:
+          type: string
+          description: Page title.
+          example: "Example Domain"
+        content:
+          type: string
+          description: Readability-extracted text content.
+        links:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: All links found on the page.
+
+    ApiKeyInfo:
+      type: object
+      description: API key metadata (does not include the full key value).
+      required: [id, prefix, createdAt]
+      properties:
+        id:
+          type: string
+          description: API key ID.
+          example: "key_a1b2c3d4"
+        name:
+          type: string
+          description: Human-readable key name.
+          example: "Production key"
+        prefix:
+          type: string
+          description: First few characters of the key.
+          example: "wp_abc1..."
+        createdAt:
+          type: string
+          format: date-time
+          description: When the key was created.
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the key was last used (null if never used).
+
+    JobInfo:
+      type: object
+      description: Background job status.
+      required: [id, type, status, createdAt]
+      properties:
+        id:
+          type: string
+          description: Job ID.
+          example: "job_a1b2c3d4"
+        type:
+          type: string
+          enum: [crawl, batch]
+          description: Job type.
+          example: crawl
+        status:
+          type: string
+          enum: [queued, processing, scraping, completed, failed, cancelled]
+          description: Current job status.
+          example: completed
+        url:
+          type: string
+          format: uri
+          description: Start URL (crawl jobs).
+          example: https://docs.example.com
+        total:
+          type: integer
+          description: Total pages discovered.
+          example: 50
+        completed:
+          type: integer
+          description: Pages processed so far.
+          example: 50
+        createdAt:
+          type: string
+          format: date-time
+          description: When the job was created.
+        expiresAt:
+          type: string
+          format: date-time
+          description: When job data will be deleted.
+
+    # -------------------------------------------------------------------------
     # Request bodies
     # -------------------------------------------------------------------------
 
@@ -729,7 +951,7 @@ components:
           example: "gpt-4o-mini"
         formats:
           type: array
-          description: Firecrawl-compatible formats array. Use `{ "type": "json", "schema": {...} }` for extraction.
+          description: 'Firecrawl-compatible formats array. Use formats like markdown, html, text, or json.'
           items:
             oneOf:
               - type: string
@@ -1038,6 +1260,20 @@ components:
             error:
               type: internal_error
               message: "An unexpected error occurred. If this persists, check https://webpeel.dev/status"
+            metadata:
+              requestId: "req_abc123"
+
+    BadRequest:
+      description: Invalid request parameters.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            success: false
+            error:
+              type: invalid_request
+              message: "Missing or invalid request parameters."
             metadata:
               requestId: "req_abc123"
 
@@ -2448,109 +2684,73 @@ paths:
           $ref: "#/components/responses/InternalError"
 
   # ===========================================================================
-  # Answer
+  # Answer (deprecated — use /v1/ask instead)
   # ===========================================================================
 
-  /v1/answer/quick:
-    get:
-      operationId: quickAnswer
-      summary: Quick Q&A on a URL (LLM-free)
+  /v1/answer:
+    post:
+      operationId: answerQuestion
+      summary: Answer a question with LLM (deprecated)
+      deprecated: true
       description: |
-        Fetch a URL and answer a question about its content using BM25 relevance scoring.
-        No LLM API key required — purely heuristic, always fast.
+        **Deprecated** — Will be removed on 2026-06-01.
 
-        Ideal for extracting specific facts from pages (pricing, contact info, specs, etc.)
-        without incurring LLM costs.
+        Use `POST /v1/ask` instead — LLM-free, faster, included in all plans without BYOK.
 
-        **Quick start:**
-        ```bash
-        curl "https://api.webpeel.dev/v1/answer/quick?url=https://example.com/pricing&question=What+is+the+pro+plan+price%3F" \
-          -H "Authorization: Bearer wp_YOUR_KEY"
-        ```
+        Search the web, fetch top results, and synthesise an answer using an LLM (BYOK).
       tags: [Answer]
-      parameters:
-        - name: url
-          in: query
-          required: true
-          description: The URL to fetch and query. Must be HTTP or HTTPS. Max 2048 characters.
-          schema:
-            type: string
-            format: uri
-          example: https://example.com/pricing
-        - name: question
-          in: query
-          required: true
-          description: The question to answer. Max 1000 characters.
-          schema:
-            type: string
-          example: "What is the price of the pro plan?"
-        - name: render
-          in: query
-          schema:
-            type: boolean
-            default: false
-          description: Use browser rendering for JavaScript-heavy pages.
-        - name: maxPassages
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 10
-            default: 3
-          description: Maximum number of relevant passages to return (1–10).
-          example: 3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question:
+                  type: string
+                  description: The question to answer.
+                  example: "What are the best practices for React performance?"
+                llmProvider:
+                  type: string
+                  enum: [openai, anthropic, google]
+                  description: LLM provider (BYOK required).
+                llmApiKey:
+                  type: string
+                  description: LLM API key (BYOK).
+                  example: "sk-..."
+                maxSources:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 3
       responses:
         "200":
-          description: Question answered successfully.
+          description: Answer generated successfully.
           headers:
-            X-Processing-Time:
-              $ref: "#/components/headers/X-Processing-Time"
-            X-Credits-Used:
-              $ref: "#/components/headers/X-Credits-Used"
-            X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
-            X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
-            X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+            X-Deprecated:
+              schema:
+                type: string
+                const: "true"
+            Sunset:
+              schema:
+                type: string
+                const: "2026-06-01"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/QuickAnswerResult"
-              example:
-                url: https://example.com/pricing
-                title: "Pricing – Example"
-                question: "What is the price of the pro plan?"
-                answer: "The Pro plan costs $49 per month."
-                confidence: 0.83
-                passages:
-                  - "Pro plan: $49/month — includes unlimited projects and priority support."
-                  - "All plans include a 14-day free trial. No credit card required."
-                source: https://example.com/pricing
-                method: bm25
+                type: object
+                properties:
+                  answer:
+                    type: string
+                  question:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: object
         "400":
-          description: Invalid request parameters.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-              examples:
-                missing_url:
-                  value:
-                    success: false
-                    error:
-                      type: invalid_request
-                      message: 'Missing or invalid "url" parameter'
-                    metadata:
-                      requestId: "req_abc123"
-                missing_question:
-                  value:
-                    success: false
-                    error:
-                      type: invalid_request
-                      message: 'Missing or invalid "question" parameter'
-                    metadata:
-                      requestId: "req_abc123"
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "429":
@@ -2558,7 +2758,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  # ===========================================================================
+    # ===========================================================================
   # YouTube
   # ===========================================================================
 
@@ -4730,6 +4930,1280 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Ask (replaces /v1/answer)
+  # ===========================================================================
+
+  /v1/ask:
+    get:
+      operationId: askGet
+      summary: Web Q&A — LLM-free (GET)
+      description: |
+        Search the web and answer a question using BM25 relevance scoring.
+        No LLM API key required — 100% deterministic, always fast.
+
+        Searches the web for the top `sources` results, fetches their content,
+        scores passages using BM25, and returns the best answer with citations.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/ask?q=What+is+the+price+of+Stripe%3F&sources=3" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+
+        Replaces the deprecated `POST /v1/answer` endpoint.
+      tags: [Ask]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: The question to answer.
+          schema:
+            type: string
+          example: "What is the price of Stripe?"
+        - name: sources
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+            default: 3
+          description: Number of web sources to fetch and score (1-5).
+          example: 3
+      responses:
+        "200":
+          description: Question answered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AskResult"
+              example:
+                question: "What is the price of Stripe?"
+                answer: "Stripe charges 2.9% + 30 cents per successful card charge."
+                confidence: 0.91
+                sources:
+                  - url: https://stripe.com/pricing
+                    title: "Stripe Pricing"
+                    snippet: "Pay as you go pricing for businesses of all sizes."
+                    confidence: 0.91
+                method: bm25
+                elapsed: 1840
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: askPost
+      summary: Web Q&A — LLM-free (POST)
+      description: |
+        POST variant of `GET /v1/ask`. Accepts a JSON body. Optionally target a
+        specific URL instead of searching the web.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/ask \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"question": "What is the price of Stripe?", "sources": 3}'
+        ```
+      tags: [Ask]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question:
+                  type: string
+                  description: The question to answer.
+                  example: "What is the price of Stripe?"
+                sources:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  default: 3
+                  description: Number of web sources to fetch and score (1-5).
+                url:
+                  type: string
+                  format: uri
+                  description: |
+                    Optional. If provided, answer is extracted from this URL only
+                    (no web search performed).
+                  example: https://stripe.com/pricing
+            examples:
+              basic:
+                summary: Ask a question (web search)
+                value:
+                  question: "What is the price of Stripe?"
+                  sources: 3
+              targeted:
+                summary: Ask about a specific URL
+                value:
+                  question: "What is the Enterprise plan price?"
+                  url: https://webpeel.dev/pricing
+                  sources: 1
+      responses:
+        "200":
+          description: Question answered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AskResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Do (intent-based routing)
+  # ===========================================================================
+
+  /v1/do:
+    get:
+      operationId: doGet
+      summary: Intent-based routing (GET)
+      description: |
+        Describe what you want in natural language — WebPeel automatically routes
+        to the right tool (fetch, search, screenshot, Q&A, etc.).
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/do?task=fetch+the+homepage+of+stripe.com" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+      tags: [Intent]
+      parameters:
+        - name: task
+          in: query
+          required: true
+          description: Natural language task description.
+          schema:
+            type: string
+          example: "fetch the homepage of stripe.com"
+      responses:
+        "200":
+          description: Task completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: doPost
+      summary: Intent-based routing (POST)
+      description: |
+        POST variant of `GET /v1/do`. Accepts a JSON body with a `task` field.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/do \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"task": "search for the latest AI news"}'
+        ```
+      tags: [Intent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task]
+              properties:
+                task:
+                  type: string
+                  description: Natural language task description.
+                  example: "search for the latest AI news"
+            examples:
+              fetch:
+                summary: Fetch a page
+                value:
+                  task: "fetch the homepage of stripe.com"
+              search:
+                summary: Search the web
+                value:
+                  task: "search for the latest AI news"
+      responses:
+        "200":
+          description: Task completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoResult"
+              example:
+                task: "fetch the homepage of stripe.com"
+                intent: fetch
+                url: "https://stripe.com"
+                result:
+                  url: https://stripe.com
+                  title: "Stripe | Payment processing platform"
+                  content: "# Stripe\n\nFinancial infrastructure for the internet..."
+                elapsed: 423
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Demo
+  # ===========================================================================
+
+  /v1/demo:
+    get:
+      operationId: demoFetch
+      summary: Demo fetch (no auth required for allowlisted domains)
+      description: |
+        Fetch a URL without authentication for allowlisted demo domains.
+        Used for embedding live demos and testing without an API key.
+
+        > **Note:** Only a small set of domains are allowlisted. All others require
+        > a valid API key. Check the WebPeel docs for the current allowlist.
+      tags: [Demo]
+      security: []
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: The URL to fetch. Must be on the allowlisted domain list.
+          schema:
+            type: string
+            format: uri
+          example: https://example.com
+      responses:
+        "200":
+          description: Successfully fetched the URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeelResult"
+        "400":
+          description: URL not in allowlist or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                error:
+                  type: invalid_request
+                  message: "Domain not in demo allowlist. Get a free API key at https://app.webpeel.dev"
+                metadata:
+                  requestId: "req_abc123"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Browser Sessions
+  # ===========================================================================
+
+  /v1/session:
+    post:
+      operationId: createSession
+      summary: Create a browser session
+      description: |
+        Create a stateful Playwright browser session. The session persists for
+        5 minutes of inactivity (max 3 concurrent sessions per account).
+
+        Use this for multi-step workflows: login, navigate, extract, screenshot.
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/session \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com"}'
+        ```
+      tags: [Browser Sessions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Initial URL to navigate to when creating the session.
+                  example: https://example.com
+            example:
+              url: https://example.com
+      responses:
+        "200":
+          description: Browser session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionInfo"
+              example:
+                sessionId: "sess_a1b2c3d4"
+                url: https://example.com
+                createdAt: "2025-03-01T10:00:00.000Z"
+                expiresAt: "2025-03-01T10:05:00.000Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          description: Maximum concurrent sessions reached.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/session/{id}:
+    get:
+      operationId: getSession
+      summary: Get session content
+      description: |
+        Retrieve the current page content (Readability-extracted text) and links
+        from the session's active page.
+      tags: [Browser Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID returned by POST /v1/session.
+          schema:
+            type: string
+          example: "sess_a1b2c3d4"
+      responses:
+        "200":
+          description: Session content retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionContent"
+              example:
+                sessionId: "sess_a1b2c3d4"
+                url: https://example.com
+                title: "Example Domain"
+                content: "# Example Domain\n\nThis domain is for use in illustrative examples..."
+                links:
+                  - https://www.iana.org/domains/example
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Session not found or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteSession
+      summary: Close a browser session
+      description: |
+        Close and destroy a browser session. Frees the browser resource immediately.
+        Sessions also auto-expire after 5 minutes of inactivity.
+      tags: [Browser Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID to close.
+          schema:
+            type: string
+          example: "sess_a1b2c3d4"
+      responses:
+        "200":
+          description: Session closed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  sessionId:
+                    type: string
+              example:
+                ok: true
+                sessionId: "sess_a1b2c3d4"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Session not found or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/session/{id}/navigate:
+    post:
+      operationId: navigateSession
+      summary: Navigate session to a URL
+      description: |
+        Navigate the session's browser to a new URL. Returns once the page has loaded.
+      tags: [Browser Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID.
+          schema:
+            type: string
+          example: "sess_a1b2c3d4"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL to navigate to.
+                  example: https://example.com/dashboard
+            example:
+              url: https://example.com/dashboard
+      responses:
+        "200":
+          description: Navigation completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Session not found or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/session/{id}/act:
+    post:
+      operationId: actInSession
+      summary: Perform browser actions in session
+      description: |
+        Execute a sequence of browser actions (click, fill, type, scroll, wait, etc.)
+        in the session's browser context. Optionally take a screenshot after actions.
+
+        **Quick start:**
+        ```bash
+        curl -X POST "https://api.webpeel.dev/v1/session/sess_a1b2c3d4/act" \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"actions":[{"type":"fill","selector":"#email","text":"user@example.com"},{"type":"click","selector":"[type=submit]"}],"screenshot":true}'
+        ```
+      tags: [Browser Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID.
+          schema:
+            type: string
+          example: "sess_a1b2c3d4"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actions]
+              properties:
+                actions:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/PageAction"
+                  description: Browser actions to perform in sequence.
+                screenshot:
+                  type: boolean
+                  default: false
+                  description: Whether to capture a screenshot after all actions complete.
+            examples:
+              login:
+                summary: Fill login form and submit
+                value:
+                  actions:
+                    - type: fill
+                      selector: "#email"
+                      text: user@example.com
+                    - type: fill
+                      selector: "#password"
+                      text: "secret"
+                    - type: click
+                      selector: "[type=submit]"
+                  screenshot: true
+      responses:
+        "200":
+          description: Actions executed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  url:
+                    type: string
+                    format: uri
+                    description: Current URL after all actions.
+                  screenshot:
+                    type: string
+                    description: Base64-encoded PNG screenshot (only if screenshot=true).
+              example:
+                ok: true
+                url: https://example.com/dashboard
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Session not found or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/session/{id}/screenshot:
+    get:
+      operationId: screenshotSession
+      summary: Screenshot session current page
+      description: |
+        Take a screenshot of the session's current page. Returns a PNG image directly.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/session/sess_a1b2c3d4/screenshot" \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          --output screenshot.png
+        ```
+      tags: [Browser Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID.
+          schema:
+            type: string
+          example: "sess_a1b2c3d4"
+      responses:
+        "200":
+          description: Screenshot captured. Returns raw PNG image bytes.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Session not found or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Screenshot - Design Analysis and Compare
+  # ===========================================================================
+
+  /v1/screenshot/design-analysis:
+    post:
+      operationId: takeDesignAnalysis
+      summary: Design analysis screenshot
+      description: |
+        Capture a screenshot and perform a visual design analysis.
+        Returns design token analysis, layout structure, and visual metadata.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/screenshot/design-analysis \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com"}'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to capture and analyse.
+                  example: https://example.com
+                viewport:
+                  type: object
+                  description: Viewport dimensions.
+                  properties:
+                    width:
+                      type: integer
+                      minimum: 100
+                      maximum: 5000
+                      default: 1440
+                    height:
+                      type: integer
+                      minimum: 100
+                      maximum: 5000
+                      default: 900
+            example:
+              url: https://example.com
+      responses:
+        "200":
+          description: Design analysis completed successfully.
+          headers:
+            X-Credits-Used:
+              $ref: "#/components/headers/X-Credits-Used"
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    type: object
+                    additionalProperties: true
+                    description: Design analysis results including typography, colours, and layout.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/design-compare:
+    get:
+      operationId: designCompare
+      summary: Compare designs of two URLs
+      description: |
+        Screenshot two URLs and compare their visual designs side-by-side.
+        Pass a `ref` (reference URL) and optionally a second `url` to compare against.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/design-compare?ref=https://example.com&url=https://example.com/new" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+      tags: [Screenshot]
+      parameters:
+        - name: ref
+          in: query
+          required: true
+          description: Reference URL to compare against.
+          schema:
+            type: string
+            format: uri
+          example: https://example.com
+        - name: url
+          in: query
+          description: URL to compare. Defaults to ref if omitted.
+          schema:
+            type: string
+            format: uri
+          example: https://example.com/new
+      responses:
+        "200":
+          description: Design comparison completed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    type: object
+                    additionalProperties: true
+                    description: Side-by-side design comparison results.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Review
+  # ===========================================================================
+
+  /v1/review:
+    post:
+      operationId: reviewPage
+      summary: Page review / visual audit
+      description: |
+        Capture multi-viewport screenshots (mobile, tablet, desktop) and run a
+        design system audit in a single API call. Uses 4 credits.
+
+        **Quick start:**
+        ```bash
+        curl -X POST https://api.webpeel.dev/v1/review \
+          -H "Authorization: Bearer wp_YOUR_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com"}'
+        ```
+      tags: [Screenshot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to review.
+                  example: https://example.com
+                rules:
+                  type: object
+                  description: Design rules to enforce during the audit.
+                  properties:
+                    spacingGrid:
+                      type: integer
+                      default: 8
+                    minTouchTarget:
+                      type: integer
+                      default: 44
+                    minContrast:
+                      type: number
+                      default: 4.5
+                selector:
+                  type: string
+                  default: body
+                  description: CSS selector for the design audit root element.
+            example:
+              url: https://example.com
+      responses:
+        "200":
+          description: Page review completed successfully.
+          headers:
+            X-Credits-Used:
+              schema:
+                type: string
+                const: "4"
+              description: Always 4 credits (3 viewports + 1 audit).
+            X-Processing-Time:
+              $ref: "#/components/headers/X-Processing-Time"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                      viewports:
+                        type: array
+                        description: Screenshots at mobile (375px), tablet (768px), and desktop (1440px).
+                        items:
+                          type: object
+                          properties:
+                            label:
+                              type: string
+                              enum: [mobile, tablet, desktop]
+                            width:
+                              type: integer
+                            screenshot:
+                              type: string
+                              description: Base64-encoded JPEG screenshot.
+                      audit:
+                        type: object
+                        description: Design system audit results.
+                        properties:
+                          score:
+                            type: integer
+                          summary:
+                            type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ===========================================================================
+  # Account
+  # ===========================================================================
+
+  /v1/activity:
+    get:
+      operationId: getActivity
+      summary: Get account activity log
+      description: |
+        Return recent API request history for the authenticated account.
+
+        **Quick start:**
+        ```bash
+        curl "https://api.webpeel.dev/v1/activity?limit=20" \
+          -H "Authorization: Bearer wp_YOUR_KEY"
+        ```
+      tags: [Account]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of activity records to return (1-100).
+          example: 20
+      responses:
+        "200":
+          description: Activity log retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  activity:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        url:
+                          type: string
+                          format: uri
+                        method:
+                          type: string
+                        status_code:
+                          type: integer
+                        processing_time_ms:
+                          type: integer
+                        created_at:
+                          type: string
+                          format: date-time
+              example:
+                ok: true
+                activity:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    url: https://example.com
+                    method: GET
+                    status_code: 200
+                    processing_time_ms: 187
+                    created_at: "2025-03-01T10:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/me:
+    get:
+      operationId: getMe
+      summary: Get current user info
+      description: |
+        Return the profile and quota information for the authenticated user.
+      tags: [Account]
+      responses:
+        "200":
+          description: User profile retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserObject"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    patch:
+      operationId: updateMe
+      summary: Update current user profile
+      description: Update the authenticated user's profile information.
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Display name.
+                  example: "Jane Doe"
+      responses:
+        "200":
+          description: Profile updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserObject"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/keys:
+    get:
+      operationId: listApiKeys
+      summary: List API keys
+      description: List all API keys for the authenticated account.
+      tags: [Account]
+      responses:
+        "200":
+          description: API keys listed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  keys:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ApiKeyInfo"
+              example:
+                ok: true
+                keys:
+                  - id: "key_a1b2c3d4"
+                    name: "Production key"
+                    prefix: "wp_abc1..."
+                    createdAt: "2025-02-25T08:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: createApiKey
+      summary: Create an API key
+      description: |
+        Create a new API key. The full key is returned only once — store it securely.
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Human-readable name for the key.
+                  example: "Production key"
+            example:
+              name: "Production key"
+      responses:
+        "201":
+          description: API key created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  key:
+                    type: string
+                    description: Full API key value. Shown only once.
+                    example: "wp_abc123def456ghi789..."
+                  info:
+                    $ref: "#/components/schemas/ApiKeyInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/keys/{id}:
+    patch:
+      operationId: updateApiKey
+      summary: Update an API key
+      description: Update the name of an existing API key.
+      tags: [Account]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: API key ID.
+          schema:
+            type: string
+          example: "key_a1b2c3d4"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Production key (renamed)"
+      responses:
+        "200":
+          description: API key updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  key:
+                    $ref: "#/components/schemas/ApiKeyInfo"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: API key not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: revokeApiKey
+      summary: Revoke an API key
+      description: Permanently revoke an API key. All requests using this key will immediately fail.
+      tags: [Account]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: API key ID to revoke.
+          schema:
+            type: string
+          example: "key_a1b2c3d4"
+      responses:
+        "200":
+          description: API key revoked successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  deleted:
+                    type: string
+              example:
+                ok: true
+                deleted: "key_a1b2c3d4"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: API key not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/billing/portal:
+    post:
+      operationId: createBillingPortal
+      summary: Create Stripe billing portal session
+      description: |
+        Create a Stripe Customer Portal session and return the redirect URL.
+        Use this to let users manage their subscription, payment methods, and invoices.
+      tags: [Account]
+      responses:
+        "200":
+          description: Billing portal session created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: Stripe Customer Portal URL. Redirect the user here.
+              example:
+                url: "https://billing.stripe.com/session/live_abc123..."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/jobs:
+    get:
+      operationId: listJobs
+      summary: List background jobs
+      description: Return all background jobs (crawl, batch) for the authenticated account.
+      tags: [Account]
+      responses:
+        "200":
+          description: Jobs listed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  jobs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/JobInfo"
+              example:
+                ok: true
+                jobs:
+                  - id: "job_a1b2c3d4"
+                    type: crawl
+                    status: completed
+                    url: https://docs.example.com
+                    total: 50
+                    completed: 50
+                    createdAt: "2025-03-01T10:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: createJob
+      summary: Create a background job
+      description: Start a new background crawl or batch scrape job.
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type:
+                  type: string
+                  enum: [crawl, batch]
+                  description: Job type.
+                  example: crawl
+                url:
+                  type: string
+                  format: uri
+                  description: Start URL (required for crawl jobs).
+                urls:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                  description: URLs to scrape (required for batch jobs).
+                limit:
+                  type: integer
+                  description: Maximum pages to crawl.
+                  example: 50
+                maxDepth:
+                  type: integer
+                  description: Maximum crawl depth.
+                  example: 3
+            examples:
+              crawl:
+                summary: Start a crawl job
+                value:
+                  type: crawl
+                  url: https://docs.example.com
+                  limit: 100
+                  maxDepth: 3
+              batch:
+                summary: Start a batch scrape job
+                value:
+                  type: batch
+                  urls:
+                    - https://example.com
+                    - https://another.com
+      responses:
+        "200":
+          description: Job created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  id:
+                    type: string
+                    description: Job ID for polling status.
+              example:
+                ok: true
+                id: "job_a1b2c3d4"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
