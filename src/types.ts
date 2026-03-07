@@ -240,6 +240,13 @@ export interface PeelOptions {
    * Use for Q&A or high-throughput workloads where speed > JS-rendered completeness.
    */
   noEscalate?: boolean;
+  /**
+   * Enhance images that lack alt text with heuristic-generated descriptions.
+   * Uses filename analysis, URL path segments, and nearby heading/paragraph context.
+   * No LLM key required — purely text-based heuristics.
+   * Default: false (opt-in). Set to true to enable.
+   */
+  captionImages?: boolean;
   /** Chunk content for RAG pipelines */
   chunk?: boolean | {
     /** Max tokens per chunk (default: 512) */
