@@ -42,7 +42,10 @@ export function createDeepFetchRouter(): Router {
 
       const result = await deepFetch(options);
 
-      res.json(result);
+      res.json({
+        ...result,
+        content: result.merged || '',   // expose as `content` for consistency
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('[deep-fetch] error:', message);

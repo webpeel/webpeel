@@ -32,6 +32,7 @@ import { createBatchRouter } from './routes/batch.js';
 import { createAgentRouter } from './routes/agent.js';
 import { createAnswerRouter } from './routes/answer.js';
 import { createQuickAnswerRouter } from './routes/quick-answer.js';
+import { createAskRouter } from './routes/ask.js';
 import { createMcpRouter } from './routes/mcp.js';
 import { createYouTubeRouter } from './routes/youtube.js';
 import { createDeepFetchRouter } from './routes/deep-fetch.js';
@@ -42,6 +43,7 @@ import { createDemoRouter } from './routes/demo.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
 import { createExtractRouter } from './routes/extract.js';
+import { createSessionRouter } from './routes/session.js';
 import { createSentryHooks } from './sentry.js';
 import { warmup, cleanup as cleanupFetcher } from '../core/fetcher.js';
 import { registerPremiumHooks } from './premium/index.js';
@@ -260,6 +262,7 @@ export function createApp(config: ServerConfig = {}): Express {
   // Apply rate limiting middleware globally
   app.use(createRateLimitMiddleware(rateLimiter));
   app.use(createCompatRouter(jobQueue));
+  app.use(createSessionRouter());
   app.use(createExtractRouter());
   app.use(createDeepFetchRouter());
   if (pool) {
@@ -279,6 +282,7 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createAgentRouter());
   app.use(createAnswerRouter());
   app.use(createQuickAnswerRouter());
+  app.use(createAskRouter());
   app.use(createYouTubeRouter());
   app.use(createMcpRouter(authStore, pool));
 

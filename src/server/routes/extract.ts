@@ -155,5 +155,23 @@ export function createExtractRouter(): Router {
     res.json({ url, pageType: extracted.type, structured: extracted });
   });
 
+  router.post('/v1/extract/auto', async (req: Request, res: Response) => {
+    const { url, ...rest } = req.body as { url?: string; [key: string]: unknown };
+    if (!url || typeof url !== 'string') {
+      res.status(400).json({ error: 'Missing or invalid url field in request body' });
+      return;
+    }
+    try {
+      const { autoExtract } = await import('../../core/auto-extract.js');
+      const result = await peel(url, { format: 'html', ...rest });
+      const extracted = autoExtract(result.content || '', url);
+      res.json({ url, pageType: extracted.type, structured: extracted });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[/v1/extract/auto POST] Error:', msg);
+      res.status(500).json({ error: 'extraction_failed', message: msg });
+    }
+  });
+
   return router;
 }

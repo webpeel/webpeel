@@ -505,6 +505,58 @@ async function handleFind(args: Record<string, unknown>) {
 
   if (!query) throw new Error('Either query or url is required');
 
+  // Question-mode: if the query looks like a natural language question and depth
+  // isn't forced to 'deep', use the LLM-free BM25 Q&A path (search → fetch → BM25).
+  // This is the /v1/ask feature — no API key required, deterministic.
+  const isQuestion = /\?$/.test(query.trim()) ||
+    /^(what|how|when|where|why|who|which|can|does|is|are|do|did|will|would|could|should)\b/i.test(query.trim());
+
+  if (isQuestion && depth !== 'deep') {
+    const numSources = Math.min(limit, 5);
+    const { provider, apiKey } = getBestSearchProvider();
+    let searchResults: Array<{ url: string; title: string; snippet: string }>;
+    try {
+      searchResults = (await Promise.race([
+        provider.searchWeb(query, { count: numSources, apiKey }),
+        timeout<never>(30000, 'Ask search'),
+      ])) as Array<{ url: string; title: string; snippet: string }>;
+    } catch {
+      searchResults = [];
+    }
+
+    if (searchResults.length === 0) {
+      return textResponse(safeJson({ question: query, answer: null, confidence: 0, sources: [], method: 'bm25' }));
+    }
+
+    const fetched = await Promise.allSettled(
+      searchResults.slice(0, numSources).map((r) =>
+        peel(r.url, { budget: 3000, format: 'markdown', timeout: 12000 }).then((result) => ({ result, searchResult: r })),
+      ),
+    );
+
+    const answers = fetched
+      .filter((f): f is PromiseFulfilledResult<any> => f.status === 'fulfilled')
+      .map((f) => {
+        const { result, searchResult } = f.value as { result: PeelResult; searchResult: { url: string; title: string; snippet: string } };
+        const qa = quickAnswer({ question: query, content: result.content || '', url: result.url || searchResult.url, maxPassages: 2 });
+        return {
+          answer: qa.answer,
+          confidence: qa.confidence,
+          source: { url: result.url || searchResult.url, title: result.title || searchResult.title, snippet: searchResult.snippet },
+        };
+      })
+      .sort((a, b) => b.confidence - a.confidence);
+
+    const best = answers[0];
+    return textResponse(safeJson({
+      question: query,
+      answer: best?.answer || null,
+      confidence: best?.confidence || 0,
+      sources: answers.map((a) => ({ ...a.source, confidence: a.confidence })),
+      method: 'bm25',
+    }));
+  }
+
   // Deep research mode
   if (depth === 'deep') {
     const { provider, apiKey } = getBestSearchProvider();
@@ -700,10 +752,36 @@ async function handleMonitor(args: Record<string, unknown>) {
 }
 
 /**
- * webpeel_act: stub — coming soon.
+ * webpeel_act: perform browser actions on a page, then optionally extract content.
  */
-function handleAct(_args: Record<string, unknown>) {
-  return textResponse(safeJson({ message: 'Coming soon — act feature in development' }));
+async function handleAct(args: Record<string, unknown>) {
+  const url = args.url as string;
+  const actions = args.actions as any[];
+  const extract = args.extract !== false; // default true
+  const screenshot = Boolean(args.screenshot);
+
+  if (!url) return textResponse(safeJson({ error: 'url is required' }));
+  if (!actions?.length) return textResponse(safeJson({ error: 'actions array is required' }));
+
+  // Reuse the full peel() pipeline — same as handleFetch
+  const { peel } = await import('../index.js');
+  const result = await peel(url, {
+    render: true,       // actions always require browser
+    actions,
+    screenshot,
+    format: 'markdown',
+    budget: 4000,
+    timeout: 60000,
+  });
+
+  return textResponse(safeJson({
+    url: result.url,
+    title: result.title,
+    content: extract ? result.content : undefined,
+    screenshot: result.screenshot,
+    method: result.method,
+    elapsed: result.elapsed,
+  }));
 }
 
 // ── Full webpeel_fetch handler (backward compat + power users) ─────────────────

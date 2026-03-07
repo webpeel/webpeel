@@ -4275,6 +4275,88 @@ program
   });
 
 // ============================================================
+// ask command — LLM-free web Q&A (search + fetch + BM25)
+// ============================================================
+
+program
+  .command('ask <question>')
+  .description('Ask a question and get a direct answer from the web (no LLM required)')
+  .option('-n, --sources <n>', 'Number of sources to check (1-5, default 3)', '3')
+  .option('--json', 'Output as JSON')
+  .option('-s, --silent', 'Silent mode')
+  .action(async (question: string, options) => {
+    const isJson = !!options.json;
+    const isSilent = !!options.silent;
+    const numSources = Math.min(Math.max(parseInt(options.sources) || 3, 1), 5);
+
+    const askCfg = loadConfig();
+    const askApiKey = askCfg.apiKey || process.env.WEBPEEL_API_KEY;
+    const askApiUrl = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
+
+    if (!askApiKey) {
+      console.error('No API key configured. Run: webpeel auth <your-key>');
+      console.error('Get a free key at: https://app.webpeel.dev/keys');
+      process.exit(2);
+    }
+
+    let spinner: any = null;
+    if (!isSilent && !isJson) {
+      const { default: ora } = await import('ora');
+      spinner = ora(`Searching for: ${question}`).start();
+    }
+
+    try {
+      const params = new URLSearchParams({ q: question, sources: String(numSources) });
+      const res = await fetch(`${askApiUrl}/v1/ask?${params}`, {
+        headers: { Authorization: `Bearer ${askApiKey}` },
+        signal: AbortSignal.timeout(60000),
+      });
+
+      if (res.status === 401) {
+        if (spinner) spinner.fail('API key invalid or expired. Run: webpeel auth <new-key>');
+        process.exit(2);
+      }
+      if (res.status === 404) {
+        if (spinner) spinner.fail('Ask endpoint not available on this server version');
+        process.exit(1);
+      }
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        if (spinner) spinner.fail(`API error ${res.status}: ${body.slice(0, 100)}`);
+        process.exit(1);
+      }
+
+      const data = await res.json() as any;
+
+      if (spinner) {
+        if (data.answer) {
+          spinner.succeed(`Found answer (confidence: ${Math.round((data.confidence || 0) * 100)}%)`);
+        } else {
+          spinner.warn('No confident answer found');
+        }
+      }
+
+      if (isJson) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        if (data.answer) {
+          console.log('\n' + data.answer);
+          if (data.sources?.length && !isSilent) {
+            console.log('\nSources:');
+            data.sources.slice(0, 3).forEach((s: any) => console.log(`  • ${s.title || s.url} — ${s.url}`));
+          }
+        } else {
+          console.log('\nNo confident answer found for:', question);
+        }
+        if (data.elapsed && !isSilent) console.log(`\n⚡ ${data.elapsed}ms`);
+      }
+    } catch (err: any) {
+      if (spinner) spinner.fail(err.message);
+      process.exit(1);
+    }
+  });
+
+// ============================================================
 // research command — autonomous multi-step web research
 // ============================================================
 

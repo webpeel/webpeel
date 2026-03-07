@@ -250,9 +250,37 @@ function extractPricingPlans($: CheerioAPI): PricingPlan[] {
       const $el = $(el);
       const text = $el.text().trim();
 
-      // Extract plan name — first heading in the container
-      const nameEl = $el.find('h1, h2, h3, h4, h5, h6, [class*="name"], [class*="title"]').first();
-      const name = nameEl.text().trim() || 'Plan';
+      // Extract plan name — try specific selectors first, then fall back to headings
+      const nameSelectors = [
+        '[data-plan-name]',
+        '.plan-name',
+        '[class*="plan-name"]',
+        '[class*="plan__name"]',
+        '[class*="tier-name"]',
+        '[class*="pricing-header"] h2',
+        '[class*="pricing-header"] h3',
+        '[class*="pricing__title"]',
+        '[class*="price__title"]',
+        '[class*="card__title"]',
+        '[class*="card-title"]',
+        'h2',
+        'h3',
+        'h4',
+        '[class*="name"]',
+        '[class*="title"]',
+        'h1',
+        'h5',
+        'h6',
+      ];
+      let name = '';
+      for (const sel of nameSelectors) {
+        const candidate = $el.find(sel).first().text().trim();
+        if (candidate && candidate.toLowerCase() !== 'plan') {
+          name = candidate;
+          break;
+        }
+      }
+      if (!name) name = 'Plan';
 
       // Extract price
       const priceMatch = text.match(/(\$|€|£|free)\s*[\d,]+(\.\d+)?/i);
@@ -305,9 +333,17 @@ function parsePricingFromText($: CheerioAPI): PricingPlan[] {
   }
 
   // Simple heuristic: each unique price = 1 plan
+  // Try to find plan names from headings near price text
+  const headings: string[] = [];
+  $('h1, h2, h3, h4').each((_, el) => {
+    const text = $(el).text().trim();
+    if (text && text.toLowerCase() !== 'plan' && text.length < 60) headings.push(text);
+  });
   const uniquePrices = [...new Set(foundPrices)];
-  for (const p of uniquePrices) {
-    plans.push({ name: 'Plan', price: p, features: [] });
+  for (let i = 0; i < uniquePrices.length; i++) {
+    const p = uniquePrices[i];
+    const name = headings[i] || 'Plan';
+    plans.push({ name, price: p, features: [] });
   }
 
   return plans;
