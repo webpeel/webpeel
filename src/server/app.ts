@@ -43,6 +43,8 @@ import { createPlaygroundRouter } from './routes/playground.js';
 import { createReaderRouter } from './routes/reader.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
+import { createCrawlRouter } from './routes/crawl.js';
+import { createMapRouter } from './routes/map.js';
 import { createExtractRouter } from './routes/extract.js';
 import { createAgentRouter } from './routes/agent.js';
 import { createSessionRouter } from './routes/session.js';
@@ -270,6 +272,9 @@ export function createApp(config: ServerConfig = {}): Express {
 
   // Apply rate limiting middleware globally
   app.use(createRateLimitMiddleware(rateLimiter));
+  // First-class native routes (registered before compat so they take precedence)
+  app.use('/v1/crawl', createCrawlRouter(jobQueue));
+  app.use('/v1/map', createMapRouter());
   app.use(createCompatRouter(jobQueue));
   app.use(createSessionRouter());
   app.use(createExtractRouter());
