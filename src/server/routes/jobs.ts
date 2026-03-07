@@ -182,7 +182,7 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
       }
 
       // ── Regular async job path (backward compat) ─────────────────────────
-      const job = await jobQueue.createJob('crawl', webhook, ownerId);
+      const job = await jobQueue.createJob('crawl', normalizedWebhook, ownerId);
 
       // Start crawl in background
       setImmediate(async () => {
@@ -191,8 +191,8 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
           jobQueue.updateJob(job.id, { status: 'processing' });
 
           // Send started webhook
-          if (webhook) {
-            await sendWebhook(webhook, 'started', {
+          if (normalizedWebhook) {
+            await sendWebhook(normalizedWebhook, 'started', {
               jobId: job.id,
               url,
             });
@@ -212,8 +212,8 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
               });
 
               // Send page webhook
-              if (webhook && progress.currentUrl) {
-                sendWebhook(webhook, 'page', {
+              if (normalizedWebhook && progress.currentUrl) {
+                sendWebhook(normalizedWebhook, 'page', {
                   jobId: job.id,
                   url: progress.currentUrl,
                   completed: progress.crawled,
@@ -242,12 +242,15 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
             creditsUsed: results.length,
           });
 
-          // Send completed webhook
-          if (webhook) {
-            await sendWebhook(webhook, 'completed', {
+          // Send completed webhook and store delivery result
+          if (normalizedWebhook) {
+            const delivery = await sendWebhook(normalizedWebhook, 'completed', {
               jobId: job.id,
               total: results.length,
             });
+            if (delivery) {
+              jobQueue.updateJob(job.id, { webhookDelivery: delivery });
+            }
           }
         } catch (error: any) {
           // Update job with error
@@ -257,8 +260,8 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
           });
 
           // Send failed webhook
-          if (webhook) {
-            await sendWebhook(webhook, 'failed', {
+          if (normalizedWebhook) {
+            await sendWebhook(normalizedWebhook, 'failed', {
               jobId: job.id,
               error: error.message || 'Unknown error',
             });
@@ -381,6 +384,7 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
           data: job.data,
           error: job.error,
           expiresAt: job.expiresAt,
+          ...(job.webhookDelivery ? { webhook: job.webhookDelivery } : {}),
         });
       }
     } catch (error: any) {
@@ -506,6 +510,7 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
         limit,
         fetchDetails,
         timeout,
+        webhook: jobWebhook,
       } = req.body as {
         url?: string;
         keywords?: string;
@@ -514,6 +519,7 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
         limit?: number;
         fetchDetails?: number;
         timeout?: number;
+        webhook?: string | { url: string; events?: string[]; secret?: string };
       };
 
       // Must provide either url or keywords
@@ -622,6 +628,16 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
         data: result,
         creditsUsed,
       });
+
+      // Fire webhook after response (non-blocking, fire-and-forget)
+      if (jobWebhook) {
+        const webhookConfig = normalizeWebhook(jobWebhook as any, ['completed']);
+        sendWebhook(webhookConfig, 'completed', {
+          keywords: keywords || url,
+          total: Array.isArray((result as any).jobs) ? (result as any).jobs.length : 0,
+          data: result,
+        }).catch(() => {});
+      }
     } catch (error: any) {
       console.error('POST /v1/jobs error:', error);
       res.status(500).json({

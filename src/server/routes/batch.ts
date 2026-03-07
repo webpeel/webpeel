@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import { peel } from '../../index.js';
 import type { PeelOptions } from '../../index.js';
 import type { IJobQueue } from '../job-queue.js';
-import { sendWebhook } from './webhooks.js';
+import { sendWebhook, normalizeWebhook } from './webhooks.js';
 import { initSSE, sendSSE, endSSE, wantsSSE } from '../utils/sse.js';
 
 export function createBatchRouter(jobQueue: IJobQueue): Router {
@@ -87,7 +87,8 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
 
       // ── SSE streaming path ────────────────────────────────────────────────
       if (wantsSSE(req)) {
-        const job = await jobQueue.createJob('batch', webhook, ownerId);
+        const normalizedWebhook = webhook ? normalizeWebhook(webhook) : undefined;
+        const job = await jobQueue.createJob('batch', normalizedWebhook, ownerId);
         await jobQueue.updateJob(job.id, { total: urls.length });
 
         // Set SSE headers (X-Request-Id already set by global middleware)
@@ -225,7 +226,8 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
       }
 
       // ── Regular async job path (backward compat) ─────────────────────────
-      const job = await jobQueue.createJob('batch', webhook, ownerId);
+      const normalizedWebhook2 = webhook ? normalizeWebhook(webhook) : undefined;
+      const job = await jobQueue.createJob('batch', normalizedWebhook2, ownerId);
       await jobQueue.updateJob(job.id, {
         total: urls.length,
       });
@@ -237,8 +239,8 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
           jobQueue.updateJob(job.id, { status: 'processing' });
 
           // Send started webhook
-          if (webhook) {
-            await sendWebhook(webhook, 'started', {
+          if (normalizedWebhook2) {
+            await sendWebhook(normalizedWebhook2, 'started', {
               jobId: job.id,
               total: urls.length,
             });
@@ -289,8 +291,8 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
                   });
 
                   // Send page webhook
-                  if (webhook) {
-                    sendWebhook(webhook, 'page', {
+                  if (normalizedWebhook2) {
+                    sendWebhook(normalizedWebhook2, 'page', {
                       jobId: job.id,
                       url,
                       completed,
@@ -330,13 +332,16 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
             data: results,
           });
 
-          // Send completed webhook
-          if (webhook) {
-            await sendWebhook(webhook, 'completed', {
+          // Send completed webhook and store delivery result
+          if (normalizedWebhook2) {
+            const delivery = await sendWebhook(normalizedWebhook2, 'completed', {
               jobId: job.id,
               total: urls.length,
               completed: results.length,
             });
+            if (delivery) {
+              jobQueue.updateJob(job.id, { webhookDelivery: delivery });
+            }
           }
         } catch (error: any) {
           // Update job with error
@@ -346,8 +351,8 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
           });
 
           // Send failed webhook
-          if (webhook) {
-            await sendWebhook(webhook, 'failed', {
+          if (normalizedWebhook2) {
+            await sendWebhook(normalizedWebhook2, 'failed', {
               jobId: job.id,
               error: error.message || 'Unknown error',
             });
@@ -434,6 +439,7 @@ export function createBatchRouter(jobQueue: IJobQueue): Router {
         data: job.data,
         error: job.error,
         expiresAt: job.expiresAt,
+        ...(job.webhookDelivery ? { webhook: job.webhookDelivery } : {}),
       });
     } catch (error: any) {
       console.error('Get batch scrape error:', error);

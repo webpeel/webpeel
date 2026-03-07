@@ -18,6 +18,14 @@ export interface WebhookConfig {
   secret?: string; // For HMAC-SHA256 signing
 }
 
+export interface WebhookDeliveryResult {
+  url: string;
+  delivered: boolean;
+  deliveredAt?: string;
+  statusCode?: number;
+  error?: string;
+}
+
 export interface Job {
   id: string;
   type: 'crawl' | 'batch' | 'extract';
@@ -29,6 +37,7 @@ export interface Job {
   data: any[]; // Results array
   error?: string;
   webhook?: WebhookConfig;
+  webhookDelivery?: WebhookDeliveryResult; // Delivery status of the final webhook
   ownerId?: string; // User ID who created the job (for authorization)
   createdAt: string;
   updatedAt: string;

@@ -5,7 +5,7 @@
 
 import pg from 'pg';
 import { randomUUID } from 'crypto';
-import type { Job, WebhookConfig } from './job-queue.js';
+import type { Job, WebhookConfig, WebhookDeliveryResult } from './job-queue.js';
 
 const { Pool } = pg;
 
@@ -77,6 +77,7 @@ export class PostgresJobQueue {
       await this.pool.query(`
         DO $$ BEGIN
           ALTER TABLE jobs ADD COLUMN IF NOT EXISTS owner_id TEXT;
+          ALTER TABLE jobs ADD COLUMN IF NOT EXISTS webhook_delivery JSONB;
         EXCEPTION WHEN others THEN NULL;
         END $$;
       `);
@@ -235,6 +236,11 @@ export class PostgresJobQueue {
         values.push(update.error);
       }
 
+      if (update.webhookDelivery !== undefined) {
+        updates.push(`webhook_delivery = $${paramIndex++}`);
+        values.push(JSON.stringify(update.webhookDelivery));
+      }
+
       // Always update updated_at
       updates.push(`updated_at = $${paramIndex++}`);
       values.push(new Date());
@@ -388,6 +394,12 @@ export class PostgresJobQueue {
         }
       : undefined;
 
+    const webhookDelivery: WebhookDeliveryResult | undefined = row.webhook_delivery
+      ? (typeof row.webhook_delivery === 'string'
+          ? JSON.parse(row.webhook_delivery)
+          : row.webhook_delivery)
+      : undefined;
+
     return {
       id: row.id,
       type: row.type,
@@ -399,6 +411,7 @@ export class PostgresJobQueue {
       data: row.data || [],
       error: row.error || undefined,
       webhook,
+      webhookDelivery,
       ownerId: row.owner_id || undefined,
       createdAt: row.created_at.toISOString(),
       updatedAt: row.updated_at.toISOString(),
