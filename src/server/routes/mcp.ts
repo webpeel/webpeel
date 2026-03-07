@@ -989,6 +989,44 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
       return { content: [{ type: 'text', text: safeStringify({ destination, checkin, checkout, sources: result.sources, count: result.results.length, results: result.results.slice(0, limit) }) }] };
     }
 
+    // webpeel_act — page interaction (click, fill, scroll, screenshot)
+    if (name === 'webpeel_act') {
+      const url = args.url as string;
+      const actions = (args.actions as any[]) || [];
+      const extract = args.extract !== false;
+      const screenshot = Boolean(args.screenshot);
+
+      if (!url) return { content: [{ type: 'text', text: safeStringify({ error: 'url is required' }) }] };
+      if (!actions.length) return { content: [{ type: 'text', text: safeStringify({ error: 'actions array is required' }) }] };
+
+      const { peel } = await import('../../index.js');
+      const { normalizeActions } = await import('../../core/actions.js');
+      const normalized = normalizeActions(actions) || [];
+
+      const result = await peel(url, {
+        render: true,
+        actions: normalized,
+        screenshot,
+        format: 'markdown',
+        budget: 4000,
+        timeout: 25000,
+      });
+
+      return {
+        content: [{
+          type: 'text',
+          text: safeStringify({
+            url: result.url,
+            title: result.title,
+            content: extract ? result.content : undefined,
+            screenshot: result.screenshot,
+            method: result.method,
+            elapsed: result.elapsed,
+          }),
+        }],
+      };
+    }
+
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) {
     const err = error as Error;
