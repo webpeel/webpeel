@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebPeel Playground — Try it live, no signup required</title>
-  <meta name="description" content="Interactive playground for WebPeel. Fetch, search, crawl, and map the web with AI-friendly markdown output. No signup required — just paste a URL.">
+  <meta name="description" content="Interactive playground for WebPeel. Fetch any URL and get clean AI-ready markdown output. No signup required — just paste a URL.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://webpeel.dev/playground">
   <meta property="og:title" content="WebPeel Playground — Try it live">
-  <meta property="og:description" content="Interactive playground for WebPeel. Fetch, search, crawl, and map the web. No signup required.">
+  <meta property="og:description" content="Fetch any URL and get clean AI-ready markdown. No signup required.">
   <meta property="og:url" content="https://webpeel.dev/playground">
   <meta property="og:type" content="website">
-
   <meta property="og:image" content="https://webpeel.dev/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -21,10 +21,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  
+
   <!-- Markdown renderer -->
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
-  
+
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     :root {
@@ -77,7 +77,7 @@
 
     /* PLAYGROUND */
     .playground { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-    
+
     /* TABS */
     .tabs { display: flex; border-bottom: 1px solid var(--border); background: #FAFAFA; }
     .tab { padding: 14px 24px; font-size: 14px; font-weight: 500; color: var(--text-3); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; background: none; border-left: none; border-right: none; border-top: none; }
@@ -86,7 +86,7 @@
 
     /* INPUT PANEL */
     .input-panel { padding: 28px; border-bottom: 1px solid var(--border-light); }
-    .input-group { display: flex; gap: 12px; margin-bottom: 20px; }
+    .input-group { display: flex; gap: 12px; margin-bottom: 12px; }
     .input-wrapper { flex: 1; position: relative; }
     .input-wrapper input { width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; transition: all 0.2s; font-family: inherit; }
     .input-wrapper input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(24,24,27,0.1); }
@@ -98,19 +98,18 @@
     .btn-secondary { background: var(--border-light); color: var(--text); }
     .btn-secondary:hover:not(:disabled) { background: var(--border); }
 
-    .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
-    .option-group { display: flex; flex-direction: column; gap: 6px; }
-    .option-group label { font-size: 13px; font-weight: 500; color: var(--text-2); }
-    .option-group select, .option-group input[type="number"], .option-group input[type="text"], .option-group input[type="password"] { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; }
-    .option-group select:focus, .option-group input[type="number"]:focus, .option-group input[type="text"]:focus, .option-group input[type="password"]:focus { outline: none; border-color: var(--accent); }
-    .checkbox-group { display: flex; align-items: center; gap: 8px; }
-    .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    /* RATE LIMIT BAR */
+    .rate-limit-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); }
+    .rate-limit-bar .rate-pips { display: flex; gap: 3px; }
+    .rate-pip { width: 8px; height: 8px; border-radius: 50%; background: var(--green); transition: background 0.3s; }
+    .rate-pip.used { background: var(--border); }
+    .rate-pip.warning { background: var(--yellow); }
 
     /* RESULTS PANEL */
     .results-panel { padding: 28px; }
     .results-panel.empty { text-align: center; padding: 80px 28px; color: var(--text-3); }
     .results-panel.empty svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.3; }
-    
+
     .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
     .metric { background: var(--border-light); border-radius: 10px; padding: 16px 20px; }
     .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 6px; font-weight: 600; }
@@ -122,10 +121,10 @@
     .result-header h3 { font-size: 16px; font-weight: 600; }
     .result-actions { display: flex; gap: 8px; }
     .btn-small { padding: 6px 12px; font-size: 13px; border-radius: 6px; }
-    
+
     .result-content { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; max-height: 500px; overflow-y: auto; }
     .result-content.json { background: #18181B; color: #D4D4D8; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; overflow-x: auto; }
-    
+
     /* Markdown rendered output */
     .markdown-body { font-size: 15px; line-height: 1.7; color: var(--text-2); word-wrap: break-word; overflow-wrap: break-word; }
     .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 { margin-top: 24px; margin-bottom: 12px; font-weight: 600; line-height: 1.3; color: var(--text); }
@@ -189,6 +188,10 @@
     .error { background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 16px; color: #991B1B; }
     .error strong { display: block; margin-bottom: 4px; font-weight: 600; }
 
+    /* TRUNCATION BANNER */
+    .upgrade-banner { margin-top: 16px; padding: 14px 18px; background: var(--accent-light); border-radius: 8px; font-size: 14px; color: var(--text-2); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .upgrade-banner a { background: var(--accent); color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap; }
+
     /* FOOTER */
     footer { border-top: 1px solid var(--border); padding: 32px 0; margin-top: auto; }
     .footer-inner { display: flex; justify-content: space-between; align-items: center; }
@@ -206,10 +209,10 @@
       .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
       .tab { white-space: nowrap; }
       .input-group { flex-direction: column; }
-      .options { grid-template-columns: 1fr; }
       .metrics { grid-template-columns: repeat(2, 1fr); gap: 8px; }
       .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
       .footer-links { flex-direction: column; gap: 12px; }
+      .upgrade-banner { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
@@ -250,21 +253,18 @@
       <div class="playground">
         <!-- TABS -->
         <div class="tabs">
-          <button class="tab active" data-mode="scrape">Scrape</button>
+          <button class="tab active" data-mode="scrape">Fetch</button>
           <button class="tab" data-mode="search">Search</button>
-          <button class="tab" data-mode="answer">Answer</button>
-          <button class="tab" data-mode="crawl">Crawl</button>
-          <button class="tab" data-mode="map">Map</button>
         </div>
 
         <!-- INPUT PANEL -->
         <div class="input-panel">
           <div class="input-group">
             <div class="input-wrapper">
-              <input 
-                type="text" 
-                id="url-input" 
-                placeholder="https://example.com" 
+              <input
+                type="text"
+                id="url-input"
+                placeholder="https://example.com"
                 value="https://news.ycombinator.com"
               />
             </div>
@@ -274,64 +274,16 @@
             </button>
           </div>
 
-          <!-- OPTIONS (shown/hidden based on mode) -->
-          <div class="options" id="options-panel" style="display: none;">
-            <div class="option-group" id="format-option">
-              <label>Format</label>
-              <select id="format-select">
-                <option value="markdown">Markdown</option>
-                <option value="text">Plain Text</option>
-                <option value="html">HTML</option>
-              </select>
+          <!-- Rate limit indicator -->
+          <div class="rate-limit-bar" id="rate-limit-bar">
+            <div class="rate-pips" id="rate-pips">
+              <div class="rate-pip"></div><div class="rate-pip"></div><div class="rate-pip"></div>
+              <div class="rate-pip"></div><div class="rate-pip"></div><div class="rate-pip"></div>
+              <div class="rate-pip"></div><div class="rate-pip"></div><div class="rate-pip"></div>
+              <div class="rate-pip"></div>
             </div>
-            <div class="option-group" id="limit-option" style="display: none;">
-              <label>Page Limit</label>
-              <input type="number" id="limit-input" value="5" min="1" max="20" />
-            </div>
-            <div class="checkbox-group" id="render-option">
-              <input type="checkbox" id="render-checkbox" />
-              <label for="render-checkbox">Browser Rendering</label>
-            </div>
-            <div class="checkbox-group" id="stealth-option">
-              <input type="checkbox" id="stealth-checkbox" />
-              <label for="stealth-checkbox">Stealth Mode</label>
-            </div>
-
-            <!-- ANSWER OPTIONS -->
-            <div class="option-group" id="answer-search-provider-option" style="display: none;">
-              <label>Search Provider</label>
-              <select id="answer-search-provider-select">
-                <option value="duckduckgo">DuckDuckGo (default)</option>
-                <option value="brave">Brave (BYOK)</option>
-              </select>
-            </div>
-            <div class="option-group" id="answer-search-api-key-option" style="display: none;">
-              <label>Brave Search API Key</label>
-              <input type="password" id="answer-search-api-key-input" placeholder="BSA..." />
-            </div>
-            <div class="option-group" id="answer-llm-provider-option" style="display: none;">
-              <label>LLM Provider</label>
-              <select id="answer-llm-provider-select">
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="google">Google</option>
-              </select>
-            </div>
-            <div class="option-group" id="answer-llm-api-key-option" style="display: none;">
-              <label>LLM API Key (BYOK)</label>
-              <input type="password" id="answer-llm-api-key-input" placeholder="sk-..." />
-            </div>
-            <div class="option-group" id="answer-llm-model-option" style="display: none;">
-              <label>LLM Model (optional)</label>
-              <input type="text" id="answer-llm-model-input" placeholder="(provider default)" />
-            </div>
-            <div class="option-group" id="answer-max-sources-option" style="display: none;">
-              <label>Max Sources</label>
-              <input type="number" id="answer-max-sources-input" value="5" min="1" max="10" />
-            </div>
-          </div>
-          <div id="answer-note" style="display: none; margin-top: 12px; font-size: 12px; color: var(--text-3);">
-            BYOK: keys are only used for this request and are never stored.
+            <span id="rate-limit-text">10/10 free tries remaining</span>
+            <span style="font-size: 11px; opacity: 0.6;">· No signup needed</span>
           </div>
         </div>
 
@@ -344,6 +296,21 @@
           </svg>
           <p>Enter a URL and click Run to get started</p>
         </div>
+      </div>
+
+      <!-- UPGRADE CTA -->
+      <div style="margin-top: 40px; padding: 32px; background: white; border: 1px solid var(--border); border-radius: var(--radius); text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <h2 style="font-family: 'Instrument Serif', serif; font-size: 28px; font-weight: 400; margin-bottom: 10px; letter-spacing: -0.02em;">Want the full experience?</h2>
+        <p style="color: var(--text-2); font-size: 15px; max-width: 520px; margin: 0 auto 24px;">Get a <strong>free API key</strong> for unlimited fetches, browser rendering, stealth mode, screenshots, LLM extraction, crawling, and more.</p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a href="https://app.webpeel.dev/signup" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #18181B; color: white; border-radius: 10px; font-size: 15px; font-weight: 600; text-decoration: none;">
+            Get free API key →
+          </a>
+          <a href="/docs/" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: var(--border-light); color: var(--text); border-radius: 10px; font-size: 15px; font-weight: 500; text-decoration: none;">
+            Read the docs
+          </a>
+        </div>
+        <p style="margin-top: 16px; font-size: 13px; color: var(--text-4);">No credit card required. Free tier: 500 requests/month.</p>
       </div>
     </div>
   </main>
@@ -368,45 +335,23 @@
   </footer>
 
   <script>
-    // State
+    // ── State ──────────────────────────────────────────────────────────────────
     let currentMode = 'scrape';
     let lastRequest = null;
     let lastResponse = null;
     let lastRenderedMarkdown = '';
     let lastRenderedJson = '';
+    let rateLimitRemaining = 10;
 
-    // DOM elements
+    // ── DOM elements ───────────────────────────────────────────────────────────
     const tabs = document.querySelectorAll('.tab');
     const urlInput = document.getElementById('url-input');
     const runBtn = document.getElementById('run-btn');
     const resultsPanel = document.getElementById('results-panel');
-    const optionsPanel = document.getElementById('options-panel');
-    const formatOption = document.getElementById('format-option');
-    const limitOption = document.getElementById('limit-option');
-    const renderOption = document.getElementById('render-option');
-    const stealthOption = document.getElementById('stealth-option');
-    const formatSelect = document.getElementById('format-select');
-    const limitInput = document.getElementById('limit-input');
-    const renderCheckbox = document.getElementById('render-checkbox');
-    const stealthCheckbox = document.getElementById('stealth-checkbox');
+    const rateLimitText = document.getElementById('rate-limit-text');
+    const ratePips = document.getElementById('rate-pips');
 
-    // Answer mode elements
-    const answerSearchProviderOption = document.getElementById('answer-search-provider-option');
-    const answerSearchApiKeyOption = document.getElementById('answer-search-api-key-option');
-    const answerLlmProviderOption = document.getElementById('answer-llm-provider-option');
-    const answerLlmApiKeyOption = document.getElementById('answer-llm-api-key-option');
-    const answerLlmModelOption = document.getElementById('answer-llm-model-option');
-    const answerMaxSourcesOption = document.getElementById('answer-max-sources-option');
-    const answerNote = document.getElementById('answer-note');
-
-    const answerSearchProviderSelect = document.getElementById('answer-search-provider-select');
-    const answerSearchApiKeyInput = document.getElementById('answer-search-api-key-input');
-    const answerLlmProviderSelect = document.getElementById('answer-llm-provider-select');
-    const answerLlmApiKeyInput = document.getElementById('answer-llm-api-key-input');
-    const answerLlmModelInput = document.getElementById('answer-llm-model-input');
-    const answerMaxSourcesInput = document.getElementById('answer-max-sources-input');
-
-    // Tab switching
+    // ── Tab switching ──────────────────────────────────────────────────────────
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
         tabs.forEach(t => t.classList.remove('active'));
@@ -416,77 +361,49 @@
       });
     });
 
-    // Answer provider switching
-    answerSearchProviderSelect.addEventListener('change', () => {
-      answerSearchApiKeyOption.style.display = answerSearchProviderSelect.value === 'brave' ? 'flex' : 'none';
-    });
-
-    // Update UI based on mode
+    // ── Update UI based on mode ────────────────────────────────────────────────
     function updateUI() {
-      // Update placeholder
       if (currentMode === 'search') {
         urlInput.placeholder = 'Enter search query...';
-        urlInput.value = 'latest AI frameworks 2026';
-      } else if (currentMode === 'answer') {
-        urlInput.placeholder = 'Ask a question...';
-        urlInput.value = 'What is MCP and why does it matter for AI agents?';
+        if (!urlInput.value || urlInput.value === 'https://news.ycombinator.com') {
+          urlInput.value = 'best web scraping tools 2026';
+        }
       } else {
         urlInput.placeholder = 'https://example.com';
-        if (urlInput.value === 'latest AI frameworks 2026' || urlInput.value === 'What is MCP and why does it matter for AI agents?') {
+        if (!urlInput.value || urlInput.value === 'best web scraping tools 2026') {
           urlInput.value = 'https://news.ycombinator.com';
         }
       }
+    }
 
-      // Default: hide answer options
-      answerSearchProviderOption.style.display = 'none';
-      answerSearchApiKeyOption.style.display = 'none';
-      answerLlmProviderOption.style.display = 'none';
-      answerLlmApiKeyOption.style.display = 'none';
-      answerLlmModelOption.style.display = 'none';
-      answerMaxSourcesOption.style.display = 'none';
-      answerNote.style.display = 'none';
-
-      // Show/hide options
-      if (currentMode === 'scrape') {
-        optionsPanel.style.display = 'grid';
-        formatOption.style.display = 'flex';
-        limitOption.style.display = 'none';
-        renderOption.style.display = 'flex';
-        stealthOption.style.display = 'flex';
-      } else if (currentMode === 'search') {
-        optionsPanel.style.display = 'none';
-      } else if (currentMode === 'answer') {
-        optionsPanel.style.display = 'grid';
-        formatOption.style.display = 'none';
-        limitOption.style.display = 'none';
-        renderOption.style.display = 'none';
-        stealthOption.style.display = 'none';
-
-        answerSearchProviderOption.style.display = 'flex';
-        answerLlmProviderOption.style.display = 'flex';
-        answerLlmApiKeyOption.style.display = 'flex';
-        answerLlmModelOption.style.display = 'flex';
-        answerMaxSourcesOption.style.display = 'flex';
-        answerSearchApiKeyOption.style.display = answerSearchProviderSelect.value === 'brave' ? 'flex' : 'none';
-        answerNote.style.display = 'block';
-      } else if (currentMode === 'crawl' || currentMode === 'map') {
-        optionsPanel.style.display = 'grid';
-        formatOption.style.display = 'none';
-        limitOption.style.display = 'flex';
-        renderOption.style.display = 'none';
-        stealthOption.style.display = 'none';
-        limitInput.value = currentMode === 'crawl' ? 5 : 10;
+    // ── Rate limit display ─────────────────────────────────────────────────────
+    function updateRateLimitDisplay(remaining) {
+      rateLimitRemaining = remaining;
+      if (rateLimitText) {
+        rateLimitText.textContent = `${remaining}/10 free tries remaining`;
+        rateLimitText.style.color = remaining <= 2 ? 'var(--red)' : 'var(--text-3)';
+      }
+      // Update pips
+      if (ratePips) {
+        const pips = ratePips.querySelectorAll('.rate-pip');
+        pips.forEach((pip, i) => {
+          pip.classList.remove('used', 'warning');
+          const usedCount = 10 - remaining;
+          if (i < usedCount) {
+            pip.classList.add(remaining <= 2 ? 'warning' : 'used');
+          }
+        });
       }
     }
 
-    // Run button
+    // ── Run button ─────────────────────────────────────────────────────────────
     runBtn.addEventListener('click', async () => {
       const input = urlInput.value.trim();
       if (!input) return;
 
       runBtn.disabled = true;
       runBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0; border-width: 2px;"></div> Running...';
-      
+
       // Show loading state
       resultsPanel.classList.remove('empty');
       resultsPanel.innerHTML = '<div class="spinner"></div>';
@@ -496,103 +413,57 @@
         let response, requestData;
 
         if (currentMode === 'scrape') {
-          const url = new URL('https://api.webpeel.dev/v1/fetch');
+          const url = new URL('https://api.webpeel.dev/v1/playground');
           url.searchParams.set('url', input);
-          url.searchParams.set('format', formatSelect.value);
-          if (renderCheckbox.checked) url.searchParams.set('render', 'true');
-          if (stealthCheckbox.checked) url.searchParams.set('stealth', 'true');
 
-          requestData = {
-            method: 'GET',
-            url: url.toString()
-          };
-
+          requestData = { method: 'GET', url: url.toString() };
           response = await fetch(url);
         } else if (currentMode === 'search') {
-          const url = new URL('https://api.webpeel.dev/v1/search');
+          const url = new URL('https://api.webpeel.dev/v1/playground/search');
           url.searchParams.set('q', input);
 
-          requestData = {
-            method: 'GET',
-            url: url.toString()
-          };
-
+          requestData = { method: 'GET', url: url.toString() };
           response = await fetch(url);
-        } else if (currentMode === 'answer') {
-          const url = 'https://api.webpeel.dev/v1/answer';
-          const llmApiKey = (answerLlmApiKeyInput.value || '').trim();
-
-          if (!llmApiKey) {
-            throw new Error('LLM API key is required for Answer mode (BYOK).');
-          }
-
-          const body = {
-            question: input,
-            llmProvider: answerLlmProviderSelect.value,
-            llmApiKey: llmApiKey,
-            searchProvider: answerSearchProviderSelect.value,
-            maxSources: parseInt(answerMaxSourcesInput.value || '5', 10),
-            stream: false
-          };
-
-          const llmModel = (answerLlmModelInput.value || '').trim();
-          if (llmModel) body.llmModel = llmModel;
-
-          if (body.searchProvider === 'brave') {
-            const searchKey = (answerSearchApiKeyInput.value || '').trim();
-            if (searchKey) body.searchApiKey = searchKey;
-          }
-
-          requestData = {
-            method: 'POST',
-            url: url,
-            body: body
-          };
-
-          response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
-        } else if (currentMode === 'crawl' || currentMode === 'map') {
-          const url = 'https://api.webpeel.dev/v1/crawl';
-          const body = {
-            url: input,
-            limit: parseInt(limitInput.value)
-          };
-
-          requestData = {
-            method: 'POST',
-            url: url,
-            body: body
-          };
-
-          response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
         }
 
         const endTime = Date.now();
         const responseTime = endTime - startTime;
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const data = await response.json();
+
+        // Handle rate limit
+        if (response.status === 429) {
+          updateRateLimitDisplay(0);
+          resultsPanel.innerHTML = `
+            <div class="error">
+              <strong>Rate limit reached</strong>
+              ${escapeHtml(data?.error?.message || 'Too many requests (10 per 15 min)')}
+              <div style="margin-top: 14px;">
+                <a href="https://app.webpeel.dev/signup" style="display: inline-flex; background: #18181B; color: white; padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none;">Get a free API key →</a>
+              </div>
+            </div>
+          `;
+          return;
         }
 
-        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // Update rate limit display
+        if (typeof data.rateLimitRemaining === 'number') {
+          updateRateLimitDisplay(data.rateLimitRemaining);
+        }
+
         lastRequest = requestData;
         lastResponse = data;
-
-        // Display results
         displayResults(data, responseTime);
 
       } catch (error) {
         resultsPanel.innerHTML = `
           <div class="error">
             <strong>Error</strong>
-            ${error.message}
+            ${escapeHtml(error.message)}
           </div>
         `;
       } finally {
@@ -601,29 +472,16 @@
       }
     });
 
+    // ── Parse search results ───────────────────────────────────────────────────
     function getSearchResults(payload) {
-      // Support multiple API shapes:
-      // - { results: [...] }
-      // - { data: { web: [...] } } (current /v1/search)
-      // - { data: { results: [...] } }
-      // - { data: { results: { web: [...] } } }
-      const container =
-        payload?.data?.data ||
-        payload?.data ||
-        payload ||
-        {};
-
+      // Playground /v1/playground/search returns { results: [...] }
       const candidates = [
-        container?.results,
-        container?.web,
-        container?.items,
-        container?.results?.web,
-        container?.results?.items,
-        container?.web?.results
+        payload?.results,
+        payload?.data?.results,
+        payload?.data?.web,
+        payload?.data?.items,
       ];
-
       const raw = candidates.find(Array.isArray) || [];
-
       return raw
         .map(r => ({
           title: r?.title || r?.name || '',
@@ -633,37 +491,34 @@
         .filter(r => (r.url && /^https?:\/\//.test(r.url)) || r.title || r.snippet);
     }
 
-    // Display results
+    // ── Display results ────────────────────────────────────────────────────────
     function displayResults(data, responseTime) {
-      // Default to the formatted/markdown view for each new response.
       showingJSON = false;
       lastRenderedJson = JSON.stringify(data, null, 2);
 
       const searchResults = currentMode === 'search' ? getSearchResults(data) : null;
-
       let metrics = '';
 
-      // Build metrics
       if (currentMode === 'scrape') {
         const tokens = data.tokens || 0;
-        const quality = data.quality || 0;
+        const elapsed = data.elapsed || responseTime;
         metrics = `
           <div class="metrics">
             <div class="metric">
               <div class="metric-label">Response Time</div>
-              <div class="metric-value success">${responseTime}ms</div>
+              <div class="metric-value success">${elapsed}ms</div>
             </div>
             <div class="metric">
               <div class="metric-label">Tokens</div>
               <div class="metric-value">${tokens.toLocaleString()}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Quality Score</div>
-              <div class="metric-value ${quality > 0.7 ? 'success' : 'warning'}">${(quality * 100).toFixed(0)}%</div>
+              <div class="metric-label">Method</div>
+              <div class="metric-value">${escapeHtml(String(data.method || 'HTTP'))}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Mode</div>
-              <div class="metric-value">${data.mode || 'HTTP'}</div>
+              <div class="metric-label">Content</div>
+              <div class="metric-value ${data.truncated ? 'warning' : 'success'}">${data.truncated ? 'Truncated' : 'Full'}</div>
             </div>
           </div>
         `;
@@ -673,7 +528,7 @@
           <div class="metrics">
             <div class="metric">
               <div class="metric-label">Response Time</div>
-              <div class="metric-value success">${responseTime}ms</div>
+              <div class="metric-value success">${data.elapsed || responseTime}ms</div>
             </div>
             <div class="metric">
               <div class="metric-label">Results</div>
@@ -681,51 +536,12 @@
             </div>
           </div>
         `;
-      } else if (currentMode === 'answer') {
-        const citations = Array.isArray(data.citations) ? data.citations : [];
-        metrics = `
-          <div class="metrics">
-            <div class="metric">
-              <div class="metric-label">Response Time</div>
-              <div class="metric-value success">${responseTime}ms</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">Sources</div>
-              <div class="metric-value">${citations.length}</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">Search</div>
-              <div class="metric-value">${escapeHtml((data.searchProvider || 'duckduckgo').toString())}</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">LLM</div>
-              <div class="metric-value">${escapeHtml((data.llmProvider || '').toString() || 'BYOK')}</div>
-            </div>
-          </div>
-        `;
-      } else if (currentMode === 'crawl' || currentMode === 'map') {
-        metrics = `
-          <div class="metrics">
-            <div class="metric">
-              <div class="metric-label">Response Time</div>
-              <div class="metric-value success">${responseTime}ms</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">Pages Crawled</div>
-              <div class="metric-value">${data.pages?.length || 0}</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">Total Tokens</div>
-              <div class="metric-value">${(data.totalTokens || 0).toLocaleString()}</div>
-            </div>
-          </div>
-        `;
       }
 
-      // Result content
+      // Result header with toggle/copy
       const resultHeader = `
         <div class="result-header">
-          <h3>Result</h3>
+          <h3>${escapeHtml(currentMode === 'scrape' ? (data.title || 'Result') : 'Search Results')}</h3>
           <div class="result-actions">
             <button class="btn btn-secondary btn-small" onclick="toggleView()">
               <span id="view-toggle-text">Show JSON</span>
@@ -742,6 +558,12 @@
       if (currentMode === 'scrape') {
         const markdown = data.content || data.markdown || '';
         lastRenderedMarkdown = markdown;
+        const upgradeBanner = data.truncated ? `
+          <div class="upgrade-banner">
+            <span>📄 Content truncated to 5,000 chars. Full content available with a free API key.</span>
+            <a href="https://app.webpeel.dev/signup">Get free key →</a>
+          </div>
+        ` : '';
         resultContent = `
           <div class="result-content markdown-body" id="result-markdown">
             ${marked.parse(markdown)}
@@ -749,68 +571,25 @@
           <div class="result-content json" id="result-json" style="display: none;">
             <pre>${escapeHtml(lastRenderedJson)}</pre>
           </div>
+          ${upgradeBanner}
         `;
       } else if (currentMode === 'search') {
-        const results = searchResults || getSearchResults(data);
-
+        const results = searchResults || [];
         const itemsMd = results
           .map((r, i) => {
             const title = escapeMarkdownText(r.title || r.url || `Result ${i + 1}`);
             const url = (r.url || '').trim();
             const hasUrl = url && /^https?:\/\//.test(url);
             const snippet = escapeMarkdownText(r.snippet || '');
-
             const lines = [hasUrl ? `- [${title}](<${url}>)` : `- ${title}`];
             if (hasUrl) lines.push(`  - URL: <${url}>`);
             if (snippet) lines.push(`  - ${snippet}`);
             return lines.join('\n');
           })
           .join('\n');
-
         const markdown = results.length
-          ? `## Search Results (${results.length.toLocaleString()})\n\n${itemsMd}`
+          ? `## Search Results (${results.length})\n\n${itemsMd}`
           : `## Search Results\n\n_No results found._`;
-
-        lastRenderedMarkdown = markdown;
-
-        resultContent = `
-          <div class="result-content markdown-body" id="result-markdown">
-            ${marked.parse(markdown)}
-          </div>
-          <div class="result-content json" id="result-json" style="display: none;">
-            <pre>${escapeHtml(lastRenderedJson)}</pre>
-          </div>
-        `;
-      } else if (currentMode === 'answer') {
-        const answer = data.answer || '';
-        const citations = Array.isArray(data.citations) ? data.citations : [];
-        const sourcesMd = citations.length
-          ? citations
-              .map((c, i) => {
-                const title = c?.title || c?.url || `Source ${i + 1}`;
-                const url = c?.url || '';
-                const snippet = c?.snippet ? ` — ${c.snippet}` : '';
-                return `${i + 1}. [${title}](${url})${snippet}`;
-              })
-              .join('\n')
-          : '_No citations returned._';
-
-        const markdown = `${answer}\n\n---\n\n## Sources\n\n${sourcesMd}`;
-        lastRenderedMarkdown = markdown;
-
-        resultContent = `
-          <div class="result-content markdown-body" id="result-markdown">
-            ${marked.parse(markdown)}
-          </div>
-          <div class="result-content json" id="result-json" style="display: none;">
-            <pre>${escapeHtml(lastRenderedJson)}</pre>
-          </div>
-        `;
-      } else if (currentMode === 'crawl' || currentMode === 'map') {
-        const pages = data.pages || [];
-        const markdown = pages.map((p, i) => 
-          `### ${i + 1}. ${p.title || p.url}\n\n${p.url}\n\n${currentMode === 'crawl' ? (p.content?.substring(0, 200) + '...' || '') : ''}`
-        ).join('\n\n---\n\n');
         lastRenderedMarkdown = markdown;
         resultContent = `
           <div class="result-content markdown-body" id="result-markdown">
@@ -822,20 +601,18 @@
         `;
       }
 
-      // Code generation
+      // Code examples
       const codeGen = generateCode();
-
       resultsPanel.innerHTML = metrics + resultHeader + resultContent + codeGen;
     }
 
-    // Toggle view (markdown/JSON)
+    // ── Toggle view (markdown/JSON) ────────────────────────────────────────────
     let showingJSON = false;
     function toggleView() {
       showingJSON = !showingJSON;
       const markdown = document.getElementById('result-markdown');
       const json = document.getElementById('result-json');
       const toggleText = document.getElementById('view-toggle-text');
-      
       if (showingJSON) {
         markdown.style.display = 'none';
         json.style.display = 'block';
@@ -847,37 +624,32 @@
       }
     }
 
-    // Copy result
+    // ── Copy result ────────────────────────────────────────────────────────────
     function copyResult() {
       const fallback = JSON.stringify(lastResponse, null, 2);
       const text = showingJSON
         ? (lastRenderedJson || fallback)
-        : (lastRenderedMarkdown || lastResponse?.content || lastResponse?.markdown || lastResponse?.answer || fallback);
-
+        : (lastRenderedMarkdown || lastResponse?.content || lastResponse?.markdown || fallback);
       navigator.clipboard.writeText(text).then(() => {
         const btn = event.target.closest('button');
         const originalHTML = btn.innerHTML;
         btn.innerHTML = '✓ Copied!';
-        setTimeout(() => {
-          btn.innerHTML = originalHTML;
-        }, 2000);
+        setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
       });
     }
 
-    // Generate code examples
+    // ── Code generation ────────────────────────────────────────────────────────
     function generateCode() {
       if (!lastRequest) return '';
-
       const examples = {
         curl: generateCurl(),
         node: generateNode(),
         python: generatePython(),
         cli: generateCLI()
       };
-
       return `
         <div class="code-gen">
-          <h4>Code Examples</h4>
+          <h4>Use with a free API key</h4>
           <div class="code-tabs">
             <button class="code-tab active" onclick="switchCodeTab('curl')">cURL</button>
             <button class="code-tab" onclick="switchCodeTab('node')">Node.js</button>
@@ -904,150 +676,82 @@
       `;
     }
 
-    function redactSecrets(body) {
-      if (!body || typeof body !== 'object') return body;
-      const cloned = JSON.parse(JSON.stringify(body));
-      if (cloned.llmApiKey) cloned.llmApiKey = '<YOUR_LLM_API_KEY>';
-      if (cloned.searchApiKey) cloned.searchApiKey = '<YOUR_SEARCH_API_KEY>';
-      return cloned;
-    }
-
     function generateCurl() {
+      const input = urlInput.value;
       if (currentMode === 'scrape') {
-        return `curl '${lastRequest.url}'`;
-      } else if (currentMode === 'search') {
-        return `curl '${lastRequest.url}'`;
+        return `curl 'https://api.webpeel.dev/v1/fetch?url=${encodeURIComponent(input)}' \\
+  -H 'Authorization: Bearer YOUR_API_KEY'`;
       } else {
-        return `curl -X POST '${lastRequest.url}' \\
-  -H 'Content-Type: application/json' \\
-  -d '${JSON.stringify(currentMode === 'answer' ? redactSecrets(lastRequest.body) : lastRequest.body)}'`;
+        return `curl 'https://api.webpeel.dev/v1/search?q=${encodeURIComponent(input)}' \\
+  -H 'Authorization: Bearer YOUR_API_KEY'`;
       }
     }
 
     function generateNode() {
+      const input = urlInput.value;
       if (currentMode === 'scrape') {
-        const url = urlInput.value;
-        const options = [];
-        if (renderCheckbox.checked) options.push('render: true');
-        if (stealthCheckbox.checked) options.push('stealth: true');
-        if (formatSelect.value !== 'markdown') options.push(`format: '${formatSelect.value}'`);
-        
         return `import { peel } from 'webpeel';
 
-const result = await peel('${url}'${options.length ? ', {\n  ' + options.join(',\n  ') + '\n}' : ''});
+// Get a free API key: https://app.webpeel.dev
+const result = await peel('${input}');
 console.log(result.content);`;
-      } else if (currentMode === 'search') {
-        return `// Search not available in Node SDK yet
-// Use the API endpoint:
-const response = await fetch('${lastRequest.url}');
-const data = await response.json();
-console.log(data);`;
-      } else if (currentMode === 'answer') {
-        return `// POST /v1/answer — BYOK
-const response = await fetch('https://api.webpeel.dev/v1/answer', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(${JSON.stringify(redactSecrets(lastRequest?.body), null, 2)})
-});
-const data = await response.json();
-console.log(data.answer);
-console.log(data.citations);`;
       } else {
-        return `import { crawl } from 'webpeel';
-
-const result = await crawl({
-  url: '${urlInput.value}',
-  limit: ${limitInput.value}
+        return `// Get a free API key: https://app.webpeel.dev
+const resp = await fetch('https://api.webpeel.dev/v1/search?q=${encodeURIComponent(input)}', {
+  headers: { Authorization: 'Bearer YOUR_API_KEY' }
 });
-console.log(result.pages);`;
+const data = await resp.json();
+console.log(data.results);`;
       }
     }
 
     function generatePython() {
+      const input = urlInput.value;
       if (currentMode === 'scrape') {
-        const url = urlInput.value;
-        const options = [];
-        if (renderCheckbox.checked) options.push('render=True');
-        if (stealthCheckbox.checked) options.push('stealth=True');
-        if (formatSelect.value !== 'markdown') options.push(`format='${formatSelect.value}'`);
-        
         return `from webpeel import WebPeel
 
-client = WebPeel()
-result = client.scrape('${url}'${options.length ? ', ' + options.join(', ') : ''})
+# Get a free API key: https://app.webpeel.dev
+client = WebPeel(api_key='YOUR_API_KEY')
+result = client.scrape('${input}')
 print(result.content)`;
-      } else if (currentMode === 'search') {
-        return `# Search not available in Python SDK yet
-# Use the API endpoint:
-import requests
-
-response = requests.get('${lastRequest.url}')
-data = response.json()
-print(data)`;
-      } else if (currentMode === 'answer') {
+      } else {
         return `import requests
 
-response = requests.post('https://api.webpeel.dev/v1/answer', json=${JSON.stringify(redactSecrets(lastRequest?.body), null, 2).replace(/"/g, "'").replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')})
-data = response.json()
-print(data['answer'])
-print(data['citations'])`;
-      } else {
-        return `from webpeel import WebPeel
-
-client = WebPeel()
-result = client.crawl(
-    url='${urlInput.value}',
-    limit=${limitInput.value}
+# Get a free API key: https://app.webpeel.dev
+resp = requests.get(
+    'https://api.webpeel.dev/v1/search',
+    params={'q': '${input.replace(/'/g, "\\'")}'},
+    headers={'Authorization': 'Bearer YOUR_API_KEY'}
 )
-print(result['pages'])`;
+print(resp.json()['results'])`;
       }
     }
 
     function generateCLI() {
+      const input = urlInput.value;
       if (currentMode === 'scrape') {
-        const url = urlInput.value;
-        const flags = [];
-        if (renderCheckbox.checked) flags.push('--render');
-        if (stealthCheckbox.checked) flags.push('--stealth');
-        if (formatSelect.value !== 'markdown') flags.push(`--format ${formatSelect.value}`);
-        
-        return `webpeel "${url}"${flags.length ? ' ' + flags.join(' ') : ''}`;
-      } else if (currentMode === 'search') {
-        return `webpeel search "${urlInput.value}"`;
-      } else if (currentMode === 'answer') {
-        const flags = [`--llm ${answerLlmProviderSelect.value}`, '--llm-api-key <YOUR_LLM_API_KEY>'];
-        if (answerSearchProviderSelect.value === 'brave') {
-          flags.push('--provider brave', '--search-api-key <YOUR_SEARCH_API_KEY>');
-        }
-        const model = (answerLlmModelInput.value || '').trim();
-        if (model) flags.push(`--llm-model ${model}`);
-        flags.push(`--max-sources ${answerMaxSourcesInput.value || 5}`);
-        return `webpeel answer "${urlInput.value}" ${flags.join(' ')}`;
+        return `# npm install -g webpeel  →  https://app.webpeel.dev
+webpeel "${input}"`;
       } else {
-        return `webpeel crawl "${urlInput.value}" --limit ${limitInput.value}`;
+        return `# npm install -g webpeel  →  https://app.webpeel.dev
+webpeel search "${input}"`;
       }
     }
 
     function switchCodeTab(lang) {
       document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
       event.target.classList.add('active');
-      
       document.querySelectorAll('.code-block').forEach(b => b.style.display = 'none');
       document.getElementById('code-' + lang).style.display = 'block';
     }
 
     function copyCode(lang) {
       const codeBlock = document.querySelector('#code-' + lang + ' pre');
-      const text = codeBlock.textContent;
-      
-      navigator.clipboard.writeText(text).then(() => {
+      navigator.clipboard.writeText(codeBlock.textContent).then(() => {
         const btn = event.target;
         btn.textContent = '✓ Copied!';
         btn.classList.add('copied');
-        setTimeout(() => {
-          btn.textContent = 'Copy';
-          btn.classList.remove('copied');
-        }, 2000);
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
       });
     }
 
@@ -1058,25 +762,21 @@ print(result['pages'])`;
     }
 
     function escapeMarkdownText(text) {
-      const cleaned = String(text || '')
+      return String(text || '')
         .replace(/<[^>]*>/g, '')
         .replace(/\s+/g, ' ')
         .trim()
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-      // Keep this minimal: we want readable markdown, but no accidental formatting.
-      return cleaned.replace(/([\\`*_\[\]()])/g, '\\$1');
+        .replace(/>/g, '&gt;')
+        .replace(/([\\`*_\[\]()])/g, '\\$1');
     }
 
-    // Enter key to run
+    // ── Enter key to run ───────────────────────────────────────────────────────
     urlInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        runBtn.click();
-      }
+      if (e.key === 'Enter') runBtn.click();
     });
 
-    // Initialize
+    // ── Initialize ─────────────────────────────────────────────────────────────
     updateUI();
   </script>
 
