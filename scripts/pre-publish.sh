@@ -2,7 +2,8 @@
 # Pre-publish gate — run this before every npm publish
 # Catches: build errors, test failures, MCP sync issues, CLI DX regressions, live API failures
 
-set -euo pipefail
+set -uo pipefail
+# Note: NOT using set -e because grep returns 1 on no-match, which is expected
 
 ERRORS=0
 STEP=0
