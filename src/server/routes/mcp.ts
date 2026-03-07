@@ -1027,6 +1027,167 @@ async function handleToolCall(name: string, args: Record<string, unknown>, pool?
       };
     }
 
+    // ── Consolidated tools (route to existing specific handlers) ──
+    // These are the 7 new public tools that map to the 20+ legacy handlers.
+
+    // webpeel_read → webpeel_fetch (with YouTube auto-detect)
+    if (name === 'webpeel_read') {
+      const url = args.url as string;
+      if (!url) return { content: [{ type: 'text', text: safeStringify({ error: 'url is required' }) }] };
+
+      // YouTube auto-detect
+      const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+      if (ytMatch) {
+        // Route to YouTube handler
+        const { getYouTubeTranscript } = await import('../../core/youtube.js');
+        const transcript = await getYouTubeTranscript(url, { language: (args.language as string) || 'en' });
+        return { content: [{ type: 'text', text: safeStringify(transcript) }] };
+      }
+
+      // Standard fetch
+      const { peel } = await import('../../index.js');
+      const result = await peel(url, {
+        render: Boolean(args.render),
+        format: ((args.format as string) || 'markdown') as 'markdown' | 'html' | 'text' | 'clean',
+        budget: (args.budget as number) || 4000,
+        readable: Boolean(args.readable),
+        summary: Boolean(args.summary),
+        timeout: 30000,
+      });
+
+      const response: Record<string, unknown> = {
+        url: result.url,
+        title: result.title,
+        content: result.content,
+        tokens: result.tokens,
+        method: result.method,
+        elapsed: result.elapsed,
+      };
+      if (args.question && result.content) {
+        const { quickAnswer } = await import('../../core/quick-answer.js');
+        const qa = quickAnswer({ content: result.content, question: args.question as string, url: result.url });
+        response.answer = qa.answer;
+        response.confidence = qa.confidence;
+      }
+      if (args.summary && result.content) {
+        response.summary = result.content.slice(0, 500);
+      }
+      return { content: [{ type: 'text', text: safeStringify(response) }] };
+    }
+
+    // webpeel_see → screenshot / design analysis / design compare
+    if (name === 'webpeel_see') {
+      const url = args.url as string;
+      if (!url) return { content: [{ type: 'text', text: safeStringify({ error: 'url is required' }) }] };
+
+      const mode = (args.mode as string) || 'screenshot';
+      const compareUrl = args.compare_url as string | undefined;
+
+      // Resolve viewport
+      let width = 1280, height = 720;
+      if (args.viewport === 'mobile') { width = 390; height = 844; }
+      else if (args.viewport === 'tablet') { width = 768; height = 1024; }
+      else if (args.viewport && typeof args.viewport === 'object') {
+        const vp = args.viewport as { width?: number; height?: number };
+        width = vp.width ?? 1280;
+        height = vp.height ?? 720;
+      }
+
+      if (mode === 'design') {
+        const { takeDesignAnalysis } = await import('../../core/screenshot.js');
+        const analysis = await takeDesignAnalysis(url, { width, height });
+        return { content: [{ type: 'text', text: safeStringify(analysis) }] };
+      }
+
+      if (mode === 'compare' && compareUrl) {
+        const { takeDesignComparison } = await import('../../core/screenshot.js');
+        const comparison = await takeDesignComparison(url, compareUrl, {});
+        return { content: [{ type: 'text', text: safeStringify(comparison) }] };
+      }
+
+      // Default: screenshot
+      const { peel } = await import('../../index.js');
+      const result = await peel(url, {
+        render: true,
+        screenshot: true,
+        fullPage: Boolean(args.full_page),
+        timeout: 30000,
+      });
+      return { content: [{ type: 'text', text: safeStringify({ url: result.url, title: result.title, screenshot: result.screenshot }) }] };
+    }
+
+    // webpeel_find → search (query) or map (url without query)
+    if (name === 'webpeel_find') {
+      const query = args.query as string | undefined;
+      const url = args.url as string | undefined;
+      const limit = Math.min(Math.max((args.limit as number) ?? 5, 1), 20);
+
+      // URL-only: map domain
+      if (url && !query) {
+        const { mapDomain } = await import('../../core/map.js');
+        const results = await mapDomain(url, { maxUrls: limit * 100 });
+        return { content: [{ type: 'text', text: safeStringify(results) }] };
+      }
+
+      if (!query) return { content: [{ type: 'text', text: safeStringify({ error: 'Either query or url is required' }) }] };
+
+      // Question detection → BM25 Q&A (like /v1/ask)
+      const isQuestion = /\?$/.test(query.trim()) ||
+        /^(what|how|when|where|why|who|which|can|does|is|are|do|did|will|would|could|should)\b/i.test(query.trim());
+
+      if (isQuestion) {
+        const { getBestSearchProvider: getBSP } = await import('../../core/search-provider.js');
+        const { provider, apiKey: sKey } = getBSP();
+        const searchResults = await provider.searchWeb(query, { count: Math.min(limit, 5), apiKey: sKey });
+        if (searchResults.length > 0) {
+          const { peel } = await import('../../index.js');
+          const topUrl = searchResults[0].url;
+          const result = await peel(topUrl, { budget: 4000, timeout: 15000 });
+          const { quickAnswer } = await import('../../core/quick-answer.js');
+          const answer = quickAnswer({ content: result.content || '', question: query, url: topUrl });
+          return { content: [{ type: 'text', text: safeStringify({ question: query, answer: answer.answer, confidence: answer.confidence, sources: searchResults.slice(0, 3).map((r: any) => ({ url: r.url, title: r.title })), method: 'bm25' }) }] };
+        }
+      }
+
+      // Regular search
+      const { getBestSearchProvider: getBSP2 } = await import('../../core/search-provider.js');
+      const { provider: sp, apiKey: sk } = getBSP2();
+      const results = await sp.searchWeb(query, { count: limit, apiKey: sk });
+      return { content: [{ type: 'text', text: safeStringify({ query, results: results.slice(0, limit) }) }] };
+    }
+
+    // webpeel_monitor → watch/change detection
+    if (name === 'webpeel_monitor') {
+      const url = args.url as string;
+      if (!url) return { content: [{ type: 'text', text: safeStringify({ error: 'url is required' }) }] };
+
+      const webhook = args.webhook as string | undefined;
+      if (webhook) {
+        return { content: [{ type: 'text', text: safeStringify({ message: 'Persistent webhook monitoring requires the hosted API. Use webpeel_monitor without webhook= for one-time change detection.', url }) }] };
+      }
+
+      // One-time change snapshot
+      const { peel } = await import('../../index.js');
+      const result = await peel(url, {
+        render: Boolean(args.render),
+        ...(args.selector ? { selector: args.selector as string } : {}),
+        timeout: 30000,
+      });
+      return {
+        content: [{
+          type: 'text',
+          text: safeStringify({
+            url: result.url,
+            title: result.title,
+            content: result.content?.slice(0, 2000),
+            tokens: result.tokens,
+            snapshot_at: new Date().toISOString(),
+            tip: 'Call again later to compare content manually, or use webhook= for persistent monitoring.',
+          }),
+        }],
+      };
+    }
+
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) {
     const err = error as Error;
