@@ -15,6 +15,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { RateLimiter } from '../middleware/rate-limit.js';
 import { simpleFetch } from '../../core/http-fetch.js';
 import { validateUrl } from '../../core/http-fetch.js';
@@ -314,12 +315,30 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
       const { url } = req.query;
 
       if (!url || typeof url !== 'string') {
-        res.status(400).json({ error: 'Missing required query parameter: url' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'missing_url',
+            message: 'Missing required query parameter: url',
+            hint: 'Pass a URL: GET /v1/demo?url=https://example.com',
+            docs: 'https://webpeel.dev/docs/errors#missing-url',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
         return;
       }
 
       if (url.length > 2048) {
-        res.status(400).json({ error: 'URL too long (max 2048 characters)' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_url',
+            message: 'URL too long (max 2048 characters)',
+            hint: 'Shorten the URL to under 2048 characters.',
+            docs: 'https://webpeel.dev/docs/errors#invalid-url',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
         return;
       }
 
@@ -328,12 +347,30 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
       try {
         parsedUrl = new URL(url);
       } catch {
-        res.status(400).json({ error: 'Invalid URL format' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_url',
+            message: 'Invalid URL format',
+            hint: 'Ensure the URL is well-formed: https://example.com',
+            docs: 'https://webpeel.dev/docs/errors#invalid-url',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
         return;
       }
 
       if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-        res.status(400).json({ error: 'Only HTTP and HTTPS URLs are allowed' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'invalid_url',
+            message: 'Only HTTP and HTTPS URLs are allowed',
+            hint: 'Ensure the URL starts with http:// or https://',
+            docs: 'https://webpeel.dev/docs/errors#invalid-url',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
         return;
       }
 
@@ -341,8 +378,15 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
       const hostname = parsedUrl.hostname.toLowerCase();
       if (!ALLOWED_DOMAINS.has(hostname)) {
         res.status(403).json({
-          error: 'Domain not allowed for demo. Sign up for full API access.',
+          success: false,
+          error: {
+            type: 'domain_not_allowed',
+            message: 'Domain not allowed for demo. Sign up for full API access.',
+            hint: `Sign up at ${SIGN_UP_URL} for unrestricted access.`,
+            docs: 'https://webpeel.dev/docs/errors#domain-not-allowed',
+          },
           signUpUrl: SIGN_UP_URL,
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -351,7 +395,16 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
       try {
         validateUrl(url);
       } catch {
-        res.status(400).json({ error: 'URL blocked for security reasons' });
+        res.status(400).json({
+          success: false,
+          error: {
+            type: 'url_blocked',
+            message: 'URL blocked for security reasons',
+            hint: 'Internal and private network URLs are not allowed.',
+            docs: 'https://webpeel.dev/docs/errors#url-blocked',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
         return;
       }
 
@@ -364,9 +417,16 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
         res.setHeader('X-RateLimit-Limit', '3');
         res.setHeader('X-RateLimit-Remaining', '0');
         res.status(429).json({
-          error: 'Rate limit exceeded. Demo allows 3 requests per minute.',
+          success: false,
+          error: {
+            type: 'rate_limit_exceeded',
+            message: 'Rate limit exceeded. Demo allows 3 requests per minute.',
+            hint: `Sign up at ${SIGN_UP_URL} for higher rate limits.`,
+            docs: 'https://webpeel.dev/docs/errors#rate-limit-exceeded',
+          },
           retryAfter: minuteResult.retryAfter,
           signUpUrl: SIGN_UP_URL,
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -377,9 +437,16 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
         res.setHeader('X-RateLimit-Limit', '30');
         res.setHeader('X-RateLimit-Remaining', '0');
         res.status(429).json({
-          error: 'Daily rate limit exceeded. Demo allows 30 requests per day.',
+          success: false,
+          error: {
+            type: 'daily_rate_limit_exceeded',
+            message: 'Daily rate limit exceeded. Demo allows 30 requests per day.',
+            hint: `Sign up at ${SIGN_UP_URL} for higher rate limits.`,
+            docs: 'https://webpeel.dev/docs/errors#daily-rate-limit-exceeded',
+          },
           retryAfter: dayResult.retryAfter,
           signUpUrl: SIGN_UP_URL,
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -414,7 +481,16 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
         }
       } catch (err: any) {
         const msg = err?.message || 'Failed to fetch URL';
-        res.status(502).json({ error: `Fetch failed: ${msg.replace(/[<>"']/g, '')}` });
+        res.status(502).json({
+          success: false,
+          error: {
+            type: 'fetch_failed',
+            message: `Fetch failed: ${msg.replace(/[<>"']/g, '')}`,
+            hint: 'Check that the URL is publicly accessible.',
+            docs: 'https://webpeel.dev/docs/errors#fetch-failed',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
         return;
       }
 
@@ -536,7 +612,15 @@ export function createDemoRouter(options: DemoRouterOptions = {}): Router {
       res.json(response);
     } catch (error: any) {
       console.error('Demo endpoint error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Internal server error',
+          docs: 'https://webpeel.dev/docs/errors#internal-error',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
+      });
     }
   });
 

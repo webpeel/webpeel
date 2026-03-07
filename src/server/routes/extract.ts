@@ -6,6 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { peel } from '../../index.js';
 import { extractWithLLM } from '../../core/llm-extract.js';
 
@@ -34,9 +35,13 @@ export function createExtractRouter(): Router {
       if (!url || typeof url !== 'string') {
         res.status(400).json({
           success: false,
-          error: 'invalid_request',
-          message: 'Missing or invalid "url" field in request body.',
-          example: '{ "url": "https://example.com", "schema": { "type": "object", "properties": { "title": { "type": "string" } } } }',
+          error: {
+            type: 'invalid_request',
+            message: 'Missing or invalid "url" field in request body.',
+            hint: 'Pass a URL in the request body: { "url": "https://example.com", "schema": { ... } }',
+            docs: 'https://webpeel.dev/docs/errors#invalid-request',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -44,8 +49,13 @@ export function createExtractRouter(): Router {
       if (url.length > 2048) {
         res.status(400).json({
           success: false,
-          error: 'invalid_url',
-          message: 'URL too long (max 2048 characters)',
+          error: {
+            type: 'invalid_url',
+            message: 'URL too long (max 2048 characters)',
+            hint: 'Shorten the URL to under 2048 characters.',
+            docs: 'https://webpeel.dev/docs/errors#invalid-url',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -57,16 +67,26 @@ export function createExtractRouter(): Router {
         if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
           res.status(400).json({
             success: false,
-            error: 'invalid_url',
-            message: 'Only HTTP and HTTPS URLs are supported',
+            error: {
+              type: 'invalid_url',
+              message: 'Only HTTP and HTTPS URLs are supported',
+              hint: 'Ensure the URL starts with http:// or https://',
+              docs: 'https://webpeel.dev/docs/errors#invalid-url',
+            },
+            requestId: req.requestId || crypto.randomUUID(),
           });
           return;
         }
       } catch {
         res.status(400).json({
           success: false,
-          error: 'invalid_url',
-          message: `Invalid URL format: ${url}`,
+          error: {
+            type: 'invalid_url',
+            message: `Invalid URL format: ${url}`,
+            hint: 'Ensure the URL is well-formed: https://example.com',
+            docs: 'https://webpeel.dev/docs/errors#invalid-url',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -75,8 +95,13 @@ export function createExtractRouter(): Router {
       if (!schema && !prompt) {
         res.status(400).json({
           success: false,
-          error: 'invalid_request',
-          message: 'Either "schema" or "prompt" is required for structured extraction.',
+          error: {
+            type: 'invalid_request',
+            message: 'Either "schema" or "prompt" is required for structured extraction.',
+            hint: 'Include a JSON schema or a natural language prompt in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#invalid-request',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -86,8 +111,13 @@ export function createExtractRouter(): Router {
       if (!resolvedApiKey) {
         res.status(400).json({
           success: false,
-          error: 'missing_api_key',
-          message: 'LLM API key required. Provide "llmApiKey" in the request body or set OPENAI_API_KEY on the server.',
+          error: {
+            type: 'missing_api_key',
+            message: 'LLM API key required. Provide "llmApiKey" in the request body or set OPENAI_API_KEY on the server.',
+            hint: 'Pass your OpenAI API key: { "llmApiKey": "sk-..." }',
+            docs: 'https://webpeel.dev/docs/errors#missing-api-key',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -131,14 +161,27 @@ export function createExtractRouter(): Router {
         return;
       }
       if (msg.includes('rate limit') || msg.includes('429')) {
-        res.status(429).json({ success: false, error: 'llm_rate_limited', message: msg });
+        res.status(429).json({
+          success: false,
+          error: {
+            type: 'llm_rate_limited',
+            message: msg,
+            hint: 'You have hit the LLM provider rate limit. Try again in a moment.',
+            docs: 'https://webpeel.dev/docs/errors#llm-rate-limited',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
         return;
       }
 
       res.status(500).json({
         success: false,
-        error: 'extraction_failed',
-        message: msg,
+        error: {
+          type: 'extraction_failed',
+          message: msg,
+          docs: 'https://webpeel.dev/docs/errors#extraction-failed',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
       });
     }
   });
@@ -146,7 +189,16 @@ export function createExtractRouter(): Router {
   router.get('/v1/extract/auto', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) {
-      res.status(400).json({ error: 'Missing url parameter' });
+      res.status(400).json({
+        success: false,
+        error: {
+          type: 'missing_url',
+          message: 'Missing url parameter',
+          hint: 'Pass a URL: GET /v1/extract/auto?url=https://example.com',
+          docs: 'https://webpeel.dev/docs/errors#missing-url',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
+      });
       return;
     }
     const { autoExtract } = await import('../../core/auto-extract.js');
@@ -158,7 +210,16 @@ export function createExtractRouter(): Router {
   router.post('/v1/extract/auto', async (req: Request, res: Response) => {
     const { url, ...rest } = req.body as { url?: string; [key: string]: unknown };
     if (!url || typeof url !== 'string') {
-      res.status(400).json({ error: 'Missing or invalid url field in request body' });
+      res.status(400).json({
+        success: false,
+        error: {
+          type: 'missing_url',
+          message: 'Missing or invalid url field in request body',
+          hint: 'Pass a URL in the request body: { "url": "https://example.com" }',
+          docs: 'https://webpeel.dev/docs/errors#missing-url',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
+      });
       return;
     }
     try {
@@ -169,7 +230,15 @@ export function createExtractRouter(): Router {
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
       console.error('[/v1/extract/auto POST] Error:', msg);
-      res.status(500).json({ error: 'extraction_failed', message: msg });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'extraction_failed',
+          message: msg,
+          docs: 'https://webpeel.dev/docs/errors#extraction-failed',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
+      });
     }
   });
 

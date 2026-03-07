@@ -113,8 +113,14 @@ export function createSessionRouter(): Router {
     const userSessions = [...sessions.values()].filter(s => s.ownerId === ownerId);
     if (userSessions.length >= MAX_SESSIONS_PER_USER) {
       res.status(429).json({
-        error: 'session_limit',
-        message: `Maximum ${MAX_SESSIONS_PER_USER} concurrent sessions per user. Delete an existing session first.`,
+        success: false,
+        error: {
+          type: 'session_limit',
+          message: `Maximum ${MAX_SESSIONS_PER_USER} concurrent sessions per user. Delete an existing session first.`,
+          hint: 'Delete an existing session via DELETE /v1/session/:id before creating a new one.',
+          docs: 'https://webpeel.dev/docs/errors#session-limit',
+        },
+        requestId: req.requestId || randomUUID(),
       });
       return;
     }
@@ -138,7 +144,16 @@ export function createSessionRouter(): Router {
           // Navigation failed — still return the session, caller can retry
           const errMsg = navErr instanceof Error ? navErr.message : String(navErr);
           await browser.close().catch(() => {});
-          res.status(502).json({ error: 'navigation_failed', message: errMsg });
+          res.status(502).json({
+            success: false,
+            error: {
+              type: 'navigation_failed',
+              message: errMsg,
+              hint: 'Check that the URL is accessible and try again.',
+              docs: 'https://webpeel.dev/docs/errors#navigation-failed',
+            },
+            requestId: req.requestId || randomUUID(),
+          });
           return;
         }
       }
@@ -164,7 +179,15 @@ export function createSessionRouter(): Router {
     } catch (err) {
       if (browser) await browser.close().catch(() => {});
       const msg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: 'session_create_failed', message: msg });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'session_create_failed',
+          message: msg,
+          docs: 'https://webpeel.dev/docs/errors#session-create-failed',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
     }
   });
 
@@ -173,7 +196,16 @@ export function createSessionRouter(): Router {
     const ownerId = getOwnerId(req);
     const session = getSession(req.params['id'] as string, ownerId);
     if (!session) {
-      res.status(404).json({ error: 'session_not_found' });
+      res.status(404).json({
+        success: false,
+        error: {
+          type: 'session_not_found',
+          message: 'Session not found or has expired.',
+          hint: 'Create a new session via POST /v1/session.',
+          docs: 'https://webpeel.dev/docs/errors#session-not-found',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
       return;
     }
 
@@ -195,7 +227,15 @@ export function createSessionRouter(): Router {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: 'session_error', message: msg });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'session_error',
+          message: msg,
+          docs: 'https://webpeel.dev/docs/errors#session-error',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
     }
   });
 
@@ -204,13 +244,31 @@ export function createSessionRouter(): Router {
     const ownerId = getOwnerId(req);
     const session = getSession(req.params["id"] as string, ownerId);
     if (!session) {
-      res.status(404).json({ error: 'session_not_found' });
+      res.status(404).json({
+        success: false,
+        error: {
+          type: 'session_not_found',
+          message: 'Session not found or has expired.',
+          hint: 'Create a new session via POST /v1/session.',
+          docs: 'https://webpeel.dev/docs/errors#session-not-found',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
       return;
     }
 
     const { url } = req.body as { url?: string };
     if (!url) {
-      res.status(400).json({ error: 'bad_request', message: '`url` is required.' });
+      res.status(400).json({
+        success: false,
+        error: {
+          type: 'bad_request',
+          message: '`url` is required.',
+          hint: 'Pass a URL in the request body: { "url": "https://example.com" }',
+          docs: 'https://webpeel.dev/docs/errors#bad-request',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
       return;
     }
 
@@ -226,7 +284,16 @@ export function createSessionRouter(): Router {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      res.status(502).json({ error: 'navigation_failed', message: msg });
+      res.status(502).json({
+        success: false,
+        error: {
+          type: 'navigation_failed',
+          message: msg,
+          hint: 'Check that the URL is accessible and try again.',
+          docs: 'https://webpeel.dev/docs/errors#navigation-failed',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
     }
   });
 
@@ -235,7 +302,16 @@ export function createSessionRouter(): Router {
     const ownerId = getOwnerId(req);
     const session = getSession(req.params["id"] as string, ownerId);
     if (!session) {
-      res.status(404).json({ error: 'session_not_found' });
+      res.status(404).json({
+        success: false,
+        error: {
+          type: 'session_not_found',
+          message: 'Session not found or has expired.',
+          hint: 'Create a new session via POST /v1/session.',
+          docs: 'https://webpeel.dev/docs/errors#session-not-found',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
       return;
     }
 
@@ -249,12 +325,30 @@ export function createSessionRouter(): Router {
       normalized = normalizeActions(actions);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      res.status(400).json({ error: 'invalid_actions', message: msg });
+      res.status(400).json({
+        success: false,
+        error: {
+          type: 'invalid_actions',
+          message: msg,
+          hint: 'Pass a valid actions array: [{ "type": "click", "selector": "#btn" }]',
+          docs: 'https://webpeel.dev/docs/errors#invalid-actions',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
       return;
     }
 
     if (!normalized?.length) {
-      res.status(400).json({ error: 'bad_request', message: '`actions` must be a non-empty array.' });
+      res.status(400).json({
+        success: false,
+        error: {
+          type: 'bad_request',
+          message: '`actions` must be a non-empty array.',
+          hint: 'Pass a valid actions array: [{ "type": "click", "selector": "#btn" }]',
+          docs: 'https://webpeel.dev/docs/errors#bad-request',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
       return;
     }
 
@@ -285,7 +379,16 @@ export function createSessionRouter(): Router {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      res.status(502).json({ error: 'action_failed', message: msg });
+      res.status(502).json({
+        success: false,
+        error: {
+          type: 'action_failed',
+          message: msg,
+          hint: 'Check your action selectors and ensure the page is loaded.',
+          docs: 'https://webpeel.dev/docs/errors#action-failed',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
     }
   });
 
@@ -294,7 +397,16 @@ export function createSessionRouter(): Router {
     const ownerId = getOwnerId(req);
     const session = getSession(req.params["id"] as string, ownerId);
     if (!session) {
-      res.status(404).json({ error: 'session_not_found' });
+      res.status(404).json({
+        success: false,
+        error: {
+          type: 'session_not_found',
+          message: 'Session not found or has expired.',
+          hint: 'Create a new session via POST /v1/session.',
+          docs: 'https://webpeel.dev/docs/errors#session-not-found',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
       return;
     }
 
@@ -308,7 +420,15 @@ export function createSessionRouter(): Router {
       res.send(buf);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: 'screenshot_failed', message: msg });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'screenshot_failed',
+          message: msg,
+          docs: 'https://webpeel.dev/docs/errors#screenshot-failed',
+        },
+        requestId: req.requestId || randomUUID(),
+      });
     }
   });
 

@@ -135,8 +135,14 @@ export function createOAuthRouter(): Router {
       const clientIp = (req.headers['cf-connecting-ip'] as string) || (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
       if (!rateLimiter.check(`${clientIp}:${provider || 'unknown'}`)) {
         res.status(429).json({
-          error: 'rate_limit_exceeded',
-          message: 'Too many OAuth attempts. Please try again in a minute.',
+          success: false,
+          error: {
+            type: 'rate_limit_exceeded',
+            message: 'Too many OAuth attempts. Please try again in a minute.',
+            hint: 'Wait 1 minute before retrying.',
+            docs: 'https://webpeel.dev/docs/errors#rate-limit-exceeded',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -144,8 +150,14 @@ export function createOAuthRouter(): Router {
       // Input validation
       if (!provider || !accessToken) {
         res.status(400).json({
-          error: 'missing_fields',
-          message: 'provider and accessToken are required',
+          success: false,
+          error: {
+            type: 'missing_fields',
+            message: 'provider and accessToken are required',
+            hint: 'Include both "provider" and "accessToken" in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#missing-fields',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -153,8 +165,14 @@ export function createOAuthRouter(): Router {
       // Validate provider
       if (provider !== 'github' && provider !== 'google') {
         res.status(400).json({
-          error: 'invalid_provider',
-          message: 'provider must be "github" or "google"',
+          success: false,
+          error: {
+            type: 'invalid_provider',
+            message: 'provider must be "github" or "google"',
+            hint: 'Use "github" or "google" as the provider value.',
+            docs: 'https://webpeel.dev/docs/errors#invalid-provider',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -219,8 +237,14 @@ export function createOAuthRouter(): Router {
       // Validate email from verified token
       if (!email || !isValidEmail(email)) {
         res.status(400).json({
-          error: 'invalid_email',
-          message: 'Could not retrieve a valid email from OAuth provider',
+          success: false,
+          error: {
+            type: 'invalid_email',
+            message: 'Could not retrieve a valid email from OAuth provider',
+            hint: 'Ensure your OAuth account has a verified email address.',
+            docs: 'https://webpeel.dev/docs/errors#invalid-email',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -376,15 +400,26 @@ export function createOAuthRouter(): Router {
       // Handle specific errors
       if (error.code === '23505') { // Unique violation
         res.status(409).json({
-          error: 'oauth_conflict',
-          message: 'OAuth account already exists',
+          success: false,
+          error: {
+            type: 'oauth_conflict',
+            message: 'OAuth account already exists',
+            hint: 'This OAuth account is already linked to another user.',
+            docs: 'https://webpeel.dev/docs/errors#oauth-conflict',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
 
       res.status(500).json({
-        error: 'oauth_failed',
-        message: 'Failed to process OAuth login',
+        success: false,
+        error: {
+          type: 'oauth_failed',
+          message: 'Failed to process OAuth login',
+          docs: 'https://webpeel.dev/docs/errors#oauth-failed',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
       });
     }
   });
@@ -400,7 +435,16 @@ export function createOAuthRouter(): Router {
       const { email, secret } = req.body;
 
       if (!email || !secret) {
-        return res.status(400).json({ error: 'missing_fields', message: 'email and secret required' });
+        return res.status(400).json({
+          success: false,
+          error: {
+            type: 'missing_fields',
+            message: 'email and secret required',
+            hint: 'Include both "email" and "secret" in the request body.',
+            docs: 'https://webpeel.dev/docs/errors#missing-fields',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
       }
 
       // Verify the shared secret — proves the request comes from our own dashboard
@@ -416,7 +460,16 @@ export function createOAuthRouter(): Router {
       );
 
       if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'user_not_found', message: 'No account found for this email' });
+        return res.status(404).json({
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'No account found for this email',
+            hint: 'Sign up at https://app.webpeel.dev to create an account.',
+            docs: 'https://webpeel.dev/docs/errors#user-not-found',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
+        });
       }
 
       const user = result.rows[0];
@@ -441,7 +494,15 @@ export function createOAuthRouter(): Router {
       });
     } catch (err) {
       console.error('Recovery endpoint error:', err);
-      return res.status(500).json({ error: 'server_error' });
+      return res.status(500).json({
+        success: false,
+        error: {
+          type: 'server_error',
+          message: 'An unexpected server error occurred.',
+          docs: 'https://webpeel.dev/docs/errors#server-error',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
+      });
     }
   });
 

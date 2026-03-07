@@ -108,7 +108,7 @@ describe('GET /v1/demo', () => {
     const { app } = await makeApp();
     const res = await request(app).get('/v1/demo');
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/missing/i);
+    expect(res.body.error.message).toMatch(/missing/i);
   });
 
   // ── Blocked domain ───────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ describe('GET /v1/demo', () => {
       .query({ url: BLOCKED_URL });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toMatch(/domain not allowed/i);
+    expect(res.body.error.message).toMatch(/domain not allowed/i);
   });
 
   it('returns 403 for subdomain not in allowlist (api.stripe.com)', async () => {
@@ -130,7 +130,7 @@ describe('GET /v1/demo', () => {
       .query({ url: 'https://api.stripe.com/v1/charges' });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toMatch(/domain not allowed/i);
+    expect(res.body.error.message).toMatch(/domain not allowed/i);
   });
 
   // ── SSRF blocking ────────────────────────────────────────────────────────────
@@ -349,7 +349,7 @@ describe('GET /v1/demo', () => {
       .query({ url: 'https://techcrunch.com' });
 
     expect(limited.status).toBe(429);
-    expect(limited.body.error).toMatch(/rate limit/i);
+    expect(limited.body.error.message).toMatch(/rate limit/i);
     expect(limited.headers['retry-after']).toBeDefined();
     expect(limited.body.signUpUrl).toBe('https://app.webpeel.dev');
   });

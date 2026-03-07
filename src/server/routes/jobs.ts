@@ -3,6 +3,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { crawl } from '../../index.js';
 import type { CrawlOptions } from '../../index.js';
 import { searchJobs } from '../../core/jobs.js';
@@ -25,8 +26,14 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
       // Validate required parameters
       if (!url || typeof url !== 'string') {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Missing or invalid "url" parameter',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Missing or invalid "url" parameter',
+            hint: 'Pass a valid URL in the request body: { "url": "https://example.com" }',
+            docs: 'https://webpeel.dev/docs/errors#invalid-request',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -36,8 +43,14 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
         new URL(url);
       } catch {
         res.status(400).json({
-          error: 'invalid_url',
-          message: 'Invalid URL format',
+          success: false,
+          error: {
+            type: 'invalid_url',
+            message: 'Invalid URL format',
+            hint: 'Ensure the URL includes a protocol: https://example.com',
+            docs: 'https://webpeel.dev/docs/errors#invalid-url',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -259,8 +272,13 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
     } catch (error: any) {
       console.error('Crawl job creation error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to create crawl job',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to create crawl job',
+          docs: 'https://webpeel.dev/docs/errors#internal-error',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
       });
     }
   });
@@ -275,8 +293,14 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
 
       if (!job) {
         res.status(404).json({
-          error: 'not_found',
-          message: 'Job not found',
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'Job not found',
+            hint: 'Check the job ID and ensure it has not expired.',
+            docs: 'https://webpeel.dev/docs/errors#not-found',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -285,8 +309,14 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
       const requestOwnerId = req.auth?.keyInfo?.accountId;
       if (job.ownerId && requestOwnerId && job.ownerId !== requestOwnerId) {
         res.status(404).json({
-          error: 'not_found',
-          message: 'Job not found',
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'Job not found',
+            hint: 'Check the job ID and ensure it has not expired.',
+            docs: 'https://webpeel.dev/docs/errors#not-found',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -353,8 +383,13 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
     } catch (error: any) {
       console.error('Get crawl job error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to retrieve job',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve job',
+          docs: 'https://webpeel.dev/docs/errors#internal-error',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
       });
     }
   });
@@ -371,8 +406,14 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
       const requestOwnerId = req.auth?.keyInfo?.accountId;
       if (job?.ownerId && requestOwnerId && job.ownerId !== requestOwnerId) {
         res.status(404).json({
-          error: 'not_found',
-          message: 'Job not found or cannot be cancelled',
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'Job not found or cannot be cancelled',
+            hint: 'Check the job ID and ensure you own this job.',
+            docs: 'https://webpeel.dev/docs/errors#not-found',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -381,8 +422,14 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
 
       if (!cancelled) {
         res.status(404).json({
-          error: 'not_found',
-          message: 'Job not found or cannot be cancelled',
+          success: false,
+          error: {
+            type: 'not_found',
+            message: 'Job not found or cannot be cancelled',
+            hint: 'The job may have already completed or expired.',
+            docs: 'https://webpeel.dev/docs/errors#not-found',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -394,8 +441,13 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
     } catch (error: any) {
       console.error('Cancel crawl job error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to cancel job',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to cancel job',
+          docs: 'https://webpeel.dev/docs/errors#internal-error',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
       });
     }
   });
@@ -425,8 +477,13 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
     } catch (error: any) {
       console.error('List jobs error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to list jobs',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to list jobs',
+          docs: 'https://webpeel.dev/docs/errors#internal-error',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
       });
     }
   });
@@ -459,9 +516,14 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
       // Must provide either url or keywords
       if (!url && !keywords) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: 'Provide either "url" or "keywords" in the request body.',
-          docs: 'https://webpeel.dev/docs/api-reference#jobs',
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: 'Provide either "url" or "keywords" in the request body.',
+            hint: 'Example: { "keywords": "software engineer", "location": "New York" }',
+            docs: 'https://webpeel.dev/docs/errors#invalid-request',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -470,8 +532,14 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
       const validSources = ['glassdoor', 'indeed', 'linkedin'];
       if (source && !validSources.includes(source)) {
         res.status(400).json({
-          error: 'invalid_request',
-          message: `Invalid "source": must be one of ${validSources.join(', ')}`,
+          success: false,
+          error: {
+            type: 'invalid_request',
+            message: `Invalid "source": must be one of ${validSources.join(', ')}`,
+            hint: `Use one of: ${validSources.join(', ')}`,
+            docs: 'https://webpeel.dev/docs/errors#invalid-request',
+          },
+          requestId: req.requestId || crypto.randomUUID(),
         });
         return;
       }
@@ -554,9 +622,13 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
     } catch (error: any) {
       console.error('POST /v1/jobs error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Job search failed. Please try again.',
-        docs: 'https://webpeel.dev/docs/api-reference#jobs',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Job search failed. Please try again.',
+          docs: 'https://webpeel.dev/docs/errors#internal-error',
+        },
+        requestId: req.requestId || crypto.randomUUID(),
       });
     }
   });
