@@ -4275,12 +4275,13 @@ program
   });
 
 // ============================================================
-// ask command — LLM-free web Q&A (search + fetch + BM25)
+// answer command — LLM-free web Q&A (search + fetch + BM25)
 // ============================================================
 
 program
-  .command('ask <question>')
-  .description('Ask a question and get a direct answer from the web (no LLM required)')
+  .command('webask <question>')
+  .alias('ask-web')
+  .description('Search the web and get a direct answer (no LLM key required)')
   .option('-n, --sources <n>', 'Number of sources to check (1-5, default 3)', '3')
   .option('--json', 'Output as JSON')
   .option('-s, --silent', 'Silent mode')

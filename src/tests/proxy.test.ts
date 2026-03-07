@@ -26,6 +26,14 @@ vi.mock('../core/strategies.js', () => ({
   cleanup: vi.fn(),
 }));
 
+// Mock search provider to prevent stealth mode from doing real network calls
+vi.mock('../core/search-provider.js', () => ({
+  search: vi.fn(async () => []),
+  getSearchProvider: vi.fn(() => ({ search: vi.fn(async () => []) })),
+  getBestSearchProvider: vi.fn(() => ({ search: vi.fn(async () => []) })),
+  ddgSearch: vi.fn(async () => []),
+}));
+
 import { peel } from '../index.js';
 
 describe('proxy option in PeelOptions', () => {
