@@ -32,6 +32,9 @@ try {
 } catch { /* Not available in CI/open-source builds */ }
 import { validateUrl, validateUserAgent, createAbortError, type FetchResult } from './http-fetch.js';
 import { autoInteract, type AutoInteractResult } from './auto-interact.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('browser');
 
 // ── Concurrency state (owned by this module) ─────────────────────────────────
 
@@ -232,7 +235,7 @@ export async function browserFetch(
           };
         } catch (e) {
           // Fallback: use proxy string as-is
-          if (process.env.DEBUG) console.debug('[webpeel]', 'proxy URL parse failed, using as-is:', e instanceof Error ? e.message : e);
+          log.debug('proxy URL parse failed, using as-is:', e instanceof Error ? e.message : e);
           playwrightProxy = { server: proxy };
         }
 
@@ -396,7 +399,7 @@ export async function browserFetch(
       // Wait for a specific CSS selector if requested
       if (waitSelector) {
         await page!.waitForSelector(waitSelector, { timeout: timeoutMs }).catch(() => {
-          if (process.env.DEBUG) console.debug('[webpeel]', `waitSelector "${waitSelector}" not found within timeout`);
+          log.debug(`waitSelector "${waitSelector}" not found within timeout`);
         });
         throwIfAborted();
       }
@@ -1073,7 +1076,7 @@ export async function scrollAndWait(page: Page, times = 3): Promise<string> {
       await page.waitForLoadState('networkidle', { timeout: 2000 });
     } catch (e) {
       // networkidle may never fire — fall back to a flat delay.
-      if (process.env.DEBUG) console.debug('[webpeel]', 'networkidle timeout, falling back to flat delay:', e instanceof Error ? e.message : e);
+      log.debug('networkidle timeout, falling back to flat delay:', e instanceof Error ? e.message : e);
       await page.waitForTimeout(1000);
     }
   }

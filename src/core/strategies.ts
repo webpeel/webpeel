@@ -20,6 +20,9 @@ import {
 
 // Re-export StrategyResult so existing consumers don't break.
 export type { StrategyResult } from './strategy-hooks.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('fetch');
 
 /* ---------- hardcoded domain rules -------------------------------------- */
 
@@ -94,7 +97,7 @@ function shouldForceBrowser(url: string): DomainRecommendation | null {
     }
   } catch (e) {
     // Ignore URL parsing errors; validation happens inside fetchers.
-    if (process.env.DEBUG) console.debug('[webpeel]', 'stealth domain URL parse failed:', e instanceof Error ? e.message : e);
+    log.debug('stealth domain URL parse failed:', e instanceof Error ? e.message : e);
   }
 
   return null;
@@ -209,7 +212,7 @@ function prefetchDns(url: string): void {
     void resolveAndCache(hostname).catch(() => {});
   } catch (e) {
     // Ignore invalid URL.
-    if (process.env.DEBUG) console.debug('[webpeel]', 'DNS prefetch URL parse failed:', e instanceof Error ? e.message : e);
+    log.debug('DNS prefetch URL parse failed:', e instanceof Error ? e.message : e);
   }
 }
 
@@ -562,7 +565,7 @@ export async function smartFetch(
       if (!isCloakBrowserAvailable()) {
         throw new Error('CloakBrowser not installed. Run: npm install cloakbrowser playwright-core');
       }
-      if (process.env.DEBUG) console.debug('[webpeel]', 'Using CloakBrowser stealth (explicitly requested)');
+      log.debug('Using CloakBrowser stealth (explicitly requested)');
       const result = await cloakFetch({
         url,
         proxy: effectiveProxies[0],
@@ -598,7 +601,7 @@ export async function smartFetch(
       if (!isPeelTLSAvailable()) {
         throw new Error('PeelTLS binary not found. Build it with: cd peeltls && bash build.sh');
       }
-      if (process.env.DEBUG) console.debug('[webpeel]', 'Using PeelTLS fingerprint spoofing (explicitly requested)');
+      log.debug('Using PeelTLS fingerprint spoofing (explicitly requested)');
       const result = await peelTLSFetch(url, {
         proxy: firstProxy,
         headers,
@@ -631,7 +634,7 @@ export async function smartFetch(
             }
           } catch (e) {
             // Non-fatal: background revalidation failed, stale entry continues serving.
-            if (process.env.DEBUG) console.debug('[webpeel]', 'background cache revalidation failed:', e instanceof Error ? e.message : e);
+            log.debug('background cache revalidation failed:', e instanceof Error ? e.message : e);
           }
         })();
       }
@@ -820,7 +823,7 @@ export async function smartFetch(
           return winner.result;
         } catch (e) {
           // Race resolution failed — determine which error to propagate
-          if (process.env.DEBUG) console.debug('[webpeel]', 'fetch race resolution failed:', e instanceof Error ? e.message : e);
+          log.debug('fetch race resolution failed:', e instanceof Error ? e.message : e);
           if (
             simpleError &&
             !shouldEscalateSimpleError(simpleError) &&
@@ -949,7 +952,7 @@ export async function smartFetch(
         try {
           const { peelTLSFetch, isPeelTLSAvailable } = await import('./peel-tls.js');
           if (isPeelTLSAvailable()) {
-            if (process.env.DEBUG) console.debug('[webpeel]', 'Escalating to PeelTLS fingerprint spoofing');
+            log.debug('Escalating to PeelTLS fingerprint spoofing');
             const peelResult = await peelTLSFetch(url, {
               proxy: currentProxy,
               headers,
@@ -966,10 +969,10 @@ export async function smartFetch(
               return peelStrategyResult;
             }
             // PeelTLS still challenged — fall through to CloakBrowser
-            if (process.env.DEBUG) console.debug('[webpeel]', 'PeelTLS still challenged, escalating to CloakBrowser');
+            log.debug('PeelTLS still challenged, escalating to CloakBrowser');
           }
         } catch (peelError) {
-          if (process.env.DEBUG) console.debug('[webpeel]', 'PeelTLS failed:', peelError instanceof Error ? peelError.message : peelError);
+          log.debug('PeelTLS failed:', peelError instanceof Error ? peelError.message : peelError);
           // Fall through to CloakBrowser
         }
       }
@@ -979,7 +982,7 @@ export async function smartFetch(
         try {
           const { cfWorkerFetch, isCfWorkerAvailable } = await import('./cf-worker-proxy.js');
           if (isCfWorkerAvailable()) {
-            if (process.env.DEBUG) console.debug('[webpeel]', 'Escalating to CF Worker proxy');
+            log.debug('Escalating to CF Worker proxy');
             const cfResult = await cfWorkerFetch(url, {
               headers,
               timeout: timeoutMs,
@@ -994,10 +997,10 @@ export async function smartFetch(
               recordMethod('cf-worker' as any);
               return cfStrategyResult;
             }
-            if (process.env.DEBUG) console.debug('[webpeel]', 'CF Worker still challenged, escalating to CloakBrowser');
+            log.debug('CF Worker still challenged, escalating to CloakBrowser');
           }
         } catch (cfError) {
-          if (process.env.DEBUG) console.debug('[webpeel]', 'CF Worker proxy failed:', cfError instanceof Error ? cfError.message : cfError);
+          log.debug('CF Worker proxy failed:', cfError instanceof Error ? cfError.message : cfError);
         }
       }
 
@@ -1007,7 +1010,7 @@ export async function smartFetch(
           // @ts-ignore — proprietary module, gitignored
       const { cloakFetch, isCloakBrowserAvailable } = await import('./cloak-fetch.js');
           if (isCloakBrowserAvailable()) {
-            if (process.env.DEBUG) console.debug('[webpeel]', 'Escalating to CloakBrowser stealth');
+            log.debug('Escalating to CloakBrowser stealth');
             const cloakResult = await cloakFetch({
               url,
               proxy: currentProxy,
@@ -1031,7 +1034,7 @@ export async function smartFetch(
             return cloakResult;
           }
         } catch (cloakError) {
-          if (process.env.DEBUG) console.debug('[webpeel]', 'CloakBrowser failed:', cloakError instanceof Error ? cloakError.message : cloakError);
+          log.debug('CloakBrowser failed:', cloakError instanceof Error ? cloakError.message : cloakError);
           // Fall through to Google Cache fallback
         }
       }
@@ -1042,7 +1045,7 @@ export async function smartFetch(
           const { fetchGoogleCache } = await import('./google-cache.js');
           const cacheResult = await fetchGoogleCache(url, { timeout: timeoutMs });
           if (cacheResult && cacheResult.html.length > 200) {
-            if (process.env.DEBUG) console.debug('[webpeel]', 'Using Google Cache fallback');
+            log.debug('Using Google Cache fallback');
             const cacheStrategyResult: StrategyResult = {
               html: cacheResult.html,
               url: cacheResult.url,
@@ -1053,7 +1056,7 @@ export async function smartFetch(
             return cacheStrategyResult;
           }
         } catch (cacheError) {
-          if (process.env.DEBUG) console.debug('[webpeel]', 'Google Cache failed:', cacheError);
+          log.debug('Google Cache failed:', cacheError);
         }
       }
 
@@ -1067,7 +1070,7 @@ export async function smartFetch(
       lastError = e;
       if (isAbortError(e)) throw e; // Don't retry on abort
       // Log and try next proxy
-      if (process.env.DEBUG) console.debug('[webpeel]', `proxy ${currentProxy || 'direct'} failed:`, e instanceof Error ? e.message : e);
+      log.debug(`proxy ${currentProxy || 'direct'} failed:`, e instanceof Error ? e.message : e);
       // If last proxy, throw below; otherwise continue loop
     }
   }

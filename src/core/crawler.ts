@@ -14,6 +14,9 @@ import {
   saveCheckpoint,
   deleteCheckpoint,
 } from './crawl-checkpoint.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('crawler');
 
 /** Safely compile a user-supplied regex pattern. Rejects patterns longer than 200 chars
  *  and wraps compilation in a try-catch to prevent invalid regex crashes. */
@@ -253,7 +256,7 @@ export async function crawl(
     
     // Use crawl-delay from robots.txt if it's larger than our rate limit
     if (robotsRules.crawlDelay && robotsRules.crawlDelay > validatedRateLimit) {
-      console.error(`[Crawler] Using Crawl-delay from robots.txt: ${robotsRules.crawlDelay}ms`);
+      log.info(`Using Crawl-delay from robots.txt: ${robotsRules.crawlDelay}ms`);
     }
   }
 
@@ -271,7 +274,7 @@ export async function crawl(
   // Load existing checkpoint if resume is requested
   const checkpoint = resume ? loadCheckpoint(jobId) : null;
   if (checkpoint) {
-    console.error(`[Crawler] Resuming crawl from checkpoint: ${checkpoint.completed.size} pages already crawled`);
+    log.info(`Resuming crawl from checkpoint: ${checkpoint.completed.size} pages already crawled`);
   }
 
   // State tracking
@@ -351,7 +354,7 @@ export async function crawl(
 
     // Check robots.txt
     if (respectRobotsTxt && !isAllowedByRobots(url, robotsRules)) {
-      console.error(`[Crawler] Skipping ${url} (disallowed by robots.txt)`);
+      log.debug(`Skipping ${url} (disallowed by robots.txt)`);
       continue;
     }
 
@@ -445,7 +448,7 @@ export async function crawl(
       // Log error and continue
       failedCount++;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[Crawler] Failed to fetch ${url}: ${errorMessage}`);
+      log.error(`Failed to fetch ${url}: ${errorMessage}`);
       
       const errorResult: CrawlResult = {
         url,

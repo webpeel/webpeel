@@ -36,6 +36,9 @@ import { BlockedError } from '../types.js';
 import type { BrandingProfile } from './branding.js';
 import type { ChangeResult } from './change-tracking.js';
 import type { DesignAnalysis } from './design-analysis.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('pipeline');
 
 /** Mutable context threaded through pipeline stages */
 export interface PipelineContext {
@@ -410,7 +413,7 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       }
     } catch (e) {
       // Domain API failed — fall through to normal fetch
-      if (process.env.DEBUG) console.debug('[webpeel]', 'domain API first-pass failed, falling back to fetch:', e instanceof Error ? e.message : e);
+      log.debug('domain API first-pass failed, falling back to fetch:', e instanceof Error ? e.message : e);
     }
   }
 
@@ -519,7 +522,7 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       fetchResult.html = await fetchResult.page.content();
     } catch (e) {
       // Non-fatal: auto-scroll failed, continuing with whatever HTML we have
-      if (process.env.DEBUG) console.debug('[webpeel]', 'auto-scroll failed:', e instanceof Error ? e.message : e);
+      log.debug('auto-scroll failed:', e instanceof Error ? e.message : e);
     } finally {
       // Close page unless branding or design analysis also needs it
       if (!needsBranding && !needsDesignAnalysis) {
@@ -530,7 +533,7 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
           }
         } catch (e) {
           // Non-fatal: page/browser cleanup after auto-scroll
-          if (process.env.DEBUG) console.debug('[webpeel]', 'page/browser cleanup after auto-scroll:', e instanceof Error ? e.message : e);
+          log.debug('page/browser cleanup after auto-scroll:', e instanceof Error ? e.message : e);
         }
         fetchResult.page = undefined;
       }
@@ -776,7 +779,7 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
           htmlForConvert = contentHtml.slice(0, minChars);
         }
         if (process.env.DEBUG) {
-          console.debug('[webpeel]', `budget pre-truncate: ${contentHtml.length} → ${htmlForConvert.length} chars`);
+          log.debug(`budget pre-truncate: ${contentHtml.length} → ${htmlForConvert.length} chars`);
         }
       }
     }
@@ -819,7 +822,7 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
     // (common for listing/index pages, SPAs with shell-first layouts).
     if (htmlForConvert !== contentHtml && convertedContent.length < 200 && contentHtml.length > 20000) {
       if (process.env.DEBUG) {
-        console.debug('[webpeel]', `budget pre-truncation produced thin content (${convertedContent.length} chars from ${htmlForConvert.length} HTML). Retrying with full HTML (${contentHtml.length} chars).`);
+        log.debug(`budget pre-truncation produced thin content (${convertedContent.length} chars from ${htmlForConvert.length} HTML). Retrying with full HTML (${contentHtml.length} chars).`);
       }
       ctx.timer.mark('convert-retry');
       let retryConverted: string;
@@ -855,7 +858,7 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
       ctx.links = [...new Set(found)];
     } catch (e) {
       // Non-fatal: JSON parse failed, treating as malformed
-      if (process.env.DEBUG) console.debug('[webpeel]', 'JSON parse failed:', e instanceof Error ? e.message : e);
+      log.debug('JSON parse failed:', e instanceof Error ? e.message : e);
       ctx.content = fetchResult.html;
       ctx.title = 'JSON Response (malformed)';
     }
@@ -885,7 +888,7 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
       }
     } catch (e) {
       // Non-fatal: XML/RSS parse failed, using raw content
-      if (process.env.DEBUG) console.debug('[webpeel]', 'XML/RSS parse failed:', e instanceof Error ? e.message : e);
+      log.debug('XML/RSS parse failed:', e instanceof Error ? e.message : e);
       ctx.content = fetchResult.html;
       ctx.title = 'XML Document';
     }
@@ -1004,7 +1007,7 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
     let budgetedContent = distillToBudget(ctx.content, options.budget, budgetFormat);
     ctx.timer.end('budget');
     if (process.env.DEBUG) {
-      console.debug('[webpeel]', `budget result: ${originalContent.length} → ${budgetedContent.length} chars`);
+      log.debug(`budget result: ${originalContent.length} → ${budgetedContent.length} chars`);
     }
 
     // Safety net: if BM25 distillation stripped too much (< 10% of original)
@@ -1022,7 +1025,7 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
       ctx.budgetFallback = true;
       ctx.warnings.push('Content was truncated to fit budget using head truncation (BM25 distillation produced insufficient content)');
       if (process.env.DEBUG) {
-        console.debug('[webpeel]', `budget distillation fallback: BM25 produced ${budgetedContent.length} chars (< 10% of ${originalContent.length}), using head truncation`);
+        log.debug(`budget distillation fallback: BM25 produced ${budgetedContent.length} chars (< 10% of ${originalContent.length}), using head truncation`);
       }
     }
 
@@ -1042,7 +1045,7 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
       }
     } catch (e) {
       // Domain extraction failure is non-fatal; continue with normal content
-      if (process.env.DEBUG) console.debug('[webpeel]', 'domain extraction failed:', e instanceof Error ? e.message : e);
+      log.debug('domain extraction failed:', e instanceof Error ? e.message : e);
     }
   }
 
@@ -1182,7 +1185,7 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
       const { extractBranding } = await import('./branding.js');
       ctx.brandingProfile = await extractBranding(fetchResult.page);
     } catch (error) {
-      console.error('Branding extraction failed:', error);
+      log.error('Branding extraction failed:', error);
     } finally {
       // Clean up the kept-open page and browser
       try {
@@ -1192,7 +1195,7 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
         }
       } catch (e) {
         // Non-fatal: page/browser cleanup after branding extraction
-        if (process.env.DEBUG) console.debug('[webpeel]', 'page/browser cleanup after branding:', e instanceof Error ? e.message : e);
+        log.debug('page/browser cleanup after branding:', e instanceof Error ? e.message : e);
       }
     }
   }
@@ -1203,7 +1206,7 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
       const { extractDesignAnalysis } = await import('./design-analysis.js');
       ctx.designAnalysisResult = await extractDesignAnalysis(fetchResult.page);
     } catch (error) {
-      console.error('Design analysis extraction failed:', error);
+      log.error('Design analysis extraction failed:', error);
     } finally {
       if (!options.branding) {
         // Clean up the page and browser if branding didn't already do it
@@ -1213,7 +1216,7 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
             await fetchResult.browser.close().catch(() => {});
           }
         } catch (e) {
-          if (process.env.DEBUG) console.debug('[webpeel]', 'page/browser cleanup after design analysis:', e instanceof Error ? e.message : e);
+          log.debug('page/browser cleanup after design analysis:', e instanceof Error ? e.message : e);
         }
       }
     }
@@ -1226,7 +1229,7 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
       const { trackChange } = await import('./change-tracking.js');
       ctx.changeResult = await trackChange(fetchResult.url, ctx.content, fingerprint);
     } catch (error) {
-      console.error('Change tracking failed:', error);
+      log.error('Change tracking failed:', error);
     }
   }
 
@@ -1245,7 +1248,7 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
         maxWords: maxLength,
       });
     } catch (error) {
-      console.error('Summary generation failed:', error);
+      log.error('Summary generation failed:', error);
     }
   }
 }

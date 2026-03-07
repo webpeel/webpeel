@@ -16,6 +16,9 @@
 import { fetch as undiciFetch } from 'undici';
 import { load } from 'cheerio';
 import { getStealthBrowser, getRandomUserAgent, applyStealthScripts } from './browser-pool.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('search');
 
 export type SearchProviderId = 'duckduckgo' | 'brave' | 'stealth' | 'google';
 
@@ -735,9 +738,7 @@ export class DuckDuckGoProvider implements SearchProvider {
     const skipDdgHttp = providerStats.shouldSkip('ddg-http');
 
     if (skipDdgHttp) {
-      console.log(
-        `[webpeel:search] DDG HTTP skipped (failure rate ${Math.round(ddgHttpRate * 100)}% ≥ 80%)`,
-      );
+      log.debug(`DDG HTTP skipped (failure rate ${Math.round(ddgHttpRate * 100)}% ≥ 80%)`);
     } else {
       const ddgTimeoutMs = ddgHttpRate > 0.5 ? 2_000 : 8_000;
       const ddgSignal = createTimeoutSignal(ddgTimeoutMs, options.signal);
@@ -749,8 +750,7 @@ export class DuckDuckGoProvider implements SearchProvider {
           const results = await this.searchOnce(q, ddgOptions);
           if (results.length > 0) {
             providerStats.record('ddg-http', true);
-            console.log(
-              `[webpeel:search] source=ddg-http returned ${results.length} results` +
+            log.debug(`source=ddg-http returned ${results.length} results` +
               (ddgTimeoutMs < 8_000 ? ` (fast-timeout ${ddgTimeoutMs}ms)` : ''),
             );
             return results;
@@ -758,7 +758,7 @@ export class DuckDuckGoProvider implements SearchProvider {
           ddgSucceeded = true; // connected OK, just 0 results
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
-          console.log('[webpeel:search] DDG HTTP failed:', msg);
+          log.debug('DDG HTTP failed:', msg);
           break;
         }
       }
@@ -775,28 +775,24 @@ export class DuckDuckGoProvider implements SearchProvider {
     const skipDdgLite = providerStats.shouldSkip('ddg-lite');
 
     if (skipDdgLite) {
-      console.log(
-        `[webpeel:search] DDG Lite skipped (failure rate ${Math.round(ddgLiteRate * 100)}% ≥ 80%)`,
-      );
+      log.debug(`DDG Lite skipped (failure rate ${Math.round(ddgLiteRate * 100)}% ≥ 80%)`);
     } else {
-      console.log('[webpeel:search] DDG returned 0 results, trying DDG Lite...');
+      log.debug('DDG returned 0 results, trying DDG Lite...');
       const liteTimeoutMs = ddgLiteRate > 0.5 ? 2_000 : 8_000;
       const liteSignal = createTimeoutSignal(liteTimeoutMs, options.signal);
       try {
         const liteResults = await this.searchLite(query, { ...options, signal: liteSignal });
         if (liteResults.length > 0) {
           providerStats.record('ddg-lite', true);
-          console.log(
-            `[webpeel:search] source=ddg-lite returned ${liteResults.length} results` +
-            (liteTimeoutMs < 8_000 ? ` (fast-timeout ${liteTimeoutMs}ms)` : ''),
-          );
+          log.debug(`source=ddg-lite returned ${liteResults.length} results` +
+            (liteTimeoutMs < 8_000 ? ` (fast-timeout ${liteTimeoutMs}ms)` : ''));
           return liteResults;
         }
         providerStats.record('ddg-lite', false);
-        console.log('[webpeel:search] DDG Lite also returned 0 results');
+        log.debug('DDG Lite also returned 0 results');
       } catch (e) {
         providerStats.record('ddg-lite', false);
-        console.log('[webpeel:search] DDG Lite failed:', e instanceof Error ? e.message : e);
+        log.debug('DDG Lite failed:', e instanceof Error ? e.message : e);
       }
     }
 
@@ -809,11 +805,11 @@ export class DuckDuckGoProvider implements SearchProvider {
         const braveProvider = new BraveSearchProvider();
         const braveResults = await braveProvider.searchWeb(query, { ...options, apiKey: braveKey });
         if (braveResults.length > 0) {
-          console.log(`[webpeel:search] source=brave returned ${braveResults.length} results`);
+          log.debug(`source=brave returned ${braveResults.length} results`);
           return braveResults;
         }
       } catch (e) {
-        console.log('[webpeel:search] Brave search failed:', e instanceof Error ? e.message : e);
+        log.debug('Brave search failed:', e instanceof Error ? e.message : e);
       }
     }
 
@@ -822,17 +818,17 @@ export class DuckDuckGoProvider implements SearchProvider {
     // Bypasses bot-detection on datacenter IPs. This is the reliable
     // last resort — but it spins up a browser so it takes a few seconds.
     // -----------------------------------------------------------
-    console.log('[webpeel:search] Trying stealth browser search (DDG + Bing + Ecosia)...');
+    log.debug('Trying stealth browser search (DDG + Bing + Ecosia)...');
     try {
       const stealthProvider = new StealthSearchProvider();
       const stealthResults = await stealthProvider.searchWeb(query, options);
       if (stealthResults.length > 0) {
-        console.log(`[webpeel:search] source=stealth returned ${stealthResults.length} results`);
+        log.debug(`source=stealth returned ${stealthResults.length} results`);
         return stealthResults;
       }
-      console.log('[webpeel:search] Stealth search returned 0 results');
+      log.debug('Stealth search returned 0 results');
     } catch (e) {
-      console.log('[webpeel:search] Stealth search failed:', e instanceof Error ? e.message : e);
+      log.debug('Stealth search failed:', e instanceof Error ? e.message : e);
     }
 
     return [];
@@ -1028,9 +1024,7 @@ export class GoogleSearchProvider implements SearchProvider {
         if (results.length > 0) return results.slice(0, count);
       }
     } catch (e) {
-      if (process.env.DEBUG) {
-        console.debug('[webpeel] Google stealth (peel) error:', (e as Error).message);
-      }
+      log.debug('Google stealth (peel) error:', (e as Error).message);
     }
 
     // Strategy B: direct playwright-extra + stealth plugin
@@ -1074,9 +1068,7 @@ export class GoogleSearchProvider implements SearchProvider {
       const html = await page.content();
       return this._parseGoogleHtml(html, count);
     } catch (e) {
-      if (process.env.DEBUG) {
-        console.debug('[webpeel] Google stealth (playwright) error:', (e as Error).message);
-      }
+      log.debug('Google stealth (playwright) error:', (e as Error).message);
       return [];
     } finally {
       await page?.close().catch(() => {});

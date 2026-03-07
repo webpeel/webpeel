@@ -16,6 +16,9 @@ import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types
 import { getCached } from './cache.js';
 import { cachedLookup, resolveAndCache, startDnsWarmup } from './dns-cache.js';
 import { detectChallenge } from './challenge-detection.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('http');
 
 // ── HTTP status text fallbacks (HTTP/2 omits reason phrases) ──────────────────
 
@@ -101,7 +104,7 @@ function normalizeUrlForConditionalCache(url: string): string {
     return normalized.toString();
   } catch (e) {
     // Non-fatal: URL normalization failed, returning raw trimmed URL
-    if (process.env.DEBUG) console.debug('[webpeel]', 'URL normalization:', e instanceof Error ? e.message : e);
+    log.debug('URL normalization:', e instanceof Error ? e.message : e);
     return url.trim();
   }
 }
@@ -507,7 +510,7 @@ export async function simpleFetch(
     });
   } catch (e) {
     // Ignore URL parsing errors here; validation handles invalid input below.
-    if (process.env.DEBUG) console.debug('[webpeel]', 'DNS prefetch (initial URL):', e instanceof Error ? e.message : e);
+    log.debug('DNS prefetch (initial URL):', e instanceof Error ? e.message : e);
   }
 
   while (redirectCount <= MAX_REDIRECTS) {
@@ -573,7 +576,7 @@ export async function simpleFetch(
           });
         } catch (e) {
           // Ignore URL parsing errors here; validation handles invalid input below.
-          if (process.env.DEBUG) console.debug('[webpeel]', 'DNS prefetch (redirect URL):', e instanceof Error ? e.message : e);
+          log.debug('DNS prefetch (redirect URL):', e instanceof Error ? e.message : e);
         }
         redirectCount++;
         continue;

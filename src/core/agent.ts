@@ -12,6 +12,9 @@
 
 import { load } from 'cheerio';
 import { peel } from '../index.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('agent');
 
 // ---------------------------------------------------------------------------
 // Types
@@ -128,14 +131,14 @@ async function searchWeb(query: string, limit = 10): Promise<SearchResult[]> {
 
           results.push({ url: actualUrl, title, snippet: desc });
         } catch (e) {
-          if (process.env.DEBUG) console.debug('[webpeel]', 'url decode failed:', e instanceof Error ? e.message : e);
+          log.debug('url decode failed:', e instanceof Error ? e.message : e);
         }
       }
     });
 
     return results.slice(0, limit);
   } catch (error: any) {
-    console.error('Search failed:', error);
+    log.error('Search failed:', error);
     return [];
   }
 }
@@ -327,7 +330,7 @@ async function callLLMStreaming(
           };
         }
       } catch (e) {
-        if (process.env.DEBUG) console.debug('[webpeel]', 'stream chunk parse failed:', e instanceof Error ? e.message : e);
+        log.debug('stream chunk parse failed:', e instanceof Error ? e.message : e);
       }
     }
   }
@@ -535,7 +538,7 @@ export async function runAgent(options: AgentOptions): Promise<AgentResult> {
 
         reportProgress('visiting', `Fetched: ${result.title}`, url);
       } catch (error: any) {
-        console.error(`Failed to fetch ${url}:`, error.message);
+        log.error(`Failed to fetch ${url}:`, error.message);
       }
     }
 
@@ -586,12 +589,12 @@ export async function runAgent(options: AgentOptions): Promise<AgentResult> {
               sources.push(result.url);
               sourcesDetailed.push({ url: result.url, title: result.title });
             } catch (e) {
-              if (process.env.DEBUG) console.debug('[webpeel]', 'page fetch failed:', e instanceof Error ? e.message : e);
+              log.debug('page fetch failed:', e instanceof Error ? e.message : e);
             }
           }
         }
       } catch (e) {
-        if (process.env.DEBUG) console.debug('[webpeel]', 'research batch failed:', e instanceof Error ? e.message : e);
+        log.debug('research batch failed:', e instanceof Error ? e.message : e);
       }
     }
 
@@ -706,7 +709,7 @@ export async function runAgent(options: AgentOptions): Promise<AgentResult> {
       tokensUsed: totalUsage,
     };
   } catch (error: any) {
-    console.error('Agent error:', error);
+    log.error('Agent error:', error);
 
     return {
       success: false,
