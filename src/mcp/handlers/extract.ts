@@ -1,11 +1,13 @@
 /**
  * handleExtract — extract structured data from a URL.
  * Supports auto-detection, field lists, schema, and brand presets.
+ * Supports LLM-based extraction via llmProvider + llmApiKey.
  */
 
 import { peel } from '../../index.js';
 import type { PeelOptions, PeelResult } from '../../types.js';
 import { textResult, safeStringify, timeout, type McpHandler } from './types.js';
+import { extractWithLLM, type LLMProvider } from '../../core/llm-extract.js';
 
 function extractColorsFromContent(content: string): string[] {
   const hexRegex = /#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g;
@@ -31,6 +33,38 @@ export const handleExtract: McpHandler = async (args, _ctx?) => {
   const schema = args['schema'] as Record<string, unknown> | undefined;
   const fields = args['fields'] as string[] | undefined;
   const render = (args['render'] as boolean | undefined) || false;
+  const llmApiKey = args['llmApiKey'] as string | undefined;
+  const llmProvider = args['llmProvider'] as LLMProvider | undefined;
+  const llmModel = args['llmModel'] as string | undefined;
+  const prompt = args['prompt'] as string | undefined;
+
+  // LLM-based extraction: when llmApiKey (and optionally llmProvider) are provided
+  if (llmApiKey && (schema || prompt)) {
+    const peelResult = await Promise.race([
+      peel(url, { format: 'markdown', render }),
+      timeout<never>(60000, 'LLM extract fetch'),
+    ]) as PeelResult;
+
+    const extractResult = await extractWithLLM({
+      content: peelResult.content,
+      schema: schema as object | undefined,
+      prompt,
+      llmApiKey,
+      llmProvider: llmProvider || 'openai',
+      llmModel,
+    });
+
+    return textResult(safeStringify({
+      success: true,
+      url: peelResult.url,
+      data: extractResult.items.length === 1 ? extractResult.items[0] : extractResult.items,
+      llm: {
+        provider: extractResult.provider || llmProvider || 'openai',
+        model: extractResult.model,
+        tokens: extractResult.tokensUsed,
+      },
+    }));
+  }
 
   // Brand preset: fields=['name','logo','colors','fonts','socials'] or _brand flag
   const isBrandPreset =

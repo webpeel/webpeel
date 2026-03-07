@@ -20,6 +20,7 @@ export function createExtractRouter(): Router {
         schema,
         prompt,
         llmApiKey,
+        llmProvider,
         model,
         baseUrl,
       } = req.body as {
@@ -27,6 +28,7 @@ export function createExtractRouter(): Router {
         schema?: object;
         prompt?: string;
         llmApiKey?: string;
+        llmProvider?: string;
         model?: string;
         baseUrl?: string;
       };
@@ -106,6 +108,11 @@ export function createExtractRouter(): Router {
         return;
       }
 
+      // Resolve provider and API key
+      const resolvedProvider = (['openai', 'anthropic', 'google'].includes(llmProvider || ''))
+        ? (llmProvider as 'openai' | 'anthropic' | 'google')
+        : 'openai';
+
       // Resolve API key from request body or environment
       const resolvedApiKey = llmApiKey || process.env.OPENAI_API_KEY;
       if (!resolvedApiKey) {
@@ -114,7 +121,7 @@ export function createExtractRouter(): Router {
           error: {
             type: 'missing_api_key',
             message: 'LLM API key required. Provide "llmApiKey" in the request body or set OPENAI_API_KEY on the server.',
-            hint: 'Pass your OpenAI API key: { "llmApiKey": "sk-..." }',
+            hint: 'Pass your API key: { "llmApiKey": "sk-...", "llmProvider": "openai" }',
             docs: 'https://webpeel.dev/docs/errors#missing-api-key',
           },
           requestId: req.requestId || crypto.randomUUID(),
@@ -128,20 +135,35 @@ export function createExtractRouter(): Router {
         timeout: 30000,
       });
 
+      const startTime = Date.now();
+
       // Extract structured data with LLM
       const extractResult = await extractWithLLM({
         content: peelResult.content,
         instruction: prompt,
+        prompt,
         schema,
         apiKey: resolvedApiKey,
-        model: model || process.env.WEBPEEL_LLM_MODEL || 'gpt-4o-mini',
+        llmApiKey: resolvedApiKey,
+        llmProvider: resolvedProvider,
+        model: model || process.env.WEBPEEL_LLM_MODEL || undefined,
+        llmModel: model || process.env.WEBPEEL_LLM_MODEL || undefined,
         baseUrl: baseUrl || process.env.WEBPEEL_LLM_BASE_URL || 'https://api.openai.com/v1',
       });
 
-      // Return in Firecrawl-compatible format
+      const elapsed = Date.now() - startTime;
+
+      // Return in Firecrawl-compatible format with llm metadata
       res.json({
         success: true,
         data: extractResult.items.length === 1 ? extractResult.items[0] : extractResult.items,
+        llm: {
+          provider: extractResult.provider || resolvedProvider,
+          model: extractResult.model,
+          tokens: extractResult.tokensUsed,
+        },
+        url: peelResult.url,
+        elapsed,
         metadata: {
           url: peelResult.url,
           title: peelResult.title,

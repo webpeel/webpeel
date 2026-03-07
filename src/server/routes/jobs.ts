@@ -10,7 +10,7 @@ import { searchJobs } from '../../core/jobs.js';
 import type { JobSearchOptions } from '../../core/jobs.js';
 import type { AuthStore } from '../auth-store.js';
 import type { IJobQueue } from '../job-queue.js';
-import { sendWebhook } from './webhooks.js';
+import { sendWebhook, normalizeWebhook } from './webhooks.js';
 import { initSSE, sendSSE, endSSE, wantsSSE } from '../utils/sse.js';
 
 export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Router {
@@ -57,9 +57,12 @@ export function createJobsRouter(jobQueue: IJobQueue, authStore: AuthStore): Rou
 
       const ownerId = req.auth?.keyInfo?.accountId;
 
+      // Normalize webhook (accept both string URL and WebhookConfig object)
+      const normalizedWebhook = webhook ? normalizeWebhook(webhook) : undefined;
+
       // ── SSE streaming path ────────────────────────────────────────────────
       if (wantsSSE(req)) {
-        const job = await jobQueue.createJob('crawl', webhook, ownerId);
+        const job = await jobQueue.createJob('crawl', normalizedWebhook, ownerId);
 
         // Set SSE headers (X-Request-Id is already set by global middleware)
         initSSE(res);
