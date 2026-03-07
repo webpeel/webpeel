@@ -40,7 +40,7 @@ export function createBillingPortalRouter(pool: pg.Pool | null): Router {
     try {
       const userId = (req as any).user?.userId || (req as any).auth?.keyInfo?.accountId;
       if (!userId) {
-        res.status(401).json({ error: 'unauthorized' });
+        res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'Authentication required.', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
         return;
       }
 

@@ -43,8 +43,9 @@ export function createCLIUsageRouter(): Router {
       // Require API key auth (set by global auth middleware)
       if (!req.auth?.keyInfo?.accountId) {
         res.status(401).json({
-          error: 'unauthorized',
-          message: 'Valid API key required. Run `webpeel login` to authenticate.',
+          success: false,
+          error: { type: 'unauthorized', message: 'Valid API key required. Run `webpeel login` to authenticate.', docs: 'https://webpeel.dev/docs/authentication' },
+          requestId: req.requestId,
         });
         return;
       }

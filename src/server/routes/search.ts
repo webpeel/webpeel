@@ -65,9 +65,9 @@ export function createSearchRouter(authStore: AuthStore): Router {
       const searchAuthId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!searchAuthId) {
         res.status(401).json({
-          error: 'authentication_required',
-          message: 'API key required. Get one free at https://app.webpeel.dev',
-          docs: 'https://webpeel.dev/docs/api-reference#authentication',
+          success: false,
+          error: { type: 'authentication_required', message: 'API key required. Get one free at https://app.webpeel.dev', docs: 'https://webpeel.dev/docs/api-reference#authentication' },
+          requestId: req.requestId,
         });
         return;
       }

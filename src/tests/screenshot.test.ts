@@ -141,7 +141,7 @@ describe('POST /v1/screenshot', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('url');
+    expect(res.body.error.message).toContain('url');
   });
 
   it('returns 400 for non-string URL', async () => {
@@ -160,7 +160,7 @@ describe('POST /v1/screenshot', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('format');
+    expect(res.body.error.message).toContain('format');
   });
 
   it('returns 400 for invalid width', async () => {
@@ -170,7 +170,7 @@ describe('POST /v1/screenshot', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('width');
+    expect(res.body.error.message).toContain('width');
   });
 
   it('returns 400 for invalid height', async () => {
@@ -180,7 +180,7 @@ describe('POST /v1/screenshot', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('height');
+    expect(res.body.error.message).toContain('height');
   });
 
   it('returns 400 for invalid quality', async () => {
@@ -190,7 +190,7 @@ describe('POST /v1/screenshot', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('quality');
+    expect(res.body.error.message).toContain('quality');
   });
 
   it('returns 400 for invalid waitFor', async () => {
@@ -200,7 +200,7 @@ describe('POST /v1/screenshot', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('waitFor');
+    expect(res.body.error.message).toContain('waitFor');
   });
 
   it('blocks SSRF — localhost', async () => {
@@ -210,7 +210,7 @@ describe('POST /v1/screenshot', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('localhost');
+    expect(res.body.error.message).toContain('localhost');
   });
 
   it('blocks non-HTTP protocols', async () => {

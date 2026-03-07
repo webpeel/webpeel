@@ -309,6 +309,33 @@ export function createApp(config: ServerConfig = {}): Express {
     app.use(sentry.errorHandler);
   }
 
+  // Global error response normalizer — ensures ALL errors use the same structured shape.
+  // Catches errors thrown via next(err) that may have a flat format {error: string, message: string}.
+  // Must run before the generic error handler below.
+  app.use((err: any, req: Request, res: Response, next: NextFunction): void => {
+    // Skip if error is already in structured format (has error.type or error.message as object)
+    if (err && typeof err.error === 'object' && err.error !== null) {
+      return next(err);
+    }
+    // Skip standard Error objects (handled by the generic error handler with Playwright sanitization)
+    if (err instanceof Error && !err.hasOwnProperty('statusCode') && !err.hasOwnProperty('status')) {
+      return next(err);
+    }
+    const statusCode: number = (err && (err.statusCode || err.status)) || 500;
+    if (res.headersSent) return next(err);
+    const requestId: string = req.requestId || (req.headers['x-request-id'] as string) || crypto.randomUUID();
+    res.status(statusCode).json({
+      success: false,
+      error: {
+        type: (err && (err.type || err.error)) || 'server_error',
+        message: (err && err.message) || 'An unexpected error occurred',
+        ...((err && err.hint) ? { hint: err.hint } : {}),
+        ...((err && err.docs) ? { docs: err.docs } : {}),
+      },
+      requestId,
+    });
+  });
+
   // Error handler - SECURITY: sanitize errors in production to prevent leaking
   // Playwright stack traces, internal paths, or other sensitive details.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

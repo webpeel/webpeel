@@ -156,7 +156,7 @@ describe('POST /v1/screenshot/audit', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('url');
+    expect(res.body.error.message).toContain('url');
   });
 
   it('returns 400 for SSRF (localhost)', async () => {
@@ -175,7 +175,7 @@ describe('POST /v1/screenshot/audit', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('format');
+    expect(res.body.error.message).toContain('format');
   });
 
   it('uses default selector "section" when no selector given', async () => {
@@ -292,7 +292,7 @@ describe('POST /v1/screenshot/viewports', () => {
       .send({ viewports: [{ width: 375, height: 812 }] });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('url');
+    expect(res.body.error.message).toContain('url');
   });
 
   it('returns 400 for SSRF (localhost)', async () => {
@@ -325,7 +325,7 @@ describe('POST /v1/screenshot/viewports', () => {
       .send({ url: 'https://example.com' });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('viewports');
+    expect(res.body.error.message).toContain('viewports');
   });
 
   it('returns 400 for empty viewports array', async () => {
@@ -334,7 +334,7 @@ describe('POST /v1/screenshot/viewports', () => {
       .send({ url: 'https://example.com', viewports: [] });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('viewports');
+    expect(res.body.error.message).toContain('viewports');
   });
 
   it('returns 400 for more than 6 viewports', async () => {
@@ -346,7 +346,7 @@ describe('POST /v1/screenshot/viewports', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('6');
+    expect(res.body.error.message).toContain('6');
   });
 
   it('returns 400 for viewport with missing width', async () => {
@@ -358,7 +358,7 @@ describe('POST /v1/screenshot/viewports', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('width');
+    expect(res.body.error.message).toContain('width');
   });
 
   it('returns 400 for viewport with out-of-range width', async () => {
@@ -370,7 +370,7 @@ describe('POST /v1/screenshot/viewports', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('dimensions');
+    expect(res.body.error.message).toContain('dimensions');
   });
 
   it('returns 400 for viewport with out-of-range height', async () => {
@@ -382,7 +382,7 @@ describe('POST /v1/screenshot/viewports', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('dimensions');
+    expect(res.body.error.message).toContain('dimensions');
   });
 
   it('returns 500 on internal error', async () => {
@@ -448,7 +448,7 @@ describe('POST /v1/screenshot/design-audit', () => {
       .send({});
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('url');
+    expect(res.body.error.message).toContain('url');
   });
 
   it('returns 400 for SSRF (localhost)', async () => {
@@ -475,7 +475,7 @@ describe('POST /v1/screenshot/design-audit', () => {
       .send({ url: 'https://example.com', rules: 'strict' });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('rules');
+    expect(res.body.error.message).toContain('rules');
   });
 
   it('returns 500 on internal error', async () => {
@@ -609,7 +609,7 @@ describe('POST /v1/screenshot — selector (element crop)', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('selector');
+    expect(res.body.error.message).toContain('selector');
   });
 });
 
@@ -690,7 +690,7 @@ describe('POST /v1/screenshot/diff', () => {
       .send({ url1: 'https://example.com', url2: 'https://example.com/v2', threshold: 1.5 });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('threshold');
+    expect(res.body.error.message).toContain('threshold');
   });
 
   it('returns 400 for invalid threshold (negative)', async () => {
@@ -699,7 +699,7 @@ describe('POST /v1/screenshot/diff', () => {
       .send({ url1: 'https://example.com', url2: 'https://example.com/v2', threshold: -0.1 });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('threshold');
+    expect(res.body.error.message).toContain('threshold');
   });
 
   it('returns 400 if url1 === url2', async () => {
@@ -948,7 +948,7 @@ describe('POST /v1/review', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
-    expect(res.body.message).toContain('url');
+    expect(res.body.error.message).toContain('url');
   });
 
   it('returns 400 for SSRF (localhost)', async () => {

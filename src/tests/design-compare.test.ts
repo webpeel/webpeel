@@ -403,15 +403,15 @@ describe('GET /v1/design-compare', () => {
   it('returns 400 when "url" is missing', async () => {
     const res = await request(app).get('/v1/design-compare?ref=https://reference.com');
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('invalid_request');
-    expect(res.body.message).toContain('"url"');
+    expect(res.body.error.type).toBe('invalid_request');
+    expect(res.body.error.message).toContain('"url"');
   });
 
   it('returns 400 when "ref" is missing', async () => {
     const res = await request(app).get('/v1/design-compare?url=https://subject.com');
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('invalid_request');
-    expect(res.body.message).toContain('"ref"');
+    expect(res.body.error.type).toBe('invalid_request');
+    expect(res.body.error.message).toContain('"ref"');
   });
 
   it('returns 400 when url and ref are the same', async () => {
@@ -419,7 +419,7 @@ describe('GET /v1/design-compare', () => {
       '/v1/design-compare?url=https://example.com&ref=https://example.com',
     );
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error.type).toBe('invalid_request');
   });
 
   it('returns 200 with full comparison shape for valid request', async () => {
@@ -460,7 +460,7 @@ describe('GET /v1/design-compare', () => {
       '/v1/design-compare?url=https://subject.com&ref=https://reference.com&width=99',
     );
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('width');
+    expect(res.body.error.message).toContain('width');
   });
 
   it('score is a number between 1 and 10', async () => {

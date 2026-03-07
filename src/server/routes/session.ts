@@ -105,7 +105,7 @@ export function createSessionRouter(): Router {
   router.post('/v1/session', async (req: Request, res: Response) => {
     const ownerId = getOwnerId(req);
     if (!ownerId) {
-      res.status(401).json({ error: 'auth_required', message: 'Valid API key or session required.' });
+      res.status(401).json({ success: false, error: { type: 'auth_required', message: 'Valid API key or session required.', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 

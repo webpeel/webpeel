@@ -15,8 +15,9 @@ export function createStatsRouter(authStore: AuthStore): Router {
       const userId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!userId) {
         res.status(401).json({
-          error: 'unauthorized',
-          message: 'Authentication required',
+          success: false,
+          error: { type: 'unauthorized', message: 'Authentication required.', docs: 'https://webpeel.dev/docs/authentication' },
+          requestId: req.requestId,
         });
         return;
       }

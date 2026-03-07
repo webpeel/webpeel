@@ -173,8 +173,9 @@ export function createOAuthRouter(): Router {
         });
         if (!ghRes.ok) {
           res.status(401).json({
-            error: 'invalid_token',
-            message: 'Invalid GitHub access token',
+            success: false,
+            error: { type: 'invalid_token', message: 'Invalid GitHub access token.' },
+            requestId: req.requestId,
           });
           return;
         }
@@ -204,8 +205,9 @@ export function createOAuthRouter(): Router {
         const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(accessToken)}`);
         if (!gRes.ok) {
           res.status(401).json({
-            error: 'invalid_token',
-            message: 'Invalid Google token',
+            success: false,
+            error: { type: 'invalid_token', message: 'Invalid Google token.' },
+            requestId: req.requestId,
           });
           return;
         }
@@ -404,7 +406,7 @@ export function createOAuthRouter(): Router {
       // Verify the shared secret — proves the request comes from our own dashboard
       const expectedSecret = process.env.DASHBOARD_RECOVER_SECRET || process.env.NEXTAUTH_SECRET;
       if (!expectedSecret || secret !== expectedSecret) {
-        return res.status(401).json({ error: 'unauthorized', message: 'Invalid recovery secret' });
+        return res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'Invalid recovery secret.' }, requestId: req.requestId });
       }
 
       // Look up user by email

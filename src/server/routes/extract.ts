@@ -127,7 +127,7 @@ export function createExtractRouter(): Router {
       const msg = error instanceof Error ? error.message : 'Unknown error';
 
       if (msg.includes('authentication failed') || msg.includes('401')) {
-        res.status(401).json({ success: false, error: 'llm_auth_failed', message: msg });
+        res.status(401).json({ success: false, error: { type: 'llm_auth_failed', message: msg }, requestId: req.requestId });
         return;
       }
       if (msg.includes('rate limit') || msg.includes('429')) {

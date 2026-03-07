@@ -49,8 +49,9 @@ export function createWatchRouter(pool: pg.Pool): Router {
     const accountId = req.auth?.keyInfo?.accountId;
     if (!accountId) {
       res.status(401).json({
-        error: 'unauthorized',
-        message: 'API key required. Pass via Authorization: Bearer <key>.',
+        success: false,
+        error: { type: 'unauthorized', message: 'API key required. Pass via Authorization: Bearer <key>.', docs: 'https://webpeel.dev/docs/authentication' },
+        requestId: req.requestId,
       });
       return null;
     }
@@ -76,8 +77,9 @@ export function createWatchRouter(pool: pg.Pool): Router {
 
     if (!url || typeof url !== 'string') {
       res.status(400).json({
-        error: 'invalid_request',
-        message: 'Missing or invalid "url" parameter.',
+        success: false,
+        error: { type: 'invalid_request', message: 'Missing or invalid "url" parameter.' },
+        requestId: req.requestId,
       });
       return;
     }
@@ -95,7 +97,7 @@ export function createWatchRouter(pool: pg.Pool): Router {
     }
 
     if (webhookUrl !== undefined && (typeof webhookUrl !== 'string' || webhookUrl.length > 2048)) {
-      res.status(400).json({ error: 'invalid_request', message: 'Invalid "webhookUrl".' });
+      res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Invalid "webhookUrl".' }, requestId: req.requestId });
       return;
     }
 
@@ -103,8 +105,9 @@ export function createWatchRouter(pool: pg.Pool): Router {
       resolvedIntervalInput !== undefined ? Number(resolvedIntervalInput) : 60;
     if (!Number.isFinite(intervalMinutes) || intervalMinutes < 1 || intervalMinutes > 44640) {
       res.status(400).json({
-        error: 'invalid_request',
-        message: '"checkIntervalMinutes" must be between 1 and 44640 (31 days).',
+        success: false,
+        error: { type: 'invalid_request', message: '"checkIntervalMinutes" must be between 1 and 44640 (31 days).' },
+        requestId: req.requestId,
       });
       return;
     }
@@ -151,7 +154,7 @@ export function createWatchRouter(pool: pg.Pool): Router {
         return;
       }
       if (entry.accountId !== accountId) {
-        res.status(403).json({ error: 'forbidden', message: 'Access denied.' });
+        res.status(403).json({ success: false, error: { type: 'forbidden', message: 'Access denied.' }, requestId: req.requestId });
         return;
       }
       res.json({ ok: true, watch: entry });
@@ -181,7 +184,7 @@ export function createWatchRouter(pool: pg.Pool): Router {
         return;
       }
       if (entry.accountId !== accountId) {
-        res.status(403).json({ error: 'forbidden', message: 'Access denied.' });
+        res.status(403).json({ success: false, error: { type: 'forbidden', message: 'Access denied.' }, requestId: req.requestId });
         return;
       }
 
@@ -248,7 +251,7 @@ export function createWatchRouter(pool: pg.Pool): Router {
         return;
       }
       if (existing.accountId !== accountId) {
-        res.status(403).json({ error: 'forbidden', message: 'Access denied.' });
+        res.status(403).json({ success: false, error: { type: 'forbidden', message: 'Access denied.' }, requestId: req.requestId });
         return;
       }
 
@@ -269,8 +272,9 @@ export function createWatchRouter(pool: pg.Pool): Router {
         const n = Number(resolvedPatchInterval);
         if (!Number.isFinite(n) || n < 1 || n > 44640) {
           res.status(400).json({
-            error: 'invalid_request',
-            message: '"checkIntervalMinutes" must be between 1 and 44640.',
+            success: false,
+            error: { type: 'invalid_request', message: '"checkIntervalMinutes" must be between 1 and 44640.' },
+            requestId: req.requestId,
           });
           return;
         }
@@ -302,7 +306,7 @@ export function createWatchRouter(pool: pg.Pool): Router {
         return;
       }
       if (existing.accountId !== accountId) {
-        res.status(403).json({ error: 'forbidden', message: 'Access denied.' });
+        res.status(403).json({ success: false, error: { type: 'forbidden', message: 'Access denied.' }, requestId: req.requestId });
         return;
       }
 
