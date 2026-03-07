@@ -4,15 +4,11 @@
   </a>
 </p>
 
-[![CI](https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg)](https://github.com/webpeel/webpeel/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/webpeel.svg)](https://www.npmjs.com/package/webpeel)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 <p align="center">
+  <a href="https://github.com/webpeel/webpeel/actions/workflows/ci.yml"><img src="https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/v/webpeel.svg?style=flat-square" alt="npm version"></a>
   <a href="https://pypi.org/project/webpeel/"><img src="https://img.shields.io/pypi/v/webpeel.svg?style=flat-square" alt="PyPI version"></a>
-  <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/dm/webpeel.svg?style=flat-square" alt="Monthly downloads"></a>
-  <a href="https://github.com/webpeel/webpeel/stargazers"><img src="https://img.shields.io/github/stars/webpeel/webpeel.svg?style=flat-square" alt="GitHub stars"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-WebPeel%20SDK-blue.svg?style=flat-square" alt="License"></a>
   <a href="https://webpeel.dev/status"><img src="https://img.shields.io/badge/status-operational-brightgreen.svg?style=flat-square" alt="Status"></a>
 </p>
