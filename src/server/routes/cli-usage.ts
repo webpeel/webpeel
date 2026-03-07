@@ -14,10 +14,15 @@ export function createCLIUsageRouter(): Router {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     // If no DB, return a stub router
-    router.get('/v1/cli/usage', (_req: Request, res: Response) => {
+    router.get('/v1/cli/usage', (req: Request, res: Response) => {
       res.status(501).json({
-        error: 'not_configured',
-        message: 'Usage tracking requires PostgreSQL backend',
+        success: false,
+        error: {
+          type: 'not_configured',
+          message: 'Usage tracking requires PostgreSQL backend',
+          docs: 'https://webpeel.dev/docs/errors#not_configured',
+        },
+        requestId: req.requestId,
       });
     });
     return router;
@@ -42,11 +47,7 @@ export function createCLIUsageRouter(): Router {
     try {
       // Require API key auth (set by global auth middleware)
       if (!req.auth?.keyInfo?.accountId) {
-        res.status(401).json({
-          success: false,
-          error: { type: 'unauthorized', message: 'Valid API key required. Run `webpeel login` to authenticate.', docs: 'https://webpeel.dev/docs/authentication' },
-          requestId: req.requestId,
-        });
+        res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'Valid API key required. Run `webpeel login` to authenticate.', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
         return;
       }
 
@@ -59,7 +60,7 @@ export function createCLIUsageRouter(): Router {
       );
 
       if (planResult.rows.length === 0) {
-        res.status(404).json({ error: 'user_not_found', message: 'User not found' });
+        res.status(404).json({ success: false, error: { type: 'user_not_found', message: 'User not found', docs: 'https://webpeel.dev/docs/errors#user_not_found' }, requestId: req.requestId });
         return;
       }
 
@@ -138,8 +139,13 @@ export function createCLIUsageRouter(): Router {
     } catch (error: any) {
       console.error('CLI usage error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to retrieve usage',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve usage',
+          docs: 'https://webpeel.dev/docs/errors#internal_error',
+        },
+        requestId: req.requestId,
       });
     }
   });

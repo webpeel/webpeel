@@ -99,15 +99,7 @@ async function handleMcpPost(req: Request, res: Response, pool?: Pool | null): P
   // Require authentication
   const mcpAuthId = req.auth?.keyInfo?.accountId || (req as unknown as { user?: { userId?: string } }).user?.userId;
   if (!mcpAuthId) {
-    res.status(401).json({
-      jsonrpc: '2.0',
-      error: {
-        code: -32001,
-        message:
-          'Authentication required. Pass API key via Authorization: Bearer <key> header or use /:apiKey/v2/mcp path.',
-      },
-      id: null,
-    });
+    res.status(401).json({ success: false, error: { type: 'authentication_required', message: 'Authentication required. Pass API key via Authorization: Bearer <key> header.', hint: 'Get an API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/errors#authentication_required' }, requestId: req.requestId });
     return;
   }
 
@@ -131,20 +123,20 @@ async function handleMcpPost(req: Request, res: Response, pool?: Pool | null): P
     console.error('MCP endpoint error:', error);
     if (!res.headersSent) {
       res.status(500).json({
-        jsonrpc: '2.0',
-        error: { code: -32603, message: 'Internal error' },
-        id: null,
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Internal error',
+          docs: 'https://webpeel.dev/docs/errors#internal_error',
+        },
+        requestId: req.requestId,
       });
     }
   }
 }
 
-function mcpMethodNotAllowed(_req: Request, res: Response): void {
-  res.status(405).json({
-    jsonrpc: '2.0',
-    error: { code: -32000, message: 'Method not allowed. Use POST to send MCP JSON-RPC messages.' },
-    id: null,
-  });
+function mcpMethodNotAllowed(req: Request, res: Response): void {
+  res.status(405).json({ success: false, error: { type: 'method_not_allowed', message: 'Method not allowed. Use POST to send MCP JSON-RPC messages.', hint: 'Send a POST request with a JSON-RPC body', docs: 'https://webpeel.dev/docs/errors#method_not_allowed' }, requestId: req.requestId });
 }
 
 function mcpDeleteOk(_req: Request, res: Response): void {
@@ -171,16 +163,7 @@ export function createMcpRouter(_authStore?: AuthStore, pool?: Pool | null): Rou
 
   // SECURITY: /:apiKey/v2/mcp — BLOCKED. API keys in URLs are insecure.
   const mcpInsecureAuthHandler = (req: Request, res: Response): void => {
-    res.status(400).json({
-      success: false,
-      error: {
-        type: 'insecure_auth',
-        message: 'API keys in URLs are insecure.',
-        hint: 'Use the Authorization header instead: Authorization: Bearer wp_your_key',
-        docs: 'https://webpeel.dev/docs/api-reference#authentication',
-      },
-      requestId: req.requestId,
-    });
+    res.status(400).json({ success: false, error: { type: 'insecure_auth', message: 'API keys in URLs are insecure.', hint: 'Use the Authorization header instead: Authorization: Bearer wp_your_key', docs: 'https://webpeel.dev/docs/api-reference#authentication' }, requestId: req.requestId });
   };
 
   router.post('/:apiKey/v2/mcp', mcpInsecureAuthHandler);

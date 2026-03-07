@@ -64,11 +64,7 @@ export function createSearchRouter(authStore: AuthStore): Router {
       // Require authentication
       const searchAuthId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!searchAuthId) {
-        res.status(401).json({
-          success: false,
-          error: { type: 'authentication_required', message: 'API key required. Get one free at https://app.webpeel.dev', docs: 'https://webpeel.dev/docs/api-reference#authentication' },
-          requestId: req.requestId,
-        });
+        res.status(401).json({ success: false, error: { type: 'authentication_required', message: 'API key required. Get one free at https://app.webpeel.dev', docs: 'https://webpeel.dev/docs/api-reference#authentication' }, requestId: req.requestId });
         return;
       }
 
@@ -89,22 +85,14 @@ export function createSearchRouter(authStore: AuthStore): Router {
 
       // Validate query parameter
       if (!q || typeof q !== 'string') {
-        res.status(400).json({
-          error: 'invalid_request',
-          message: 'Missing or invalid "q" parameter. Pass a search query: GET /v1/search?q=your+search+terms',
-          example: 'curl "https://api.webpeel.dev/v1/search?q=latest+AI+news&count=5"',
-          docs: 'https://webpeel.dev/docs/api-reference#search',
-        });
+        res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing or invalid "q" parameter. Pass a search query: GET /v1/search?q=your+search+terms', hint: 'Example: curl "https://api.webpeel.dev/v1/search?q=latest+AI+news&count=5"', docs: 'https://webpeel.dev/docs/api-reference#search' }, requestId: req.requestId });
         return;
       }
 
       // Parse and validate count
       const resultCount = count ? parseInt(count as string, 10) : 5;
       if (isNaN(resultCount) || resultCount < 1 || resultCount > 10) {
-        res.status(400).json({
-          error: 'invalid_request',
-          message: 'Invalid "count" parameter: must be between 1 and 10',
-        });
+        res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Invalid "count" parameter: must be between 1 and 10', hint: 'Use a count value between 1 and 10', docs: 'https://webpeel.dev/docs/errors#invalid_request' }, requestId: req.requestId });
         return;
       }
 
@@ -382,10 +370,14 @@ export function createSearchRouter(authStore: AuthStore): Router {
       // SECURITY: Generic error message to prevent information disclosure
       console.error('Search error:', err); // Log full error server-side
       res.status(500).json({
-        error: 'search_failed',
-        message: 'Search request failed. If using Brave provider, verify your API key. Otherwise try again.',
-        hint: 'Free search uses DuckDuckGo (no key required). For higher quality, add provider=brave&searchApiKey=YOUR_KEY',
-        docs: 'https://webpeel.dev/docs/api-reference#search',
+        success: false,
+        error: {
+          type: 'search_failed',
+          message: 'Search request failed. If using Brave provider, verify your API key. Otherwise try again.',
+          hint: 'Free search uses DuckDuckGo (no key required). For higher quality, add provider=brave&searchApiKey=YOUR_KEY',
+          docs: 'https://webpeel.dev/docs/api-reference#search',
+        },
+        requestId: req.requestId,
       });
     }
   });

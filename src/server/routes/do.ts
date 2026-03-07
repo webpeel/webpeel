@@ -16,10 +16,7 @@ export function createDoRouter(): Router {
   async function handleDo(req: Request, res: Response): Promise<void> {
     const task = req.body?.task || (req.query?.task as string);
     if (!task?.trim()) {
-      res.status(400).json({
-        error: 'missing_task',
-        message: 'Provide task= parameter or {"task": "..."}',
-      });
+      res.status(400).json({ success: false, error: { type: 'missing_task', message: 'Provide task= parameter or {"task": "..."}', hint: 'POST {"task": "search for X"} or GET /v1/do?task=search+for+X', docs: 'https://webpeel.dev/docs/errors#missing_task' }, requestId: req.requestId });
       return;
     }
 
@@ -30,11 +27,7 @@ export function createDoRouter(): Router {
     const toolName = `webpeel_${intent.intent}`;
     const handler = getHandler(toolName);
     if (!handler) {
-      res.status(400).json({
-        error: 'unknown_intent',
-        message: `Could not understand: "${task}"`,
-        parsed: intent,
-      });
+      res.status(400).json({ success: false, error: { type: 'unknown_intent', message: `Could not understand: "${task}"`, hint: 'Try phrasing as: "fetch https://example.com", "search for AI news", or "screenshot https://example.com"', docs: 'https://webpeel.dev/docs/errors#unknown_intent' }, requestId: req.requestId });
       return;
     }
 
@@ -70,11 +63,13 @@ export function createDoRouter(): Router {
       });
     } catch (err: any) {
       res.status(500).json({
-        error: 'execution_failed',
-        task,
-        intent: intent.intent,
-        message: err.message,
-        elapsed: Date.now() - startMs,
+        success: false,
+        error: {
+          type: 'execution_failed',
+          message: err.message,
+          docs: 'https://webpeel.dev/docs/errors#execution_failed',
+        },
+        requestId: req.requestId,
       });
     }
   }

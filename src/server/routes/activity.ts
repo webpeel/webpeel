@@ -14,18 +14,20 @@ export function createActivityRouter(authStore: AuthStore): Router {
       // Require authentication (API key or JWT session token)
       const userId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!userId) {
-        res.status(401).json({
-          error: 'unauthorized',
-          message: 'Authentication required',
-        });
+        res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'Authentication required', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/errors#unauthorized' }, requestId: req.requestId });
         return;
       }
 
       // Only works with PostgreSQL backend
       if (!(authStore instanceof PostgresAuthStore)) {
         res.status(501).json({
-          error: 'not_implemented',
-          message: 'Activity endpoint requires PostgreSQL backend',
+          success: false,
+          error: {
+            type: 'not_implemented',
+            message: 'Activity endpoint requires PostgreSQL backend',
+            docs: 'https://webpeel.dev/docs/errors#not_implemented',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -67,8 +69,13 @@ export function createActivityRouter(authStore: AuthStore): Router {
     } catch (error: any) {
       console.error('Activity error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to retrieve activity',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve activity',
+          docs: 'https://webpeel.dev/docs/errors#internal_error',
+        },
+        requestId: req.requestId,
       });
     }
   });

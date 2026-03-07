@@ -79,20 +79,14 @@ export function createAskRouter(): Router {
     const elapsed = () => Date.now() - startMs;
 
     if (!question?.trim()) {
-      res.status(400).json({
-        error: 'missing_question',
-        message: 'Provide q= or question= parameter',
-      });
+      res.status(400).json({ success: false, error: { type: 'missing_question', message: 'Provide q= or question= parameter', hint: 'GET /v1/ask?q=your+question or POST {"question": "your question"}', docs: 'https://webpeel.dev/docs/errors#missing_question' }, requestId: req.requestId });
       return;
     }
 
     // Auth check — global middleware sets req.auth
     const authId = (req as any).auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!authId) {
-      res.status(401).json({
-        error: 'authentication_required',
-        message: 'API key required. Get one at https://app.webpeel.dev/keys',
-      });
+      res.status(401).json({ success: false, error: { type: 'authentication_required', message: 'API key required. Get one at https://app.webpeel.dev/keys', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/errors#authentication_required' }, requestId: req.requestId });
       return;
     }
 

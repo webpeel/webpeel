@@ -228,9 +228,9 @@ async function handleFilmstrip(req: Request, res: Response, authStore: AuthStore
       ).catch(() => {});
     }
     if (error.code) {
-      res.status(500).json({ error: 'filmstrip_error', message: error.message.replace(/[<>"']/g, '') });
+      res.status(500).json({ success: false, error: { type: 'filmstrip_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#filmstrip_error' }, requestId: req.requestId });
     } else {
-      res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred while taking the filmstrip' });
+      res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred while taking the filmstrip', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
     }
   }
 }
@@ -285,9 +285,9 @@ async function handleAudit(req: Request, res: Response, authStore: AuthStore): P
     });
   } catch (error: any) {
     if (error.code) {
-      res.status(500).json({ error: 'audit_error', message: error.message.replace(/[<>"']/g, '') });
+      res.status(500).json({ success: false, error: { type: 'audit_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#audit_error' }, requestId: req.requestId });
     } else {
-      res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during audit screenshots' });
+      res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred during audit screenshots', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
     }
   }
 }
@@ -353,9 +353,9 @@ async function handleViewports(req: Request, res: Response, authStore: AuthStore
     });
   } catch (error: any) {
     if (error.code) {
-      res.status(500).json({ error: 'viewports_error', message: error.message.replace(/[<>"']/g, '') });
+      res.status(500).json({ success: false, error: { type: 'viewports_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#viewports_error' }, requestId: req.requestId });
     } else {
-      res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during viewport screenshots' });
+      res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred during viewport screenshots', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
     }
   }
 }
@@ -401,9 +401,9 @@ async function handleDesignAuditHandler(req: Request, res: Response, authStore: 
     });
   } catch (error: any) {
     if (error.code) {
-      res.status(500).json({ error: 'design_audit_error', message: error.message.replace(/[<>"']/g, '') });
+      res.status(500).json({ success: false, error: { type: 'design_audit_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#design_audit_error' }, requestId: req.requestId });
     } else {
-      res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during design audit' });
+      res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred during design audit', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
     }
   }
 }
@@ -444,9 +444,9 @@ async function handleDesignAnalysisHandler(req: Request, res: Response, authStor
     });
   } catch (error: any) {
     if (error.code) {
-      res.status(500).json({ error: 'design_analysis_error', message: error.message.replace(/[<>"']/g, '') });
+      res.status(500).json({ success: false, error: { type: 'design_analysis_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#design_analysis_error' }, requestId: req.requestId });
     } else {
-      res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during design analysis' });
+      res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred during design analysis', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
     }
   }
 }
@@ -506,9 +506,9 @@ async function handleDesignMerged(req: Request, res: Response, authStore: AuthSt
     });
   } catch (error: any) {
     if (error.code) {
-      res.status(500).json({ error: 'design_error', message: error.message.replace(/[<>"']/g, '') });
+      res.status(500).json({ success: false, error: { type: 'design_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#design_error' }, requestId: req.requestId });
     } else {
-      res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during design analysis' });
+      res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred during design analysis', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
     }
   }
 }
@@ -587,9 +587,9 @@ async function handleDiff(req: Request, res: Response, authStore: AuthStore): Pr
     });
   } catch (error: any) {
     if (error.code) {
-      res.status(500).json({ error: 'diff_error', message: error.message.replace(/[<>"']/g, '') });
+      res.status(500).json({ success: false, error: { type: 'diff_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#diff_error' }, requestId: req.requestId });
     } else {
-      res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during visual diff' });
+      res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred during visual diff', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
     }
   }
 }
@@ -666,9 +666,9 @@ async function handleDesignCompare(req: Request, res: Response, authStore: AuthS
   } catch (error: unknown) {
     const err = error as Error & { code?: string };
     if (err.code) {
-      res.status(500).json({ error: 'design_compare_error', message: err.message.replace(/[<>"']/g, '') });
+      res.status(500).json({ success: false, error: { type: 'design_compare_error', message: err.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#design_compare_error' }, requestId: req.requestId });
     } else {
-      res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during design comparison' });
+      res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred during design comparison', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
     }
   }
 }
@@ -836,9 +836,9 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       }
 
       if (error.code) {
-        res.status(500).json({ error: 'screenshot_error', message: error.message.replace(/[<>"']/g, '') });
+        res.status(500).json({ success: false, error: { type: 'screenshot_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#screenshot_error' }, requestId: req.requestId });
       } else {
-        res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred while taking the screenshot' });
+        res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred while taking the screenshot', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
       }
     }
   });
@@ -854,10 +854,8 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
   );
 
   // ── POST /v1/screenshot/animation — DEPRECATED (410 Gone) ─────────────────
-  router.post('/v1/screenshot/animation', (_req: Request, res: Response) => {
-    res.status(410).json({
-      error: "This endpoint has been deprecated. Use POST /v1/screenshot with mode='filmstrip' instead.",
-    });
+  router.post('/v1/screenshot/animation', (req: Request, res: Response) => {
+    res.status(410).json({ success: false, error: { type: 'deprecated', message: "This endpoint has been deprecated. Use POST /v1/screenshot with mode='filmstrip' instead.", hint: "Use POST /v1/screenshot with { mode: 'filmstrip' } instead", docs: 'https://webpeel.dev/docs/errors#deprecated' }, requestId: req.requestId });
   });
 
   // ── POST /v1/screenshot/viewports — thin wrapper ───────────────────────────
@@ -932,9 +930,9 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
       });
     } catch (error: any) {
       if (error.code) {
-        res.status(500).json({ error: 'review_error', message: error.message.replace(/[<>"']/g, '') });
+        res.status(500).json({ success: false, error: { type: 'review_error', message: error.message.replace(/[<>"']/g, ''), docs: 'https://webpeel.dev/docs/errors#review_error' }, requestId: req.requestId });
       } else {
-        res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred during review' });
+        res.status(500).json({ success: false, error: { type: 'internal_error', message: 'An unexpected error occurred during review', docs: 'https://webpeel.dev/docs/errors#internal_error' }, requestId: req.requestId });
       }
     }
   });

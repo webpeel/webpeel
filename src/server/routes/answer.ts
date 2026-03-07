@@ -24,8 +24,9 @@ export function createAnswerRouter(): Router {
     // AUTH: require authentication (global middleware sets req.auth)
     const ansAuthId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ansAuthId) {
-      res.status(401).json({ error: 'authentication_required', message: 'API key required. Get one at https://app.webpeel.dev/keys' });
-      return;    }
+      res.status(401).json({ success: false, error: { type: 'authentication_required', message: 'API key required. Get one at https://app.webpeel.dev/keys', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/errors#authentication_required' }, requestId: req.requestId });
+      return;
+    }
     try {
       const {
         question,
@@ -49,34 +50,22 @@ export function createAnswerRouter(): Router {
 
       // --- Validation -----------------------------------------------------------
       if (!question || typeof question !== 'string' || question.trim().length === 0) {
-        res.status(400).json({
-          error: 'invalid_request',
-          message: 'Missing or invalid "question" parameter',
-        });
+        res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing or invalid "question" parameter', hint: 'Include a "question" string in the request body', docs: 'https://webpeel.dev/docs/errors#invalid_request' }, requestId: req.requestId });
         return;
       }
 
       if (question.length > 2000) {
-        res.status(400).json({
-          error: 'invalid_request',
-          message: '"question" too long (max 2000 characters)',
-        });
+        res.status(400).json({ success: false, error: { type: 'invalid_request', message: '"question" too long (max 2000 characters)', hint: 'Keep the question under 2000 characters', docs: 'https://webpeel.dev/docs/errors#invalid_request' }, requestId: req.requestId });
         return;
       }
 
       if (!llmProvider || !VALID_LLM_PROVIDERS.includes(llmProvider as LLMProviderId)) {
-        res.status(400).json({
-          error: 'invalid_request',
-          message: `"llmProvider" is required and must be one of: ${VALID_LLM_PROVIDERS.join(', ')}`,
-        });
+        res.status(400).json({ success: false, error: { type: 'invalid_request', message: `"llmProvider" is required and must be one of: ${VALID_LLM_PROVIDERS.join(', ')}`, hint: `Supported providers: ${VALID_LLM_PROVIDERS.join(', ')}`, docs: 'https://webpeel.dev/docs/errors#invalid_request' }, requestId: req.requestId });
         return;
       }
 
       if (!llmApiKey || typeof llmApiKey !== 'string' || llmApiKey.trim().length === 0) {
-        res.status(400).json({
-          error: 'invalid_request',
-          message: 'Missing or invalid "llmApiKey" (BYOK required)',
-        });
+        res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing or invalid "llmApiKey" (BYOK required)', hint: 'Provide your own LLM API key in the "llmApiKey" field', docs: 'https://webpeel.dev/docs/errors#invalid_request' }, requestId: req.requestId });
         return;
       }
 
@@ -165,8 +154,13 @@ export function createAnswerRouter(): Router {
       const err = error as Error;
       console.error('Answer error:', err);
       res.status(500).json({
-        error: 'answer_failed',
-        message: 'Failed to generate answer. Please try again.',
+        success: false,
+        error: {
+          type: 'answer_failed',
+          message: 'Failed to generate answer. Please try again.',
+          docs: 'https://webpeel.dev/docs/errors#answer_failed',
+        },
+        requestId: req.requestId,
       });
     }
   });

@@ -14,19 +14,20 @@ export function createStatsRouter(authStore: AuthStore): Router {
       // Require authentication (API key or JWT session token)
       const userId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          error: { type: 'unauthorized', message: 'Authentication required.', docs: 'https://webpeel.dev/docs/authentication' },
-          requestId: req.requestId,
-        });
+        res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'Authentication required.', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
         return;
       }
 
       // Only works with PostgreSQL backend
       if (!(authStore instanceof PostgresAuthStore)) {
         res.status(501).json({
-          error: 'not_implemented',
-          message: 'Stats endpoint requires PostgreSQL backend',
+          success: false,
+          error: {
+            type: 'not_implemented',
+            message: 'Stats endpoint requires PostgreSQL backend',
+            docs: 'https://webpeel.dev/docs/errors#not_implemented',
+          },
+          requestId: req.requestId,
         });
         return;
       }
@@ -66,8 +67,13 @@ export function createStatsRouter(authStore: AuthStore): Router {
     } catch (error: any) {
       console.error('Stats error:', error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to retrieve stats',
+        success: false,
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve stats',
+          docs: 'https://webpeel.dev/docs/errors#internal_error',
+        },
+        requestId: req.requestId,
       });
     }
   });

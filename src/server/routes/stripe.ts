@@ -45,7 +45,15 @@ export function createBillingPortalRouter(pool: pg.Pool | null): Router {
       }
 
       if (!pool) {
-        res.status(503).json({ error: 'db_unavailable', message: 'Database not configured' });
+        res.status(503).json({
+          success: false,
+          error: {
+            type: 'db_unavailable',
+            message: 'Database not configured',
+            docs: 'https://webpeel.dev/docs/errors#db_unavailable',
+          },
+          requestId: req.requestId,
+        });
         return;
       }
 
@@ -57,10 +65,7 @@ export function createBillingPortalRouter(pool: pg.Pool | null): Router {
       const stripeCustomerId = result.rows[0]?.stripe_customer_id;
 
       if (!stripeCustomerId) {
-        res.status(400).json({
-          error: 'no_subscription',
-          message: 'No active subscription found. Upgrade to Pro or Max to manage billing.',
-        });
+        res.status(400).json({ success: false, error: { type: 'no_subscription', message: 'No active subscription found. Upgrade to Pro or Max to manage billing.', hint: 'Upgrade at https://webpeel.dev/pricing', docs: 'https://webpeel.dev/docs/errors#no_subscription' }, requestId: req.requestId });
         return;
       }
 
@@ -73,7 +78,15 @@ export function createBillingPortalRouter(pool: pg.Pool | null): Router {
       res.json({ url: session.url });
     } catch (err: any) {
       log.error('Failed to create portal session:', err);
-      res.status(500).json({ error: 'portal_failed', message: 'Failed to create billing portal session' });
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'portal_failed',
+          message: 'Failed to create billing portal session',
+          docs: 'https://webpeel.dev/docs/errors#portal_failed',
+        },
+        requestId: req.requestId,
+      });
     }
   });
 
@@ -126,10 +139,7 @@ export function createStripeRouter(): Router {
       const sig = req.headers['stripe-signature'];
 
       if (!sig || typeof sig !== 'string') {
-        res.status(400).json({
-          error: 'missing_signature',
-          message: 'Stripe signature header missing',
-        });
+        res.status(400).json({ success: false, error: { type: 'missing_signature', message: 'Stripe signature header missing', hint: 'Ensure the request includes the stripe-signature header', docs: 'https://webpeel.dev/docs/errors#missing_signature' }, requestId: req.requestId });
         return;
       }
 
@@ -143,10 +153,7 @@ export function createStripeRouter(): Router {
         );
       } catch (err: any) {
         log.error('Webhook signature verification failed', { message: err.message });
-        res.status(400).json({
-          error: 'invalid_signature',
-          message: 'Webhook signature verification failed',
-        });
+        res.status(400).json({ success: false, error: { type: 'invalid_signature', message: 'Webhook signature verification failed', hint: 'Verify your STRIPE_WEBHOOK_SECRET matches the Stripe dashboard', docs: 'https://webpeel.dev/docs/errors#invalid_signature' }, requestId: req.requestId });
         return;
       }
 
@@ -184,8 +191,13 @@ export function createStripeRouter(): Router {
     } catch (error) {
       log.error('Webhook error', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
-        error: 'webhook_failed',
-        message: 'Failed to process webhook',
+        success: false,
+        error: {
+          type: 'webhook_failed',
+          message: 'Failed to process webhook',
+          docs: 'https://webpeel.dev/docs/errors#webhook_failed',
+        },
+        requestId: req.requestId,
       });
     }
   });
