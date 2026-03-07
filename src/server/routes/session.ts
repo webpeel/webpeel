@@ -22,7 +22,7 @@ import {
   getRandomUserAgent,
   applyStealthScripts,
 } from '../../core/browser-pool.js';
-// extractReadableContent imported dynamically in extractReadableText()
+import { extractReadableContent } from '../../core/readability.js';
 
 // ── Session store ─────────────────────────────────────────────────────────────
 
@@ -87,9 +87,8 @@ async function launchBrowser(): Promise<Browser> {
 }
 
 /** Extract readable text from an HTML string using WebPeel's built-in Readability engine. */
-async function extractReadableText(html: string, url: string): Promise<string> {
+function extractReadableText(html: string, url: string): string {
   try {
-    const { extractReadableContent } = await import('../../core/readability.js');
     const result = extractReadableContent(html, url);
     return result.content?.trim() || result.excerpt?.trim() || '';
   } catch {
@@ -184,7 +183,7 @@ export function createSessionRouter(): Router {
         session.page.title(),
       ]);
 
-      const content = extractReadableText(html, session.page.url());
+      const content = await extractReadableText(html, session.page.url());
       session.lastUsedAt = Date.now();
 
       res.json({
