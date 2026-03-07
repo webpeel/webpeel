@@ -879,6 +879,51 @@ export async function smartFetch(
     }
   }
 
+  /* ---- simple-with-headers: intermediate step before browser ----------- */
+  // Before escalating to the headless browser, retry simple fetch with Googlebot UA
+  // and a Google Referer. This catches sites that block generic UAs but return full
+  // content to search-engine crawlers without needing JS rendering.
+  // Only fires when: we escalated from simple (not forced by domain rules), noEscalate=false.
+
+  if (shouldUseBrowser && !noEscalate && !effectiveForceBrowser && !effectiveStealth && !screenshot) {
+    const t0Headers = Date.now();
+    log.debug('Escalating: simple → simple-with-headers (Googlebot UA + Google Referer)');
+    try {
+      const headersResult = await simpleFetch(
+        url,
+        'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        timeoutMs,
+        {
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Referer': 'https://www.google.com/',
+        },
+        undefined,
+        firstProxy,
+      );
+
+      const headersChallengeCheck = detectChallenge(headersResult.html, headersResult.statusCode);
+      const headersOk =
+        !looksLikeShellPage(headersResult) &&
+        !hasSpaIndicators(headersResult.html) &&
+        !shouldEscalateForLowContent(headersResult) &&
+        (!headersChallengeCheck.isChallenge || headersChallengeCheck.confidence < 0.7);
+
+      if (headersOk) {
+        log.debug(`simple-with-headers succeeded in ${Date.now() - t0Headers}ms`);
+        const strategyResult: StrategyResult = { ...headersResult, method: 'simple' };
+        if (canUseCache) {
+          hooks.setCache?.(url, strategyResult) ?? setBasicCache(url, strategyResult);
+        }
+        recordMethod('simple');
+        return strategyResult;
+      }
+      log.debug(`simple-with-headers produced thin/blocked content in ${Date.now() - t0Headers}ms, continuing to browser`);
+    } catch (e) {
+      if (isAbortError(e)) throw e;
+      log.debug('simple-with-headers failed:', e instanceof Error ? e.message : e);
+    }
+  }
+
   /* ---- browser / stealth fallback with challenge-detection cascade ----- */
 
   // Try each proxy in sequence until one succeeds
@@ -892,6 +937,31 @@ export async function smartFetch(
 
       // Attempt 1: browser (or stealth, if already forced)
       let finalResult = await fetchWithBrowserStrategy(url, currentBrowserOptions);
+
+      // browser-with-wait: if browser returned thin content (SPA may not have fully loaded),
+      // retry with a 3-second networkidle wait before escalating to stealth mode.
+      // This handles dynamic SPAs where the initial browser fetch catches a partial render.
+      if (!currentBrowserOptions.effectiveStealth && shouldEscalateForLowContent(finalResult)) {
+        const t0Wait = Date.now();
+        log.debug('browser returned thin content, escalating to browser-with-wait (3s networkidle)');
+        try {
+          const browserWaitResult = await fetchWithBrowserStrategy(url, {
+            ...currentBrowserOptions,
+            waitMs: Math.max(currentBrowserOptions.waitMs, 3000),
+            waitUntil: 'networkidle',
+          });
+          log.debug(`browser-with-wait done in ${Date.now() - t0Wait}ms`);
+          // Accept the wait result if it has more content (even if still thin — it's better than nothing)
+          if (
+            !shouldEscalateForLowContent(browserWaitResult) ||
+            browserWaitResult.html.length > finalResult.html.length
+          ) {
+            finalResult = browserWaitResult;
+          }
+        } catch (e) {
+          log.debug('browser-with-wait failed:', e instanceof Error ? e.message : e);
+        }
+      }
 
       // Check if the browser result is itself a bot-challenge page
       const browserChallengeCheck = detectChallenge(finalResult.html, finalResult.statusCode);

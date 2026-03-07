@@ -180,6 +180,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         timeout,
         schema,
         detail,
+        captionImages,
       } = req.query;
       
       const detailMode = (detail as string) || 'standard';
@@ -361,6 +362,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         raw: raw === 'true',
         lite: lite === 'true',
         timeout: timeout ? parseInt(timeout as string, 10) : undefined,
+        captionImages: captionImages === 'true',
       };
 
       // Auto-budget: default to 4000 tokens for API requests when no budget specified

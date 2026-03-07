@@ -599,6 +599,15 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
   const { contentType, format, fullPage, raw, selector, exclude, includeTags, excludeTags } = ctx;
   const hasBuffer = !!fetchResult.buffer;
 
+  // === Image alt-text enhancement (opt-in, heuristic) ===
+  // Runs before any conversion so both lite mode and standard mode benefit.
+  if (ctx.options.captionImages && contentType === 'html' && fetchResult.html) {
+    ctx.timer.mark('captionImages');
+    const { enhanceImageAltText } = await import('./image-caption.js');
+    fetchResult.html = enhanceImageAltText(fetchResult.html);
+    ctx.timer.end('captionImages');
+  }
+
   if (contentType === 'document' && hasBuffer) {
     // Document parsing pipeline (PDF/DOCX)
     // 'clean' maps to 'markdown' for extraction; cleanForAI is applied in buildResult
