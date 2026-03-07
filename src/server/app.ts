@@ -32,6 +32,7 @@ import { createBatchRouter } from './routes/batch.js';
 import { createAnswerRouter } from './routes/answer.js';
 import { createAskRouter } from './routes/ask.js';
 import { createMcpRouter } from './routes/mcp.js';
+import { createDoRouter } from './routes/do.js';
 import { createYouTubeRouter } from './routes/youtube.js';
 import { createDeepFetchRouter } from './routes/deep-fetch.js';
 import { createWatchRouter } from './routes/watch.js';
@@ -286,6 +287,7 @@ export function createApp(config: ServerConfig = {}): Express {
   });
   app.use(createAnswerRouter());
   app.use(createAskRouter());
+  app.use('/v1/do', createDoRouter());
   app.use(createYouTubeRouter());
   app.use(createMcpRouter(authStore, pool));
 

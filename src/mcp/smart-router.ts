@@ -16,6 +16,9 @@ const MULTI_WORD_PATTERNS: Array<{ intent: ParsedIntent['intent']; pattern: RegE
   { intent: 'find',   pattern: /\blook\s+up\b/ },
   { intent: 'extract', pattern: /\bget\s+data\b/ },
   { intent: 'read',   pattern: /\bwhat\s+does\b/ },
+  // Question-as-search: "what is X", "how much does Y cost", "who is Z", etc.
+  // Must come AFTER "what does" (read) so that pattern takes priority.
+  { intent: 'find',   pattern: /^\s*(?:what\s+(?:is|are|was|were|can|will|would|could|should)|how\s+(?:much|many|do|does|did|to|can|are|is)|who\s+(?:is|are|was)|when\s+(?:is|was|does|do)|where\s+(?:is|can|do|are)|why\s+(?:is|does|do|can)|which\s+(?:is|are))\b/i },
 ];
 
 // Single-word keywords in descending priority order

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="WebPeel /v1/ask — LLM-free web Q&A using search, fetch, and BM25 sentence scoring. No API key required.">
+  <link rel="canonical" href="https://webpeel.dev/docs/ask">
+  <meta property="og:title" content="/v1/ask — LLM-Free Web Q&A — WebPeel">
+  <meta property="og:description" content="WebPeel /v1/ask — LLM-free web Q&A using search, fetch, and BM25 sentence scoring. No API key required.">
+  <meta property="og:url" content="https://webpeel.dev/docs/ask">
+  <meta property="og:type" content="website">
+  <title>/v1/ask — LLM-Free Web Q&A — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/getting-started" class="sidebar-link">Getting Started</a>
+        <a href="/docs/authentication" class="sidebar-link">Authentication</a>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+        <a href="/docs/changelog" class="sidebar-link">Changelog</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">API</div>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshot</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl</a>
+        <a href="/docs/extract" class="sidebar-link">Extract</a>
+        <a href="/docs/batch" class="sidebar-link">Batch</a>
+        <a href="/docs/ask" class="sidebar-link active">/v1/ask — Web Q&amp;A</a>
+        <a href="/docs/sessions" class="sidebar-link">/v1/session — Browser Sessions</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>/v1/ask</span>
+      </div>
+
+      <h1>/v1/ask — LLM-Free Web Q&amp;A</h1>
+      <p class="lead">Ask any question and get an answer sourced from the live web — no LLM API key required. WebPeel searches, fetches, and ranks the most relevant sentences using BM25 scoring.</p>
+
+      <div style="padding: 16px 20px; background: #ECFDF5; border: 1px solid #6EE7B7; border-radius: 8px; margin-bottom: 32px; font-size: 14px; color: #065F46;">
+        <strong>⚡ No LLM required.</strong> /v1/ask uses BM25 term-frequency ranking — it's fast, deterministic, and free from hallucinations. Results come from real web sources with source attribution. Added in <a href="/docs/changelog#v0.19.0" style="color: #065F46; font-weight: 600;">v0.19.0</a>.
+      </div>
+
+      <h2 id="how-it-works">How It Works</h2>
+      <p>The ask pipeline runs three steps automatically:</p>
+      <ol>
+        <li><strong>Search</strong> — Query DuckDuckGo (or Brave if configured) for the question</li>
+        <li><strong>Fetch</strong> — Retrieve and extract clean text from the top <code>sources</code> results</li>
+        <li><strong>Score</strong> — Use BM25 sentence scoring to rank the most relevant sentences and assemble an answer</li>
+      </ol>
+      <p>The response includes the ranked answer, confidence score, source URLs, and the method used — so you always know where the answer came from.</p>
+
+      <h2 id="get-request">GET /v1/ask</h2>
+      <p>Ask a question using query parameters.</p>
+
+      <h3>Request</h3>
+      <pre><code class="language-bash">GET https://api.webpeel.dev/v1/ask?q=&lt;question&gt;&amp;sources=3</code></pre>
+
+      <h3>Parameters</h3>
+      <div class="params-table">
+        <table>
+          <thead>
+            <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>q</code></td><td>string</td><td>Yes</td><td>The question to answer</td></tr>
+            <tr><td><code>sources</code></td><td>number</td><td>No</td><td>Number of web sources to fetch (default: 3, max: 10)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl "https://api.webpeel.dev/v1/ask?q=What+is+BM25+scoring&sources=3" \
+  -H "Authorization: Bearer wp_live_xxxx"</code></pre>
+
+      <h2 id="post-request">POST /v1/ask</h2>
+      <p>Ask a question with a JSON body — useful for longer or structured questions.</p>
+
+      <h3>Request Body</h3>
+      <pre><code class="language-json">{
+  "question": "What is the capital of France?",
+  "sources": 3
+}</code></pre>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl -X POST "https://api.webpeel.dev/v1/ask" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What is BM25 and how does it rank documents?",
+    "sources": 5
+  }'</code></pre>
+
+      <h2 id="response">Response</h2>
+      <pre><code class="language-json">{
+  "question": "What is BM25 scoring?",
+  "answer": "BM25 (Best Match 25) is a ranking function used by search engines to rank documents by relevance to a query. It extends TF-IDF with document length normalization and saturating term frequency.",
+  "confidence": 0.87,
+  "sources": [
+    {
+      "url": "https://en.wikipedia.org/wiki/Okapi_BM25",
+      "title": "Okapi BM25 — Wikipedia",
+      "snippet": "BM25 is a bag-of-words retrieval function..."
+    },
+    {
+      "url": "https://www.elastic.co/blog/practical-bm25",
+      "title": "Practical BM25 — Elastic",
+      "snippet": "BM25 remains the gold standard for keyword search..."
+    }
+  ],
+  "method": "bm25",
+  "elapsed": 1420
+}</code></pre>
+
+      <h3>Response Fields</h3>
+      <div class="params-table">
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>question</code></td><td>string</td><td>The original question</td></tr>
+            <tr><td><code>answer</code></td><td>string</td><td>Best answer assembled from ranked sentences</td></tr>
+            <tr><td><code>confidence</code></td><td>number</td><td>BM25 confidence score (0–1)</td></tr>
+            <tr><td><code>sources</code></td><td>array</td><td>List of web sources used (url, title, snippet)</td></tr>
+            <tr><td><code>method</code></td><td>string</td><td>Scoring method used (always <code>"bm25"</code>)</td></tr>
+            <tr><td><code>elapsed</code></td><td>number</td><td>Total time in milliseconds</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="cli">CLI Usage</h2>
+      <p>The <code>webask</code> CLI command is a wrapper around <code>/v1/ask</code>:</p>
+      <pre><code class="language-bash"># Ask any question
+webpeel webask "What is the current price of Bitcoin?"
+
+# Control number of sources
+webpeel webask "How does BM25 work?" --sources 5
+
+# Or use npx without installing
+npx webpeel webask "What is WebPeel?"</code></pre>
+
+      <h2 id="use-cases">Use Cases</h2>
+      <ul>
+        <li><strong>Fact lookup</strong> — Quick answers without spinning up an LLM</li>
+        <li><strong>Research pipelines</strong> — Gather cited facts from the web as a first pass</li>
+        <li><strong>Cost reduction</strong> — Use BM25 answers for simple questions, only escalate to LLMs for complex reasoning</li>
+        <li><strong>RAG pre-fetch</strong> — Collect source documents and confidence scores before sending to your LLM</li>
+      </ul>
+
+      <h2 id="vs-quick-answer">vs. /v1/fetch with question=</h2>
+      <p><code>/v1/ask</code> and <code>/v1/fetch?question=</code> both use BM25, but serve different needs:</p>
+      <ul>
+        <li><strong><code>/v1/ask</code></strong> — Searches the web first, then fetches + ranks across multiple sources</li>
+        <li><strong><code>/v1/fetch?question=</code></strong> — Fetches a specific URL you provide, then scores sentences within that page</li>
+      </ul>
+      <p>Use <code>/v1/ask</code> when you don't have a specific URL. Use <code>/v1/fetch?question=</code> when you already know the page.</p>
+
+      <h2 id="next-steps">Related</h2>
+      <ul>
+        <li><a href="/docs/quick-answer"><strong>LLM-Free Q&amp;A</strong></a> — BM25 scoring on a single page via <code>/v1/fetch?question=</code></li>
+        <li><a href="/docs/fetch"><strong>Fetch API</strong></a> — Full parameter reference including <code>question=</code> and <code>summary=</code></li>
+        <li><a href="/docs/sessions"><strong>Browser Sessions</strong></a> — Stateful sessions for multi-step web interaction</li>
+        <li><a href="/docs/changelog"><strong>Changelog</strong></a> — See what else shipped in v0.19.0</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+</body>
+</html>

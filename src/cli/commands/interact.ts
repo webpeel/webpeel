@@ -783,6 +783,76 @@ export function registerInteractCommands(program: Command): void {
       }
     });
 
+  // ── do command — natural language intent routing ──────────────────────────
+  program
+    .command('do <task...>')
+    .description('Do anything — describe what you want in plain English')
+    .option('-s, --silent', 'Silent mode')
+    .option('--json', 'JSON output')
+    .action(async (taskParts: string[], options: any) => {
+      const task = taskParts.join(' ');
+      const cfg = loadConfig();
+      const apiKey = cfg.apiKey || process.env.WEBPEEL_API_KEY;
+      const apiUrl = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
+
+      if (!apiKey) {
+        console.error('No API key. Run: webpeel auth <key>');
+        process.exit(1);
+      }
+
+      let spinner: any = null;
+      if (!options.silent && !options.json) {
+        const { default: oraModule } = await import('ora');
+        spinner = oraModule(`Doing: ${task}`).start();
+      }
+
+      try {
+        const res = await fetch(`${apiUrl}/v1/do`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ task }),
+          signal: AbortSignal.timeout(60000),
+        });
+
+        const data = await res.json() as any;
+
+        if (spinner) {
+          if (data.error) {
+            spinner.fail(`Failed: ${data.message || data.error}`);
+          } else {
+            spinner.succeed(`Done (${data.elapsed}ms) — intent: ${data.intent}`);
+          }
+        }
+
+        if (options.json) {
+          console.log(JSON.stringify(data, null, 2));
+        } else {
+          if (data.error) {
+            console.error(`Error: ${data.message || data.error}`);
+            process.exit(1);
+          }
+          console.log(`Intent: ${data.intent}`);
+          if (data.url) console.log(`URL: ${data.url}`);
+          if (data.query) console.log(`Query: ${data.query}`);
+          console.log(`Elapsed: ${data.elapsed}ms`);
+          console.log('');
+          // Pretty-print the result
+          const result = data.result || {};
+          if (result.content) console.log(result.content.slice(0, 2000));
+          else if (result.answer) console.log(`Answer: ${result.answer}\nConfidence: ${Math.round((result.confidence || 0) * 100)}%`);
+          else if (result.screenshot) console.log(`Screenshot: ${result.screenshot.length} bytes (base64)`);
+          else console.log(JSON.stringify(result, null, 2).slice(0, 2000));
+        }
+      } catch (err: any) {
+        if (spinner) spinner.fail(err.message);
+        if (!options.silent) console.error(`Error: ${err.message}`);
+        process.exit(1);
+      }
+    });
+
   // ── schemas command ───────────────────────────────────────────────────────
   program
     .command('schemas')

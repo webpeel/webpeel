@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="WebPeel changelog — full version history with release notes for every version.">
+  <link rel="canonical" href="https://webpeel.dev/docs/changelog">
+  <meta property="og:title" content="Changelog — WebPeel">
+  <meta property="og:description" content="WebPeel changelog — full version history with release notes for every version.">
+  <meta property="og:url" content="https://webpeel.dev/docs/changelog">
+  <meta property="og:type" content="website">
+  <title>Changelog — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .changelog-entry {
+      border-left: 3px solid #E4E4E7;
+      padding-left: 24px;
+      margin-bottom: 48px;
+      position: relative;
+    }
+    .changelog-entry::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 6px;
+      width: 9px;
+      height: 9px;
+      background: #18181B;
+      border-radius: 50%;
+    }
+    .changelog-version {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: #71717A;
+      margin-bottom: 4px;
+    }
+    .changelog-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #18181B;
+      margin: 0 0 12px 0;
+    }
+    .changelog-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+      background: #F4F4F5;
+      color: #52525B;
+    }
+    .changelog-badge.major {
+      background: #EFF6FF;
+      color: #1D4ED8;
+    }
+    .changelog-badge.minor {
+      background: #F0FDF4;
+      color: #15803D;
+    }
+    .changelog-badge.patch {
+      background: #F4F4F5;
+      color: #52525B;
+    }
+    .changelog-entry ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .changelog-entry ul li {
+      margin-bottom: 6px;
+      color: #3F3F46;
+      line-height: 1.6;
+    }
+    .changelog-entry ul li code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: #F4F4F5;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/getting-started" class="sidebar-link">Getting Started</a>
+        <a href="/docs/authentication" class="sidebar-link">Authentication</a>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+        <a href="/docs/changelog" class="sidebar-link active">Changelog</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">API</div>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshot</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl</a>
+        <a href="/docs/extract" class="sidebar-link">Extract</a>
+        <a href="/docs/batch" class="sidebar-link">Batch</a>
+        <a href="/docs/ask" class="sidebar-link">/v1/ask — Web Q&amp;A</a>
+        <a href="/docs/sessions" class="sidebar-link">/v1/session — Browser Sessions</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Changelog</span>
+      </div>
+
+      <h1>Changelog</h1>
+      <p class="lead">Full release history for WebPeel. New versions ship frequently — follow <a href="https://github.com/webpeel/webpeel/releases">GitHub Releases</a> or <a href="https://x.com/webpeel_dev">@webpeel_dev</a> for updates.</p>
+
+      <!-- v0.19.5 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.19.5 &mdash; 2026-03-07</div>
+        <div class="changelog-title">Architecture Cleanup <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li>Shared MCP handler registry — eliminated duplicate handler code across standalone and HTTP paths</li>
+          <li>CLI split into modular command files; entry point trimmed to 81 lines</li>
+          <li>Removed dead endpoints (<code>/v1/agent</code>, <code>/v1/answer/quick</code>)</li>
+          <li>GitHub CI pipeline, issue templates, and release automation added</li>
+          <li>Quality gates: MCP parity check, CLI DX test, and pre-publish gate</li>
+        </ul>
+      </div>
+
+      <!-- v0.19.3 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.19.3 &mdash; 2026-03-07</div>
+        <div class="changelog-title">CLI DX <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Verb-first aliases: <code>webpeel fetch</code> / <code>get</code> / <code>scrape</code> / <code>peel</code> &lt;url&gt; all work</li>
+          <li><code>--format text|html|json|markdown</code> flag for controlling output format</li>
+          <li><code>webpeel doctor</code> — diagnostic command to verify config, auth, and connectivity</li>
+          <li>Smarter error messages for invalid or malformed URLs</li>
+        </ul>
+      </div>
+
+      <!-- v0.19.0 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.19.0 &mdash; 2026-03-07</div>
+        <div class="changelog-title">Major Features <span class="changelog-badge major">Major</span></div>
+        <ul>
+          <li><a href="/docs/ask"><code>/v1/ask</code></a> — LLM-free web Q&amp;A using search + fetch + BM25 sentence scoring</li>
+          <li><a href="/docs/sessions"><code>/v1/session</code></a> — Stateful browser sessions: create, navigate, act, screenshot, close</li>
+          <li><code>webpeel_act</code> MCP tool wired to live browser interaction</li>
+          <li>CLI <code>webask</code> command for quick web Q&amp;A from the terminal</li>
+          <li>Fixed <code>content</code> field in deep-fetch responses</li>
+          <li><code>extract/auto</code> POST endpoint added</li>
+        </ul>
+      </div>
+
+      <!-- v0.18.7 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.18.7 &mdash; 2026-03-06</div>
+        <div class="changelog-title">CLI Rewrite <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li>CLI is now a pure API client — no local Playwright dependency required</li>
+          <li>Install size dropped from ~150 MB to ~2 MB</li>
+          <li>All CLI commands route through <code>api.webpeel.dev</code></li>
+        </ul>
+      </div>
+
+      <!-- v0.18.5 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.18.5 &mdash; 2026-03-06</div>
+        <div class="changelog-title">Dashboard Polish <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Plan badge capitalization fix</li>
+          <li>Live-refresh sidebar usage counter</li>
+          <li>Usage counter fallback for JWT-authenticated users</li>
+          <li>Product Hunt RSS extractor</li>
+        </ul>
+      </div>
+
+      <!-- v0.18.2 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.18.2 &mdash; 2026-03-06</div>
+        <div class="changelog-title">Full Audit <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>10+ critical/high bugs fixed from 5-agent audit</li>
+          <li>Security: health endpoint no longer exposes version string</li>
+          <li>Dashboard dark mode conversion across 36 files</li>
+          <li>Inline welcome banner replaced blocking modal on first login</li>
+        </ul>
+      </div>
+
+      <!-- v0.18.0 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.18.0 &mdash; 2026-03-05</div>
+        <div class="changelog-title">MCP + API Consolidation <span class="changelog-badge major">Major</span></div>
+        <ul>
+          <li>Consolidated 20 MCP tools down to 7 public tools — all 20 legacy names still work</li>
+          <li>Screenshot mode param dispatch (mode selection via request parameter)</li>
+          <li><code>/v1/fetch</code> enhanced with <code>question=</code>, <code>summary=</code>, and <code>budget=</code> params</li>
+          <li>Email alerts feature for page monitoring</li>
+        </ul>
+      </div>
+
+      <!-- v0.17.26 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.17.26 &mdash; 2026-03-04</div>
+        <div class="changelog-title">Product Features <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Token savings metrics: <code>rawTokenEstimate</code> and <code>tokenSavingsPercent</code> in fetch responses</li>
+          <li>Auto-interact with page obstacles using 60+ CSS selectors (cookie banners, paywalls, overlays)</li>
+          <li>Watch diff mode — <code>?diff=true</code> returns only changed content</li>
+          <li>Search performance: auto-skip failing providers to reduce latency</li>
+        </ul>
+      </div>
+
+      <div style="margin-top: 48px; padding: 20px; background: #F9F9F9; border-radius: 8px; font-size: 14px; color: #71717A;">
+        <strong>Older releases</strong> are available on <a href="https://github.com/webpeel/webpeel/releases" style="color: #18181B;">GitHub Releases</a> and the <a href="https://www.npmjs.com/package/webpeel?activeTab=versions" style="color: #18181B;">npm version history</a>.
+      </div>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+</body>
+</html>
