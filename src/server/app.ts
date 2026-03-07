@@ -29,9 +29,7 @@ import { createActivityRouter } from './routes/activity.js';
 import { createCLIUsageRouter } from './routes/cli-usage.js';
 import { createJobsRouter } from './routes/jobs.js';
 import { createBatchRouter } from './routes/batch.js';
-import { createAgentRouter } from './routes/agent.js';
 import { createAnswerRouter } from './routes/answer.js';
-import { createQuickAnswerRouter } from './routes/quick-answer.js';
 import { createAskRouter } from './routes/ask.js';
 import { createMcpRouter } from './routes/mcp.js';
 import { createYouTubeRouter } from './routes/youtube.js';
@@ -279,9 +277,14 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createCLIUsageRouter());
   app.use(createJobsRouter(jobQueue, authStore));
   app.use(createBatchRouter(jobQueue));
-  app.use(createAgentRouter());
+  // Deprecation headers for declining endpoints
+  app.use('/v1/answer', (_req, res, next) => {
+    res.set('Deprecation', 'true');
+    res.set('Sunset', '2026-06-01');
+    res.set('Link', '</v1/ask>; rel="successor-version"');
+    next();
+  });
   app.use(createAnswerRouter());
-  app.use(createQuickAnswerRouter());
   app.use(createAskRouter());
   app.use(createYouTubeRouter());
   app.use(createMcpRouter(authStore, pool));

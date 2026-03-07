@@ -1,34 +1,27 @@
 name: Feature Request
-description: Suggest a new feature or improvement
+description: Suggest a new feature for WebPeel
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
   - type: textarea
-    id: description
+    id: problem
     attributes:
-      label: What would you like?
-      description: A clear description of the feature you'd like to see
-      placeholder: I'd like WebPeel to...
+      label: What problem does this solve?
+      description: Describe the use case or pain point.
     validations:
       required: true
   - type: textarea
-    id: use_case
+    id: solution
     attributes:
-      label: Use case
-      description: How would this help you? What problem does it solve?
-      placeholder: This would help me because...
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      options:
-        - CLI
-        - API
-        - MCP Server
-        - Python SDK
-        - Node.js Library
-        - Documentation
-        - Dashboard
-        - Other
+      label: Proposed solution
+      description: How should this work? Include API/CLI examples if applicable.
     validations:
       required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Nice to have
+        - Important
+        - Critical

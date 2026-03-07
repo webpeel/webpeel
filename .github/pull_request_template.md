@@ -1,21 +1,18 @@
-## What
+## What does this PR do?
 
-Brief description of the changes.
+<!-- Brief description of changes -->
 
-## Why
+## Type of change
 
-Why are these changes needed? Link to issue if applicable.
-
-Closes #
-
-## How
-
-How did you implement this? Any important design decisions?
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactoring (no behavior change)
+- [ ] Documentation
 
 ## Checklist
 
-- [ ] Tests added/updated
-- [ ] `pnpm build` passes
-- [ ] `pnpm test` passes
-- [ ] Documentation updated (if applicable)
-- [ ] Commit messages follow conventional commits
+- [ ] `npm run build` passes
+- [ ] `npm test` passes (1495+ tests)
+- [ ] `bash scripts/mcp-parity-check.sh` passes (if MCP changed)
+- [ ] `bash scripts/cli-dx-test.sh` passes (if CLI changed)
+- [ ] Tested with real URLs (not just mocks)

@@ -4,6 +4,10 @@
   </a>
 </p>
 
+[![CI](https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg)](https://github.com/webpeel/webpeel/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/webpeel.svg)](https://www.npmjs.com/package/webpeel)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 <p align="center">
   <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/v/webpeel.svg?style=flat-square" alt="npm version"></a>
   <a href="https://pypi.org/project/webpeel/"><img src="https://img.shields.io/pypi/v/webpeel.svg?style=flat-square" alt="PyPI version"></a>
