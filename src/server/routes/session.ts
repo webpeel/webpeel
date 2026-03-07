@@ -22,6 +22,7 @@ import {
   getRandomUserAgent,
   applyStealthScripts,
 } from '../../core/browser-pool.js';
+// extractReadableContent imported dynamically in extractReadableText()
 
 // ── Session store ─────────────────────────────────────────────────────────────
 
@@ -85,15 +86,12 @@ async function launchBrowser(): Promise<Browser> {
   });
 }
 
-/** Extract readable text from an HTML string using Readability + jsdom. */
+/** Extract readable text from an HTML string using WebPeel's built-in Readability engine. */
 async function extractReadableText(html: string, url: string): Promise<string> {
   try {
-    const { Readability } = await import('@mozilla/readability');
-    const { JSDOM } = await import('jsdom');
-    const dom = new JSDOM(html, { url });
-    const reader = new Readability(dom.window.document);
-    const article = reader.parse();
-    return article?.textContent?.trim() || '';
+    const { extractReadableContent } = await import('../../core/readability.js');
+    const result = extractReadableContent(html, url);
+    return result.content?.trim() || result.excerpt?.trim() || '';
   } catch {
     return '';
   }
@@ -186,7 +184,7 @@ export function createSessionRouter(): Router {
         session.page.title(),
       ]);
 
-      const content = await extractReadableText(html, session.page.url());
+      const content = extractReadableText(html, session.page.url());
       session.lastUsedAt = Date.now();
 
       res.json({
@@ -247,7 +245,7 @@ export function createSessionRouter(): Router {
       screenshot?: boolean;
     };
 
-    let normalized;
+    let normalized: ReturnType<typeof normalizeActions> | undefined;
     try {
       normalized = normalizeActions(actions);
     } catch (err) {
@@ -261,8 +259,10 @@ export function createSessionRouter(): Router {
       return;
     }
 
+    const normalizedActions = normalized;
+
     try {
-      await executeActions(session.page, normalized);
+      await executeActions(session.page, normalizedActions);
       session.lastUsedAt = Date.now();
       session.currentUrl = session.page.url();
 
@@ -281,7 +281,7 @@ export function createSessionRouter(): Router {
         currentUrl,
         title,
         screenshot,
-        actionsExecuted: normalized.length,
+        actionsExecuted: normalizedActions.length,
         expiresAt: new Date(session.lastUsedAt + SESSION_TTL_MS).toISOString(),
       });
     } catch (err) {
