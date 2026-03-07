@@ -110,7 +110,20 @@
       <pre><code class="language-bash">pip install webpeel</code></pre>
 
       <h3>CLI (no install required)</h3>
-      <pre><code class="language-bash">npx webpeel fetch https://example.com</code></pre>
+      <pre><code class="language-bash"># Verb-first aliases — fetch, get, scrape, and peel all work
+npx webpeel fetch https://example.com
+npx webpeel get https://example.com
+npx webpeel scrape https://example.com
+
+# Control output format
+npx webpeel fetch https://example.com --format markdown
+npx webpeel fetch https://example.com --format text
+npx webpeel fetch https://example.com --format json
+
+# Diagnose your setup
+npx webpeel doctor</code></pre>
+
+      <p>The <code>webpeel doctor</code> command checks your API key, network connectivity, and configuration — run it first if anything isn't working.</p>
 
       <h2 id="your-first-fetch">Your First Fetch</h2>
       <p>Here's a complete example fetching a page and getting back clean markdown:</p>
@@ -148,13 +161,28 @@ print(result.tokens)   # Token count</code></pre>
       </ol>
       <p>Your key starts with <code>wp_live_</code> for production or <code>wp_test_</code> for sandbox. Pass it in the <code>Authorization</code> header on every request.</p>
 
+      <h2 id="web-qa">LLM-Free Web Q&amp;A</h2>
+      <p>The <code>/v1/ask</code> endpoint answers questions from the live web — no LLM API key needed. It searches, fetches, and ranks the best sentences using BM25 scoring.</p>
+
+      <pre><code class="language-bash"># Ask a question from the CLI
+npx webpeel webask "What is the capital of France?"
+
+# Or via the REST API
+curl "https://api.webpeel.dev/v1/ask?q=What+is+BM25" \
+  -H "Authorization: Bearer wp_live_xxxx"</code></pre>
+
+      <p>See the <a href="/docs/ask"><strong>/v1/ask documentation</strong></a> for the full response format and options.</p>
+
       <h2 id="next-steps">Next Steps</h2>
       <ul>
         <li><a href="/docs/authentication"><strong>Authentication</strong></a> — Key formats, scopes, rate limits per tier</li>
         <li><a href="/docs/fetch"><strong>Fetch API</strong></a> — Full parameter reference: <code>question=</code>, <code>summary=</code>, <code>render</code>, <code>stealth</code>, and more</li>
+        <li><a href="/docs/ask"><strong>/v1/ask</strong></a> — LLM-free web Q&amp;A using BM25 scoring</li>
+        <li><a href="/docs/sessions"><strong>/v1/session</strong></a> — Stateful browser sessions for login flows and multi-step scraping</li>
         <li><a href="/docs/screenshot"><strong>Screenshot API</strong></a> — Capture pages with design analysis mode</li>
         <li><a href="/docs/mcp"><strong>MCP Server</strong></a> — Use WebPeel directly inside Claude, Cursor, or any MCP client</li>
         <li><a href="/docs/sdks"><strong>SDKs</strong></a> — Full Node.js and Python SDK reference</li>
+        <li><a href="/docs/changelog"><strong>Changelog</strong></a> — What's new in recent versions</li>
       </ul>
 
     </main>
