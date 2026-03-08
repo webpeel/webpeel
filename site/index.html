@@ -6195,11 +6195,16 @@
     }
   }
 
-  /* ── DESIGN-FIX: Mobile hero breathing room ──── */
+  /* ── DESIGN-FIX: Mobile hero breathing room (Anthropic-style gap below nav) ──── */
   @media (max-width: 768px) {
     .hero {
-      padding-top: 100px !important;
+      padding-top: 64px !important;
     }
+  }
+
+  /* ── DESIGN-FIX: Subtitle text white, not grey ──── */
+  .hero-sub {
+    color: rgba(255,255,255,0.92) !important;
   }
 
   /* ── DESIGN-FIX: Remove grey box from stat cards on mobile ──── */
