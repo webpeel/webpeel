@@ -49,8 +49,8 @@ export default function LoginPage() {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Left Side — Auth */}
-      <div className="flex w-full flex-col items-center justify-center overflow-y-auto px-4 sm:px-6 py-8 lg:w-1/2" style={{ backgroundColor: '#0A0A0F' }}>
-        <div className="w-full max-w-[380px]">
+      <div className="flex w-full flex-col items-center overflow-y-auto px-4 sm:px-6 py-8 lg:w-1/2" style={{ backgroundColor: '#0A0A0F' }}>
+        <div className="my-auto w-full max-w-[380px]">
           {/* Logo */}
           <div className="mb-8 sm:mb-12">
             <svg width="36" height="36" viewBox="0 0 32 32" className="mb-4 sm:mb-6">
@@ -175,14 +175,14 @@ export default function LoginPage() {
           )}
 
           {/* Footer */}
-          <p className="mt-8 text-center text-[13px] text-zinc-500">
+          <p className="mt-8 text-left text-[13px] text-zinc-500">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-zinc-200 font-medium hover:underline">
               Sign up
             </Link>
           </p>
 
-          <p className="mt-4 text-center text-[11px] text-zinc-500 leading-relaxed">
+          <p className="mt-4 text-left text-[11px] text-zinc-500 leading-relaxed">
             By continuing, you acknowledge WebPeel&apos;s{' '}
             <a href="https://webpeel.dev/privacy" className="underline hover:text-zinc-300">Privacy Policy</a>{' '}
             and agree to our{' '}
@@ -192,7 +192,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side — Product Demo */}
-      <div className="hidden lg:flex flex-1 items-center justify-center p-10" style={{ backgroundColor: '#0D0D12' }}>
+      <div className="hidden lg:flex flex-1 items-center justify-center p-10 overflow-y-auto" style={{ backgroundColor: '#0D0D12' }}>
         <WebAnimation />
       </div>
     </div>
