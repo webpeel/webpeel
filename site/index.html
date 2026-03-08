@@ -6258,7 +6258,7 @@
           <span class="hero-stat-l">avg latency</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-n" data-count-to="18" style="color: #A5B4FC">18</span>
+          <span class="hero-stat-n" data-count-to="28" style="color: #A5B4FC">28</span>
           <span class="hero-stat-l">MCP tools</span>
         </div>
       </div>
@@ -6336,10 +6336,14 @@ pip install webpeel</div>
           <div class="how-step-num">02</div>
           <h3>Fetch</h3>
           <p>Pass any URL. WebPeel auto-detects what's needed — HTTP, headless browser, or stealth mode.</p>
-          <div class="mini-code"><span style="color:#6B7280;"># CLI</span>
-webpeel "https://stripe.com" --readable
-<span style="color:#6B7280;"># API</span>
-curl api.webpeel.dev/v1/fetch?url=stripe.com</div>
+          <div class="mini-code"><span style="color:#6B7280;"># Pipe directly to your LLM</span>
+webpeel "https://example.com" --content-only | llm "summarize"
+<span style="color:#6B7280;"># See engine decisions live</span>
+webpeel "https://complex-spa.com" --progress
+<span style="color:#6B7280;"># Process local HTML via stdin</span>
+cat page.html | webpeel --stdin
+<span style="color:#6B7280;"># Batch 50 agent queries in parallel</span>
+curl api.webpeel.dev/v1/agent/batch</div>
         </div>
         <div class="how-step reveal" data-delay="3" style="animation-delay: 160ms">
           <div class="how-step-num">03</div>
@@ -6474,6 +6478,81 @@ page = peel(<span style="color:#86EFAC;">'stripe.com'</span>)
           <div class="feat-card-desc">Drop-in REST API + MCP server. Works with Claude, GPT, LangChain, LlamaIndex — all of them.</div>
         </div>
 
+        <!-- Card 7: Batch Agent -->
+        <div class="feat-card reveal" data-delay="1">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">POST /v1/agent/batch</div>
+            <div style="color:rgba(255,255,255,0.50);">Running 50 queries in parallel…</div>
+            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
+              <div style="color:#A5B4FC;margin-bottom:4px;">✓ 50 / 50 complete</div>
+              <div style="color:#A5B4FC;">→ 412ms avg · 0 failures</div>
+            </div>
+          </div>
+          <div class="feat-card-title">🤖 Batch Agent</div>
+          <div class="feat-card-desc">Run 50 AI agent queries in parallel. Search, fetch, extract at scale.</div>
+        </div>
+
+        <!-- Card 8: Webhook Delivery -->
+        <div class="feat-card reveal" data-delay="2">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">POST your-app.com/webhook</div>
+            <div style="color:rgba(255,255,255,0.50);">X-Signature: sha256=a3f9…</div>
+            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
+              <div style="color:#A5B4FC;">{"status":"done","result":…}</div>
+            </div>
+          </div>
+          <div class="feat-card-title">🔗 Webhook Delivery</div>
+          <div class="feat-card-desc">Get notified when jobs complete. HMAC-SHA256 signed for security.</div>
+        </div>
+
+        <!-- Card 9: Persistent Sessions -->
+        <div class="feat-card reveal" data-delay="3">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">GET /v1/session/:id/cookies</div>
+            <div style="color:rgba(255,255,255,0.50);">Session active · 42min remaining</div>
+            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
+              <div style="color:#A5B4FC;">Logged in · cookies saved ✓</div>
+            </div>
+          </div>
+          <div class="feat-card-title">🔒 Persistent Sessions</div>
+          <div class="feat-card-desc">Login flows, cookie persistence, up to 60-minute sessions.</div>
+        </div>
+
+        <!-- Card 10: PDF Extraction -->
+        <div class="feat-card reveal" data-delay="1">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">webpeel "report.pdf"</div>
+            <div style="color:rgba(255,255,255,0.50);">Extracting real text…</div>
+            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
+              <div style="color:#A5B4FC;margin-bottom:4px;">14,320 tokens · 138ms</div>
+              <div style="color:#A5B4FC;">Actual content, not metadata</div>
+            </div>
+          </div>
+          <div class="feat-card-title">📄 PDF Extraction</div>
+          <div class="feat-card-desc">Extract real text from PDFs. Not metadata — actual content.</div>
+        </div>
+
+        <!-- Card 11: Token Savings -->
+        <div class="feat-card reveal" data-delay="2">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:rgba(255,255,255,0.50);margin-bottom:6px;">Raw HTML → WebPeel</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <div style="height:8px;width:100%;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:100%;background:rgba(255,255,255,0.25);border-radius:4px;"></div>
+              </div>
+              <span style="color:rgba(255,255,255,0.4);white-space:nowrap;">36,000 tok</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="height:8px;width:100%;background:rgba(88,101,242,0.15);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:8%;background:#818CF8;border-radius:4px;"></div>
+              </div>
+              <span style="color:#A5B4FC;white-space:nowrap;font-weight:600;">2,847 tok</span>
+            </div>
+          </div>
+          <div class="feat-card-title">🧮 Token Savings</div>
+          <div class="feat-card-desc">92% smaller than raw HTML. Save thousands on LLM costs.</div>
+        </div>
+
       </div><!-- /feat-cards-grid -->
     </div>
   </section>
@@ -6490,7 +6569,7 @@ page = peel(<span style="color:#86EFAC;">'stripe.com'</span>)
           <ul class="why-checks">
             <li><i class="why-check-icon">✓</i> Handles JS rendering, SPAs, Cloudflare</li>
             <li><i class="why-check-icon">✓</i> 31 domain extractors for structured data</li>
-            <li><i class="why-check-icon">✓</i> 18 MCP tools for Claude, Cursor, GPT</li>
+            <li><i class="why-check-icon">✓</i> 28 MCP tools for Claude, Cursor, GPT</li>
             <li><i class="why-check-icon">✓</i> Firecrawl-compatible API</li>
           </ul>
           <div class="before-after">
