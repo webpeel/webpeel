@@ -1,9 +1,20 @@
+# syntax=docker/dockerfile:1
 # WebPeel API Server — Hosted REST API (Render/Docker)
-# Installs from npm (pre-compiled) and runs the Express server.
-# Build: docker build -f Dockerfile.api -t webpeel/api .
-# Run:   docker run -p 3000:3000 -e DATABASE_URL=... webpeel/api
+# Multi-arch: supports linux/amd64 and linux/arm64 (Apple M-series + x86 servers).
+# Build single-arch: docker build -f Dockerfile.api -t webpeel/api .
+# Build multi-arch:  docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.api -t webpeel/api --push .
+# Run:               docker run -p 3000:3000 -e DATABASE_URL=... webpeel/api
 
+# node:22-slim is an official multi-arch image (amd64 + arm64 manifests on Docker Hub).
+# No extra steps needed — npm packages and Playwright binaries are arch-aware at install time.
 FROM node:22-slim
+
+# Capture the build platform for diagnostic labels (set by buildx automatically)
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+LABEL org.opencontainers.image.description="WebPeel API Server" \
+      org.opencontainers.image.source="https://github.com/webpeel/webpeel" \
+      multi-arch="linux/amd64,linux/arm64"
 
 # Shared Playwright browser path — ensures install + runtime use the same location
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers

@@ -10,7 +10,7 @@ import { peel, cleanup } from '../../index.js';
 import type { PeelOptions, PeelResult, PageAction } from '../../types.js';
 import { checkUsage, showUsageFooter, loadConfig } from '../../cli-auth.js';
 import { getCache, setCache, parseTTL } from '../../cache.js';
-import { estimateTokens } from '../../core/markdown.js';
+import { estimateTokens, htmlToMarkdown } from '../../core/markdown.js';
 import { distillToBudget, budgetListings } from '../../core/budget.js';
 import {
   parseActions,
@@ -23,6 +23,39 @@ import {
   formatListingsCsv,
   normaliseExtractedToRows,
 } from '../utils.js';
+
+// ─── readStdin ────────────────────────────────────────────────────────────────
+
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString('utf-8');
+}
+
+// ─── runStdin ─────────────────────────────────────────────────────────────────
+
+// Read HTML from stdin, convert to markdown, and output
+async function runStdin(options: any): Promise<void> {
+  try {
+    const html = await readStdin();
+    if (!html.trim()) {
+      process.stderr.write('Error: No input received on stdin\n');
+      process.exit(1);
+    }
+    const markdown = htmlToMarkdown(html, { raw: false, prune: true });
+    if (options.json) {
+      const tokens = estimateTokens(markdown);
+      process.stdout.write(JSON.stringify({ success: true, content: markdown, tokens }) + '\n');
+    } else {
+      process.stdout.write(markdown + '\n');
+    }
+  } catch (err: any) {
+    process.stderr.write(`Error: ${err.message}\n`);
+    process.exit(1);
+  }
+}
 
 // ─── runFetch ─────────────────────────────────────────────────────────────────
 
@@ -1116,7 +1149,12 @@ export function registerFetchCommands(program: Command): void {
     .option('--format <type>', 'Output format: markdown (default), text, html, json')
     .option('--content-only', 'Output only the raw content field (no metadata, no JSON wrapper) — ideal for piping to LLMs')
     .option('--progress', 'Show engine escalation steps (simple → browser → stealth) with timing')
+    .option('--stdin', 'Read HTML from stdin instead of fetching a URL — converts to markdown')
     .action(async (url: string | undefined, options) => {
+      if (options.stdin) {
+        await runStdin(options);
+        return;
+      }
       await runFetch(url, options);
     });
 
