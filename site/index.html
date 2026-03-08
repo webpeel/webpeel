@@ -6159,15 +6159,22 @@
     word-wrap: normal !important;
     white-space: pre !important;
     overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
+  /* Allow horizontal scroll within hero for code blocks */
   @media (max-width: 768px) {
-    .hero-mobile-code,
-    .mini-code,
-    .ba-code {
+    .hero { overflow-x: visible !important; overflow-y: visible !important; }
+    .hero-mobile-code {
       word-break: normal !important;
       overflow-x: auto !important;
       white-space: pre !important;
       -webkit-overflow-scrolling: touch;
+      max-width: calc(100vw - 32px) !important;
+    }
+    .mini-code, .ba-code {
+      word-break: normal !important;
+      overflow-x: auto !important;
+      white-space: pre !important;
     }
   }
 

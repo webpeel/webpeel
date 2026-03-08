@@ -49,7 +49,7 @@ export default function LoginPage() {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Left Side — Auth */}
-      <div className="flex w-full flex-col items-center overflow-y-auto px-4 sm:px-6 py-8 lg:w-1/2" style={{ backgroundColor: '#0A0A0F' }}>
+      <div className="flex w-full flex-col items-center justify-center overflow-y-auto px-4 sm:px-6 py-8 lg:w-1/2" style={{ backgroundColor: '#0A0A0F' }}>
         <div className="my-auto w-full max-w-[380px]">
           {/* Logo */}
           <div className="mb-8 sm:mb-12">
