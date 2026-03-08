@@ -65,7 +65,7 @@ function TypeWriter({ text, speed = 30, onDone }: { text: string; speed?: number
 
 export function WebAnimation() {
   const [siteIndex, setSiteIndex] = useState(0);
-  const [phase, setPhase] = useState<'typing' | 'fetching' | 'result'>('typing');
+  const [phase, setPhase] = useState<'typing' | 'fetching' | 'result'>('result');
 
   const site = DEMO_SITES[siteIndex];
 
@@ -124,7 +124,7 @@ export function WebAnimation() {
           </div>
 
           {/* Fetching state */}
-          {phase !== 'typing' && (
+          {phase === 'fetching' && (
             <div className="mt-4 animate-fade-in">
               <div className="text-[12px] text-zinc-500 font-mono">
                 <span className="text-zinc-600">⟳</span> Fetching...
@@ -181,21 +181,21 @@ export function WebAnimation() {
 
       {/* Feature Highlights */}
       <div className="mt-10 grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
-          <div className="text-[13px] font-semibold text-emerald-400 mb-1">⚡ HTTP Mode</div>
-          <div className="text-[12px] text-zinc-500 leading-snug">Instant extraction — no browser overhead</div>
+        <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+          <div className="text-[13px] font-semibold text-emerald-400 mb-1 break-words">⚡ HTTP Mode</div>
+          <div className="text-[12px] text-zinc-500 leading-snug break-words">Instant extraction — no browser overhead</div>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
-          <div className="text-[13px] font-semibold text-amber-400 mb-1">🌐 Browser Mode</div>
-          <div className="text-[12px] text-zinc-500 leading-snug">Full JS rendering for SPAs & dynamic sites</div>
+        <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+          <div className="text-[13px] font-semibold text-amber-400 mb-1 break-words">🌐 Browser Mode</div>
+          <div className="text-[12px] text-zinc-500 leading-snug break-words">Full JS rendering for SPAs & dynamic sites</div>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
-          <div className="text-[13px] font-semibold text-indigo-400 mb-1">📄 Clean Markdown</div>
-          <div className="text-[12px] text-zinc-500 leading-snug">LLM-ready output, stripped of boilerplate</div>
+        <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+          <div className="text-[13px] font-semibold text-indigo-400 mb-1 break-words">📄 Clean Markdown</div>
+          <div className="text-[12px] text-zinc-500 leading-snug break-words">LLM-ready output, stripped of boilerplate</div>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
-          <div className="text-[13px] font-semibold text-zinc-300 mb-1">🔑 Simple API</div>
-          <div className="text-[12px] text-zinc-500 leading-snug">One endpoint, one key — ship in minutes</div>
+        <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+          <div className="text-[13px] font-semibold text-zinc-300 mb-1 break-words">🔑 Simple API</div>
+          <div className="text-[12px] text-zinc-500 leading-snug break-words">One endpoint, one key — ship in minutes</div>
         </div>
       </div>
     </div>
