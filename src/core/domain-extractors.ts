@@ -382,19 +382,73 @@ async function twitterExtractor(html: string, url: string): Promise<DomainExtrac
         };
 
         // Try to fetch recent tweets from Twitter's public syndication endpoint
+        // NOTE: simpleFetch sends too many Sec-* headers that trigger 429. Use https directly.
         let recentTweets = '';
         try {
-          const syndicationUrl = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${u.screen_name}`;
-          const syndicationResult = await simpleFetch(syndicationUrl, 'Mozilla/5.0 (compatible; WebPeel/1.0)', 8000);
-          if (syndicationResult?.html) {
-            // Extract tweet texts from the syndication HTML
-            const tweetMatches = [...syndicationResult.html.matchAll(/"full_text":"((?:[^"\\]|\\.)*)"/g)];
-            const tweets = tweetMatches
-              .slice(0, 5)
-              .map(m => m[1].replace(/\\n/g, ' ').replace(/\\"/g, '"').trim())
-              .filter(t => t.length > 10 && !t.startsWith('RT @'));
-            if (tweets.length > 0) {
-              recentTweets = '\n\n### Recent Tweets\n\n' + tweets.map(t => `> ${t}`).join('\n\n');
+          const { default: httpsModule } = await import('https');
+          const syndicationHtml = await new Promise<string>((resolve, reject) => {
+            const req = httpsModule.request({
+              hostname: 'syndication.twitter.com',
+              path: `/srv/timeline-profile/screen-name/${u.screen_name}`,
+              method: 'GET',
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+              },
+            }, (res) => {
+              if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); res.resume(); return; }
+              let body = '';
+              res.on('data', (chunk: Buffer) => body += chunk.toString());
+              res.on('end', () => resolve(body));
+            });
+            req.on('error', reject);
+            setTimeout(() => req.destroy(new Error('timeout')), 12000);
+            req.end();
+          });
+          if (syndicationHtml) {
+            // Parse __NEXT_DATA__ JSON from the syndication page for rich tweet data
+            const nextDataMatch = syndicationHtml.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
+            if (nextDataMatch) {
+              const nextData = tryParseJson(nextDataMatch[1]);
+              const entries: any[] = nextData?.props?.pageProps?.timeline?.entries || [];
+              const tweetSections: string[] = [];
+              for (const entry of entries) {
+                if (tweetSections.length >= 8) break;
+                const tweet = entry?.content?.tweet;
+                if (!tweet?.full_text) continue;
+                const text: string = tweet.full_text.replace(/\\n/g, '\n').replace(/\\"/g, '"').trim();
+                // Skip retweets and pure-URL-only tweets without media
+                if (text.startsWith('RT @')) continue;
+                const media: any[] = tweet.extended_entities?.media || tweet.entities?.media || [];
+                const isUrlOnly = /^https?:\/\/t\.co\/\S+$/.test(text.trim()) || /^https?:\/\/t\.co\/\S+\s*$/.test(text.trim());
+                if (isUrlOnly && media.length === 0) continue;
+                // Format date
+                const dateStr = tweet.created_at ? (() => {
+                  try { return new Date(tweet.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }); } catch { return tweet.created_at; }
+                })() : '';
+                const likes: number = tweet.favorite_count ?? 0;
+                const retweets: number = tweet.retweet_count ?? 0;
+                const replies: number = tweet.reply_count ?? 0;
+                const fmtNum = (n: number) => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n);
+                const mediaLine = media.length > 0 ? `\n📷 ${media.map((m: any) => m.media_url_https || m.media_url).filter(Boolean).join(', ')}` : '';
+                // Clean t.co URLs from text when they have real media
+                const cleanText = media.length > 0 ? text.replace(/https?:\/\/t\.co\/\S+/g, '').trim() : text;
+                tweetSections.push(`### ${dateStr}\n${cleanText}${mediaLine}\n♻️ ${fmtNum(retweets)} | ❤️ ${fmtNum(likes)} | 💬 ${fmtNum(replies)}`);
+              }
+              if (tweetSections.length > 0) {
+                recentTweets = '\n\n## Recent Tweets\n\n' + tweetSections.join('\n\n---\n\n');
+              }
+            } else {
+              // Fallback: simple regex extraction without metrics
+              const tweetMatches = [...syndicationHtml.matchAll(/"full_text":"((?:[^"\\]|\\.)*)"/g)];
+              const tweets = tweetMatches
+                .slice(0, 5)
+                .map(m => m[1].replace(/\\n/g, ' ').replace(/\\"/g, '"').trim())
+                .filter(t => t.length > 10 && !t.startsWith('RT @'));
+              if (tweets.length > 0) {
+                recentTweets = '\n\n## Recent Tweets\n\n' + tweets.map(t => `> ${t}`).join('\n\n');
+              }
             }
           }
         } catch { /* syndication optional */ }
@@ -402,7 +456,7 @@ async function twitterExtractor(html: string, url: string): Promise<DomainExtrac
         const websiteLine = structured.website ? `\n🌐 ${structured.website}` : '';
         const joinedLine = structured.created ? `\n📅 Joined: ${structured.created}` : '';
         const likesLine = structured.likes ? `  |  ❤️ Likes: ${structured.likes?.toLocaleString() || 0}` : '';
-        const cleanContent = `## 🐦 @${(structured.handle || '').replace('@', '')} on X/Twitter\n\n**${structured.name}**${structured.verified ? ' ✓' : ''}\n\n${structured.bio || ''}\n\n📍 ${structured.location || 'N/A'}${websiteLine}${joinedLine}\n\n👥 **Followers:** ${structured.followers?.toLocaleString() || 0}  |  **Following:** ${structured.following?.toLocaleString() || 0}  |  **Tweets:** ${structured.tweets?.toLocaleString() || 0}${likesLine}${recentTweets}`;
+        const cleanContent = `# @${(structured.handle || '').replace('@', '')} on X/Twitter\n\n**${structured.name}**${structured.verified ? ' ✓' : ''}\n\n${structured.bio || ''}\n\n📍 ${structured.location || 'N/A'}${websiteLine}${joinedLine}\n👥 Followers: ${structured.followers?.toLocaleString() || 0} | Following: ${structured.following?.toLocaleString() || 0} | Tweets: ${structured.tweets?.toLocaleString() || 0}${likesLine}${recentTweets}`;
 
         return { domain, type: 'profile', structured, cleanContent };
       }
@@ -2213,7 +2267,18 @@ async function linkedinExtractor(html: string, url: string): Promise<DomainExtra
     const { load } = await import('cheerio');
     const $ = load(html);
 
-    // LinkedIn SSR exposes some data in meta tags and JSON-LD
+    // Detect page type from URL first
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+    const pageType = pathParts[0] === 'company' ? 'company'
+      : pathParts[0] === 'in' ? 'profile'
+      : pathParts[0] === 'jobs' ? 'job'
+      : 'page';
+
+    // Detect if we're on the authwall (LinkedIn redirects unauthenticated requests)
+    const isAuthwall = html.includes('authwall') || html.includes('Join LinkedIn') || html.includes('Sign in') && !html.includes('linkedin.com/in/');
+
+    // --- Try parsing meta tags / JSON-LD from the HTML ---
     let jsonLd: any = null;
     $('script[type="application/ld+json"]').each((_: any, el: any) => {
       if (jsonLd) return;
@@ -2225,26 +2290,66 @@ async function linkedinExtractor(html: string, url: string): Promise<DomainExtra
     const ogTitle = $('meta[property="og:title"]').attr('content') || '';
     const ogDescription = $('meta[property="og:description"]').attr('content') || '';
     const ogImage = $('meta[property="og:image"]').attr('content') || '';
+    const metaDescription = $('meta[name="description"]').attr('content') || '';
 
-    const name = jsonLd?.name || ogTitle.replace(/ \| LinkedIn$/, '').trim() || '';
+    let name = jsonLd?.name || ogTitle.replace(/ \| LinkedIn$/, '').replace(/Sign Up \| LinkedIn$/, '').trim() || '';
+    // When on authwall, discard authwall-specific meta data
+    let headline = isAuthwall ? (jsonLd?.jobTitle || '') : (jsonLd?.jobTitle || metaDescription?.split('|')?.[0]?.trim() || ogDescription || '');
+    let description = isAuthwall ? (jsonLd?.description || '') : (jsonLd?.description || ogDescription || '');
+    let location = $('[class*="location"]').first().text().trim() || jsonLd?.address?.addressLocality || '';
+
+    // --- If authwall or no useful data, try direct HTTPS fetch with minimal headers ---
+    // LinkedIn returns rich og: meta tags when fetched with a plain browser UA (no Sec-Fetch-* noise)
+    if (!name || isAuthwall || name.toLowerCase().includes('sign up') || name.toLowerCase().includes('linkedin')) {
+      try {
+        const { default: httpsLI } = await import('https');
+        const { gunzip } = await import('zlib');
+        const linkedInHtml = await new Promise<string>((resolve, reject) => {
+          const req = httpsLI.request({
+            hostname: 'www.linkedin.com',
+            path: urlObj.pathname,
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Accept-Encoding': 'gzip, deflate',
+            },
+          }, (res) => {
+            if (res.statusCode && res.statusCode >= 400) { reject(new Error(`HTTP ${res.statusCode}`)); res.resume(); return; }
+            const chunks: Buffer[] = [];
+            res.on('data', (chunk: Buffer) => chunks.push(chunk));
+            res.on('end', () => {
+              const buf = Buffer.concat(chunks);
+              const enc = res.headers['content-encoding'] || '';
+              if (enc === 'gzip') {
+                gunzip(buf, (err, decoded) => err ? reject(err) : resolve(decoded.toString('utf8')));
+              } else {
+                resolve(buf.toString('utf8'));
+              }
+            });
+          });
+          req.on('error', reject);
+          setTimeout(() => req.destroy(new Error('timeout')), 10000);
+          req.end();
+        });
+        if (linkedInHtml) {
+          const $li = load(linkedInHtml);
+          const liOgTitle = $li('meta[property="og:title"]').attr('content') || '';
+          const liOgDesc = $li('meta[property="og:description"]').attr('content') || '';
+          // Only use if it has real profile data (not authwall)
+          if (liOgTitle && !liOgTitle.toLowerCase().includes('sign up') && !liOgTitle.toLowerCase().includes('join linkedin')) {
+            // "Name - Headline | LinkedIn" or "Name | LinkedIn"
+            const titleParts = liOgTitle.replace(/ \| LinkedIn$/, '').split(/\s*[-–]\s*/);
+            if (titleParts[0]) name = titleParts[0].trim();
+            if (titleParts[1]) headline = titleParts[1].trim();
+            if (liOgDesc) description = liOgDesc;
+          }
+        }
+      } catch { /* direct fetch optional */ }
+    }
+
     if (!name) return null;
-
-    const headline = jsonLd?.jobTitle ||
-      $('meta[name="description"]').attr('content')?.split('|')?.[0]?.trim() ||
-      ogDescription || '';
-
-    const description = jsonLd?.description || ogDescription || '';
-
-    // Try to detect page type from URL
-    const pathParts = new URL(url).pathname.split('/').filter(Boolean);
-    const pageType = pathParts[0] === 'company' ? 'company'
-      : pathParts[0] === 'in' ? 'profile'
-      : pathParts[0] === 'jobs' ? 'job'
-      : 'page';
-
-    // Extract any visible structured info from the HTML
-    const location = $('[class*="location"]').first().text().trim() ||
-      jsonLd?.address?.addressLocality || '';
 
     const structured: Record<string, any> = {
       name, headline, description, location, pageType,
@@ -2253,9 +2358,11 @@ async function linkedinExtractor(html: string, url: string): Promise<DomainExtra
 
     const typeLine = pageType === 'company' ? '🏢' : pageType === 'profile' ? '👤' : '🔗';
     const locationLine = location ? `\n📍 ${location}` : '';
-    const headlineLine = headline ? `\n*${headline}*` : '';
+    const headlineLine = headline && headline !== name ? `\n*${headline}*` : '';
+    const descriptionLine = description ? `\n\n${description}` : '';
+    const authNote = '\n\n⚠️ Full LinkedIn profiles require authentication. Use /v1/session to log in first.';
 
-    const cleanContent = `# ${typeLine} ${name}${headlineLine}${locationLine}\n\n${description}`;
+    const cleanContent = `# ${typeLine} ${name} — LinkedIn${headlineLine}${locationLine}${descriptionLine}${authNote}`;
 
     return { domain: 'linkedin.com', type: pageType, structured, cleanContent };
   } catch {
@@ -2852,8 +2959,77 @@ async function soundcloudExtractor(_html: string, url: string): Promise<DomainEx
 // ---------------------------------------------------------------------------
 
 async function instagramExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  const pathParts = new URL(url).pathname.split('/').filter(Boolean);
+  const contentType = pathParts[0] === 'p' ? 'post' : pathParts[0] === 'reel' ? 'reel' : pathParts[0] === 'tv' ? 'igtv' : pathParts.length === 1 ? 'profile' : 'post';
+
+  // --- Profile extraction via Instagram internal API (no auth needed) ---
+  if (contentType === 'profile' && pathParts.length === 1) {
+    const username = pathParts[0];
+    try {
+      const apiUrl = `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(username)}`;
+      const igHeaders = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'X-IG-App-ID': '936619743392459',
+        'Accept': '*/*',
+        'Referer': 'https://www.instagram.com/',
+      };
+      const apiResult = await simpleFetch(apiUrl, igHeaders['User-Agent'], 12000, igHeaders);
+      const data = tryParseJson(apiResult?.html || '');
+      const user = data?.data?.user;
+      if (user && user.username) {
+        const followers: number = user.edge_followed_by?.count ?? 0;
+        const following: number = user.edge_follow?.count ?? 0;
+        const postCount: number = user.edge_owner_to_timeline_media?.count ?? 0;
+        const fmtNum = (n: number) => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n);
+
+        const structured: Record<string, any> = {
+          username: user.username,
+          fullName: user.full_name || '',
+          bio: user.biography || '',
+          followers,
+          following,
+          posts: postCount,
+          verified: user.is_verified || false,
+          isPrivate: user.is_private || false,
+          profilePic: user.profile_pic_url_hd || user.profile_pic_url || '',
+          externalUrl: user.external_url || (user.bio_links?.[0]?.url) || '',
+          contentType: 'profile',
+        };
+
+        // Recent posts
+        const edges: any[] = user.edge_owner_to_timeline_media?.edges || [];
+        const postSections: string[] = [];
+        for (const edge of edges.slice(0, 6)) {
+          const node = edge?.node;
+          if (!node) continue;
+          const caption = node.edge_media_to_caption?.edges?.[0]?.node?.text || '';
+          const likes: number = node.edge_liked_by?.count ?? node.edge_media_preview_like?.count ?? 0;
+          const comments: number = node.edge_media_to_comment?.count ?? 0;
+          const isVideo = node.is_video;
+          const mediaType = isVideo ? '🎬' : '📸';
+          const timestamp = node.taken_at_timestamp ? new Date(node.taken_at_timestamp * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+          const imgUrl = node.thumbnail_src || node.display_url || '';
+          const captionSnippet = caption ? caption.slice(0, 150) + (caption.length > 150 ? '…' : '') : '';
+          postSections.push(`### ${mediaType} ${timestamp}\n${captionSnippet}\n❤️ ${fmtNum(likes)} | 💬 ${fmtNum(comments)}${imgUrl ? `\n🖼 ${imgUrl}` : ''}`);
+        }
+
+        const verifiedBadge = structured.verified ? ' ✓' : '';
+        const privateBadge = structured.isPrivate ? ' 🔒' : '';
+        const bioLine = structured.bio ? `\n\n${structured.bio}` : '';
+        const externalLine = structured.externalUrl ? `\n🌐 ${structured.externalUrl}` : '';
+        const postsSection = postSections.length > 0 ? '\n\n## Recent Posts\n\n' + postSections.join('\n\n---\n\n') : '';
+
+        const cleanContent = `# @${structured.username} on Instagram${verifiedBadge}${privateBadge}\n\n**${structured.fullName || structured.username}**${bioLine}${externalLine}\n\n👥 ${fmtNum(followers)} Followers | ${fmtNum(following)} Following | ${fmtNum(postCount)} Posts${postsSection}`;
+
+        return { domain: 'instagram.com', type: 'profile', structured, cleanContent };
+      }
+    } catch (e) {
+      if (process.env.DEBUG) console.debug('[webpeel]', 'Instagram profile API failed:', e instanceof Error ? e.message : e);
+    }
+  }
+
+  // --- Post/Reel/IGTV: Try oEmbed API ---
   try {
-    // Instagram official oEmbed (no access token needed for basic data)
     const oembedUrl = `https://graph.facebook.com/v22.0/instagram_oembed?url=${encodeURIComponent(url)}&fields=title,author_name,provider_name,thumbnail_url`;
     const data = await fetchJson(oembedUrl);
 
@@ -2865,9 +3041,6 @@ async function instagramExtractor(_html: string, url: string): Promise<DomainExt
     }
     if (!resolvedData || resolvedData.error) return null;
 
-    const pathParts = new URL(url).pathname.split('/').filter(Boolean);
-    const contentType = pathParts[0] === 'p' ? 'post' : pathParts[0] === 'reel' ? 'reel' : pathParts[0] === 'tv' ? 'igtv' : pathParts.length === 1 ? 'profile' : 'post';
-
     const structured: Record<string, any> = {
       title: resolvedData.title || '',
       author: resolvedData.author_name || '',
@@ -2877,7 +3050,7 @@ async function instagramExtractor(_html: string, url: string): Promise<DomainExt
       provider: 'Instagram',
     };
 
-    const typeEmoji = contentType === 'reel' ? '🎬' : contentType === 'post' ? '📸' : contentType === 'profile' ? '👤' : '📱';
+    const typeEmoji = contentType === 'reel' ? '🎬' : contentType === 'post' ? '📸' : '📱';
     const titleText = structured.title || `Instagram ${contentType} by ${structured.author}`;
     const cleanContent = `## ${typeEmoji} Instagram ${contentType}: ${titleText}\n\n**Creator:** @${structured.author.replace('@', '')}\n**URL:** ${url}`;
 
