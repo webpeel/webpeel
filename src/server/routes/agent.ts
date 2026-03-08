@@ -14,6 +14,7 @@
  * Returns: { success, data|answer, sources, method, elapsed, tokensUsed }
  *
  * Webhook support: pass `webhook` URL to get async delivery with HMAC-SHA256 signing.
+ * Streaming support: pass `stream: true` to get SSE events instead of polling.
  *
  * 5-minute in-memory cache. Max 10 sources per request.
  */
@@ -104,6 +105,14 @@ function setCache(key: string, result: Record<string, unknown>): void {
 }
 
 // ---------------------------------------------------------------------------
+// SSE helpers
+// ---------------------------------------------------------------------------
+
+function sseWrite(res: Response, event: string, data: unknown): void {
+  res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+// ---------------------------------------------------------------------------
 // Core agent logic — shared by single and batch endpoints
 // ---------------------------------------------------------------------------
 
@@ -115,10 +124,15 @@ interface AgentQueryParams {
   llmModel?: string;
   urls?: string[];
   sources?: number;
+  // Optional SSE callbacks for streaming mode
+  onSearching?: () => void;
+  onFetching?: (count: number) => void;
+  onExtracting?: (method: 'llm' | 'bm25') => void;
 }
 
 async function runAgentQuery(params: AgentQueryParams): Promise<Record<string, unknown>> {
-  const { prompt, schema, llmApiKey, llmProvider, llmModel, urls, sources: maxSources } = params;
+  const { prompt, schema, llmApiKey, llmProvider, llmModel, urls, sources: maxSources,
+    onSearching, onFetching, onExtracting } = params;
   const startMs = Date.now();
   const numSources = Math.min(maxSources || 5, 10);
 
@@ -134,6 +148,7 @@ async function runAgentQuery(params: AgentQueryParams): Promise<Record<string, u
     sourceUrls = urls.map((u) => ({ url: u }));
   } else {
     log.info(`Searching web for: "${prompt}"`);
+    if (onSearching) onSearching();
     const { provider, apiKey: searchApiKey } = getBestSearchProvider();
     try {
       const searchResults = await provider.searchWeb(prompt.trim(), { count: numSources, apiKey: searchApiKey });
@@ -149,6 +164,7 @@ async function runAgentQuery(params: AgentQueryParams): Promise<Record<string, u
 
   // Step 2: Fetch pages in parallel
   log.info(`Fetching ${sourceUrls.length} sources in parallel`);
+  if (onFetching) onFetching(sourceUrls.length);
   const PER_SOURCE_TIMEOUT_MS = 5000;
 
   const fetchPromises = sourceUrls.map(async (source) => {
@@ -176,6 +192,7 @@ async function runAgentQuery(params: AgentQueryParams): Promise<Record<string, u
 
   if (schema && llmApiKey) {
     log.info('Using LLM extraction');
+    if (onExtracting) onExtracting('llm');
     const extracted = await extractWithLLM({
       content: combinedContent.slice(0, 30000), schema, llmApiKey, llmProvider: (llmProvider || 'openai') as LLMProvider, llmModel,
       prompt: `Based on these web pages, ${prompt}`, url: fetchResults[0].url,
@@ -185,6 +202,7 @@ async function runAgentQuery(params: AgentQueryParams): Promise<Record<string, u
       llm: { provider: extracted.provider || llmProvider || 'openai', model: extracted.model || llmModel || 'default' }, tokensUsed: totalTokens + llmTokensUsed, elapsed: Date.now() - startMs };
   } else {
     log.info('Using BM25 text extraction');
+    if (onExtracting) onExtracting('bm25');
     const qa = quickAnswer({ question: prompt, content: combinedContent, maxPassages: 3, maxChars: 2000 });
     result = { success: true, answer: qa.answer || combinedContent.slice(0, 2000), confidence: qa.confidence ?? 0,
       sources: fetchResults.map((r) => ({ url: r.url, title: r.title })), method: 'agent-bm25', tokensUsed: totalTokens, elapsed: Date.now() - startMs };
@@ -201,9 +219,9 @@ async function runAgentQuery(params: AgentQueryParams): Promise<Record<string, u
 export function createAgentRouter(): Router {
   const router = Router();
 
-  // ── POST /v1/agent — single query (with optional webhook) ──────────────
+  // ── POST /v1/agent — single query (with optional webhook or stream) ──────
   router.post('/', async (req: Request, res: Response) => {
-    const { prompt, schema, llmApiKey, llmProvider, llmModel, urls, sources: maxSources, webhook } = req.body || {};
+    const { prompt, schema, llmApiKey, llmProvider, llmModel, urls, sources: maxSources, webhook, stream } = req.body || {};
     const requestId = (req as any).requestId || crypto.randomUUID();
 
     if (!prompt?.trim()) {
@@ -213,6 +231,35 @@ export function createAgentRouter(): Router {
           hint: 'POST /v1/agent { "prompt": "Find Stripe pricing plans" }', docs: 'https://webpeel.dev/docs/api-reference' },
         requestId,
       });
+    }
+
+    // ── Streaming mode (SSE) ─────────────────────────────────────────────
+    if (stream === true) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+
+      try {
+        const result = await runAgentQuery({
+          prompt, schema, llmApiKey, llmProvider, llmModel, urls, sources: maxSources,
+          onSearching: () => {
+            sseWrite(res, 'searching', { message: 'Searching the web...' });
+          },
+          onFetching: (count: number) => {
+            sseWrite(res, 'fetching', { message: `Fetching ${count} sources...`, count });
+          },
+          onExtracting: (method: 'llm' | 'bm25') => {
+            sseWrite(res, 'extracting', { message: method === 'llm' ? 'Extracting with LLM...' : 'Analyzing with BM25...', method });
+          },
+        });
+        sseWrite(res, 'done', { ...result, requestId });
+      } catch (err: any) {
+        sseWrite(res, 'error', { message: err.message || 'An unexpected error occurred', requestId });
+      }
+      res.end();
+      return;
     }
 
     // Async mode: webhook provided → return immediately, deliver result later
@@ -245,7 +292,7 @@ export function createAgentRouter(): Router {
 
   // ── POST /v1/agent/batch — parallel batch queries ─────────────────────
   router.post('/batch', async (req: Request, res: Response) => {
-    const { prompts, schema, llmApiKey, llmProvider, llmModel, sources, webhook } = req.body || {};
+    const { prompts, schema, llmApiKey, llmProvider, llmModel, sources, webhook, stream } = req.body || {};
     const requestId = (req as any).requestId || crypto.randomUUID();
 
     if (!Array.isArray(prompts) || prompts.length === 0) {
@@ -265,7 +312,61 @@ export function createAgentRouter(): Router {
     const job: BatchJob = { id: jobId, status: 'processing', total: prompts.length, completed: 0, results: [], webhook, createdAt: Date.now() };
     batchJobs.set(jobId, job);
 
-    // Return immediately, then process in background
+    // ── Streaming mode (SSE) — keep connection open ──────────────────────
+    if (stream === true) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+
+      // Send start event
+      sseWrite(res, 'start', { id: jobId, total: prompts.length, requestId });
+
+      const sem = new Semaphore(5);
+      const tasks = prompts.map(async (prompt: string) => {
+        await sem.acquire();
+        try {
+          const result = await runAgentQuery({ prompt, schema, llmApiKey, llmProvider, llmModel, sources });
+          const entry = {
+            prompt,
+            success: !!result.success,
+            answer: result.answer as string | undefined,
+            data: result.data,
+            sources: result.sources as unknown[] | undefined,
+            method: result.method as string | undefined,
+            elapsed: result.elapsed as number | undefined,
+          };
+          job.results.push(entry);
+          job.completed++;
+          // Send per-prompt progress event
+          sseWrite(res, 'progress', { completed: job.completed, total: job.total, result: entry });
+        } catch (err: any) {
+          const entry = { prompt, success: false, error: err.message };
+          job.results.push(entry);
+          job.completed++;
+          sseWrite(res, 'progress', { completed: job.completed, total: job.total, result: entry });
+        } finally {
+          sem.release();
+        }
+      });
+
+      await Promise.allSettled(tasks);
+      job.status = 'completed';
+
+      // Send done event
+      sseWrite(res, 'done', { id: jobId, total: job.total, completed: job.completed, requestId });
+      res.end();
+
+      // Fire webhook if configured
+      if (webhook) {
+        sendWebhook(webhook, 'agent.batch.completed', { id: jobId, total: job.total, completed: job.completed, results: job.results })
+          .catch((err: any) => log.error('Batch webhook failed:', err.message));
+      }
+      return;
+    }
+
+    // Non-streaming mode: Return immediately, then process in background
     res.json({ success: true, id: jobId, status: 'processing', total: prompts.length, requestId });
 
     // Process in background with concurrency limit of 5

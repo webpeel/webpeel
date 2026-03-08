@@ -5,6 +5,7 @@
 import type { Command } from 'commander';
 import { handleLogin, handleLogout, handleUsage, loadConfig, saveConfig } from '../../cli-auth.js';
 import { clearCache, cacheStats } from '../../cache.js';
+import { loginToProfile } from '../../core/profiles.js';
 import { cliVersion } from '../utils.js';
 
 export function registerAuthCommands(program: Command): void {
@@ -262,13 +263,36 @@ export function registerAuthCommands(program: Command): void {
     });
 
   // ── login command ─────────────────────────────────────────────────────────
+  // Two modes:
+  //   webpeel login             — interactive API key authentication (existing)
+  //   webpeel login <domain>    — browser login: open site, log in, save cookies as profile
   program
-    .command('login')
-    .description('Authenticate the CLI with your API key')
-    .action(async () => {
+    .command('login [domain]')
+    .description('Authenticate: no args = API key auth; with domain = browser login (saves cookies as a named profile)')
+    .option('--profile <name>', 'Profile name to save under (defaults to the domain)')
+    .action(async (domain: string | undefined, opts: { profile?: string }) => {
       try {
-        await handleLogin();
-        process.exit(0);
+        if (domain) {
+          // ── Browser login mode ──────────────────────────────────────────
+          const url = domain.startsWith('http') ? domain : `https://${domain}`;
+          // Extract hostname for profile name default (e.g. "instagram.com" from "https://www.instagram.com/")
+          let defaultProfileName: string;
+          try {
+            const hostname = new URL(url).hostname;
+            // Strip "www." prefix for cleaner profile names
+            defaultProfileName = hostname.replace(/^www\./, '');
+          } catch {
+            defaultProfileName = domain;
+          }
+          const profileName = opts.profile || defaultProfileName;
+
+          await loginToProfile(url, profileName);
+          process.exit(0);
+        } else {
+          // ── API key auth mode (original behavior) ───────────────────────
+          await handleLogin();
+          process.exit(0);
+        }
       } catch (error) {
         console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         process.exit(1);

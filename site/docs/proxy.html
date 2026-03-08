@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="WebPeel Proxy Support — HTTP, HTTPS, and SOCKS5 proxies with automatic rotation. Access geo-restricted content worldwide.">
+  <link rel="canonical" href="https://webpeel.dev/docs/proxy">
+  <meta property="og:title" content="Proxy Support — WebPeel">
+  <meta property="og:description" content="WebPeel Proxy Support — HTTP, HTTPS, and SOCKS5 proxies with automatic rotation. Access geo-restricted content worldwide.">
+  <meta property="og:url" content="https://webpeel.dev/docs/proxy">
+  <meta property="og:type" content="website">
+  <title>Proxy Support — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/getting-started" class="sidebar-link">Getting Started</a>
+        <a href="/docs/authentication" class="sidebar-link">Authentication</a>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+        <a href="/docs/changelog" class="sidebar-link">Changelog</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">API</div>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshot</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl</a>
+        <a href="/docs/extract" class="sidebar-link">Extract</a>
+        <a href="/docs/batch" class="sidebar-link">Batch</a>
+        <a href="/docs/ask" class="sidebar-link">/v1/ask — Web Q&amp;A</a>
+        <a href="/docs/sessions" class="sidebar-link">/v1/session — Browser Sessions</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+        <a href="/docs/proxy" class="sidebar-link active">Proxy Support</a>
+        <a href="/docs/sessions-cookies" class="sidebar-link">Sessions &amp; Cookies</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Proxy Support</span>
+      </div>
+
+      <h1>Proxy Support</h1>
+      <p class="lead">WebPeel supports HTTP, HTTPS, and SOCKS5 proxies for accessing geo-restricted or IP-blocked content. Route requests through any standard proxy — including authenticated proxies and automatic rotation with failover.</p>
+
+      <div style="padding: 16px 20px; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; margin-bottom: 32px; font-size: 14px; color: #166534;">
+        <strong>🌍 Already built-in.</strong> Proxy support is available now in the CLI and API — no extra setup required. Pass <code>--proxy</code> or <code>--proxies</code> and WebPeel handles the rest.
+      </div>
+
+      <h2 id="cli-usage">CLI Usage</h2>
+
+      <h3 id="http-proxy">HTTP Proxy</h3>
+      <pre><code class="language-bash">webpeel "https://example.com" --proxy http://proxy.example.com:8080</code></pre>
+
+      <h3 id="authenticated-proxy">Authenticated Proxy</h3>
+      <pre><code class="language-bash">webpeel "https://example.com" --proxy http://user:pass@proxy.example.com:8080</code></pre>
+
+      <h3 id="socks5-proxy">SOCKS5 Proxy</h3>
+      <pre><code class="language-bash">webpeel "https://example.com" --proxy socks5://user:pass@proxy.example.com:1080</code></pre>
+
+      <h3 id="proxy-rotation">Proxy Rotation (Automatic Failover)</h3>
+      <p>Pass multiple proxies as a comma-separated list. WebPeel tries them in order and automatically fails over to the next proxy if one fails.</p>
+      <pre><code class="language-bash">webpeel "https://example.com" \
+  --proxies "http://proxy1:8080,http://proxy2:8080,socks5://proxy3:1080"</code></pre>
+
+      <h2 id="api-usage">API Usage</h2>
+      <p>Pass a <code>proxy</code> parameter in the request body to route that specific fetch through a proxy.</p>
+
+      <pre><code class="language-bash">POST https://api.webpeel.dev/v1/fetch
+Authorization: Bearer wp_live_xxxx
+Content-Type: application/json
+
+{
+  "url": "https://example.com",
+  "proxy": "http://proxy.example.com:8080"
+}</code></pre>
+
+      <h3>curl Example</h3>
+      <pre><code class="language-bash">curl -X POST "https://api.webpeel.dev/v1/fetch" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://geo-restricted-site.com",
+    "proxy": "http://user:pass@proxy.example.com:8080",
+    "render": true
+  }'</code></pre>
+
+      <h2 id="env-vars">Environment Variables</h2>
+      <p>Set a default proxy for all requests using standard environment variables:</p>
+
+      <pre><code class="language-bash"># HTTP proxy (used for http:// URLs)
+export HTTP_PROXY=http://proxy.example.com:8080
+
+# HTTPS proxy (used for https:// URLs — most common)
+export HTTPS_PROXY=http://proxy.example.com:8080
+
+# No proxy for specific domains
+export NO_PROXY=localhost,127.0.0.1,internal.example.com</code></pre>
+
+      <p>When set, these variables apply to all WebPeel requests automatically. An explicit <code>--proxy</code> flag overrides the environment variable.</p>
+
+      <h2 id="proxy-params">CLI Parameters Reference</h2>
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--proxy &lt;url&gt;</code></td><td>Single proxy URL. Supports <code>http://</code>, <code>https://</code>, and <code>socks5://</code> schemes.</td></tr>
+          <tr><td><code>--proxies &lt;urls&gt;</code></td><td>Comma-separated list of proxies. Tried in order; automatically fails over to the next on error.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="supported-formats">Supported Proxy Formats</h2>
+      <table>
+        <thead>
+          <tr><th>Format</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>HTTP proxy</td><td><code>http://proxy.example.com:8080</code></td></tr>
+          <tr><td>HTTPS proxy</td><td><code>https://proxy.example.com:8080</code></td></tr>
+          <tr><td>SOCKS5 proxy</td><td><code>socks5://proxy.example.com:1080</code></td></tr>
+          <tr><td>Authenticated HTTP</td><td><code>http://user:pass@proxy.example.com:8080</code></td></tr>
+          <tr><td>Authenticated SOCKS5</td><td><code>socks5://user:pass@proxy.example.com:1080</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="providers">Supported Proxy Providers</h2>
+      <p>WebPeel works with any standard proxy. Popular options:</p>
+      <ul>
+        <li><strong>Bright Data</strong> — Residential and datacenter proxies, large IP pool</li>
+        <li><strong>Oxylabs</strong> — Datacenter + residential proxies, high reliability</li>
+        <li><strong>SmartProxy</strong> — Rotating residential proxies, easy setup</li>
+        <li><strong>Your own server</strong> — Any SOCKS5 or HTTP proxy you control</li>
+      </ul>
+
+      <h2 id="next-steps">Related</h2>
+      <ul>
+        <li><a href="/docs/sessions-cookies"><strong>Sessions &amp; Cookies</strong></a> — Persistent browser profiles and cookie injection</li>
+        <li><a href="/docs/fetch"><strong>Fetch API</strong></a> — Full fetch parameter reference</li>
+        <li><a href="/docs/cli"><strong>CLI Reference</strong></a> — All CLI flags and options</li>
+        <li><a href="/docs/sessions"><strong>Browser Sessions</strong></a> — Stateful sessions for login flows</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+</body>
+</html>

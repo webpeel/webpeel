@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="description" content="WebPeel Sessions &amp; Cookies — persistent browser profiles, cookie injection, and stateful session cookie management.">
+  <link rel="canonical" href="https://webpeel.dev/docs/sessions-cookies">
+  <meta property="og:title" content="Sessions &amp; Cookies — WebPeel">
+  <meta property="og:description" content="WebPeel Sessions &amp; Cookies — persistent browser profiles, cookie injection, and stateful session cookie management.">
+  <meta property="og:url" content="https://webpeel.dev/docs/sessions-cookies">
+  <meta property="og:type" content="website">
+  <title>Sessions &amp; Cookies — WebPeel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/getting-started" class="sidebar-link">Getting Started</a>
+        <a href="/docs/authentication" class="sidebar-link">Authentication</a>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+        <a href="/docs/changelog" class="sidebar-link">Changelog</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">API</div>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshot</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl</a>
+        <a href="/docs/extract" class="sidebar-link">Extract</a>
+        <a href="/docs/batch" class="sidebar-link">Batch</a>
+        <a href="/docs/ask" class="sidebar-link">/v1/ask — Web Q&amp;A</a>
+        <a href="/docs/sessions" class="sidebar-link">/v1/session — Browser Sessions</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+        <a href="/docs/proxy" class="sidebar-link">Proxy Support</a>
+        <a href="/docs/sessions-cookies" class="sidebar-link active">Sessions &amp; Cookies</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Sessions &amp; Cookies</span>
+      </div>
+
+      <h1>Sessions &amp; Cookies</h1>
+      <p class="lead">Maintain login state across requests with persistent browser profiles and cookie injection. Scrape authenticated content, remember sessions between CLI calls, and programmatically save and restore cookies via the API.</p>
+
+      <div style="padding: 16px 20px; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; margin-bottom: 32px; font-size: 14px; color: #166534;">
+        <strong>🍪 Already built-in.</strong> Persistent profiles (<code>--profile</code>), cookie injection (<code>--cookie</code>), and cookie save/restore via <code>GET/POST /v1/session/:id/cookies</code> are all available today — no extra setup needed.
+      </div>
+
+      <h2 id="persistent-profiles">Persistent Browser Profiles</h2>
+      <p>The <code>--profile</code> flag saves the browser's cookies, storage, and session state under a named profile. Next time you use the same profile, you're already logged in.</p>
+
+      <h3 id="create-profile">Step 1: Log In and Save the Profile</h3>
+      <pre><code class="language-bash"># Open the login page with --headed so you can log in manually
+webpeel "https://instagram.com/login" --profile instagram --render --headed
+
+# Log in in the opened browser window, then close it (or press Ctrl+C)
+# Cookies are automatically saved to the profile.</code></pre>
+
+      <h3 id="use-profile">Step 2: Reuse the Profile</h3>
+      <pre><code class="language-bash"># Cookies are loaded automatically — no login required
+webpeel "https://instagram.com/natgeo" --profile instagram --render</code></pre>
+
+      <h3 id="profile-paths">Profile Storage</h3>
+      <p>Named profiles are stored in your home directory. You can also pass an absolute path to use a specific directory:</p>
+      <pre><code class="language-bash"># Named profile (stored in ~/.webpeel/profiles/mysite/)
+webpeel "https://example.com" --profile mysite --render
+
+# Absolute path to an existing profile directory
+webpeel "https://example.com" --profile /path/to/profile --render</code></pre>
+
+      <h2 id="cookie-injection">Cookie Injection</h2>
+      <p>Pass cookies directly on the command line without needing a saved profile. Useful for one-off authenticated requests or when you already have a cookie string.</p>
+
+      <pre><code class="language-bash"># Single cookie
+webpeel "https://example.com/dashboard" --cookie "session=abc123"
+
+# Multiple cookies
+webpeel "https://example.com/dashboard" \
+  --cookie "session=abc123" \
+  --cookie "auth=xyz789" \
+  --cookie "csrf=tok123"</code></pre>
+
+      <p>Cookie format: <code>name=value</code>. The same cookie format used in browser DevTools and curl's <code>-b</code> flag.</p>
+
+      <h2 id="api-sessions">API: Session Cookie Management</h2>
+      <p>When using stateful browser sessions via <a href="/docs/sessions"><code>/v1/session</code></a>, you can save and restore cookies programmatically — useful for caching authenticated sessions and avoiding repeated login flows.</p>
+
+      <h3 id="create-session">Create a Session</h3>
+      <pre><code class="language-bash">curl -X POST "https://api.webpeel.dev/v1/session" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://instagram.com" }'
+
+# Returns:
+# { "id": "sess_abc123xyz", "status": "ready", ... }</code></pre>
+
+      <h3 id="navigate-and-login">Navigate and Log In</h3>
+      <pre><code class="language-bash">SESSION=sess_abc123xyz
+
+# Navigate to login page
+curl -X POST "https://api.webpeel.dev/v1/session/$SESSION/navigate" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://instagram.com/login" }'
+
+# Fill username
+curl -X POST "https://api.webpeel.dev/v1/session/$SESSION/act" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "action": "fill", "selector": "#username", "value": "myuser" }'
+
+# Fill password and submit
+curl -X POST "https://api.webpeel.dev/v1/session/$SESSION/act" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "action": "fill", "selector": "#password", "value": "mypass", "submit": true }'</code></pre>
+
+      <h3 id="save-cookies">Save Cookies</h3>
+      <p>Export all cookies from the current session to save for later:</p>
+      <pre><code class="language-bash">curl "https://api.webpeel.dev/v1/session/$SESSION/cookies" \
+  -H "Authorization: Bearer wp_live_xxxx"
+
+# Returns:
+# {
+#   "cookies": [
+#     { "name": "sessionid", "value": "abc123", "domain": ".instagram.com", ... },
+#     { "name": "csrftoken", "value": "xyz789", "domain": ".instagram.com", ... }
+#   ]
+# }</code></pre>
+
+      <h3 id="restore-cookies">Restore Cookies</h3>
+      <p>Inject saved cookies into a new session to skip the login flow:</p>
+      <pre><code class="language-bash"># Create a new session
+NEW_SESSION=$(curl -s -X POST "https://api.webpeel.dev/v1/session" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://instagram.com" }' | jq -r '.id')
+
+# Restore saved cookies
+curl -X POST "https://api.webpeel.dev/v1/session/$NEW_SESSION/cookies" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cookies": [
+      { "name": "sessionid", "value": "abc123", "domain": ".instagram.com" },
+      { "name": "csrftoken", "value": "xyz789", "domain": ".instagram.com" }
+    ]
+  }'
+
+# Now navigate to authenticated content
+curl -X POST "https://api.webpeel.dev/v1/session/$NEW_SESSION/navigate" \
+  -H "Authorization: Bearer wp_live_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://instagram.com/natgeo" }'</code></pre>
+
+      <h2 id="cli-reference">CLI Reference</h2>
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--profile &lt;name|path&gt;</code></td><td>Load and save a persistent browser profile. Named profiles are stored in <code>~/.webpeel/profiles/</code>. Pass an absolute path for a custom location.</td></tr>
+          <tr><td><code>--cookie &lt;name=value&gt;</code></td><td>Inject a cookie into the request. Repeatable for multiple cookies.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="api-reference">API Reference</h2>
+      <table>
+        <thead>
+          <tr><th>Endpoint</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>GET /v1/session/:id/cookies</code></td><td>Export all cookies from the current session as a JSON array.</td></tr>
+          <tr><td><code>POST /v1/session/:id/cookies</code></td><td>Inject cookies into an existing session. Body: <code>{ "cookies": [...] }</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="next-steps">Related</h2>
+      <ul>
+        <li><a href="/docs/sessions"><strong>/v1/session</strong></a> — Full browser session API: navigate, act, screenshot, and close</li>
+        <li><a href="/docs/proxy"><strong>Proxy Support</strong></a> — Route requests through HTTP, HTTPS, or SOCKS5 proxies</li>
+        <li><a href="/docs/cli"><strong>CLI Reference</strong></a> — All CLI flags and options</li>
+        <li><a href="/docs/fetch"><strong>Fetch API</strong></a> — Single-request page fetching</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+</body>
+</html>

@@ -329,6 +329,7 @@ export function registerInteractCommands(program: Command): void {
     .option('--schema <json>', 'Schema template name (e.g. product, article) or JSON schema for structured output')
     .option('-s, --silent', 'Silent mode (no spinner)')
     .option('--json', 'Output as JSON')
+    .option('--stream', 'Stream progress via SSE (calls API endpoint, requires API key)')
     .action(async (prompt: string, options) => {
       const llmApiKey = options.llmKey || process.env.OPENAI_API_KEY;
       const urls = options.urls ? options.urls.split(',').map((u: string) => u.trim()) : undefined;

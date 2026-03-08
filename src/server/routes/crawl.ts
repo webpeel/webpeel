@@ -13,6 +13,7 @@ import '../types.js'; // Augments Express.Request with requestId
 import { crawl } from '../../core/crawler.js';
 import type { IJobQueue } from '../job-queue.js';
 import { validateUrlForSSRF, SSRFError } from '../middleware/url-validator.js';
+import crypto from 'crypto';
 
 export function createCrawlRouter(jobQueue: IJobQueue): Router {
   const router = Router();
@@ -21,6 +22,7 @@ export function createCrawlRouter(jobQueue: IJobQueue): Router {
    * POST /v1/crawl
    *
    * Start an async crawl job. Returns a job ID immediately; poll GET /v1/crawl/:id for status.
+   * With stream:true, keeps the connection open and sends SSE events per page.
    *
    * Body:
    *   url            {string}   Required. Starting URL.
@@ -30,6 +32,7 @@ export function createCrawlRouter(jobQueue: IJobQueue): Router {
    *   excludePatterns {string[]} Regex patterns — skip matching URLs.
    *   formats        {string[]} Content formats: 'markdown' | 'text' (default: ['markdown']).
    *   webhook        {object}   Optional webhook to POST results to when done.
+   *   stream         {boolean}  If true, respond with SSE events (start → progress → done).
    */
   router.post('/', async (req: Request, res: Response) => {
     try {
@@ -40,6 +43,7 @@ export function createCrawlRouter(jobQueue: IJobQueue): Router {
         includePatterns = [],
         excludePatterns = [],
         webhook,
+        stream,
       } = req.body ?? {};
 
       // Validate URL
@@ -91,6 +95,86 @@ export function createCrawlRouter(jobQueue: IJobQueue): Router {
       }
 
       const ownerId = req.auth?.keyInfo?.accountId;
+
+      // ── Streaming mode (SSE) — keep connection open ──────────────────────
+      if (stream === true) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        res.flushHeaders();
+
+        const jobId = crypto.randomUUID();
+        // Send start event (total unknown until crawl runs)
+        res.write(`event: start\ndata: ${JSON.stringify({ id: jobId, url, maxPages, requestId: req.requestId })}\n\n`);
+
+        let crawledCount = 0;
+        const crawlOptions: any = {
+          maxPages,
+          maxDepth,
+          tier: req.auth?.tier,
+          onProgress: (progress: any) => {
+            const total = progress.crawled + progress.queued;
+            crawledCount = progress.crawled;
+            res.write(`event: progress\ndata: ${JSON.stringify({
+              id: jobId,
+              completed: progress.crawled,
+              total,
+              queued: progress.queued,
+              currentUrl: progress.currentUrl,
+            })}\n\n`);
+          },
+        };
+
+        if (Array.isArray(includePatterns) && includePatterns.length > 0) {
+          crawlOptions.includePatterns = includePatterns;
+        }
+        if (Array.isArray(excludePatterns) && excludePatterns.length > 0) {
+          crawlOptions.excludePatterns = excludePatterns;
+        }
+
+        try {
+          const results = await crawl(url, crawlOptions);
+          const data = results.map(r => ({
+            url: r.url,
+            title: r.title,
+            content: r.markdown,
+            links: r.links,
+            elapsed: r.elapsed,
+          }));
+
+          res.write(`event: done\ndata: ${JSON.stringify({
+            id: jobId,
+            total: results.length,
+            completed: results.length,
+            results: data,
+            requestId: req.requestId,
+          })}\n\n`);
+
+          // Fire webhook if configured
+          if (webhook) {
+            jobQueue.createJob('crawl', webhook, ownerId).then(job => {
+              jobQueue.updateJob(job.id, {
+                status: 'completed',
+                data,
+                total: results.length,
+                completed: results.length,
+                creditsUsed: results.length,
+              });
+            }).catch(() => {});
+          }
+        } catch (error: any) {
+          res.write(`event: error\ndata: ${JSON.stringify({
+            id: jobId,
+            message: error.message || 'Crawl failed',
+            requestId: req.requestId,
+          })}\n\n`);
+        }
+
+        res.end();
+        return;
+      }
+
       const job = await jobQueue.createJob('crawl', webhook, ownerId);
 
       // Start crawl in background
