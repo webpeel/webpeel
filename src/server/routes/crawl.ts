@@ -108,14 +108,12 @@ export function createCrawlRouter(jobQueue: IJobQueue): Router {
         // Send start event (total unknown until crawl runs)
         res.write(`event: start\ndata: ${JSON.stringify({ id: jobId, url, maxPages, requestId: req.requestId })}\n\n`);
 
-        let crawledCount = 0;
         const crawlOptions: any = {
           maxPages,
           maxDepth,
           tier: req.auth?.tier,
           onProgress: (progress: any) => {
             const total = progress.crawled + progress.queued;
-            crawledCount = progress.crawled;
             res.write(`event: progress\ndata: ${JSON.stringify({
               id: jobId,
               completed: progress.crawled,
@@ -153,7 +151,7 @@ export function createCrawlRouter(jobQueue: IJobQueue): Router {
 
           // Fire webhook if configured
           if (webhook) {
-            jobQueue.createJob('crawl', webhook, ownerId).then(job => {
+            Promise.resolve(jobQueue.createJob('crawl', webhook, ownerId)).then((job: any) => {
               jobQueue.updateJob(job.id, {
                 status: 'completed',
                 data,
