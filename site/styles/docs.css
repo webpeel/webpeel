@@ -142,16 +142,24 @@ img, svg {
 }
 
 .nav-links a.nav-btn-primary {
-  background: #1A1A18;
+  background: #5865F2;
   color: #FFFFFF;
   font-weight: 500;
   border-radius: 4px;
 }
 
 .nav-links a.nav-btn-primary:hover {
-  background: #1A1A18;
+  background: #6B73FF;
   color: #FFFFFF;
-  opacity: 0.85;
+  opacity: 1;
+}
+
+/* ── DESIGN-FIX: Prune docs nav to 6 items max — hide low-priority links ──── */
+.nav-links a[href="/#how"],
+.nav-links a[href="/#compare"],
+.nav-links a[href="/blog/"],
+.nav-links a[href="/changelog"] {
+  display: none;
 }
 
 /* ---------- Mobile hamburger (injected by JS) ---------- */

@@ -6148,6 +6148,53 @@
   }
 }
 
+
+  /* ── DESIGN-FIX: Code blocks must scroll, not word-break ──── */
+  .hero-mobile-code,
+  .mini-code,
+  .ba-code,
+  .terminal-body pre,
+  .terminal-body code {
+    word-break: normal !important;
+    word-wrap: normal !important;
+    white-space: pre !important;
+    overflow-x: auto !important;
+  }
+  @media (max-width: 768px) {
+    .hero-mobile-code,
+    .mini-code,
+    .ba-code {
+      word-break: normal !important;
+      overflow-x: auto !important;
+      white-space: pre !important;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* ── DESIGN-FIX: CTA button height parity ──── */
+  .hero-ctas .btn-ghost {
+    min-height: 56px !important;
+    padding: 16px 32px !important;
+    font-size: var(--text-md) !important;
+    opacity: 0.85 !important;
+  }
+
+  /* ── DESIGN-FIX: Mobile stat labels more visible ──── */
+  @media (max-width: 768px) {
+    .hero-stat-l {
+      color: rgba(255,255,255,0.65) !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+    }
+  }
+
+  /* ── DESIGN-FIX: Mobile hero breathing room ──── */
+  @media (max-width: 768px) {
+    .hero {
+      padding-top: 100px !important;
+    }
+  }
+
   </style>
 </head>
 <body>
