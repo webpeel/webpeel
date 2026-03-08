@@ -6202,6 +6202,25 @@
     }
   }
 
+  /* ── DESIGN-FIX: Center CTA button on mobile ──── */
+  @media (max-width: 768px) {
+    .hero-content {
+      align-items: center !important;
+      text-align: center !important;
+    }
+    .hero-ctas {
+      width: 100% !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .hero-ctas .btn-primary,
+    .hero-ctas .btn-ghost {
+      width: 100% !important;
+      max-width: 340px !important;
+      margin: 0 auto !important;
+    }
+  }
+
   </style>
 </head>
 <body>
