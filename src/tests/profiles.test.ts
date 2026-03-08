@@ -44,9 +44,14 @@ describe('isValidProfileName', () => {
     expect(isValidProfileName(' leading')).toBe(false);
   });
 
+  it('accepts names with dots (for domain-style profile names)', () => {
+    expect(isValidProfileName('instagram.com')).toBe(true);
+    expect(isValidProfileName('linkedin.com')).toBe(true);
+    expect(isValidProfileName('my.profile')).toBe(true);
+  });
+
   it('rejects names with special characters', () => {
     expect(isValidProfileName('my_profile')).toBe(false);    // underscore
-    expect(isValidProfileName('my.profile')).toBe(false);    // dot
     expect(isValidProfileName('my/profile')).toBe(false);    // slash
     expect(isValidProfileName('my@profile')).toBe(false);    // at
     expect(isValidProfileName('my!profile')).toBe(false);    // exclamation
