@@ -1,611 +1,653 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import ReactMarkdown from 'react-markdown';
+import useSWR from 'swr';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UsageBar } from '@/components/usage-bar';
+import { StatCard } from '@/components/stat-card';
+import { ActivityTable } from '@/components/activity-table';
+import { OnboardingBanner } from '@/components/onboarding-modal';
+import { CopyButton } from '@/components/copy-button';
 import {
-  ArrowRight,
-  Copy,
-  Download,
-  Share2,
   RefreshCw,
-  AlertCircle,
+  ExternalLink,
+  Activity,
+  Clock,
   CheckCircle2,
-  Globe,
-  Camera,
-  Search,
+  Zap,
+  AlertCircle,
+  Play,
   BookOpen,
-  Database,
-  MessageSquare,
+  Terminal,
+  ArrowRight,
+  Globe,
+  Key,
+  BarChart3,
+  Circle,
+  X,
 } from 'lucide-react';
+import { apiClient, Usage, ApiKey } from '@/lib/api';
+import { ApiErrorBanner } from '@/components/api-error-banner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+const fetcher = async <T,>(url: string, token: string): Promise<T> => {
+  return apiClient<T>(url, { token });
+};
 
-type Mode = 'read' | 'extract' | 'search' | 'screenshot' | 'ask';
-type AppState = 'idle' | 'loading' | 'success' | 'error';
-
-interface ResultData {
-  content?: string;
-  title?: string;
-  tokens?: number;
-  fetchTimeMs?: number;
-  method?: string;
-  imageUrl?: string;
-  results?: SearchResult[];
-  answer?: string;
+interface StatsData {
+  totalRequests: number;
+  successRate: number;
+  avgResponseTime: number;
 }
 
-interface SearchResult {
-  title: string;
-  url: string;
-  snippet: string;
+interface ActivityData {
+  requests: Array<{
+    id: string;
+    url: string;
+    status: 'success' | 'error';
+    responseTime: number;
+    mode: 'basic' | 'stealth';
+    timestamp: string;
+  }>;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return { emoji: '🌅', text: 'Good morning' };
-  if (hour < 18) return { emoji: '☀️', text: 'Good afternoon' };
-  return { emoji: '🌙', text: 'Good evening' };
+interface DailyUsage {
+  date: string;
+  fetches: number;
+  stealth: number;
+  search: number;
 }
 
-function isUrl(input: string): boolean {
-  return input.startsWith('http://') || input.startsWith('https://');
-}
-
-function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text).catch(() => {});
-}
-
-function downloadMarkdown(content: string, title?: string) {
-  const filename = (title || 'webpeel-result').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.md';
-  const blob = new Blob([content], { type: 'text/markdown' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ─── Chip config ─────────────────────────────────────────────────────────────
-
-const CHIPS: { mode: Mode; emoji: string; label: string; placeholder: string }[] = [
-  { mode: 'read', emoji: '📖', label: 'Read Article', placeholder: 'Paste a URL to read as clean markdown...' },
-  { mode: 'extract', emoji: '📊', label: 'Extract Data', placeholder: 'Paste a URL to extract structured data...' },
-  { mode: 'search', emoji: '🔍', label: 'Search Web', placeholder: 'Type anything to search the web...' },
-  { mode: 'screenshot', emoji: '📸', label: 'Screenshot', placeholder: 'Paste a URL to capture a screenshot...' },
-  { mode: 'ask', emoji: '❓', label: 'Ask a Question', placeholder: 'Paste a URL, then ask a question about it...' },
-];
-
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
-
-function LoadingSkeleton({ url }: { url: string }) {
-  return (
-    <div className="w-full max-w-2xl mx-auto mt-6 animate-pulse">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded-full bg-[#5865F2] animate-pulse" />
-          <span className="text-sm text-zinc-400">
-            Reading <span className="text-zinc-300 font-mono text-xs">{url.length > 60 ? url.slice(0, 60) + '…' : url}</span>
-          </span>
-        </div>
-        <div className="space-y-3">
-          <div className="h-4 bg-zinc-800 rounded w-3/4" />
-          <div className="h-4 bg-zinc-800 rounded w-full" />
-          <div className="h-4 bg-zinc-800 rounded w-5/6" />
-          <div className="h-4 bg-zinc-800 rounded w-2/3" />
-          <div className="h-4 bg-zinc-800 rounded w-full" />
-          <div className="h-4 bg-zinc-800 rounded w-4/5" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Result card ─────────────────────────────────────────────────────────────
-
-function ResultCard({
-  result,
-  mode,
-  query,
-  onReset,
-}: {
-  result: ResultData;
-  mode: Mode;
-  query: string;
-  onReset: () => void;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    const text = result.content || result.answer || '';
-    copyToClipboard(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDownload = () => {
-    downloadMarkdown(result.content || result.answer || '', result.title);
-  };
-
-  const handleShare = () => {
-    const shareUrl = `${API_URL}/v1/fetch?url=${encodeURIComponent(query)}&format=markdown`;
-    copyToClipboard(shareUrl);
-  };
-
-  return (
-    <div
-      className="w-full max-w-2xl mx-auto mt-6"
-      style={{
-        opacity: 1,
-        transform: 'translateY(0)',
-        transition: 'opacity 0.3s ease, transform 0.3s ease',
-      }}
-    >
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
-        {/* Metadata bar */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-zinc-800 bg-zinc-900/40 flex-wrap">
-          {result.title && (
-            <span className="text-sm font-medium text-zinc-200 truncate flex-1 min-w-0">{result.title}</span>
-          )}
-          <div className="flex items-center gap-3 text-xs text-zinc-500 shrink-0 ml-auto">
-            {result.tokens != null && (
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#5865F2] inline-block" />
-                {result.tokens.toLocaleString()} tokens
-              </span>
-            )}
-            {result.fetchTimeMs != null && (
-              <span>{result.fetchTimeMs}ms</span>
-            )}
-            {result.method && (
-              <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 capitalize">
-                {result.method}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-5 max-h-[60vh] overflow-y-auto">
-          {/* Screenshot mode */}
-          {mode === 'screenshot' && result.imageUrl && (
-            <img
-              src={result.imageUrl}
-              alt="Screenshot"
-              className="w-full rounded-lg border border-zinc-700"
-            />
-          )}
-
-          {/* Search results mode */}
-          {mode === 'search' && result.results && (
-            <div className="space-y-4">
-              {result.results.map((r, i) => (
-                <div key={i} className="group">
-                  <a
-                    href={r.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start gap-2 hover:opacity-80 transition-opacity"
-                  >
-                    <Globe className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-[#818CF8] group-hover:underline">{r.title}</p>
-                      <p className="text-xs text-zinc-500 mt-0.5 break-all">{r.url}</p>
-                      <p className="text-sm text-zinc-300 mt-1">{r.snippet}</p>
-                    </div>
-                  </a>
-                  {i < result.results!.length - 1 && (
-                    <div className="mt-4 border-t border-zinc-800" />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Ask / Read / Extract markdown mode */}
-          {(mode === 'read' || mode === 'extract' || mode === 'ask') && (result.content || result.answer) && (
-            <div className="prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown
-                components={{
-                  pre: ({ children }) => (
-                    <pre className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-xs">
-                      {children}
-                    </pre>
-                  ),
-                  code: ({ children, className }) => {
-                    const isInline = !className;
-                    return isInline ? (
-                      <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-[#818CF8] text-xs font-mono">
-                        {children}
-                      </code>
-                    ) : (
-                      <code className="font-mono text-zinc-200">{children}</code>
-                    );
-                  },
-                  a: ({ href, children }) => (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#818CF8] hover:underline"
-                    >
-                      {children}
-                    </a>
-                  ),
-                  h1: ({ children }) => <h1 className="text-xl font-bold text-zinc-100 mt-6 mb-3">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-lg font-semibold text-zinc-100 mt-5 mb-2">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-base font-semibold text-zinc-200 mt-4 mb-2">{children}</h3>,
-                  p: ({ children }) => <p className="text-zinc-300 leading-relaxed mb-3">{children}</p>,
-                  ul: ({ children }) => <ul className="text-zinc-300 list-disc list-inside space-y-1 mb-3">{children}</ul>,
-                  ol: ({ children }) => <ol className="text-zinc-300 list-decimal list-inside space-y-1 mb-3">{children}</ol>,
-                  li: ({ children }) => <li className="text-zinc-300">{children}</li>,
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-2 border-[#5865F2] pl-4 my-3 text-zinc-400 italic">
-                      {children}
-                    </blockquote>
-                  ),
-                  hr: () => <hr className="border-zinc-700 my-4" />,
-                }}
-              >
-                {result.content || result.answer || ''}
-              </ReactMarkdown>
-            </div>
-          )}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center gap-2 px-5 py-3 border-t border-zinc-800 bg-zinc-900/40">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
-          >
-            {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-
-          {(mode === 'read' || mode === 'ask' || mode === 'extract') && (
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Download
-            </button>
-          )}
-
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            Share link
-          </button>
-
-          <button
-            onClick={onReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all ml-auto"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            New
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
-
-export default function ReadPage() {
-  const { data: session } = useSession();
+export default function DashboardPage() {
+  const { data: session, status } = useSession();
   const token = (session as any)?.apiToken as string | undefined;
+  const [storedApiKey, setStoredApiKey] = useState<string | null>(null);
+  const [gettingStartedDismissed, setGettingStartedDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gs-dismissed') === 'true';
+    }
+    return false;
+  });
+  const [cliDone, setCliDone] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gs-cli-done') === 'true';
+    }
+    return false;
+  });
+  const [mcpDone, setMcpDone] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gs-mcp-done') === 'true';
+    }
+    return false;
+  });
 
-  const [input, setInput] = useState('');
-  const [mode, setMode] = useState<Mode>('read');
-  const [askQuestion, setAskQuestion] = useState('');
-  const [appState, setAppState] = useState<AppState>('idle');
-  const [result, setResult] = useState<ResultData | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [submittedQuery, setSubmittedQuery] = useState('');
-
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const greeting = getGreeting();
-
-  const userName =
-    session?.user?.name?.split(' ')[0] ||
-    session?.user?.email?.split('@')[0] ||
-    'there';
-
-  // Auto-detect mode when typing
   useEffect(() => {
-    if (isUrl(input.trim())) {
-      if (mode === 'search') setMode('read');
-    } else if (input.trim() && !isUrl(input.trim())) {
-      if (mode === 'read' || mode === 'extract' || mode === 'screenshot') {
-        setMode('search');
-      }
-    }
-  }, [input]);
+    const key = localStorage.getItem('webpeel_first_api_key');
+    if (key) setStoredApiKey(key);
+  }, []);
 
-  // Auto-resize textarea
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-    e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+  // SWR config: limit retries to avoid thundering herd on failures
+  const swrOpts = { errorRetryCount: 2, dedupingInterval: 5000 };
+
+  const { data: usage, isLoading: usageLoading, error: usageError, mutate: refreshUsage } = useSWR<Usage>(
+    token ? ['/v1/usage', token] : null,
+    ([url, token]: [string, string]) => fetcher<Usage>(url, token),
+    { refreshInterval: 30000, ...swrOpts }
+  );
+
+  const { data: keys } = useSWR<{ keys: ApiKey[] }>(
+    token ? ['/v1/keys', token] : null,
+    ([url, token]: [string, string]) => fetcher<{ keys: ApiKey[] }>(url, token),
+    swrOpts
+  );
+
+  const { data: stats, isLoading: statsLoading, error: statsError, mutate: refreshStats } = useSWR<StatsData>(
+    token ? ['/v1/stats', token] : null,
+    ([url, token]: [string, string]) => fetcher<StatsData>(url, token),
+    { refreshInterval: 60000, ...swrOpts }
+  );
+
+  const { data: activity, isLoading: activityLoading, error: activityError, mutate: refreshActivity } = useSWR<ActivityData>(
+    token ? ['/v1/activity?limit=5', token] : null,
+    ([url, token]: [string, string]) => fetcher<ActivityData>(url, token),
+    { refreshInterval: 30000, ...swrOpts }
+  );
+
+  const { data: history } = useSWR<{ history: DailyUsage[] }>(
+    token ? ['/v1/usage/history?days=7', token] : null,
+    ([url, token]: [string, string]) => fetcher<{ history: DailyUsage[] }>(url, token),
+    { refreshInterval: 60000, ...swrOpts }
+  );
+
+  const dashboardError = usageError || statsError || activityError;
+  const dashboardMutate = () => { refreshUsage(); refreshStats(); refreshActivity(); };
+
+  if (status === 'authenticated' && !token) {
+    return (
+      <div className="mx-auto max-w-6xl">
+        <ApiErrorBanner
+          title="API Connection Issue"
+          message="We couldn't connect your account to the WebPeel API. This can happen if the API was temporarily unavailable during sign-in. Reconnecting automatically..."
+          reconnecting
+        />
+      </div>
+    );
+  }
+
+  if (dashboardError) return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <AlertCircle className="h-8 w-8 text-red-500 mb-3" />
+      <p className="text-sm text-muted-foreground mb-3">Failed to load data. Please try again.</p>
+      <Button variant="outline" size="sm" onClick={() => dashboardMutate()}>Retry</Button>
+    </div>
+  );
+
+  const primaryKey = keys?.keys?.[0];
+  const sessionApiKey = (session as any)?.apiKey;
+  const realApiKey = sessionApiKey || storedApiKey || null;
+  const displayApiKey = realApiKey || 'YOUR_API_KEY';
+  const userName = session?.user?.name?.split(' ')[0] || session?.user?.email?.split('@')[0] || 'there';
+
+  // Stats
+  const weeklyUsed = usage?.weekly?.totalUsed || 0;
+  const totalRequests = stats?.totalRequests || 0;
+  const remaining = usage?.weekly ? usage.weekly.totalAvailable - usage.weekly.totalUsed : 0;
+  const successRate = stats?.successRate ?? 100;
+  const avgResponseTime = stats?.avgResponseTime || 0;
+  const hasWeeklyData = weeklyUsed > 0;
+  const hasData = totalRequests > 0;
+  const weeklyPercentage = usage?.weekly ? (usage.weekly.totalUsed / usage.weekly.totalAvailable) * 100 : 0;
+
+  // Getting started auto-completion detection
+  const hasApiKey = !!(keys?.keys && keys.keys.length > 0);
+  const hasMadeRequest = hasData; // stats.totalRequests > 0
+  const gettingStartedComplete = hasApiKey && hasMadeRequest;
+  const showGettingStarted = !gettingStartedDismissed && !gettingStartedComplete;
+
+  // Usage chart data
+  const dailyHistory = history?.history || [];
+  const maxDailyValue = Math.max(...dailyHistory.map((d) => d.fetches + d.stealth + d.search), 1);
+
+  // Code examples
+  const codeExamples = {
+    curl: `curl "${API_URL}/v1/fetch?url=https://example.com" \\
+  -H "Authorization: Bearer ${displayApiKey}"`,
+    node: `const res = await fetch(
+  '${API_URL}/v1/fetch?url=https://example.com',
+  { headers: { 'Authorization': 'Bearer ${displayApiKey}' } }
+);
+const { markdown } = await res.json();`,
+    python: `import requests
+
+r = requests.get(
+    '${API_URL}/v1/fetch',
+    params={'url': 'https://example.com'},
+    headers={'Authorization': 'Bearer ${displayApiKey}'}
+)
+print(r.json()['markdown'])`,
   };
-
-  const currentChip = CHIPS.find((c) => c.mode === mode) || CHIPS[0];
-
-  const handleSubmit = useCallback(async () => {
-    const query = input.trim();
-    if (!query) return;
-
-    setAppState('loading');
-    setSubmittedQuery(query);
-    setResult(null);
-    setErrorMsg('');
-
-    try {
-      let data: ResultData = {};
-      const headers: Record<string, string> = token
-        ? { Authorization: `Bearer ${token}` }
-        : {};
-
-      const effectiveMode = isUrl(query) ? (mode === 'search' ? 'read' : mode) : 'search';
-
-      if (effectiveMode === 'search' || !isUrl(query)) {
-        const res = await fetch(
-          `${API_URL}/v1/search?q=${encodeURIComponent(query)}`,
-          { headers }
-        );
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || json.message || 'Search failed');
-        // Normalize search results
-        const rawResults = json.results || json.data || [];
-        data = {
-          results: rawResults.map((r: any) => ({
-            title: r.title || r.name || 'Untitled',
-            url: r.url || r.link || '#',
-            snippet: r.snippet || r.description || r.body || '',
-          })),
-          fetchTimeMs: json.fetchTimeMs,
-          method: 'search',
-        };
-        setMode('search');
-
-      } else if (effectiveMode === 'screenshot') {
-        const res = await fetch(
-          `${API_URL}/v1/screenshot?url=${encodeURIComponent(query)}`,
-          { headers }
-        );
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || json.message || 'Screenshot failed');
-        data = {
-          imageUrl: json.screenshotUrl || json.url || json.screenshot,
-          title: json.title || query,
-          fetchTimeMs: json.fetchTimeMs,
-          method: 'screenshot',
-        };
-
-      } else if (effectiveMode === 'ask') {
-        const question = askQuestion.trim() || 'Summarize this page';
-        const res = await fetch(`${API_URL}/v1/ask`, {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: query, question }),
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || json.message || 'Ask failed');
-        data = {
-          answer: json.answer || json.content || json.result || JSON.stringify(json),
-          title: json.title || query,
-          tokens: json.tokens,
-          fetchTimeMs: json.fetchTimeMs,
-          method: 'ask',
-        };
-
-      } else {
-        // read or extract
-        const format = effectiveMode === 'extract' ? 'json' : 'markdown';
-        const res = await fetch(
-          `${API_URL}/v1/fetch?url=${encodeURIComponent(query)}&format=${format}`,
-          { headers }
-        );
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || json.message || 'Fetch failed');
-        const rawContent = json.content ?? json.markdown ?? json.text ?? json.data;
-        data = {
-          content: typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent, null, 2),
-          title: json.title,
-          tokens: json.tokens,
-          fetchTimeMs: json.fetchTimeMs,
-          method: json.mode || effectiveMode,
-        };
-      }
-
-      setResult(data);
-      setAppState('success');
-
-      // Notify sidebar to refresh usage
-      window.dispatchEvent(new Event('webpeel:fetch-completed'));
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Something went wrong. Please try again.');
-      setAppState('error');
-    }
-  }, [input, mode, askQuestion, token]);
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
-  const handleReset = () => {
-    setAppState('idle');
-    setResult(null);
-    setInput('');
-    setAskQuestion('');
-    setErrorMsg('');
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
-  // ─── Render ───────────────────────────────────────────────────────────────
-
-  const isIdle = appState === 'idle';
-  const isLoading = appState === 'loading';
-  const isSuccess = appState === 'success';
-  const isError = appState === 'error';
 
   return (
-    <div className="flex flex-col min-h-full">
-      {/* Center content vertically when idle */}
-      <div
-        className={`flex flex-col items-center px-4 transition-all duration-300 ${
-          isIdle ? 'justify-center flex-1' : 'pt-10 pb-8'
-        }`}
-      >
-        {/* Greeting */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-light text-zinc-100 tracking-tight">
-            <span className="mr-3 text-3xl">{greeting.emoji}</span>
-            {greeting.text},{' '}
-            <span className="font-normal text-zinc-300">{userName}</span>
+    <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
+      {/* Welcome Banner (replaces blocking modal) */}
+      <OnboardingBanner sessionApiKey={sessionApiKey} />
+
+      {/* Hero Section */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-zinc-100 mb-1">
+            Welcome back, <span className="font-serif italic text-zinc-300">{userName}</span>
           </h1>
-          {isIdle && (
-            <p className="mt-2 text-sm text-zinc-500">
-              Paste a URL or type a search query to get started
-            </p>
-          )}
+          <p className="text-base text-zinc-400">Here&apos;s your API activity at a glance</p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => dashboardMutate()}
+          disabled={usageLoading}
+          className="gap-2 w-full sm:w-auto shrink-0"
+        >
+          <RefreshCw className={`h-4 w-4 ${usageLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
 
-        {/* Input box */}
-        <div className="w-full max-w-2xl">
-          <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/60 focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-zinc-700 transition-all shadow-lg shadow-black/20">
-            <div className="flex items-start gap-3 p-4">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder={currentChip.placeholder}
-                disabled={isLoading}
-                rows={1}
-                className="flex-1 resize-none bg-transparent text-zinc-100 placeholder-zinc-500 text-sm leading-relaxed outline-none min-h-[28px] max-h-[200px] overflow-y-auto disabled:opacity-50"
-                style={{ height: '28px' }}
-              />
-              <button
-                onClick={handleSubmit}
-                disabled={isLoading || !input.trim()}
-                className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
-                aria-label="Submit"
-              >
-                {isLoading ? (
-                  <RefreshCw className="h-4 w-4 text-white animate-spin" />
-                ) : (
-                  <ArrowRight className="h-4 w-4 text-white" />
-                )}
-              </button>
-            </div>
+      {/* Stat Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {statsLoading ? (
+          <>
+            <div className="h-32 animate-pulse rounded-lg bg-zinc-800" />
+            <div className="h-32 animate-pulse rounded-lg bg-zinc-800" />
+            <div className="h-32 animate-pulse rounded-lg bg-zinc-800" />
+            <div className="h-32 animate-pulse rounded-lg bg-zinc-800" />
+          </>
+        ) : (
+          <>
+            <StatCard icon={Activity} label="This Week" value={weeklyUsed.toLocaleString()} delay={0} />
+            <StatCard icon={Zap} label="Remaining" value={remaining.toLocaleString()} iconColor="text-emerald-400" iconBg="bg-emerald-500/10" delay={100} />
+            <StatCard icon={CheckCircle2} label="Success Rate" value={hasWeeklyData ? `${successRate.toFixed(1)}%` : '—'} iconColor="text-blue-400" iconBg="bg-blue-500/10" delay={200} />
+            <StatCard
+              icon={Clock}
+              label="Avg Response"
+              value={hasData ? `${avgResponseTime}ms` : '—'}
+              subtitle={hasData ? 'Avg across all modes. Basic: ~300ms. Browser: ~3s' : undefined}
+              iconColor="text-amber-400"
+              iconBg="bg-amber-500/10"
+              delay={300}
+            />
+          </>
+        )}
+      </div>
+      {usage?.weekly?.resetsAt && (
+        <p className="text-xs text-zinc-500 -mt-4">
+          Stats reset every Sunday · Resets {new Date(usage.weekly.resetsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </p>
+      )}
 
-            {/* Ask mode: question input */}
-            {mode === 'ask' && (
-              <div className="px-4 pb-4 pt-0">
-                <div className="border-t border-zinc-800 pt-3">
-                  <input
-                    type="text"
-                    value={askQuestion}
-                    onChange={(e) => setAskQuestion(e.target.value)}
-                    placeholder="What would you like to know about this page?"
-                    className="w-full bg-transparent text-zinc-100 placeholder-zinc-600 text-sm outline-none"
-                  />
-                </div>
-              </div>
-            )}
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a
+          href="/playground"
+          className="group flex items-center gap-3 p-4 bg-[#111116] border border-zinc-800 rounded-xl hover:border-zinc-600 hover:shadow-sm hover:shadow-black/20 transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors flex-shrink-0">
+            <Play className="h-5 w-5 text-zinc-300" />
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-100">Fetch a URL</p>
+            <p className="text-xs text-zinc-500 truncate">Playground →</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
+        </a>
 
-          {/* Quick action chips */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
-            {CHIPS.map((chip) => (
-              <button
-                key={chip.mode}
-                onClick={() => setMode(chip.mode)}
-                disabled={isLoading}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all disabled:opacity-50 ${
-                  mode === chip.mode
-                    ? 'bg-zinc-700 border-zinc-600 text-zinc-100 shadow-sm'
-                    : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 hover:border-zinc-600'
+        <a
+          href="/keys"
+          className="group flex items-center gap-3 p-4 bg-[#111116] border border-zinc-800 rounded-xl hover:border-zinc-600 hover:shadow-sm hover:shadow-black/20 transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors flex-shrink-0">
+            <Key className="h-5 w-5 text-zinc-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-100">Manage Keys</p>
+            <p className="text-xs text-zinc-500 truncate">API Keys →</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
+        </a>
+
+        <a
+          href="/usage"
+          className="group flex items-center gap-3 p-4 bg-[#111116] border border-zinc-800 rounded-xl hover:border-zinc-600 hover:shadow-sm hover:shadow-black/20 transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors flex-shrink-0">
+            <BarChart3 className="h-5 w-5 text-zinc-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-100">View Usage</p>
+            <p className="text-xs text-zinc-500 truncate">Usage →</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
+        </a>
+
+        <a
+          href="https://webpeel.dev/docs/mcp"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-3 p-4 bg-[#111116] border border-zinc-800 rounded-xl hover:border-zinc-600 hover:shadow-sm hover:shadow-black/20 transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors flex-shrink-0">
+            <Terminal className="h-5 w-5 text-zinc-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-100">Set up MCP</p>
+            <p className="text-xs text-zinc-500 truncate">Docs →</p>
+          </div>
+          <ExternalLink className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
+        </a>
+      </div>
+
+      {/* Getting Started Checklist */}
+      {showGettingStarted && <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-lg">Getting Started</CardTitle>
+              <CardDescription>Complete these steps to get the most out of WebPeel</CardDescription>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.setItem('gs-dismissed', 'true');
+                setGettingStartedDismissed(true);
+              }}
+              className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[
+              {
+                label: 'Create an API key',
+                desc: 'Generate a key from the Keys page',
+                done: hasApiKey,
+                href: '/keys',
+              },
+              {
+                label: 'Make your first API request',
+                desc: 'Fetch any URL via the API or playground',
+                done: hasMadeRequest,
+                href: '/playground',
+              },
+              {
+                label: 'Install the WebPeel CLI',
+                desc: 'Run: npm install -g webpeel',
+                done: cliDone,
+                href: 'https://webpeel.dev/docs/cli',
+                external: true,
+                onOpen: () => { localStorage.setItem('gs-cli-done', 'true'); setCliDone(true); },
+              },
+              {
+                label: 'Set up MCP for AI coding',
+                desc: 'Use WebPeel in Claude, Cursor, or Windsurf',
+                done: mcpDone,
+                href: 'https://webpeel.dev/docs/mcp',
+                external: true,
+                onOpen: () => { localStorage.setItem('gs-mcp-done', 'true'); setMcpDone(true); },
+              },
+            ].map(({ label, desc, done, href, external, onOpen }) => (
+              <a
+                key={label}
+                href={href}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noopener noreferrer' : undefined}
+                onClick={onOpen}
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                  done
+                    ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15'
+                    : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800'
                 }`}
               >
-                <span>{chip.emoji}</span>
-                <span>{chip.label}</span>
-              </button>
+                {done ? (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                ) : (
+                  <Circle className="h-5 w-5 text-zinc-600 flex-shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${done ? 'text-emerald-400 line-through opacity-70' : 'text-zinc-200'}`}>
+                    {label}
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-0.5 truncate">{desc}</p>
+                </div>
+                {!done && (
+                  <ArrowRight className="h-4 w-4 text-zinc-600 flex-shrink-0" />
+                )}
+              </a>
             ))}
           </div>
-        </div>
+        </CardContent>
+      </Card>}
 
-        {/* Loading skeleton */}
-        {isLoading && <LoadingSkeleton url={submittedQuery} />}
-
-        {/* Error state */}
-        {isError && (
-          <div className="w-full max-w-2xl mx-auto mt-6">
-            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-300">Something went wrong</p>
-                <p className="text-sm text-red-400/80 mt-1">{errorMsg}</p>
-                <button
-                  onClick={handleSubmit}
-                  className="mt-3 flex items-center gap-1.5 text-xs font-medium text-red-300 hover:text-red-200 transition-colors"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Try again
-                </button>
+      {/* Usage + Activity Chart */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Usage Overview */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Usage Overview</CardTitle>
+                <CardDescription>Weekly API usage and limits</CardDescription>
               </div>
-              <button
-                onClick={handleReset}
-                className="text-xs text-red-400/60 hover:text-red-300 transition-colors shrink-0"
-              >
-                Clear
-              </button>
+              {usage?.weekly && (
+                <span className="text-xs text-zinc-500">
+                  Resets {new Date(usage.weekly.resetsAt).toLocaleDateString()}
+                </span>
+              )}
             </div>
-          </div>
-        )}
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Donut */}
+            <div className="flex items-center gap-6">
+              <div className="relative w-28 h-28 flex-shrink-0">
+                <svg className="w-full h-full -rotate-90 transform">
+                  <circle cx="56" cy="56" r="46" fill="none" stroke="#3f3f46" strokeWidth="10" />
+                  <circle
+                    cx="56" cy="56" r="46" fill="none"
+                    stroke={weeklyPercentage > 80 ? 'url(#warningGrad)' : 'url(#grad)'}
+                    strokeWidth="10"
+                    strokeDasharray={`${(weeklyPercentage / 100) * 289} 289`}
+                    strokeLinecap="round"
+                    className="transition-all duration-700 ease-out"
+                  />
+                  <defs>
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#5865F2" />
+                      <stop offset="100%" stopColor="#818CF8" />
+                    </linearGradient>
+                    <linearGradient id="warningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#FCD34D" />
+                      <stop offset="100%" stopColor="#EF4444" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-xl font-bold text-zinc-100">{Math.round(weeklyPercentage)}%</span>
+                  <span className="text-[10px] text-zinc-500">used</span>
+                </div>
+              </div>
+              <div className="flex-1 space-y-3">
+                {usage?.weekly ? (
+                  <>
+                    <UsageBar label="All fetches" used={usage.weekly.totalUsed} limit={usage.weekly.totalAvailable} />
+                    <UsageBar label="Stealth" used={usage.weekly.stealthUsed} limit={usage.weekly.totalAvailable} />
+                  </>
+                ) : (
+                  <>
+                    <div className="h-14 animate-pulse rounded-lg bg-zinc-800" />
+                    <div className="h-14 animate-pulse rounded-lg bg-zinc-800" />
+                  </>
+                )}
+              </div>
+            </div>
 
-        {/* Success result */}
-        {isSuccess && result && (
-          <ResultCard
-            result={result}
-            mode={mode}
-            query={submittedQuery}
-            onReset={handleReset}
-          />
-        )}
+            {usage?.session && (
+              <>
+                <Separator />
+                <UsageBar
+                  label="Session burst"
+                  used={usage.session.burstUsed}
+                  limit={usage.session.burstLimit}
+                  resetInfo={`Resets in ${usage.session.resetsIn}`}
+                />
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Activity Chart */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Requests (7 days)</CardTitle>
+                <CardDescription>Daily API request volume</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" asChild className="text-xs text-zinc-500 hover:text-zinc-300">
+                <a href="/activity">View all <ArrowRight className="h-3 w-3 ml-1" /></a>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {dailyHistory.length > 0 ? (
+              <>
+                <div className="h-40 flex items-end justify-between gap-1.5">
+                  {dailyHistory.map((day, i) => {
+                    const total = day.fetches + day.stealth + day.search;
+                    const heightPct = maxDailyValue > 0 ? (total / maxDailyValue) * 100 : 0;
+                    const dayName = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' });
+                    const isToday = i === dailyHistory.length - 1;
+
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
+                        <div
+                          className="relative w-full"
+                          title={`${dayName}: ${total} requests`}
+                        >
+                          <div
+                            className={`w-full rounded-t-md transition-all ${
+                              isToday
+                                ? 'bg-gradient-to-t from-[#5865F2] to-indigo-400'
+                                : 'bg-gradient-to-t from-zinc-700 to-zinc-600 group-hover:from-zinc-600 group-hover:to-zinc-500'
+                            }`}
+                            style={{ height: heightPct > 0 ? `${Math.max(heightPct * 1.4, 6)}px` : '2px' }}
+                          />
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                            <div className="bg-zinc-800 text-zinc-100 text-xs rounded px-2 py-1 whitespace-nowrap border border-zinc-700">
+                              {total} req
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`text-[9px] font-medium ${isToday ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                          {dayName}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-xs text-zinc-500">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-[#5865F2]" />
+                    <span>Today</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-zinc-700" />
+                    <span>Previous days</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="h-40 flex flex-col items-center justify-center">
+                <Globe className="h-10 w-10 text-zinc-700 mb-2" />
+                <p className="text-sm text-zinc-400 font-medium">No requests yet</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Try the playground to get started</p>
+                <Button size="sm" variant="outline" asChild className="mt-3">
+                  <a href="/playground">
+                    <Play className="h-3 w-3 mr-1.5" />
+                    Open Playground
+                  </a>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Idle hints at the bottom */}
-      {isIdle && (
-        <div className="flex items-center justify-center gap-6 pb-6 px-4 flex-wrap">
-          {[
-            { icon: BookOpen, label: 'Any article or blog post' },
-            { icon: Database, label: 'Structured data extraction' },
-            { icon: Camera, label: 'Visual screenshots' },
-            { icon: Search, label: 'Web search' },
-            { icon: MessageSquare, label: 'Ask questions about URLs' },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 text-xs text-zinc-600">
-              <Icon className="h-3.5 w-3.5" />
-              <span>{label}</span>
+      {/* API Endpoint + Quick Start */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Quick Start</CardTitle>
+          <CardDescription>Start making requests in seconds</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* API Endpoint */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-zinc-200">API Endpoint</label>
+            <div className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-700 rounded-lg">
+              <Globe className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+              <code className="flex-1 text-sm font-mono text-zinc-300 truncate">{API_URL}/v1/fetch</code>
+              <CopyButton text={`${API_URL}/v1/fetch`} size="sm" variant="ghost" />
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+
+          {/* API Key Display */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-zinc-200">Your API Key</label>
+            <div className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-700 rounded-lg font-mono text-sm">
+              <code className="flex-1 truncate text-zinc-300">{displayApiKey}</code>
+              <CopyButton text={displayApiKey} size="sm" variant="ghost" />
+            </div>
+            {!realApiKey && (
+              <p className="text-xs text-zinc-500">
+                Get your key from the{' '}
+                <a href="/keys" className="text-zinc-300 hover:underline">Keys page</a>.
+              </p>
+            )}
+          </div>
+
+          {/* Code Examples */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-zinc-200">Example Request</label>
+            <Tabs defaultValue="curl" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-3">
+                <TabsTrigger value="curl">cURL</TabsTrigger>
+                <TabsTrigger value="node">Node.js</TabsTrigger>
+                <TabsTrigger value="python">Python</TabsTrigger>
+              </TabsList>
+              {Object.entries(codeExamples).map(([lang, code]) => (
+                <TabsContent key={lang} value={lang} className="mt-0">
+                  <div className="relative">
+                    <pre className="p-4 bg-zinc-950 text-zinc-100 rounded-lg overflow-x-auto text-xs md:text-sm border border-zinc-800">
+                      <code>{code}</code>
+                    </pre>
+                    <div className="absolute top-3 right-3">
+                      <CopyButton text={code} size="sm" variant="ghost" />
+                    </div>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button asChild className="bg-[#5865F2] hover:bg-[#4752C4] flex-1 gap-2">
+              <a href="/playground">
+                <Play className="h-4 w-4" />
+                Try in Playground
+              </a>
+            </Button>
+            <Button variant="outline" asChild className="flex-1 gap-2">
+              <a href="https://webpeel.dev/docs" target="_blank" rel="noopener noreferrer">
+                <BookOpen className="h-4 w-4" />
+                View Documentation
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl">Recent Activity</CardTitle>
+              <CardDescription>Your latest API requests</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <a href="/activity" className="gap-1.5">
+                View all
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {activityLoading ? (
+            <div className="h-64 animate-pulse rounded-lg bg-zinc-800" />
+          ) : (
+            <ActivityTable requests={activity?.requests || []} />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

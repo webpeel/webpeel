@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import useSWR, { useSWRConfig } from 'swr';
-import { Home, Key, CreditCard, Settings, ExternalLink, BookOpen, X, Zap, Play, Activity, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, Globe, Key, CreditCard, Settings, ExternalLink, BookOpen, X, Zap, Play, Activity, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiClient, Usage } from '@/lib/api';
 
 const navigation = [
-  { name: 'Home', href: '/dashboard', icon: Home },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Read', href: '/read', icon: Globe },
   { name: 'Playground', href: '/playground', icon: Play },
   { name: 'API Keys', href: '/keys', icon: Key },
   { name: 'Activity', href: '/activity', icon: Activity },
