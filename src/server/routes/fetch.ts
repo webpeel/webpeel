@@ -628,6 +628,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
       // SECURITY: Sanitize error messages to prevent information disclosure
       if (err.code) {
         // WebPeelError from core library - safe to expose with helpful context
+        if (res.headersSent) return; // Timeout middleware already responded
         const safeMessage = err.message.replace(/[<>"']/g, ''); // Remove HTML chars
         const statusCode = err.code === 'TIMEOUT' ? 504 
           : err.code === 'BLOCKED' ? 403 
@@ -653,6 +654,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
       } else {
         // Unexpected error - generic message only
         console.error('Fetch error:', err); // Log full error server-side
+        if (res.headersSent) return; // Timeout middleware already responded
         res.status(500).json({
           success: false,
           error: {
@@ -1243,6 +1245,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
       const err = error as any;
       console.error('POST fetch/scrape error:', err);
 
+      if (res.headersSent) return; // Timeout middleware already responded
       if (err.code) {
         const safeMessage = err.message.replace(/[<>"']/g, '');
         const statusCode = err.code === 'TIMEOUT' ? 504 

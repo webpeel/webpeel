@@ -106,10 +106,12 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use((req: Request, res: Response, next: NextFunction) => {
     const path = req.path;
     let timeoutMs = 30000; // 30s default
+    const urlParam = (req.query?.url as string) || '';
     if (path.includes('/crawl') || path.includes('/map')) timeoutMs = 300000; // 5min for crawls
     else if (path.includes('/batch')) timeoutMs = 120000; // 2min for batch
     else if (path.includes('/screenshot')) timeoutMs = 60000; // 1min for screenshots
     else if (req.query?.render === 'true') timeoutMs = 60000; // 1min for rendered fetches
+    else if (urlParam.includes('youtube.com') || urlParam.includes('youtu.be')) timeoutMs = 45000; // 45s for YouTube (transcript extraction)
 
     req.setTimeout(timeoutMs);
     res.setTimeout(timeoutMs, () => {
