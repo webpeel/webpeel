@@ -337,11 +337,12 @@ export async function getYouTubeTranscript(
 
     const availableLanguages = captionTracks.map(t => t.languageCode);
     const selectedTrack = selectBestTrack(captionTracks, preferredLang);
-    const captionXml = await fetchCaptionXml(selectedTrack.baseUrl);
+    // Pass same cookies + user-agent to caption fetch — URL is session-locked
+    const captionXml = await fetchCaptionXml(selectedTrack.baseUrl, ytUserAgent, ytHeaders);
     const segments = parseCaptionXml(captionXml);
     if (segments.length === 0) {
       // Caption URL returned empty content (common when ip=0.0.0.0 in signature)
-      // Fall through to browser intercept path
+      // Fall through to yt-dlp / browser intercept path
       throw new Error('Caption XML returned empty — session-locked URL');
     }
     const fullText = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
@@ -809,10 +810,14 @@ function selectBestTrack(tracks: CaptionTrack[], preferredLang: string): Caption
 
 /**
  * Fetch the caption XML from YouTube's timedtext API.
- * Used only in the simpleFetch path (no bot detection).
+ * Must use same cookies/UA as the page fetch — URLs are session-locked.
  */
-async function fetchCaptionXml(baseUrl: string): Promise<string> {
-  const result = await simpleFetch(baseUrl, undefined, 15000);
+async function fetchCaptionXml(
+  baseUrl: string,
+  userAgent?: string,
+  headers?: Record<string, string>,
+): Promise<string> {
+  const result = await simpleFetch(baseUrl, userAgent, 10000, headers);
   return result.html;
 }
 
