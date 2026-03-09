@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -12,18 +12,15 @@ import {
   AlertCircle,
   CheckCircle2,
   Globe,
-  Camera,
-  Search,
   BookOpen,
-  Database,
-  MessageSquare,
+  Search,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Mode = 'read' | 'extract' | 'search' | 'screenshot' | 'ask';
+type DetectedMode = 'read' | 'search' | 'ask';
 type AppState = 'idle' | 'loading' | 'success' | 'error';
 
 interface ResultData {
@@ -32,9 +29,10 @@ interface ResultData {
   tokens?: number;
   fetchTimeMs?: number;
   method?: string;
-  imageUrl?: string;
   results?: SearchResult[];
   answer?: string;
+  detectedMode?: DetectedMode;
+  question?: string;
 }
 
 interface SearchResult {
@@ -52,10 +50,6 @@ function getGreeting() {
   return { emoji: '🌙', text: 'Good evening' };
 }
 
-function isUrl(input: string): boolean {
-  return input.startsWith('http://') || input.startsWith('https://');
-}
-
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text).catch(() => {});
 }
@@ -71,26 +65,62 @@ function downloadMarkdown(content: string, title?: string) {
   URL.revokeObjectURL(url);
 }
 
-// ─── Chip config ─────────────────────────────────────────────────────────────
+/** Detect intent from user input — URL only, URL+text, or plain text */
+function detectIntent(input: string): { mode: DetectedMode; url?: string; question?: string } {
+  const lines = input.trim().split('\n').map((l) => l.trim()).filter(Boolean);
+  const urlLine = lines.find((l) => /^https?:\/\//i.test(l));
+  const textLines = lines.filter((l) => !/^https?:\/\//i.test(l));
+  const question = textLines.join(' ').trim();
 
-const CHIPS: { mode: Mode; emoji: string; label: string; placeholder: string }[] = [
-  { mode: 'read', emoji: '📖', label: 'Read Article', placeholder: 'Paste a URL to read as clean markdown...' },
-  { mode: 'extract', emoji: '📊', label: 'Extract Data', placeholder: 'Paste a URL to extract structured data...' },
-  { mode: 'search', emoji: '🔍', label: 'Search Web', placeholder: 'Type anything to search the web...' },
-  { mode: 'screenshot', emoji: '📸', label: 'Screenshot', placeholder: 'Paste a URL to capture a screenshot...' },
-  { mode: 'ask', emoji: '❓', label: 'Ask a Question', placeholder: 'Paste a URL, then ask a question about it...' },
-];
+  if (urlLine && question) {
+    return { mode: 'ask', url: urlLine, question };
+  }
+  if (urlLine && !question) {
+    return { mode: 'read', url: urlLine };
+  }
+  return { mode: 'search', question: input.trim() };
+}
+
+/** Strip JSON/HTML artifacts that leak into markdown content */
+function sanitizeContent(raw: string): string {
+  return raw
+    // Remove \n"}">" style artifacts
+    .replace(/\\n["{}>\s]+/g, '\n')
+    // Remove escaped HTML tag fragments like \n"}">
+    .replace(/\\n["\s}]*>/g, '')
+    // Remove lone closing tag fragments on their own line
+    .replace(/^["\s]*}["\s]*>[\s]*$/gm, '')
+    // Remove sequences like "}"> that are clearly JSON/template artifacts
+    .replace(/["}\s]{0,3}>/g, (m) => {
+      // Only remove if it looks like a JSON artifact (short, not a real > in text)
+      return m.trim().length <= 3 && /["}\s]/.test(m) ? '' : m;
+    })
+    // Clean up multiple blank lines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ─── Mode badge ───────────────────────────────────────────────────────────────
+
+const MODE_BADGES: Record<DetectedMode, { emoji: string; label: string }> = {
+  read:   { emoji: '📖', label: 'Read' },
+  search: { emoji: '🔍', label: 'Search' },
+  ask:    { emoji: '❓', label: 'Q&A' },
+};
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
-function LoadingSkeleton({ url }: { url: string }) {
+function LoadingSkeleton({ query }: { query: string }) {
   return (
     <div className="w-full max-w-2xl mx-auto mt-6 animate-pulse">
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-4 h-4 rounded-full bg-[#5865F2] animate-pulse" />
           <span className="text-sm text-zinc-400">
-            Reading <span className="text-zinc-300 font-mono text-xs">{url.length > 60 ? url.slice(0, 60) + '…' : url}</span>
+            Processing{' '}
+            <span className="text-zinc-300 font-mono text-xs">
+              {query.length > 60 ? query.slice(0, 60) + '…' : query}
+            </span>
           </span>
         </div>
         <div className="space-y-3">
@@ -106,30 +136,55 @@ function LoadingSkeleton({ url }: { url: string }) {
   );
 }
 
+// ─── Search results component ─────────────────────────────────────────────────
+
+function SearchResults({ results }: { results: SearchResult[] }) {
+  return (
+    <div className="space-y-3">
+      {results.map((r, i) => (
+        <a
+          key={i}
+          href={r.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all"
+        >
+          <div className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1">{r.title}</div>
+          <div className="text-xs text-zinc-500 mt-1 truncate">{r.url}</div>
+          {r.snippet && (
+            <div className="text-sm text-zinc-400 mt-2 line-clamp-2">{r.snippet}</div>
+          )}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 // ─── Result card ─────────────────────────────────────────────────────────────
 
 function ResultCard({
   result,
-  mode,
   query,
   onReset,
 }: {
   result: ResultData;
-  mode: Mode;
   query: string;
   onReset: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const detectedMode = result.detectedMode || 'read';
+  const badge = MODE_BADGES[detectedMode];
+
+  const textContent = result.content || result.answer || '';
 
   const handleCopy = () => {
-    const text = result.content || result.answer || '';
-    copyToClipboard(text);
+    copyToClipboard(textContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownload = () => {
-    downloadMarkdown(result.content || result.answer || '', result.title);
+    downloadMarkdown(textContent, result.title);
   };
 
   const handleShare = () => {
@@ -137,22 +192,29 @@ function ResultCard({
     copyToClipboard(shareUrl);
   };
 
+  // Build title bar label
+  const titleLabel = (() => {
+    if (detectedMode === 'search') return `Search: ${query}`;
+    if (detectedMode === 'ask' && result.title) return `${result.title} — Q&A`;
+    return result.title || query;
+  })();
+
+  // Count search results
+  const resultCount = result.results?.length;
+
   return (
     <div
       className="w-full max-w-2xl mx-auto mt-6"
-      style={{
-        opacity: 1,
-        transform: 'translateY(0)',
-        transition: 'opacity 0.3s ease, transform 0.3s ease',
-      }}
+      style={{ opacity: 1, transform: 'translateY(0)', transition: 'opacity 0.3s ease, transform 0.3s ease' }}
     >
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
         {/* Metadata bar */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-zinc-800 bg-zinc-900/40 flex-wrap">
-          {result.title && (
-            <span className="text-sm font-medium text-zinc-200 truncate flex-1 min-w-0">{result.title}</span>
-          )}
-          <div className="flex items-center gap-3 text-xs text-zinc-500 shrink-0 ml-auto">
+          <span className="text-sm font-medium text-zinc-200 truncate flex-1 min-w-0">{titleLabel}</span>
+          <div className="flex items-center gap-2 text-xs text-zinc-500 shrink-0 ml-auto">
+            {resultCount != null && (
+              <span>{resultCount} results</span>
+            )}
             {result.tokens != null && (
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#5865F2] inline-block" />
@@ -162,80 +224,83 @@ function ResultCard({
             {result.fetchTimeMs != null && (
               <span>{result.fetchTimeMs}ms</span>
             )}
-            {result.method && (
-              <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 capitalize">
-                {result.method}
-              </span>
-            )}
+            {/* Mode badge */}
+            <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
+              {badge.emoji} {badge.label}
+            </span>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-5 max-h-[60vh] overflow-y-auto">
-          {/* Screenshot mode */}
-          {mode === 'screenshot' && result.imageUrl && (
-            <img
-              src={result.imageUrl}
-              alt="Screenshot"
-              className="w-full rounded-lg border border-zinc-700"
-            />
+          {/* Search results */}
+          {detectedMode === 'search' && result.results && (
+            <SearchResults results={result.results} />
           )}
 
-          {/* Search results mode */}
-          {mode === 'search' && result.results && (
+          {/* Ask mode: question box + answer */}
+          {detectedMode === 'ask' && (
             <div className="space-y-4">
-              {result.results.map((r, i) => (
-                <div key={i} className="group">
-                  <a
-                    href={r.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start gap-2 hover:opacity-80 transition-opacity"
-                  >
-                    <Globe className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-[#818CF8] group-hover:underline">{r.title}</p>
-                      <p className="text-xs text-zinc-500 mt-0.5 break-all">{r.url}</p>
-                      <p className="text-sm text-zinc-300 mt-1">{r.snippet}</p>
-                    </div>
-                  </a>
-                  {i < result.results!.length - 1 && (
-                    <div className="mt-4 border-t border-zinc-800" />
-                  )}
+              {result.question && (
+                <div className="p-3 rounded-xl bg-[#5865F2]/10 border border-[#5865F2]/20">
+                  <p className="text-xs text-zinc-500 mb-1 font-medium uppercase tracking-wider">Your question</p>
+                  <p className="text-sm text-zinc-200">{result.question}</p>
                 </div>
-              ))}
+              )}
+              <div className="prose prose-invert prose-sm max-w-none">
+                <ReactMarkdown
+                  components={{
+                    pre: ({ children }) => (
+                      <pre className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-xs">{children}</pre>
+                    ),
+                    code: ({ children, className }) => {
+                      const isInline = !className;
+                      return isInline ? (
+                        <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-[#818CF8] text-xs font-mono">{children}</code>
+                      ) : (
+                        <code className="font-mono text-zinc-200">{children}</code>
+                      );
+                    },
+                    a: ({ href, children }) => (
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{children}</a>
+                    ),
+                    h1: ({ children }) => <h1 className="text-xl font-bold text-zinc-100 mt-6 mb-3">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-lg font-semibold text-zinc-100 mt-5 mb-2">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-base font-semibold text-zinc-200 mt-4 mb-2">{children}</h3>,
+                    p: ({ children }) => <p className="text-zinc-300 leading-relaxed mb-3">{children}</p>,
+                    ul: ({ children }) => <ul className="text-zinc-300 list-disc list-inside space-y-1 mb-3">{children}</ul>,
+                    ol: ({ children }) => <ol className="text-zinc-300 list-decimal list-inside space-y-1 mb-3">{children}</ol>,
+                    li: ({ children }) => <li className="text-zinc-300">{children}</li>,
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-2 border-[#5865F2] pl-4 my-3 text-zinc-400 italic">{children}</blockquote>
+                    ),
+                    hr: () => <hr className="border-zinc-700 my-4" />,
+                  }}
+                >
+                  {sanitizeContent(textContent)}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
 
-          {/* Ask / Read / Extract markdown mode */}
-          {(mode === 'read' || mode === 'extract' || mode === 'ask') && (result.content || result.answer) && (
+          {/* Read mode: plain markdown */}
+          {detectedMode === 'read' && textContent && (
             <div className="prose prose-invert prose-sm max-w-none">
               <ReactMarkdown
                 components={{
                   pre: ({ children }) => (
-                    <pre className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-xs">
-                      {children}
-                    </pre>
+                    <pre className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-xs">{children}</pre>
                   ),
                   code: ({ children, className }) => {
                     const isInline = !className;
                     return isInline ? (
-                      <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-[#818CF8] text-xs font-mono">
-                        {children}
-                      </code>
+                      <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-[#818CF8] text-xs font-mono">{children}</code>
                     ) : (
                       <code className="font-mono text-zinc-200">{children}</code>
                     );
                   },
                   a: ({ href, children }) => (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#818CF8] hover:underline"
-                    >
-                      {children}
-                    </a>
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{children}</a>
                   ),
                   h1: ({ children }) => <h1 className="text-xl font-bold text-zinc-100 mt-6 mb-3">{children}</h1>,
                   h2: ({ children }) => <h2 className="text-lg font-semibold text-zinc-100 mt-5 mb-2">{children}</h2>,
@@ -245,14 +310,12 @@ function ResultCard({
                   ol: ({ children }) => <ol className="text-zinc-300 list-decimal list-inside space-y-1 mb-3">{children}</ol>,
                   li: ({ children }) => <li className="text-zinc-300">{children}</li>,
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-2 border-[#5865F2] pl-4 my-3 text-zinc-400 italic">
-                      {children}
-                    </blockquote>
+                    <blockquote className="border-l-2 border-[#5865F2] pl-4 my-3 text-zinc-400 italic">{children}</blockquote>
                   ),
                   hr: () => <hr className="border-zinc-700 my-4" />,
                 }}
               >
-                {result.content || result.answer || ''}
+                {sanitizeContent(textContent)}
               </ReactMarkdown>
             </div>
           )}
@@ -260,32 +323,31 @@ function ResultCard({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2 px-5 py-3 border-t border-zinc-800 bg-zinc-900/40">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
-          >
-            {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-
-          {(mode === 'read' || mode === 'ask' || mode === 'extract') && (
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Download
-            </button>
+          {detectedMode !== 'search' && (
+            <>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+              >
+                {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+              <button
+                onClick={handleDownload}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                Share link
+              </button>
+            </>
           )}
-
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            Share link
-          </button>
-
           <button
             onClick={onReset}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all ml-auto"
@@ -306,8 +368,6 @@ export default function ReadPage() {
   const token = (session as any)?.apiToken as string | undefined;
 
   const [input, setInput] = useState('');
-  const [mode, setMode] = useState<Mode>('read');
-  const [askQuestion, setAskQuestion] = useState('');
   const [appState, setAppState] = useState<AppState>('idle');
   const [result, setResult] = useState<ResultData | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -321,17 +381,6 @@ export default function ReadPage() {
     session?.user?.email?.split('@')[0] ||
     'there';
 
-  // Auto-detect mode when typing
-  useEffect(() => {
-    if (isUrl(input.trim())) {
-      if (mode === 'search') setMode('read');
-    } else if (input.trim() && !isUrl(input.trim())) {
-      if (mode === 'read' || mode === 'extract' || mode === 'screenshot') {
-        setMode('search');
-      }
-    }
-  }, [input]);
-
   // Auto-resize textarea
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -339,92 +388,91 @@ export default function ReadPage() {
     e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
   };
 
-  const currentChip = CHIPS.find((c) => c.mode === mode) || CHIPS[0];
-
   const handleSubmit = useCallback(async () => {
-    const query = input.trim();
-    if (!query) return;
+    const raw = input.trim();
+    if (!raw) return;
 
+    const intent = detectIntent(raw);
     setAppState('loading');
-    setSubmittedQuery(query);
+    setSubmittedQuery(raw);
     setResult(null);
     setErrorMsg('');
 
     try {
-      let data: ResultData = {};
+      let data: ResultData = { detectedMode: intent.mode };
       const headers: Record<string, string> = token
         ? { Authorization: `Bearer ${token}` }
         : {};
 
-      const effectiveMode = isUrl(query) ? (mode === 'search' ? 'read' : mode) : 'search';
-
-      if (effectiveMode === 'search' || !isUrl(query)) {
+      if (intent.mode === 'search') {
+        // ── Search mode ─────────────────────────────────────────────────────
         const res = await fetch(
-          `${API_URL}/v1/search?q=${encodeURIComponent(query)}`,
+          `${API_URL}/v1/search?q=${encodeURIComponent(intent.question || raw)}`,
           { headers }
         );
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || json.message || 'Search failed');
-        // Normalize search results
         const rawResults = json.results || json.data || [];
         data = {
+          detectedMode: 'search',
           results: rawResults.map((r: any) => ({
             title: r.title || r.name || 'Untitled',
             url: r.url || r.link || '#',
             snippet: r.snippet || r.description || r.body || '',
           })),
           fetchTimeMs: json.fetchTimeMs,
-          method: 'search',
-        };
-        setMode('search');
-
-      } else if (effectiveMode === 'screenshot') {
-        const res = await fetch(
-          `${API_URL}/v1/screenshot?url=${encodeURIComponent(query)}`,
-          { headers }
-        );
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || json.message || 'Screenshot failed');
-        data = {
-          imageUrl: json.screenshotUrl || json.url || json.screenshot,
-          title: json.title || query,
-          fetchTimeMs: json.fetchTimeMs,
-          method: 'screenshot',
         };
 
-      } else if (effectiveMode === 'ask') {
-        const question = askQuestion.trim() || 'Summarize this page';
-        const res = await fetch(`${API_URL}/v1/ask`, {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: query, question }),
-        });
+      } else if (intent.mode === 'ask') {
+        // ── Ask mode — fetch page with question param ────────────────────────
+        // /v1/fetch supports ?question= which runs quickAnswer() on the page content
+        const url = new URL(`${API_URL}/v1/fetch`);
+        url.searchParams.set('url', intent.url!);
+        url.searchParams.set('format', 'markdown');
+        url.searchParams.set('question', intent.question!);
+
+        const res = await fetch(url.toString(), { headers });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || json.message || 'Ask failed');
+        if (!res.ok) throw new Error(json.error || json.message || 'Fetch failed');
+
+        const pageContent = json.content ?? json.markdown ?? json.text ?? '';
+        const rawAnswer = json.answer;
+
+        // Build human-readable content — NEVER show raw JSON
+        let displayContent: string;
+        if (rawAnswer && typeof rawAnswer === 'string' && rawAnswer.trim()) {
+          // Got a direct answer from quickAnswer
+          displayContent = rawAnswer;
+        } else {
+          // No direct answer — show page content with question as header
+          const pageText = typeof pageContent === 'string' ? pageContent : JSON.stringify(pageContent, null, 2);
+          displayContent = `### Your question: ${intent.question}\n\nHere's what we found on the page:\n\n${pageText}`;
+        }
+
         data = {
-          answer: json.answer || json.content || json.result || JSON.stringify(json),
-          title: json.title || query,
+          detectedMode: 'ask',
+          answer: displayContent,
+          title: json.title,
           tokens: json.tokens,
           fetchTimeMs: json.fetchTimeMs,
-          method: 'ask',
+          question: intent.question,
         };
 
       } else {
-        // read or extract
-        const format = effectiveMode === 'extract' ? 'json' : 'markdown';
+        // ── Read mode — fetch page as markdown ───────────────────────────────
         const res = await fetch(
-          `${API_URL}/v1/fetch?url=${encodeURIComponent(query)}&format=${format}`,
+          `${API_URL}/v1/fetch?url=${encodeURIComponent(intent.url!)}&format=markdown`,
           { headers }
         );
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || json.message || 'Fetch failed');
         const rawContent = json.content ?? json.markdown ?? json.text ?? json.data;
         data = {
+          detectedMode: 'read',
           content: typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent, null, 2),
           title: json.title,
           tokens: json.tokens,
           fetchTimeMs: json.fetchTimeMs,
-          method: json.mode || effectiveMode,
         };
       }
 
@@ -437,7 +485,7 @@ export default function ReadPage() {
       setErrorMsg(err.message || 'Something went wrong. Please try again.');
       setAppState('error');
     }
-  }, [input, mode, askQuestion, token]);
+  }, [input, token]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -450,7 +498,6 @@ export default function ReadPage() {
     setAppState('idle');
     setResult(null);
     setInput('');
-    setAskQuestion('');
     setErrorMsg('');
     setTimeout(() => inputRef.current?.focus(), 50);
   };
@@ -464,7 +511,6 @@ export default function ReadPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Center content vertically when idle */}
       <div
         className={`flex flex-col items-center px-4 transition-all duration-300 ${
           isIdle ? 'justify-center flex-1' : 'pt-10 pb-8'
@@ -484,7 +530,7 @@ export default function ReadPage() {
           )}
         </div>
 
-        {/* Input box */}
+        {/* Unified input */}
         <div className="w-full max-w-2xl">
           <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/60 focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-zinc-700 transition-all shadow-lg shadow-black/20">
             <div className="flex items-start gap-3 p-4">
@@ -493,11 +539,11 @@ export default function ReadPage() {
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder={currentChip.placeholder}
+                placeholder="Paste a URL, ask a question, or search anything..."
                 disabled={isLoading}
-                rows={1}
-                className="flex-1 resize-none bg-transparent text-zinc-100 placeholder-zinc-500 text-sm leading-relaxed outline-none min-h-[28px] max-h-[200px] overflow-y-auto disabled:opacity-50"
-                style={{ height: '28px' }}
+                rows={2}
+                className="flex-1 resize-none bg-transparent text-zinc-100 placeholder-zinc-500 text-sm leading-relaxed outline-none min-h-[44px] max-h-[200px] overflow-y-auto disabled:opacity-50"
+                style={{ height: '44px' }}
               />
               <button
                 onClick={handleSubmit}
@@ -512,45 +558,16 @@ export default function ReadPage() {
                 )}
               </button>
             </div>
-
-            {/* Ask mode: question input */}
-            {mode === 'ask' && (
-              <div className="px-4 pb-4 pt-0">
-                <div className="border-t border-zinc-800 pt-3">
-                  <input
-                    type="text"
-                    value={askQuestion}
-                    onChange={(e) => setAskQuestion(e.target.value)}
-                    placeholder="What would you like to know about this page?"
-                    className="w-full bg-transparent text-zinc-100 placeholder-zinc-600 text-sm outline-none"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Quick action chips */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
-            {CHIPS.map((chip) => (
-              <button
-                key={chip.mode}
-                onClick={() => setMode(chip.mode)}
-                disabled={isLoading}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all disabled:opacity-50 ${
-                  mode === chip.mode
-                    ? 'bg-zinc-700 border-zinc-600 text-zinc-100 shadow-sm'
-                    : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 hover:border-zinc-600'
-                }`}
-              >
-                <span>{chip.emoji}</span>
-                <span>{chip.label}</span>
-              </button>
-            ))}
-          </div>
+          {/* Hint text */}
+          <p className="text-center text-xs text-zinc-500 mt-3">
+            Try: paste a URL to read&nbsp;•&nbsp;add a question on the next line for Q&amp;A&nbsp;•&nbsp;or just type to search
+          </p>
         </div>
 
         {/* Loading skeleton */}
-        {isLoading && <LoadingSkeleton url={submittedQuery} />}
+        {isLoading && <LoadingSkeleton query={submittedQuery} />}
 
         {/* Error state */}
         {isError && (
@@ -582,7 +599,6 @@ export default function ReadPage() {
         {isSuccess && result && (
           <ResultCard
             result={result}
-            mode={mode}
             query={submittedQuery}
             onReset={handleReset}
           />
@@ -594,10 +610,8 @@ export default function ReadPage() {
         <div className="flex items-center justify-center gap-6 pb-6 px-4 flex-wrap">
           {[
             { icon: BookOpen, label: 'Any article or blog post' },
-            { icon: Database, label: 'Structured data extraction' },
-            { icon: Camera, label: 'Visual screenshots' },
+            { icon: Globe, label: 'YouTube transcripts' },
             { icon: Search, label: 'Web search' },
-            { icon: MessageSquare, label: 'Ask questions about URLs' },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-1.5 text-xs text-zinc-600">
               <Icon className="h-3.5 w-3.5" />
