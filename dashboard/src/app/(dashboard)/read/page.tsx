@@ -84,17 +84,24 @@ function detectIntent(input: string): { mode: DetectedMode; url?: string; questi
 /** Strip JSON/HTML artifacts that leak into markdown content */
 function sanitizeContent(raw: string): string {
   return raw
+    // Strip raw HTML blocks (tables, divs, spans with attributes)
+    .replace(/<table[\s\S]*?<\/table>/gi, '')
+    // Strip remaining HTML tags with attributes (leaked from converter)
+    .replace(/<[a-z][a-z0-9]*\s[^>]*>/gi, '')
+    .replace(/<\/[a-z][a-z0-9]*>/gi, '')
+    // Strip self-closing tags like <img ... /> <link ... />
+    .replace(/<(?:img|link|br|hr|input|meta)[^>]*\/?>/gi, '')
     // Remove \n"}">" style artifacts
     .replace(/\\n["{}>\s]+/g, '\n')
-    // Remove escaped HTML tag fragments like \n"}">
     .replace(/\\n["\s}]*>/g, '')
-    // Remove lone closing tag fragments on their own line
     .replace(/^["\s]*}["\s]*>[\s]*$/gm, '')
-    // Remove sequences like "}"> that are clearly JSON/template artifacts
-    .replace(/["}\s]{0,3}>/g, (m) => {
-      // Only remove if it looks like a JSON artifact (short, not a real > in text)
-      return m.trim().length <= 3 && /["}\s]/.test(m) ? '' : m;
-    })
+    .replace(/["}\s]{0,3}>/g, (m) =>
+      m.trim().length <= 3 && /["}\s]/.test(m) ? '' : m
+    )
+    // Remove Wikipedia image badge lines (broken after tag stripping)
+    .replace(/^\[?\!\[.*?\]\(\/wiki(?:pedia)?\/.*?\).*$/gm, '')
+    // Remove empty markdown links left after stripping
+    .replace(/\[?\]\([^)]*\)/g, '')
     // Clean up multiple blank lines
     .replace(/\n{3,}/g, '\n\n')
     .trim();
