@@ -158,7 +158,7 @@ function SearchResults({ results, onReadUrl }: { results: SearchResult[]; onRead
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onReadUrl(r.url); }}
-            className="mt-2 text-xs text-[#5865F2] hover:text-[#818CF8] font-medium transition-colors"
+            className="mt-2 inline-flex items-center min-h-[44px] px-3 py-2 text-xs text-[#5865F2] hover:text-[#818CF8] hover:bg-zinc-800/50 rounded-lg font-medium transition-colors -ml-3"
           >
             📖 Read this page →
           </button>
@@ -249,7 +249,7 @@ function ResultCard({
     >
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
         {/* Metadata bar */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-zinc-800 bg-zinc-900/40 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-900/40 flex-wrap">
           <span className="text-sm font-medium text-zinc-200 truncate flex-1 min-w-0">{titleLabel}</span>
           <div className="flex items-center gap-2 text-xs text-zinc-500 shrink-0 ml-auto">
             {resultCount != null && (
@@ -282,7 +282,7 @@ function ResultCard({
         </div>
 
         {/* Content */}
-        <div className="p-5 max-h-[60vh] overflow-y-auto">
+        <div className="p-3 sm:p-5 max-h-[60vh] overflow-y-auto">
           {/* Search results */}
           {detectedMode === 'search' && result.results && (
             <SearchResults results={result.results} onReadUrl={onReadUrl} />
@@ -330,7 +330,7 @@ function ResultCard({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2 px-5 py-3 border-t border-zinc-800 bg-zinc-900/40">
+        <div className="flex items-center gap-1 sm:gap-2 px-3 sm:px-5 py-3 border-t border-zinc-800 bg-zinc-900/40 flex-wrap">
           {detectedMode !== 'search' && (
             <>
               <button
@@ -522,8 +522,8 @@ export default function ReadPage() {
       >
         {/* Greeting */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-light text-zinc-100 tracking-tight">
-            <span className="mr-3 text-3xl">{greeting.emoji}</span>
+          <h1 className="text-2xl sm:text-4xl font-light text-zinc-100 tracking-tight">
+            <span className="mr-3 text-xl sm:text-3xl">{greeting.emoji}</span>
             {greeting.text},{' '}
             <span className="font-normal text-zinc-300">{userName}</span>
           </h1>
