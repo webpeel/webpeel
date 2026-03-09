@@ -418,11 +418,18 @@ async function getTranscriptViaYtDlp(
       videoUrl,
     ];
 
-    const proc = execFile('yt-dlp', args, { timeout: 45000 }, async (err) => {
+    // Pass explicit PATH so yt-dlp is found in Docker containers
+    // pip3 installs to /usr/local/bin which may not be in Node's process.env.PATH
+    const execEnv = {
+      ...process.env,
+      PATH: `/usr/local/bin:/usr/bin:/bin:${process.env.PATH ?? ''}`,
+    };
+
+    const proc = execFile('yt-dlp', args, { timeout: 45000, env: execEnv }, async (err) => {
       try {
         if (err) {
           // yt-dlp not installed, timed out, or failed
-          if (process.env.DEBUG) console.debug('[webpeel]', 'yt-dlp error:', err.message);
+          console.error('[webpeel] yt-dlp error:', err.message);
           resolve(null);
           return;
         }
