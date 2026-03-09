@@ -418,10 +418,11 @@ async function getTranscriptViaYtDlp(
       videoUrl,
     ];
 
-    const proc = execFile('yt-dlp', args, { timeout: 20000 }, async (err) => {
+    const proc = execFile('yt-dlp', args, { timeout: 45000 }, async (err) => {
       try {
         if (err) {
-          // yt-dlp not installed or failed
+          // yt-dlp not installed, timed out, or failed
+          if (process.env.DEBUG) console.debug('[webpeel]', 'yt-dlp error:', err.message);
           resolve(null);
           return;
         }
@@ -541,11 +542,11 @@ async function getTranscriptViaBrowserIntercept(
   });
 
   try {
-    await page.goto(videoUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+    await page.goto(videoUrl, { waitUntil: 'domcontentloaded', timeout: 35000 });
 
     // Wait for timedtext request to be intercepted (player auto-fetches captions)
     const startWait = Date.now();
-    while (!capturedJson && Date.now() - startWait < 8000) {
+    while (!capturedJson && Date.now() - startWait < 12000) {
       await page.waitForTimeout(200);
     }
 
