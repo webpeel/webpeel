@@ -86,21 +86,21 @@ function sanitizeContent(raw: string): string {
   return raw
     // Strip raw HTML blocks (tables, divs, spans with attributes)
     .replace(/<table[\s\S]*?<\/table>/gi, '')
-    // Strip remaining HTML tags with attributes (leaked from converter)
+    // Strip remaining HTML tags with attributes
     .replace(/<[a-z][a-z0-9]*\s[^>]*>/gi, '')
     .replace(/<\/[a-z][a-z0-9]*>/gi, '')
-    // Strip self-closing tags like <img ... /> <link ... />
+    // Strip self-closing tags
     .replace(/<(?:img|link|br|hr|input|meta)[^>]*\/?>/gi, '')
-    // Remove \n"}">" style artifacts
+    // Strip any remaining angle-bracket fragments with quotes
+    .replace(/["'{}]\s*>/g, '')
+    .replace(/<[^>]{0,3}>/g, '') // tiny broken tags like <> <i>
+    // Remove \n"}">" artifacts
     .replace(/\\n["{}>\s]+/g, '\n')
     .replace(/\\n["\s}]*>/g, '')
     .replace(/^["\s]*}["\s]*>[\s]*$/gm, '')
-    .replace(/["}\s]{0,3}>/g, (m) =>
-      m.trim().length <= 3 && /["}\s]/.test(m) ? '' : m
-    )
-    // Remove Wikipedia image badge lines (broken after tag stripping)
+    // Wikipedia image badges
     .replace(/^\[?\!\[.*?\]\(\/wiki(?:pedia)?\/.*?\).*$/gm, '')
-    // Remove empty markdown links left after stripping
+    // Empty markdown links
     .replace(/\[?\]\([^)]*\)/g, '')
     // Clean up multiple blank lines
     .replace(/\n{3,}/g, '\n\n')
@@ -145,27 +145,58 @@ function LoadingSkeleton({ query }: { query: string }) {
 
 // ─── Search results component ─────────────────────────────────────────────────
 
-function SearchResults({ results }: { results: SearchResult[] }) {
+function SearchResults({ results, onReadUrl }: { results: SearchResult[]; onReadUrl: (url: string) => void }) {
   return (
     <div className="space-y-3">
       {results.map((r, i) => (
-        <a
-          key={i}
-          href={r.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all"
-        >
-          <div className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1">{r.title}</div>
+        <div key={i} className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+          <a href={r.url} target="_blank" rel="noopener noreferrer"
+             className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1">{r.title}</a>
           <div className="text-xs text-zinc-500 mt-1 truncate">{r.url}</div>
           {r.snippet && (
             <div className="text-sm text-zinc-400 mt-2 line-clamp-2">{r.snippet}</div>
           )}
-        </a>
+          <button
+            onClick={(e) => { e.stopPropagation(); onReadUrl(r.url); }}
+            className="mt-2 text-xs text-[#5865F2] hover:text-[#818CF8] font-medium transition-colors"
+          >
+            📖 Read this page →
+          </button>
+        </div>
       ))}
     </div>
   );
 }
+
+// ─── Shared markdown components ───────────────────────────────────────────────
+
+const markdownComponents = {
+  pre: ({ children }: any) => (
+    <pre className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-xs">{children}</pre>
+  ),
+  code: ({ children, className }: any) => {
+    const isInline = !className;
+    return isInline ? (
+      <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-[#818CF8] text-xs font-mono">{children}</code>
+    ) : (
+      <code className="font-mono text-zinc-200">{children}</code>
+    );
+  },
+  a: ({ href, children }: any) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{children}</a>
+  ),
+  h1: ({ children }: any) => <h1 className="text-xl font-bold text-zinc-100 mt-6 mb-3">{children}</h1>,
+  h2: ({ children }: any) => <h2 className="text-lg font-semibold text-zinc-100 mt-5 mb-2">{children}</h2>,
+  h3: ({ children }: any) => <h3 className="text-base font-semibold text-zinc-200 mt-4 mb-2">{children}</h3>,
+  p: ({ children }: any) => <p className="text-zinc-300 leading-relaxed mb-3">{children}</p>,
+  ul: ({ children }: any) => <ul className="text-zinc-300 list-disc list-inside space-y-1 mb-3">{children}</ul>,
+  ol: ({ children }: any) => <ol className="text-zinc-300 list-decimal list-inside space-y-1 mb-3">{children}</ol>,
+  li: ({ children }: any) => <li className="text-zinc-300">{children}</li>,
+  blockquote: ({ children }: any) => (
+    <blockquote className="border-l-2 border-[#5865F2] pl-4 my-3 text-zinc-400 italic">{children}</blockquote>
+  ),
+  hr: () => <hr className="border-zinc-700 my-4" />,
+};
 
 // ─── Result card ─────────────────────────────────────────────────────────────
 
@@ -173,10 +204,12 @@ function ResultCard({
   result,
   query,
   onReset,
+  onReadUrl,
 }: {
   result: ResultData;
   query: string;
   onReset: () => void;
+  onReadUrl: (url: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const detectedMode = result.detectedMode || 'read';
@@ -231,6 +264,16 @@ function ResultCard({
             {result.fetchTimeMs != null && (
               <span>{result.fetchTimeMs}ms</span>
             )}
+            {/* AI vs BM25 method badge */}
+            {result.method && (
+              <span className={`px-2 py-0.5 rounded-full border capitalize text-xs ${
+                result.method === 'ai'
+                  ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
+                  : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+              }`}>
+                {result.method === 'ai' ? '✨ AI' : result.method}
+              </span>
+            )}
             {/* Mode badge */}
             <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
               {badge.emoji} {badge.label}
@@ -242,7 +285,7 @@ function ResultCard({
         <div className="p-5 max-h-[60vh] overflow-y-auto">
           {/* Search results */}
           {detectedMode === 'search' && result.results && (
-            <SearchResults results={result.results} />
+            <SearchResults results={result.results} onReadUrl={onReadUrl} />
           )}
 
           {/* Ask mode: question box + answer */}
@@ -255,73 +298,31 @@ function ResultCard({
                 </div>
               )}
               <div className="prose prose-invert prose-sm max-w-none">
-                <ReactMarkdown
-                  components={{
-                    pre: ({ children }) => (
-                      <pre className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-xs">{children}</pre>
-                    ),
-                    code: ({ children, className }) => {
-                      const isInline = !className;
-                      return isInline ? (
-                        <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-[#818CF8] text-xs font-mono">{children}</code>
-                      ) : (
-                        <code className="font-mono text-zinc-200">{children}</code>
-                      );
-                    },
-                    a: ({ href, children }) => (
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{children}</a>
-                    ),
-                    h1: ({ children }) => <h1 className="text-xl font-bold text-zinc-100 mt-6 mb-3">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-lg font-semibold text-zinc-100 mt-5 mb-2">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-base font-semibold text-zinc-200 mt-4 mb-2">{children}</h3>,
-                    p: ({ children }) => <p className="text-zinc-300 leading-relaxed mb-3">{children}</p>,
-                    ul: ({ children }) => <ul className="text-zinc-300 list-disc list-inside space-y-1 mb-3">{children}</ul>,
-                    ol: ({ children }) => <ol className="text-zinc-300 list-decimal list-inside space-y-1 mb-3">{children}</ol>,
-                    li: ({ children }) => <li className="text-zinc-300">{children}</li>,
-                    blockquote: ({ children }) => (
-                      <blockquote className="border-l-2 border-[#5865F2] pl-4 my-3 text-zinc-400 italic">{children}</blockquote>
-                    ),
-                    hr: () => <hr className="border-zinc-700 my-4" />,
-                  }}
-                >
-                  {sanitizeContent(textContent)}
+                <ReactMarkdown components={markdownComponents}>
+                  {sanitizeContent(result.answer || '')}
                 </ReactMarkdown>
               </div>
+
+              {/* Collapsible full page content below AI answer */}
+              {result.content && (
+                <details className="mt-4 border-t border-zinc-800 pt-4">
+                  <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors select-none">
+                    📄 View full page content ({result.tokens?.toLocaleString()} tokens)
+                  </summary>
+                  <div className="mt-3 prose prose-invert prose-sm max-w-none">
+                    <ReactMarkdown components={markdownComponents}>
+                      {sanitizeContent(result.content)}
+                    </ReactMarkdown>
+                  </div>
+                </details>
+              )}
             </div>
           )}
 
           {/* Read mode: plain markdown */}
           {detectedMode === 'read' && textContent && (
             <div className="prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown
-                components={{
-                  pre: ({ children }) => (
-                    <pre className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-xs">{children}</pre>
-                  ),
-                  code: ({ children, className }) => {
-                    const isInline = !className;
-                    return isInline ? (
-                      <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-[#818CF8] text-xs font-mono">{children}</code>
-                    ) : (
-                      <code className="font-mono text-zinc-200">{children}</code>
-                    );
-                  },
-                  a: ({ href, children }) => (
-                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{children}</a>
-                  ),
-                  h1: ({ children }) => <h1 className="text-xl font-bold text-zinc-100 mt-6 mb-3">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-lg font-semibold text-zinc-100 mt-5 mb-2">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-base font-semibold text-zinc-200 mt-4 mb-2">{children}</h3>,
-                  p: ({ children }) => <p className="text-zinc-300 leading-relaxed mb-3">{children}</p>,
-                  ul: ({ children }) => <ul className="text-zinc-300 list-disc list-inside space-y-1 mb-3">{children}</ul>,
-                  ol: ({ children }) => <ol className="text-zinc-300 list-decimal list-inside space-y-1 mb-3">{children}</ol>,
-                  li: ({ children }) => <li className="text-zinc-300">{children}</li>,
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-2 border-[#5865F2] pl-4 my-3 text-zinc-400 italic">{children}</blockquote>
-                  ),
-                  hr: () => <hr className="border-zinc-700 my-4" />,
-                }}
-              >
+              <ReactMarkdown components={markdownComponents}>
                 {sanitizeContent(textContent)}
               </ReactMarkdown>
             </div>
@@ -395,13 +396,13 @@ export default function ReadPage() {
     e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
   };
 
-  const handleSubmit = useCallback(async () => {
-    const raw = input.trim();
-    if (!raw) return;
+  /** Core submit logic — accepts a raw input string so it can be called programmatically */
+  const handleSubmitRaw = useCallback(async (raw: string) => {
+    if (!raw.trim()) return;
 
-    const intent = detectIntent(raw);
+    const intent = detectIntent(raw.trim());
     setAppState('loading');
-    setSubmittedQuery(raw);
+    setSubmittedQuery(raw.trim());
     setResult(null);
     setErrorMsg('');
 
@@ -431,38 +432,24 @@ export default function ReadPage() {
         };
 
       } else if (intent.mode === 'ask') {
-        // ── Ask mode — fetch page with question param ────────────────────────
-        // /v1/fetch supports ?question= which runs quickAnswer() on the page content
-        const url = new URL(`${API_URL}/v1/fetch`);
-        url.searchParams.set('url', intent.url!);
-        url.searchParams.set('format', 'markdown');
-        url.searchParams.set('question', intent.question!);
-
-        const res = await fetch(url.toString(), { headers });
+        // ── Ask mode — AI-powered Q&A via our server route ────────────────────
+        const res = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: intent.url, question: intent.question }),
+        });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || json.message || 'Fetch failed');
-
-        const pageContent = json.content ?? json.markdown ?? json.text ?? '';
-        const rawAnswer = json.answer;
-
-        // Build human-readable content — NEVER show raw JSON
-        let displayContent: string;
-        if (rawAnswer && typeof rawAnswer === 'string' && rawAnswer.trim()) {
-          // Got a direct answer from quickAnswer
-          displayContent = rawAnswer;
-        } else {
-          // No direct answer — show page content with question as header
-          const pageText = typeof pageContent === 'string' ? pageContent : JSON.stringify(pageContent, null, 2);
-          displayContent = `### Your question: ${intent.question}\n\nHere's what we found on the page:\n\n${pageText}`;
-        }
+        if (!res.ok) throw new Error(json.error || 'Ask failed');
 
         data = {
           detectedMode: 'ask',
-          answer: displayContent,
+          answer: json.answer || `Here's what we found on the page:\n\n${json.content || 'No content available'}`,
           title: json.title,
           tokens: json.tokens,
           fetchTimeMs: json.fetchTimeMs,
           question: intent.question,
+          method: json.method, // 'ai' or 'bm25'
+          content: json.content, // page content for collapsible section
         };
 
       } else {
@@ -492,7 +479,17 @@ export default function ReadPage() {
       setErrorMsg(err.message || 'Something went wrong. Please try again.');
       setAppState('error');
     }
-  }, [input, token]);
+  }, [token]);
+
+  const handleSubmit = useCallback(() => {
+    handleSubmitRaw(input);
+  }, [input, handleSubmitRaw]);
+
+  /** Called from SearchResults "Read this page →" button */
+  const handleReadUrl = useCallback((url: string) => {
+    setInput(url);
+    handleSubmitRaw(url);
+  }, [handleSubmitRaw]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -608,6 +605,7 @@ export default function ReadPage() {
             result={result}
             query={submittedQuery}
             onReset={handleReset}
+            onReadUrl={handleReadUrl}
           />
         )}
       </div>
