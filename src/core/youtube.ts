@@ -308,8 +308,15 @@ export async function getYouTubeTranscript(
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   // --- Path 1: Try simpleFetch (fast, no browser overhead) ---
+  // YouTube serves consent/challenge pages to server IPs without cookies.
+  // Setting SOCS consent cookie bypasses this — same approach as youtube-transcript npm.
+  const ytUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  const ytHeaders = {
+    'Cookie': 'SOCS=CAISNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjQwNTE1LjA3X3AxGgJlbiADGgYIgLv3tQY; CONSENT=PENDING+987',
+    'Accept-Language': 'en-US,en;q=0.9',
+  };
   try {
-    const fetchResult = await simpleFetch(videoUrl, undefined, 15000);
+    const fetchResult = await simpleFetch(videoUrl, ytUserAgent, 15000, ytHeaders);
     const html = fetchResult.html;
     if (!html.includes('ytInitialPlayerResponse') && !html.includes('ytInitialData')) {
       throw new Error('YouTube served non-video page (likely challenge/consent)');
