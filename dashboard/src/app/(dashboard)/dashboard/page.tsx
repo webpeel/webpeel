@@ -452,6 +452,36 @@ export default function ReadPage() {
           content: json.content, // page content for collapsible section
         };
 
+      } else if (intent.url && /(?:youtube\.com\/watch|youtu\.be\/|youtube\.com\/embed)/.test(intent.url)) {
+        // ── YouTube mode — use Vercel API route (bypasses Render IP block) ──
+        const res = await fetch(
+          `/api/youtube-transcript?url=${encodeURIComponent(intent.url)}`,
+        );
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to fetch YouTube transcript');
+
+        // Format transcript as readable markdown
+        const header = [
+          json.title && `# 🎬 ${json.title}`,
+          json.channel && `**Channel:** ${json.channel}`,
+          json.duration && `**Duration:** ${json.duration}`,
+          json.language && `**Language:** ${json.language}`,
+          '',
+          '---',
+          '',
+          '## Transcript',
+          '',
+        ].filter(Boolean).join('\n');
+
+        const transcriptText = json.fullText || json.segments?.map((s: any) => s.text).join(' ') || '';
+
+        data = {
+          detectedMode: 'read',
+          content: header + transcriptText,
+          title: json.title || 'YouTube Transcript',
+          tokens: json.wordCount,
+          fetchTimeMs: json.elapsed,
+        };
       } else {
         // ── Read mode — fetch page as markdown ───────────────────────────────
         const res = await fetch(
