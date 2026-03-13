@@ -33,6 +33,7 @@ interface ResultData {
   answer?: string;
   detectedMode?: DetectedMode;
   question?: string;
+  videoId?: string;
 }
 
 interface SearchResult {
