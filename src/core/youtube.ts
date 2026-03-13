@@ -318,9 +318,12 @@ export function extractSummary(fullText: string): string {
 // Webshare residential proxy config — reads from env vars on Render.
 // Locally, falls back to direct fetch (residential IP already works).
 const PROXY_HOST = process.env.WEBSHARE_PROXY_HOST || 'p.webshare.io';
-const PROXY_PORT = parseInt(process.env.WEBSHARE_PROXY_PORT || '80', 10);
+const PROXY_BASE_PORT = parseInt(process.env.WEBSHARE_PROXY_PORT || '10000', 10);
 const PROXY_USER = process.env.WEBSHARE_PROXY_USER || '';
 const PROXY_PASS = process.env.WEBSHARE_PROXY_PASS || '';
+// With paid Webshare backbone plan, each US slot has its own port:
+// slot N → port (PROXY_BASE_PORT + N - 1), username: USER-US-N
+const PROXY_MAX_US_SLOTS = parseInt(process.env.WEBSHARE_PROXY_SLOTS || '44744', 10);
 
 function isProxyConfigured(): boolean {
   return !!(PROXY_USER && PROXY_PASS);
@@ -333,6 +336,7 @@ function isProxyConfigured(): boolean {
  */
 function proxyRequestSlotted(
   slottedUser: string,
+  proxyPort: number,
   targetUrl: string,
   opts: { method?: string; body?: string; headers?: Record<string, string>; timeoutMs?: number } = {},
 ): Promise<{ status: number; body: string }> {
@@ -343,7 +347,7 @@ function proxyRequestSlotted(
     const proxyAuth = Buffer.from(`${slottedUser}:${PROXY_PASS}`).toString('base64');
     const proxyReq = http.request({
       host: PROXY_HOST,
-      port: PROXY_PORT,
+      port: proxyPort,
       method: 'CONNECT',
       path: `${url.hostname}:443`,
       headers: { 'Proxy-Authorization': `Basic ${proxyAuth}` },
@@ -430,24 +434,28 @@ async function getTranscriptViaProxy(
   videoId: string,
   preferredLang: string,
 ): Promise<YouTubeTranscript | null> {
-  // Try multiple proxy slots — some may be rate-limited by other Webshare users.
-  // Shuffle slot order for even distribution across requests.
-  const maxSlots = parseInt(process.env.WEBSHARE_PROXY_SLOTS || '10', 10);
-  const slots = Array.from({ length: maxSlots }, (_, i) => i + 1);
-  // Fisher-Yates shuffle
-  for (let i = slots.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [slots[i], slots[j]] = [slots[j], slots[i]];
-  }
+  // Try multiple proxy slots from the 44K+ US residential pool.
+  // Pick random slots across the pool for even distribution and to avoid
+  // rate-limited IPs. Try up to MAX_RETRIES different slots.
+  const MAX_RETRIES = 5;
+  const usedSlots = new Set<number>();
 
   const INNERTUBE_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
 
-  for (const slot of slots) {
-    const proxyUser = `${PROXY_USER}-${slot}`;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    // Pick a random US slot we haven't tried yet
+    let slot: number;
+    do {
+      slot = Math.floor(Math.random() * PROXY_MAX_US_SLOTS) + 1;
+    } while (usedSlots.has(slot) && usedSlots.size < PROXY_MAX_US_SLOTS);
+    usedSlots.add(slot);
+
+    const proxyUser = `${PROXY_USER}-US-${slot}`;
+    const proxyPort = PROXY_BASE_PORT + slot - 1;
     const doProxyRequest = (
       url: string,
       opts: { method?: string; body?: string; headers?: Record<string, string>; timeoutMs?: number } = {},
-    ) => proxyRequestSlotted(proxyUser, url, opts);
+    ) => proxyRequestSlotted(proxyUser, proxyPort, url, opts);
 
     try {
       // Step 1: Call InnerTube /player with ANDROID client
@@ -465,7 +473,7 @@ async function getTranscriptViaProxy(
       );
 
       if (playerResp.status !== 200) {
-        console.log(`[webpeel] [youtube] Proxy slot ${slot}: /player returned ${playerResp.status}`);
+        console.log(`[webpeel] [youtube] Proxy US-${slot} (port ${proxyPort}): /player returned ${playerResp.status}`);
         continue;
       }
 
@@ -474,7 +482,7 @@ async function getTranscriptViaProxy(
         playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
 
       if (!captionTracks || captionTracks.length === 0) {
-        console.log(`[webpeel] [youtube] Proxy slot ${slot}: no caption tracks`);
+        console.log(`[webpeel] [youtube] Proxy US-${slot} (port ${proxyPort}): no caption tracks`);
         continue;
       }
 
@@ -486,7 +494,7 @@ async function getTranscriptViaProxy(
 
       const captionUrl: string = track.baseUrl;
       if (captionUrl.includes('exp=xpe')) {
-        console.log(`[webpeel] [youtube] Proxy slot ${slot}: caption URL has exp=xpe, skipping`);
+        console.log(`[webpeel] [youtube] Proxy US-${slot} (port ${proxyPort}): caption URL has exp=xpe, skipping`);
         continue;
       }
 
@@ -500,7 +508,7 @@ async function getTranscriptViaProxy(
         capResp.body.includes('<title>Sorry...</title>')
       ) {
         console.log(
-          `[webpeel] [youtube] Proxy slot ${slot}: caption XML failed (status=${capResp.status}, bytes=${capResp.body?.length ?? 0})`,
+          `[webpeel] [youtube] Proxy US-${slot} (port ${proxyPort}): caption XML failed (status=${capResp.status}, bytes=${capResp.body?.length ?? 0})`,
         );
         continue; // Try next slot
       }
@@ -513,7 +521,7 @@ async function getTranscriptViaProxy(
       ];
 
       if (xmlSegments.length === 0) {
-        console.log(`[webpeel] [youtube] Proxy slot ${slot}: no segments parsed from XML`);
+        console.log(`[webpeel] [youtube] Proxy US-${slot} (port ${proxyPort}): no segments parsed from XML`);
         continue;
       }
 
