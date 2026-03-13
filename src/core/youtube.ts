@@ -16,13 +16,17 @@ import { join } from 'node:path';
 import { fetchTranscript as ytpFetchTranscript } from 'youtube-transcript-plus';
 import { simpleFetch } from './fetcher.js';
 import { getBrowser, getRandomUserAgent, applyStealthScripts } from './browser-pool.js';
+import { createLogger } from './logger.js';
 
 // ---------------------------------------------------------------------------
 // yt-dlp startup diagnostics
 // ---------------------------------------------------------------------------
 
+const _ytLog = createLogger('youtube');
+
 // Check yt-dlp availability on startup.
 // Skipped in test environments (VITEST) to avoid interfering with mocked paths.
+// Uses logger.debug (→ stderr) so it never pollutes stdout JSON output when piped.
 let ytdlpAvailable = false;
 (async () => {
   if (process.env.VITEST) return;
@@ -33,9 +37,9 @@ let ytdlpAvailable = false;
       env: { ...process.env, PATH: `/usr/local/bin:/usr/bin:/bin:${process.env.PATH ?? ''}` },
     }).toString().trim();
     ytdlpAvailable = true;
-    console.log(`[webpeel] [youtube] yt-dlp available: v${version}`);
+    _ytLog.debug(`yt-dlp available: v${version}`);
   } catch {
-    console.log('[webpeel] [youtube] yt-dlp NOT available — falling back to HTTP extraction');
+    _ytLog.debug('yt-dlp NOT available — falling back to HTTP extraction');
   }
 })();
 
