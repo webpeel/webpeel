@@ -210,13 +210,19 @@ function ResultCard({
   query,
   onReset,
   onReadUrl,
+  token,
 }: {
   result: ResultData;
   query: string;
   onReset: () => void;
   onReadUrl: (url: string) => void;
+  token?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [shareState, setShareState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [shareUrl, setShareUrl] = useState('');
+  const [shareUrlCopied, setShareUrlCopied] = useState(false);
+  const [shareToast, setShareToast] = useState('');
   const detectedMode = result.detectedMode || 'read';
   const badge = MODE_BADGES[detectedMode];
 
@@ -232,9 +238,56 @@ function ResultCard({
     downloadMarkdown(textContent, result.title);
   };
 
-  const handleShare = () => {
-    const shareUrl = `${API_URL}/v1/fetch?url=${encodeURIComponent(query)}&format=markdown`;
-    copyToClipboard(shareUrl);
+  const handleShare = async () => {
+    if (shareState === 'done' && shareUrl) {
+      // Already have a share URL — just copy it again
+      copyToClipboard(shareUrl);
+      setShareUrlCopied(true);
+      setShareToast('Link copied! Expires in 30 days.');
+      setTimeout(() => { setShareUrlCopied(false); setShareToast(''); }, 2500);
+      return;
+    }
+
+    // Determine the URL to share
+    const intentUrl = (() => {
+      const lines = query.split('\n').map((l) => l.trim());
+      return lines.find((l) => /^https?:\/\//i.test(l)) || '';
+    })();
+    if (!intentUrl) return; // no URL to share (search mode etc.)
+
+    setShareState('loading');
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_URL}/v1/share`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          url: intentUrl,
+          content: textContent || undefined,
+          title: result.title || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setShareState('error');
+        setShareToast(json.error?.message || 'Share failed');
+        setTimeout(() => { setShareState('idle'); setShareToast(''); }, 3000);
+        return;
+      }
+      const url = json.shareUrl as string;
+      setShareUrl(url);
+      setShareState('done');
+      copyToClipboard(url);
+      setShareUrlCopied(true);
+      setShareToast('Link copied! Expires in 30 days.');
+      setTimeout(() => { setShareUrlCopied(false); setShareToast(''); }, 3000);
+    } catch {
+      setShareState('error');
+      setShareToast('Share failed — try again');
+      setTimeout(() => { setShareState('idle'); setShareToast(''); }, 3000);
+    }
   };
 
   // Build title bar label
@@ -370,13 +423,29 @@ function ResultCard({
                 <Download className="h-3.5 w-3.5" />
                 Download
               </button>
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-                Share link
-              </button>
+              {/* Share button — only show when a URL is in the query */}
+              {/^https?:\/\//i.test(query.split('\n').find((l) => /^https?:\/\//i.test(l.trim())) || '') && (
+                <button
+                  onClick={handleShare}
+                  disabled={shareState === 'loading'}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                    shareState === 'done'
+                      ? 'text-emerald-400 hover:text-emerald-300 hover:bg-zinc-800'
+                      : shareState === 'error'
+                      ? 'text-red-400 hover:text-red-300 hover:bg-zinc-800'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {shareState === 'loading' ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  ) : shareState === 'done' ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <Share2 className="h-3.5 w-3.5" />
+                  )}
+                  {shareState === 'loading' ? 'Sharing…' : shareState === 'done' ? 'Shared!' : 'Share'}
+                </button>
+              )}
             </>
           )}
           <button
@@ -387,6 +456,38 @@ function ResultCard({
             New
           </button>
         </div>
+
+        {/* Share URL strip — shown after successful share */}
+        {shareState === 'done' && shareUrl && (
+          <div className="px-3 sm:px-5 py-3 border-t border-zinc-800 bg-emerald-500/5 flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-emerald-400 shrink-0">🔗 Share link:</span>
+            <input
+              readOnly
+              value={shareUrl}
+              className="flex-1 min-w-0 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200 font-mono outline-none focus:border-emerald-500 transition-colors cursor-pointer"
+              onClick={() => { copyToClipboard(shareUrl); setShareUrlCopied(true); setShareToast('Link copied! Expires in 30 days.'); setTimeout(() => { setShareUrlCopied(false); setShareToast(''); }, 2500); }}
+            />
+            <button
+              onClick={() => { copyToClipboard(shareUrl); setShareUrlCopied(true); setShareToast('Link copied! Expires in 30 days.'); setTimeout(() => { setShareUrlCopied(false); setShareToast(''); }, 2500); }}
+              className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-medium transition-all"
+            >
+              {shareUrlCopied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {shareUrlCopied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        )}
+
+        {/* Toast notification */}
+        {shareToast && (
+          <div className="px-3 sm:px-5 py-2 bg-emerald-500/10 border-t border-emerald-500/20 text-xs text-emerald-400 text-center">
+            {shareToast}
+          </div>
+        )}
+        {shareState === 'error' && shareToast && (
+          <div className="px-3 sm:px-5 py-2 bg-red-500/10 border-t border-red-500/20 text-xs text-red-400 text-center">
+            {shareToast}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -676,6 +777,7 @@ export default function ReadPage() {
             query={submittedQuery}
             onReset={handleReset}
             onReadUrl={handleReadUrl}
+            token={token}
           />
         )}
       </div>

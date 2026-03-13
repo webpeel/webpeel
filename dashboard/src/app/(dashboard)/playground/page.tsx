@@ -28,6 +28,7 @@ import {
   Search,
   Camera,
   MessageSquare,
+  Youtube,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
@@ -95,9 +96,38 @@ const exampleSearchQueries = [
 
 type ScreenshotFormat = 'png' | 'jpeg';
 
+// ── YouTube types ─────────────────────────────────────────────────────────────
+
+interface TranscriptSegment {
+  text: string;
+  start: number;
+  duration: number;
+}
+
+interface YoutubeResult {
+  success: boolean;
+  videoId?: string;
+  title?: string;
+  channel?: string;
+  duration?: string;
+  language?: string;
+  segments?: TranscriptSegment[];
+  fullText?: string;
+  wordCount?: number;
+  description?: string;
+  elapsed?: number;
+  method?: string;
+  error?: string;
+}
+
+const exampleYoutubeUrls = [
+  'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  'https://www.youtube.com/watch?v=jNQXAC9IVRw',
+];
+
 // ── Mode type ────────────────────────────────────────────────────────────────
 
-type Mode = 'fetch' | 'search' | 'screenshot';
+type Mode = 'fetch' | 'youtube' | 'search' | 'screenshot';
 
 // ── SWR fetcher ──────────────────────────────────────────────────────────────
 
@@ -170,6 +200,14 @@ function PlaygroundContent() {
   const [screenshotSrc, setScreenshotSrc] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [screenshotElapsed, setScreenshotElapsed] = useState<number | null>(null);
+
+  // ── YouTube state ─────────────────────────────────────────────────────────
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeLoading, setYoutubeLoading] = useState(false);
+  const [youtubeResult, setYoutubeResult] = useState<YoutubeResult | null>(null);
+  const [youtubeError, setYoutubeError] = useState<string | null>(null);
+  const [youtubeElapsed, setYoutubeElapsed] = useState<number | null>(null);
+  const [youtubeShowFull, setYoutubeShowFull] = useState(false);
 
   // ── Populate from URL search params on mount (Activity → Playground flow) ──
   useEffect(() => {
@@ -368,6 +406,47 @@ function PlaygroundContent() {
     if (e.key === 'Enter' && !screenshotLoading) handleScreenshot();
   };
 
+  // ── YouTube handler ───────────────────────────────────────────────────────
+
+  const handleYoutube = async (urlOverride?: string) => {
+    const targetUrl = (urlOverride ?? youtubeUrl).trim();
+    if (!targetUrl) return;
+    if (urlOverride) setYoutubeUrl(urlOverride);
+
+    setYoutubeLoading(true);
+    setYoutubeError(null);
+    setYoutubeResult(null);
+    setYoutubeShowFull(false);
+    const startTime = Date.now();
+
+    try {
+      const params = new URLSearchParams({ url: targetUrl });
+      const response = await fetch(`/api/youtube-transcript?${params}`);
+      const ms = Date.now() - startTime;
+      setYoutubeElapsed(ms);
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || `Request failed with status ${response.status}`);
+      }
+
+      setYoutubeResult(data);
+      toast.success(`Transcript extracted — ${data.wordCount?.toLocaleString() ?? '?'} words`);
+    } catch (err: any) {
+      setYoutubeElapsed(Date.now() - startTime);
+      const msg = err.message || 'An unexpected error occurred';
+      setYoutubeError(msg);
+      toast.error(msg);
+    } finally {
+      setYoutubeLoading(false);
+    }
+  };
+
+  const handleYoutubeKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !youtubeLoading) handleYoutube();
+  };
+
   // ── cURL snippets ─────────────────────────────────────────────────────────
 
   const buildFetchParams = (): string => {
@@ -429,10 +508,11 @@ function PlaygroundContent() {
       </div>
 
       {/* Mode Tabs */}
-      <div className="flex gap-1 p-1 bg-zinc-800 rounded-xl w-full sm:w-fit">
+      <div className="flex flex-wrap gap-1 p-1 bg-zinc-800 rounded-xl w-full sm:w-fit">
         {(
           [
             { value: 'fetch', label: 'Fetch', icon: Globe },
+            { value: 'youtube', label: 'YouTube', icon: Youtube },
             { value: 'search', label: 'Search', icon: Search },
             { value: 'screenshot', label: 'Screenshot', icon: Camera },
           ] as { value: Mode; label: string; icon: React.ElementType }[]
@@ -440,14 +520,14 @@ function PlaygroundContent() {
           <button
             key={value}
             onClick={() => setMode(value)}
-            className={`flex flex-1 sm:flex-none items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`flex flex-1 sm:flex-none items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all min-h-[40px] ${
               mode === value
                 ? 'bg-zinc-900 text-white shadow-sm'
                 : 'bg-transparent text-zinc-300 hover:text-zinc-100'
             }`}
           >
             <Icon className="h-4 w-4" />
-            {label}
+            <span className="hidden xs:inline sm:inline">{label}</span>
           </button>
         ))}
       </div>
@@ -849,6 +929,214 @@ function PlaygroundContent() {
                 <pre className="p-3 bg-zinc-900 text-zinc-100 rounded-lg text-xs overflow-x-auto whitespace-pre-wrap">
                   <code>{fetchCurl}</code>
                 </pre>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* ── YOUTUBE MODE ──────────────────────────────────────────────────── */}
+      {mode === 'youtube' && (
+        <>
+          <Card className="border-zinc-700">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Youtube className="h-5 w-5 text-red-500" />
+                YouTube Transcript
+              </CardTitle>
+              <CardDescription>Extract the full transcript from any YouTube video</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="youtube-url-input" className="text-sm font-semibold text-zinc-100">YouTube URL</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500/70" />
+                    <Input
+                      id="youtube-url-input"
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      onKeyDown={handleYoutubeKeyDown}
+                      className="pl-9 font-mono text-sm"
+                      disabled={youtubeLoading}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => handleYoutube()}
+                    disabled={youtubeLoading || !youtubeUrl.trim()}
+                    className="bg-red-600 hover:bg-red-700 gap-2 px-6 flex-shrink-0"
+                  >
+                    {youtubeLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Extracting…
+                      </>
+                    ) : (
+                      <>
+                        <Youtube className="h-4 w-4" />
+                        Extract
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-zinc-400">Try:</span>
+                  {exampleYoutubeUrls.map((exUrl) => (
+                    <button
+                      key={exUrl}
+                      onClick={() => handleYoutube(exUrl)}
+                      className="text-xs text-zinc-200 hover:underline transition-colors font-mono"
+                    >
+                      {exUrl.replace('https://www.youtube.com/watch?v=', 'youtu.be/')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* YouTube Error */}
+          {youtubeError && (
+            <Card className="border-red-500/30 bg-red-500/10">
+              <CardContent className="flex items-start gap-3 pt-4 md:pt-6">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-red-300">Extraction Failed</p>
+                  <p className="text-xs text-red-400 mt-1">{youtubeError}</p>
+                  {youtubeElapsed != null && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> Failed after {youtubeElapsed}ms
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* YouTube Loading */}
+          {youtubeLoading && (
+            <Card className="border-zinc-700">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="relative mb-4">
+                  <div className="h-12 w-12 rounded-full border-4 border-zinc-800 border-t-red-500 animate-spin" />
+                  <Youtube className="absolute inset-0 m-auto h-5 w-5 text-red-500" />
+                </div>
+                <p className="text-sm font-medium text-zinc-300">Extracting transcript…</p>
+                <p className="text-xs text-zinc-400 mt-1">Fetching captions from YouTube</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* YouTube Result */}
+          {youtubeResult && (
+            <div className="space-y-4">
+              {/* Success bar */}
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                <Badge className="bg-emerald-100 text-emerald-700 border-0">✓ Extracted</Badge>
+                {youtubeElapsed != null && (
+                  <span className="text-xs text-zinc-600 flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {youtubeElapsed}ms
+                  </span>
+                )}
+                {youtubeResult.method && (
+                  <span className="text-xs text-zinc-500 font-mono">via {youtubeResult.method}</span>
+                )}
+              </div>
+
+              {/* Video metadata */}
+              <Card className="border-zinc-700">
+                <CardContent className="pt-4 pb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="col-span-2 sm:col-span-4">
+                      <p className="text-xs text-zinc-500 mb-1">Title</p>
+                      <p className="text-sm font-semibold text-zinc-100">{youtubeResult.title || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Channel</p>
+                      <p className="text-sm text-zinc-300">{youtubeResult.channel || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Duration</p>
+                      <p className="text-sm text-zinc-300">{youtubeResult.duration || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Words</p>
+                      <p className="text-sm text-zinc-300">{youtubeResult.wordCount?.toLocaleString() ?? '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Language</p>
+                      <p className="text-sm text-zinc-300 uppercase">{youtubeResult.language || '—'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Transcript */}
+              <Card className="border-zinc-700">
+                <CardHeader className="pb-0">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <CardTitle className="text-lg">Transcript</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setYoutubeShowFull(!youtubeShowFull)}
+                        className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                      >
+                        {youtubeShowFull ? 'Show timed segments' : 'Show full text'}
+                      </button>
+                      <CopyButton text={youtubeResult.fullText || ''} size="sm" />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  {youtubeShowFull ? (
+                    <pre className="p-4 bg-zinc-900 text-zinc-100 rounded-lg overflow-auto text-xs max-h-[60vh] whitespace-pre-wrap leading-relaxed">
+                      {youtubeResult.fullText || '(no transcript)'}
+                    </pre>
+                  ) : (
+                    <div className="rounded-lg border border-zinc-800 overflow-auto max-h-[60vh]">
+                      {youtubeResult.segments?.map((seg, i) => {
+                        const mins = Math.floor(seg.start / 60);
+                        const secs = Math.floor(seg.start % 60);
+                        const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
+                        return (
+                          <div key={i} className="flex gap-3 px-4 py-2 hover:bg-zinc-900 border-b border-zinc-800 last:border-0">
+                            <span className="text-xs font-mono text-zinc-500 flex-shrink-0 w-10 pt-0.5">{timeStr}</span>
+                            <span className="text-xs text-zinc-300 leading-relaxed">{seg.text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* YouTube empty state */}
+          {!youtubeLoading && !youtubeResult && !youtubeError && (
+            <Card className="border-zinc-700">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-zinc-200" />
+                  What transcript extraction returns
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[
+                  ['Title', 'Video title from YouTube metadata'],
+                  ['Channel', 'Channel name'],
+                  ['Duration', 'Video length'],
+                  ['Segments', 'Timed transcript segments with start/duration'],
+                  ['Full text', 'Complete transcript as plain text'],
+                  ['Word count', 'Total word count of the transcript'],
+                ].map(([key, val]) => (
+                  <div key={key} className="flex gap-3">
+                    <span className="text-xs font-semibold text-zinc-200 w-24 flex-shrink-0 pt-0.5">{key}</span>
+                    <span className="text-xs text-zinc-600">{val}</span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}

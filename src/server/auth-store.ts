@@ -11,6 +11,7 @@ export interface ApiKeyInfo {
   rateLimit: number;
   accountId?: string;
   createdAt: Date;
+  scope?: 'full' | 'read' | 'restricted';
 }
 
 export interface AuthStore {

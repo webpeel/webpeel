@@ -229,6 +229,61 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
       process.exit(1);
     }
 
+    // ── --export: YouTube transcript download (early exit) ────────────────
+    if (options.export) {
+      const exportFmt = (options.export as string).toLowerCase();
+      const validExportFmts = ['srt', 'txt', 'md', 'json'];
+      if (!validExportFmts.includes(exportFmt)) {
+        console.error(`Error: --export format must be one of: ${validExportFmts.join(', ')}`);
+        process.exit(1);
+      }
+
+      const exportCfg = loadConfig();
+      const exportApiKey = exportCfg.apiKey || process.env.WEBPEEL_API_KEY;
+      const exportApiUrl = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
+
+      if (!exportApiKey) {
+        console.error('No API key configured. Run: webpeel auth <your-key>');
+        console.error('Get a free key at: https://app.webpeel.dev/keys');
+        process.exit(2);
+      }
+
+      const lang = options.language || 'en';
+      const exportUrl = `${exportApiUrl}/v1/transcript/export?url=${encodeURIComponent(url)}&format=${exportFmt}&language=${lang}`;
+
+      const exportRes = await fetch(exportUrl, {
+        headers: { 'Authorization': `Bearer ${exportApiKey}` },
+        signal: AbortSignal.timeout(options.timeout ?? 90000),
+      });
+
+      if (!exportRes.ok) {
+        const errBody = await exportRes.text().catch(() => '');
+        try {
+          const errJson = JSON.parse(errBody);
+          const msg = errJson?.error?.message || errJson?.message || exportRes.statusText;
+          console.error(`Export failed (${exportRes.status}): ${msg}`);
+        } catch {
+          console.error(`Export failed (${exportRes.status}): ${exportRes.statusText}`);
+        }
+        process.exit(1);
+      }
+
+      const exportContent = await exportRes.text();
+
+      if (options.output) {
+        writeFileSync(options.output as string, exportContent, 'utf-8');
+        if (!options.silent) {
+          console.error(`Transcript saved to: ${options.output}`);
+        }
+      } else {
+        process.stdout.write(exportContent);
+        if (!exportContent.endsWith('\n')) process.stdout.write('\n');
+      }
+
+      await cleanup();
+      process.exit(0);
+    }
+
     // Check cache first (before spinner/network)
     // Default: 5m TTL for all CLI fetches unless --no-cache is set
     let cacheTtlMs: number | undefined;
@@ -1150,6 +1205,8 @@ export function registerFetchCommands(program: Command): void {
     .option('--content-only', 'Output only the raw content field (no metadata, no JSON wrapper) — ideal for piping to LLMs')
     .option('--progress', 'Show engine escalation steps (simple → browser → stealth) with timing')
     .option('--stdin', 'Read HTML from stdin instead of fetching a URL — converts to markdown')
+    .option('--export <format>', 'Export YouTube transcript in the given format: srt, txt, md, json')
+    .option('--output <file>', 'Write output to a file instead of stdout')
     .action(async (url: string | undefined, options) => {
       if (options.stdin) {
         await runStdin(options);

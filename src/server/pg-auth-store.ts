@@ -7,6 +7,9 @@ import pg from 'pg';
 import crypto from 'crypto';
 import { AuthStore, ApiKeyInfo } from './auth-store.js';
 
+/** Permission scope for an API key */
+export type KeyScope = 'full' | 'read' | 'restricted';
+
 const { Pool } = pg;
 
 export interface WeeklyUsageInfo {
@@ -75,6 +78,40 @@ export class PostgresAuthStore implements AuthStore {
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
     });
+
+    // Run idempotent schema migrations on startup
+    this.ensureSchema().catch(err =>
+      console.error('[pg-auth-store] Schema migration failed:', err)
+    );
+  }
+
+  /**
+   * Run idempotent schema migrations.
+   * Safe to call on every startup — all statements use IF NOT EXISTS / IF EXISTS.
+   */
+  private async ensureSchema(): Promise<void> {
+    await this.pool.query(`
+      ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS scope VARCHAR(20) NOT NULL DEFAULT 'full';
+    `);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS shared_reads (
+        id VARCHAR(12) PRIMARY KEY,
+        url TEXT NOT NULL,
+        title TEXT,
+        content TEXT NOT NULL,
+        tokens INTEGER,
+        created_by TEXT REFERENCES users(id),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '30 days',
+        view_count INTEGER DEFAULT 0
+      );
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_shared_reads_url ON shared_reads(url);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_shared_reads_created_by ON shared_reads(created_by);
+    `);
   }
 
   /**
@@ -159,6 +196,7 @@ export class PostgresAuthStore implements AuthStore {
           ak.user_id,
           ak.key_prefix,
           ak.name,
+          ak.scope,
           u.tier,
           u.rate_limit,
           u.weekly_limit,
@@ -189,6 +227,7 @@ export class PostgresAuthStore implements AuthStore {
         rateLimit: row.rate_limit,
         accountId: row.user_id,
         createdAt: new Date(),
+        scope: (row.scope as KeyScope) || 'full',
       };
     } catch (error) {
       console.error('Failed to validate API key:', error);

@@ -34,6 +34,7 @@ import { createAskRouter } from './routes/ask.js';
 import { createMcpRouter } from './routes/mcp.js';
 import { createDoRouter } from './routes/do.js';
 import { createYouTubeRouter } from './routes/youtube.js';
+import { createTranscriptExportRouter } from './routes/transcript-export.js';
 import { createDeepFetchRouter } from './routes/deep-fetch.js';
 import { createWatchRouter } from './routes/watch.js';
 import pg from 'pg';
@@ -41,6 +42,7 @@ import { createScreenshotRouter } from './routes/screenshot.js';
 import { createDemoRouter } from './routes/demo.js';
 import { createPlaygroundRouter } from './routes/playground.js';
 import { createReaderRouter } from './routes/reader.js';
+import { createSharePublicRouter, createShareRouter } from './routes/share.js';
 import { createJobQueue } from './job-queue.js';
 import { createCompatRouter } from './routes/compat.js';
 import { createCrawlRouter } from './routes/crawl.js';
@@ -49,6 +51,7 @@ import { createExtractRouter } from './routes/extract.js';
 import { createAgentRouter } from './routes/agent.js';
 import { createSessionRouter } from './routes/session.js';
 import { createSentryHooks } from './sentry.js';
+import { requireScope } from './middleware/scope-guard.js';
 import { warmup, cleanup as cleanupFetcher } from '../core/fetcher.js';
 import { registerPremiumHooks } from './premium/index.js';
 import { readFileSync } from 'fs';
@@ -265,6 +268,10 @@ export function createApp(config: ServerConfig = {}): Express {
   // Playground endpoint — unauthenticated, CORS-locked to webpeel.dev/localhost
   app.use('/v1/playground', createPlaygroundRouter());
 
+  // Public share endpoint — GET /s/:id (no auth required, must be before reader router)
+  // Registered first so valid share IDs are served before falling through to reader's /s/* search
+  app.use(createSharePublicRouter(pool));
+
   // Zero-auth reader API — Jina-style URL prefix (/r/URL) and search (/s/query)
   // Must be BEFORE auth middleware so no API key is required
   app.use(createReaderRouter());
@@ -274,17 +281,36 @@ export function createApp(config: ServerConfig = {}): Express {
 
   // Apply rate limiting middleware globally
   app.use(createRateLimitMiddleware(rateLimiter));
+
+  // Share links — POST /v1/share (auth required, after auth middleware)
+  app.use(createShareRouter(pool));
+
   // First-class native routes (registered before compat so they take precedence)
-  app.use('/v1/crawl', createCrawlRouter(jobQueue));
-  app.use('/v1/map', createMapRouter());
+  //
+  // Scope guards enforce API key permission scopes; JWT sessions bypass them.
+  // For routers with relative paths: app.use(path, guard, router)    ← prefix stripped, relative paths match
+  // For routers with absolute paths: app.use(path, guard) then app.use(router) ← guard at path, router sees full path
+
+  // /v1/crawl — full or read only (router uses relative paths)
+  app.use('/v1/crawl', requireScope('full', 'read'), createCrawlRouter(jobQueue));
+  // /v1/map — full or read only (router uses relative paths)
+  app.use('/v1/map', requireScope('full', 'read'), createMapRouter());
+  // Compat routes (/v1/scrape, /v1/search) — all scopes allowed, no guard needed
   app.use(createCompatRouter(jobQueue));
   app.use(createSessionRouter());
   app.use(createExtractRouter());
+  // /v1/deep-fetch — full or read only (router uses absolute paths, guard before router)
+  app.use('/v1/deep-fetch', requireScope('full', 'read'));
   app.use(createDeepFetchRouter());
+  // /v1/watch — full or read only (router uses absolute paths, guard before router)
   if (pool) {
+    app.use('/v1/watch', requireScope('full', 'read'));
     app.use(createWatchRouter(pool));
   }
+  // /v1/fetch, /v1/search — all scopes allowed, no guard needed
   app.use(createFetchRouter(authStore));
+  // /v1/screenshot — full or read only (router uses absolute paths, guard before router)
+  app.use('/v1/screenshot', requireScope('full', 'read'));
   app.use(createScreenshotRouter(authStore));
   app.use(createSearchRouter(authStore));
   app.use(createBillingPortalRouter(pool));
@@ -294,6 +320,8 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use(createActivityRouter(authStore));
   app.use(createCLIUsageRouter());
   app.use(createJobsRouter(jobQueue, authStore));
+  // /v1/batch — full or read only (router uses absolute paths, guard before router)
+  app.use('/v1/batch', requireScope('full', 'read'));
   app.use(createBatchRouter(jobQueue));
   // Deprecation headers for declining endpoints
   app.use('/v1/answer', (_req, res, next) => {
@@ -302,11 +330,15 @@ export function createApp(config: ServerConfig = {}): Express {
     res.set('Link', '</v1/ask>; rel="successor-version"');
     next();
   });
+  // /v1/answer, /v1/ask — all scopes allowed, no guard needed
   app.use(createAnswerRouter());
   app.use(createAskRouter());
-  app.use('/v1/agent', createAgentRouter());
-  app.use('/v1/do', createDoRouter());
+  // /v1/agent — full or read only (router uses relative paths)
+  app.use('/v1/agent', requireScope('full', 'read'), createAgentRouter());
+  // /v1/do — full only (router uses relative paths; admin-level operation)
+  app.use('/v1/do', requireScope('full'), createDoRouter());
   app.use(createYouTubeRouter());
+  app.use(createTranscriptExportRouter());
   app.use(createMcpRouter(authStore, pool));
 
   // 404 handler

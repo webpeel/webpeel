@@ -41,10 +41,12 @@ export function createActivityRouter(authStore: AuthStore): Router {
         SELECT 
           id,
           url,
+          endpoint,
           method,
           status_code,
           processing_time_ms,
           tokens_used,
+          ip_address,
           created_at
         FROM usage_logs
         WHERE user_id = $1
@@ -58,11 +60,14 @@ export function createActivityRouter(authStore: AuthStore): Router {
       const requests = result.rows.map((row: any) => ({
         id: row.id,
         url: row.url || 'N/A',
+        endpoint: row.endpoint || null,
         status: (row.status_code >= 200 && row.status_code < 300) ? 'success' : 'error',
         responseTime: row.processing_time_ms || 0,
         mode: row.method || 'basic',
         timestamp: row.created_at,
         tokensUsed: row.tokens_used || null,
+        ipAddress: row.ip_address || null,
+        statusCode: row.status_code || null,
       }));
 
       res.json({ requests });

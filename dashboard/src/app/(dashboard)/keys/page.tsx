@@ -93,6 +93,7 @@ export default function ApiKeysPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyExpiry, setNewKeyExpiry] = useState<string>('never');
+  const [newKeyScope, setNewKeyScope] = useState<'full' | 'read' | 'restricted'>('full');
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [newKeyKeyCopied, setNewKeyKeyCopied] = useState(false);
@@ -197,12 +198,13 @@ export default function ApiKeysPage() {
     try {
       const result = await apiClient<{ key: string; id: string }>('/v1/keys', {
         method: 'POST',
-        body: JSON.stringify({ name: newKeyName, expiresIn: newKeyExpiry }),
+        body: JSON.stringify({ name: newKeyName, expiresIn: newKeyExpiry, scope: newKeyScope }),
         token,
       });
       setNewKey(result.key);
       setNewKeyName('');
       setNewKeyExpiry('never');
+      setNewKeyScope('full');
       mutate();
       toast.success('API key created successfully');
     } catch (error: any) {
@@ -240,6 +242,7 @@ export default function ApiKeysPage() {
     setNewKey(null);
     setNewKeyName('');
     setNewKeyExpiry('never');
+    setNewKeyScope('full');
     setNewKeyKeyCopied(false);
   };
 
@@ -252,6 +255,21 @@ export default function ApiKeysPage() {
     const daysLeft = (new Date(k.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000);
     return daysLeft <= 7;
   });
+
+  // Scope badge renderer
+  function ScopeBadge({ scope }: { scope: 'full' | 'read' | 'restricted' | undefined }) {
+    const s = scope || 'full';
+    const config = {
+      full:       { icon: '🔓', label: 'Full',       className: 'bg-emerald-100 text-emerald-700 border-0' },
+      read:       { icon: '👁',  label: 'Read Only',  className: 'bg-blue-100 text-blue-700 border-0' },
+      restricted: { icon: '🔒', label: 'Restricted', className: 'bg-zinc-200 text-zinc-700 border-0' },
+    }[s];
+    return (
+      <Badge className={`text-xs ${config.className}`}>
+        {config.icon} {config.label}
+      </Badge>
+    );
+  }
 
   // Expiry badge renderer
   function ExpiryBadge({ apiKey }: { apiKey: typeof keys[0] }) {
@@ -384,6 +402,24 @@ export default function ApiKeysPage() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="key-scope">Permission Scope</Label>
+                  <select
+                    id="key-scope"
+                    value={newKeyScope}
+                    onChange={(e) => setNewKeyScope(e.target.value as 'full' | 'read' | 'restricted')}
+                    className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5865F2] focus:border-transparent"
+                  >
+                    <option value="full">🔓 Full Access — all endpoints</option>
+                    <option value="read">👁 Read Only — fetch, search, scrape</option>
+                    <option value="restricted">🔒 Restricted — scrape only</option>
+                  </select>
+                  <p className="text-xs text-zinc-500">
+                    {newKeyScope === 'full' && 'Full access to all API endpoints including batch, crawl, and agent.'}
+                    {newKeyScope === 'read' && 'Read-only access to fetch, search, scrape, screenshot, and answer.'}
+                    {newKeyScope === 'restricted' && 'Limited to /v1/scrape only. Ideal for sharing with untrusted consumers.'}
+                  </p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="key-expiry">Expiration</Label>
                   <select
                     id="key-expiry"
@@ -477,7 +513,7 @@ export default function ApiKeysPage() {
         <CardHeader>
           <CardTitle className="text-lg md:text-xl">Your API Keys</CardTitle>
           <CardDescription className="text-sm">
-            {isLoading ? 'Loading...' : `${activeKeys.length} active ${activeKeys.length === 1 ? 'key' : 'keys'}`}
+            {isLoading ? 'Loading…' : `${activeKeys.length} active ${activeKeys.length === 1 ? 'key' : 'keys'}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -534,9 +570,12 @@ export default function ApiKeysPage() {
                           </button>
                         </div>
                       </div>
-                      <Badge variant={key.isActive ? 'default' : 'secondary'} className={`text-xs ${key.isExpired ? 'bg-red-100 text-red-700 border-0' : ''}`}>
-                        {key.isExpired ? 'expired' : key.isActive ? 'active' : 'revoked'}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant={key.isActive ? 'default' : 'secondary'} className={`text-xs ${key.isExpired ? 'bg-red-100 text-red-700 border-0' : ''}`}>
+                          {key.isExpired ? 'expired' : key.isActive ? 'active' : 'revoked'}
+                        </Badge>
+                        <ScopeBadge scope={key.scope} />
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       <div>
@@ -593,6 +632,7 @@ export default function ApiKeysPage() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Key Prefix</TableHead>
+                      <TableHead>Scope</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Last Used</TableHead>
                       <TableHead>Expires</TableHead>
@@ -652,6 +692,9 @@ export default function ApiKeysPage() {
                               }
                             </button>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <ScopeBadge scope={key.scope} />
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(key.createdAt).toLocaleDateString()}

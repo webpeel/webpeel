@@ -794,7 +794,12 @@ export function createUserRouter(): Router {
   router.post('/v1/keys', jwtAuth, async (req: Request, res: Response) => {
     try {
       const { userId } = (req as any).user as JwtPayload;
-      const { name, expiresIn } = req.body;
+      const { name, expiresIn, scope } = req.body;
+
+      // Validate scope — only allow known values; default to 'full'
+      const validScopes = ['full', 'read', 'restricted'] as const;
+      const keyScope: 'full' | 'read' | 'restricted' =
+        validScopes.includes(scope) ? scope : 'full';
 
       // Parse optional expiration
       const expiresAt = parseExpiresIn(expiresIn as string | undefined);
@@ -806,10 +811,10 @@ export function createUserRouter(): Router {
 
       // Store API key
       const result = await pool.query(
-        `INSERT INTO api_keys (user_id, key_hash, key_prefix, name, expires_at)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, key_prefix, name, created_at, expires_at`,
-        [userId, keyHash, keyPrefix, name || 'Unnamed Key', expiresAt]
+        `INSERT INTO api_keys (user_id, key_hash, key_prefix, name, expires_at, scope)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, key_prefix, name, created_at, expires_at, scope`,
+        [userId, keyHash, keyPrefix, name || 'Unnamed Key', expiresAt, keyScope]
       );
 
       const key = result.rows[0];
@@ -819,6 +824,7 @@ export function createUserRouter(): Router {
         key: apiKey, // SECURITY: Only returned once
         prefix: key.key_prefix,
         name: key.name,
+        scope: key.scope,
         createdAt: key.created_at,
         expiresAt: key.expires_at,
       });
@@ -862,7 +868,7 @@ export function createUserRouter(): Router {
       const { userId } = (req as any).user as JwtPayload;
 
       const result = await pool.query(
-        `SELECT id, key_prefix, name, is_active, created_at, last_used_at, expires_at
+        `SELECT id, key_prefix, name, is_active, created_at, last_used_at, expires_at, scope
         FROM api_keys
         WHERE user_id = $1
         ORDER BY created_at DESC`,
@@ -879,6 +885,7 @@ export function createUserRouter(): Router {
             prefix: key.key_prefix,
             name: key.name,
             isActive: key.is_active,
+            scope: key.scope || 'full',
             createdAt: key.created_at,
             lastUsedAt: key.last_used_at,
             expiresAt: key.expires_at,

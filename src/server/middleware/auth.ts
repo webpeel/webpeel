@@ -13,7 +13,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthStore, ApiKeyInfo } from '../auth-store.js';
-import { PostgresAuthStore } from '../pg-auth-store.js';
+import { PostgresAuthStore, KeyScope } from '../pg-auth-store.js';
 import '../types.js'; // Augments Express.Request with requestId
 
 declare global {
@@ -26,6 +26,12 @@ declare global {
         softLimited: boolean;  // true when over quota — degrade, don't block
         extraUsageAvailable: boolean; // true when extra usage is enabled and can be used
       };
+      /**
+       * Permission scope of the authenticated API key.
+       * Undefined when authenticated via JWT (dashboard session) — JWT users bypass scope enforcement.
+       * Set to 'full' | 'read' | 'restricted' for API key requests.
+       */
+      keyScope?: KeyScope;
     }
   }
 }
@@ -247,6 +253,11 @@ export function createAuthMiddleware(authStore: AuthStore) {
         softLimited,
         extraUsageAvailable,
       };
+
+      // Attach API key scope (only for API key auth; JWT users get undefined = bypass scope checks)
+      if (keyInfo) {
+        req.keyScope = keyInfo.scope || 'full';
+      }
 
       next();
     } catch (_error) {

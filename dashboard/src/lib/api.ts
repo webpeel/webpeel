@@ -178,6 +178,7 @@ export interface ApiKey {
   name: string;
   prefix: string;
   isActive: boolean;
+  scope: 'full' | 'read' | 'restricted';
   createdAt: string;
   lastUsedAt?: string;
   expiresAt?: string | null;
