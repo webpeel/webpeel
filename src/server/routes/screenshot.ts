@@ -39,30 +39,31 @@ import { normalizeActions } from '../../core/actions.js';
  * Validate a URL from a request body. Sends a 400 response and returns false on failure.
  * Returns true when the URL is valid and safe to use.
  */
-function validateRequestUrl(url: unknown, res: Response): boolean {
+function validateRequestUrl(url: unknown, req: Request, res: Response): boolean {
+  const requestId = req.requestId;
   if (!url || typeof url !== 'string') {
-    res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing or invalid "url" parameter' } });
+    res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing or invalid "url" parameter', hint: 'Provide a full URL including scheme, e.g. https://example.com', docs: 'https://webpeel.dev/docs/errors#invalid_request' }, requestId });
     return false;
   }
   if ((url as string).length > 2048) {
-    res.status(400).json({ success: false, error: { type: 'invalid_url', message: 'URL too long (max 2048 characters)' } });
+    res.status(400).json({ success: false, error: { type: 'invalid_url', message: 'URL too long (max 2048 characters)', hint: 'Shorten the URL or remove unnecessary query parameters', docs: 'https://webpeel.dev/docs/errors#invalid_url' }, requestId });
     return false;
   }
   try {
     const parsed = new URL(url as string);
     if (!['http:', 'https:'].includes(parsed.protocol)) {
-      res.status(400).json({ success: false, error: { type: 'invalid_url', message: 'Only HTTP and HTTPS protocols are allowed' } });
+      res.status(400).json({ success: false, error: { type: 'invalid_url', message: 'Only HTTP and HTTPS protocols are allowed', hint: 'Ensure the URL starts with https:// or http://', docs: 'https://webpeel.dev/docs/errors#invalid_url' }, requestId });
       return false;
     }
   } catch {
-    res.status(400).json({ success: false, error: { type: 'invalid_url', message: 'Invalid URL format' } });
+    res.status(400).json({ success: false, error: { type: 'invalid_url', message: 'Invalid URL format', hint: 'Ensure the URL includes a scheme (https://) and a valid hostname', docs: 'https://webpeel.dev/docs/errors#invalid_url' }, requestId });
     return false;
   }
   try {
     validateUrlForSSRF(url as string);
   } catch (error) {
     if (error instanceof SSRFError) {
-      res.status(400).json({ success: false, error: { type: 'ssrf_blocked', message: 'Cannot fetch localhost, private networks, or non-HTTP URLs' } });
+      res.status(400).json({ success: false, error: { type: 'ssrf_blocked', message: 'Cannot fetch localhost, private networks, or non-HTTP URLs', hint: 'Use a publicly reachable URL', docs: 'https://webpeel.dev/docs/errors#ssrf_blocked' }, requestId });
       return false;
     }
     throw error;
@@ -118,7 +119,7 @@ async function handleFilmstrip(req: Request, res: Response, authStore: AuthStore
   try {
     const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ssUserId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 
@@ -136,7 +137,7 @@ async function handleFilmstrip(req: Request, res: Response, authStore: AuthStore
       stealth,
     } = req.body;
 
-    if (!validateRequestUrl(url, res)) return;
+    if (!validateRequestUrl(url, req, res)) return;
 
     if (frames !== undefined && (typeof frames !== 'number' || frames < 2 || frames > 12)) {
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Invalid frames: must be between 2 and 12' }, requestId: req.requestId });
@@ -239,13 +240,13 @@ async function handleAudit(req: Request, res: Response, authStore: AuthStore): P
   try {
     const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ssUserId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 
     const { url, width, height, format = 'jpeg', quality, selector, scrollThrough = false, waitFor, timeout } = req.body;
 
-    if (!validateRequestUrl(url, res)) return;
+    if (!validateRequestUrl(url, req, res)) return;
 
     if (format !== undefined && !['png', 'jpeg', 'jpg'].includes(format)) {
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Invalid format: must be "png", "jpeg", or "jpg"' }, requestId: req.requestId });
@@ -296,13 +297,13 @@ async function handleViewports(req: Request, res: Response, authStore: AuthStore
   try {
     const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ssUserId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 
     const { url, viewports, fullPage = false, format = 'jpeg', quality, scrollThrough = false, waitFor, timeout } = req.body;
 
-    if (!validateRequestUrl(url, res)) return;
+    if (!validateRequestUrl(url, req, res)) return;
 
     if (format !== undefined && !['png', 'jpeg', 'jpg'].includes(format)) {
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Invalid format: must be "png", "jpeg", or "jpg"' }, requestId: req.requestId });
@@ -364,13 +365,13 @@ async function handleDesignAuditHandler(req: Request, res: Response, authStore: 
   try {
     const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ssUserId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 
     const { url, rules, selector, width, height, waitFor, timeout } = req.body;
 
-    if (!validateRequestUrl(url, res)) return;
+    if (!validateRequestUrl(url, req, res)) return;
 
     if (rules !== undefined && typeof rules !== 'object') {
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Invalid "rules": must be an object' }, requestId: req.requestId });
@@ -412,13 +413,13 @@ async function handleDesignAnalysisHandler(req: Request, res: Response, authStor
   try {
     const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ssUserId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 
     const { url, selector, width, height, waitFor, timeout, stealth } = req.body;
 
-    if (!validateRequestUrl(url, res)) return;
+    if (!validateRequestUrl(url, req, res)) return;
 
     const startTime = Date.now();
     const result = await takeDesignAnalysis(url, {
@@ -458,13 +459,13 @@ async function handleDesignMerged(req: Request, res: Response, authStore: AuthSt
   try {
     const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ssUserId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 
     const { url, rules, selector, width, height, waitFor, timeout, stealth } = req.body;
 
-    if (!validateRequestUrl(url, res)) return;
+    if (!validateRequestUrl(url, req, res)) return;
 
     if (rules !== undefined && typeof rules !== 'object') {
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Invalid "rules": must be an object' }, requestId: req.requestId });
@@ -520,7 +521,7 @@ async function handleDiff(req: Request, res: Response, authStore: AuthStore): Pr
   try {
     const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!ssUserId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 
@@ -529,8 +530,8 @@ async function handleDiff(req: Request, res: Response, authStore: AuthStore): Pr
     const url2 = req.body.url2 ?? req.body.compareUrl;
     const { width, height, fullPage = false, threshold, waitFor, timeout } = req.body;
 
-    if (!validateRequestUrl(url1, res)) return;
-    if (!validateRequestUrl(url2, res)) return;
+    if (!validateRequestUrl(url1, req, res)) return;
+    if (!validateRequestUrl(url2, req, res)) return;
 
     if (url1 === url2) {
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'url1 and url2 must be different URLs' }, requestId: req.requestId });
@@ -602,7 +603,7 @@ async function handleDesignCompare(req: Request, res: Response, authStore: AuthS
   try {
     const userId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
 
@@ -616,13 +617,13 @@ async function handleDesignCompare(req: Request, res: Response, authStore: AuthS
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing required parameter "url"' }, requestId: req.requestId });
       return;
     }
-    if (!validateRequestUrl(url, res)) return;
+    if (!validateRequestUrl(url, req, res)) return;
 
     if (!ref || typeof ref !== 'string') {
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing required parameter "compareUrl" (or "ref")' }, requestId: req.requestId });
       return;
     }
-    if (!validateRequestUrl(ref, res)) return;
+    if (!validateRequestUrl(ref, req, res)) return;
 
     if (url === ref) {
       res.status(400).json({ success: false, error: { type: 'invalid_request', message: '"url" and "compareUrl" must be different URLs' }, requestId: req.requestId });
@@ -695,7 +696,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
     try {
       const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!ssUserId) {
-        res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+        res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
         return;
       }
 
@@ -716,7 +717,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
         selector,
       } = req.body;
 
-      if (!validateRequestUrl(url, res)) return;
+      if (!validateRequestUrl(url, req, res)) return;
 
       if (format !== undefined && !['png', 'jpeg', 'jpg'].includes(format)) {
         res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Invalid format: must be "png", "jpeg", or "jpg"' }, requestId: req.requestId });
@@ -883,13 +884,13 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
     try {
       const ssUserId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
       if (!ssUserId) {
-        res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+        res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
         return;
       }
 
       const { url, rules, selector } = req.body;
 
-      if (!validateRequestUrl(url, res)) return;
+      if (!validateRequestUrl(url, req, res)) return;
 
       const startTime = Date.now();
 
@@ -941,7 +942,7 @@ export function createScreenshotRouter(authStore: AuthStore): Router {
   router.get('/v1/design-compare', async (req: Request, res: Response) => {
     const userId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' } });
+      res.status(401).json({ success: false, error: { type: 'unauthorized', message: 'API key required.', hint: 'Get a free API key at https://app.webpeel.dev/keys', docs: 'https://webpeel.dev/docs/authentication' }, requestId: req.requestId });
       return;
     }
     // Validate ref query param (url is validated inside handleDesignCompare)
