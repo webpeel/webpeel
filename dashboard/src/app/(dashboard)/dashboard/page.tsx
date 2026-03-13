@@ -34,6 +34,10 @@ interface ResultData {
   detectedMode?: DetectedMode;
   question?: string;
   videoId?: string;
+  channel?: string;
+  duration?: string;
+  viewCount?: string;
+  publishDate?: string;
 }
 
 interface SearchResult {
@@ -250,9 +254,10 @@ function ResultCard({
     >
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
         {/* Metadata bar */}
-        <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-900/40 flex-wrap">
-          <span className="text-sm font-medium text-zinc-200 truncate flex-1 min-w-0">{titleLabel}</span>
-          <div className="flex items-center gap-2 text-xs text-zinc-500 shrink-0 ml-auto">
+        <div className="px-3 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-900/40">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <span className="text-sm font-medium text-zinc-200 truncate flex-1 min-w-0">{titleLabel}</span>
+            <div className="flex items-center gap-2 text-xs text-zinc-500 shrink-0 ml-auto">
             {resultCount != null && (
               <span>{resultCount} results</span>
             )}
@@ -279,7 +284,24 @@ function ResultCard({
             <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
               {badge.emoji} {badge.label}
             </span>
+            </div>
           </div>
+          {/* YouTube metadata row */}
+          {result.videoId && (result.channel || result.duration || result.viewCount) && (
+            <div className="flex items-center gap-3 mt-2 text-xs text-zinc-400 flex-wrap">
+              {result.channel && <span><span className="text-zinc-500">Channel:</span> {result.channel}</span>}
+              {result.duration && result.duration !== '0:00' && <span><span className="text-zinc-500">Duration:</span> {result.duration}</span>}
+              {result.viewCount && (() => {
+                const v = parseInt(result.viewCount, 10);
+                if (isNaN(v)) return null;
+                const formatted = v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+                  : v >= 1_000 ? `${(v / 1_000).toFixed(1).replace(/\.0$/, '')}K`
+                  : v.toLocaleString();
+                return <span>{formatted} views</span>;
+              })()}
+              {result.tokens != null && <span><span className="text-zinc-500">Words:</span> {result.tokens.toLocaleString()}</span>}
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -466,40 +488,38 @@ export default function ReadPage() {
         const vidMatch = intent.url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
         const videoId = vidMatch?.[1] ?? '';
 
-        // Build clean, readable transcript output
-        const rawText = json.content ?? json.fullText ?? json.text ?? '';
+        const rawContent = json.content ?? json.fullText ?? json.text ?? '';
 
-        // Add intelligent paragraph breaks: split on sentence endings followed by
-        // topic shifts (capital letter after period, or >> quote markers)
-        const paragraphed = rawText
-          .replace(/\.\s+(?=[A-Z])/g, '.\n\n')  // Paragraph break after sentence + capital
-          .replace(/>>\s*/g, '\n\n> ')            // Quote markers → blockquotes
-          .replace(/\n{3,}/g, '\n\n');             // Collapse excess newlines
+        // Strip the title + metadata header from API content (dashboard renders its own header)
+        // The API returns markdown starting with "# Title\n\n**Channel:**..." — remove that
+        let transcriptBody = rawContent;
+        // Remove leading "# Title" line
+        transcriptBody = transcriptBody.replace(/^#\s+[^\n]+\n*/, '');
+        // Remove metadata lines like "**Channel:**...", "**Duration:**...", "**Published:**..."
+        transcriptBody = transcriptBody.replace(/^\*\*(?:Channel|Duration|Published|Language|Available Languages|Words)[:\*][^\n]*\n*/gm, '');
+        // Remove leading horizontal rules
+        transcriptBody = transcriptBody.replace(/^---\n*/m, '');
+        // Clean up excess leading newlines
+        transcriptBody = transcriptBody.replace(/^\n+/, '');
 
         const title = json.title ?? json.metadata?.title ?? 'YouTube Transcript';
-        const channel = json.metadata?.channel ?? json.channel ?? '';
-        const duration = json.metadata?.duration ?? json.duration ?? '';
-        const wordCount = json.wordCount ?? json.tokens ?? rawText.split(/\s+/).length;
-
-        // Professional header with video embed
-        const header = [
-          `# 🎬 ${title}`,
-          '',
-          channel && `**Channel:** ${channel}`,
-          duration && `**Duration:** ${duration}`,
-          wordCount && `**Words:** ${wordCount.toLocaleString()}`,
-          '',
-          '---',
-          '',
-        ].filter(x => x !== false && x !== undefined).join('\n');
+        const channel = json.structured?.channel ?? json.metadata?.channel ?? json.channel ?? '';
+        const duration = json.structured?.duration ?? json.metadata?.duration ?? json.duration ?? '';
+        const viewCount = json.structured?.viewCount ?? '';
+        const publishDate = json.structured?.publishDate ?? '';
+        const wordCount = json.wordCount ?? json.tokens ?? rawContent.split(/\s+/).length;
 
         data = {
           detectedMode: 'read',
-          content: header + paragraphed,
+          content: transcriptBody,
           title,
           tokens: wordCount,
           fetchTimeMs: json.elapsed ?? json.fetchTimeMs,
-          videoId, // Pass to renderer for embed
+          videoId,
+          channel,
+          duration,
+          viewCount,
+          publishDate,
         };
       } else {
         // ── Read mode — fetch page as markdown ───────────────────────────────
