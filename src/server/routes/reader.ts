@@ -110,6 +110,12 @@ export function createReaderRouter(): Router {
         waitSelector: waitForSelector,
       });
 
+      // Cache-Control: this endpoint is public and heavily cacheable.
+      // Cloudflare edge caches for 2 min; serves stale for up to 10 min while revalidating.
+      res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
+      // Vary on Accept so different content-type representations are cached separately.
+      res.setHeader('Vary', 'Accept');
+
       // Return based on format
       const responseFormat = format.toLowerCase();
       if (responseFormat === 'text') {

@@ -118,6 +118,8 @@ export interface PipelineContext {
   domainApiHandled?: boolean;
   /** True when server returned pre-rendered markdown (Content-Type: text/markdown) */
   serverMarkdown?: boolean;
+  /** True when HTTP fetch completed in < 500ms — enables fast path (skip challenge detection) */
+  fastPath?: boolean;
   /** Non-fatal warnings accumulated during the pipeline run */
   warnings: string[];
   /** Raw HTML size in characters (measured from fetched content before any conversion) */
@@ -543,7 +545,20 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
 
     throw fetchError;
   }
-  ctx.timer.end('fetch');
+  const fetchDuration = ctx.timer.end('fetch');
+
+  // Fast path: if a plain HTTP fetch completed quickly with real HTML content,
+  // mark it so post-processing can skip expensive heuristics (challenge detection).
+  // Only applies to non-browser fetches that succeeded with HTML content.
+  if (
+    fetchDuration < 500 &&
+    !ctx.render &&
+    fetchResult.statusCode === 200 &&
+    (fetchResult.contentType || '').includes('html') &&
+    (fetchResult.html?.length || 0) > 200
+  ) {
+    ctx.fastPath = true;
+  }
 
   // Auto-scroll to load lazy content, then grab fresh HTML
   if (needsAutoScroll && fetchResult.page) {
@@ -1092,7 +1107,9 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
   // === Challenge / bot-protection page detection ===
   // If the extracted content looks like a challenge page (not real content),
   // mark it and try the search-as-proxy fallback to get the real info.
-  if (ctx.content && ctx.content.length < 2000) {
+  // Fast path: skip this check for HTTP fetches that completed in < 500ms —
+  // a fast successful response is virtually never a challenge page.
+  if (!ctx.fastPath && ctx.content && ctx.content.length < 2000) {
     const lowerContent = ctx.content.toLowerCase();
     const challengeSignals = [
       'please verify you are a human',

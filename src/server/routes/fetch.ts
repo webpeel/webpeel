@@ -297,7 +297,10 @@ export function createFetchRouter(authStore: AuthStore): Router {
           const cacheAge = Date.now() - cached.timestamp;
           if (cacheAge < maxAgeMs && cacheAge < cacheTtlMs) {
             res.setHeader('X-Cache', 'HIT');
+            res.setHeader('X-Cache-Status', 'HIT');
             res.setHeader('X-Cache-Age', Math.floor(cacheAge / 1000).toString());
+            // Cache-Control: allow Cloudflare edge to cache successful GET responses
+            res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
             if (wantsEnvelope(req)) {
               successResponse(res, cached.result, {
                 requestId: req.requestId,
@@ -575,9 +578,21 @@ export function createFetchRouter(authStore: AuthStore): Router {
 
       // Add usage headers (kept for backward compat; also surfaced in envelope metadata)
       res.setHeader('X-Cache', 'MISS');
+      res.setHeader('X-Cache-Status', 'MISS');
       res.setHeader('X-Credits-Used', '1');
       res.setHeader('X-Processing-Time', elapsed.toString());
       res.setHeader('X-Fetch-Type', fetchType);
+
+      // Cache-Control: allow Cloudflare edge to cache successful GET responses for 60s
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
+      // Response timing headers — let customers see exactly where time is spent
+      const timingFetch = result.timing?.fetch ?? 0;
+      const timingParse = (result.timing?.convert ?? 0) + (result.timing?.metadata ?? 0) + (result.timing?.prune ?? 0);
+      res.setHeader('X-Response-Time', `${elapsed}ms`);
+      res.setHeader('X-Fetch-Time', `${timingFetch}ms`);
+      res.setHeader('X-Parse-Time', `${timingParse}ms`);
+      res.setHeader('Server-Timing', `fetch;dur=${timingFetch}, parse;dur=${timingParse}, total;dur=${elapsed}`);
 
       // Build response — extend result with optional answer/summary fields
       const getResponseBody: any = { ...result };
@@ -878,6 +893,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
           const cacheAge = Date.now() - cached.timestamp;
           if (cacheAge < postCacheTtlMs) {
             res.setHeader('X-Cache', 'HIT');
+            res.setHeader('X-Cache-Status', 'HIT');
             res.setHeader('X-Cache-Age', Math.floor(cacheAge / 1000).toString());
             if (wantsEnvelope(req)) {
               successResponse(res, cached.result, {
@@ -1172,9 +1188,18 @@ export function createFetchRouter(authStore: AuthStore): Router {
       // --- Build response ------------------------------------------------------
       // Headers kept for backward compat; also surfaced in envelope metadata.
       res.setHeader('X-Cache', 'MISS');
+      res.setHeader('X-Cache-Status', 'MISS');
       res.setHeader('X-Credits-Used', '1');
       res.setHeader('X-Processing-Time', elapsed.toString());
       res.setHeader('X-Fetch-Type', fetchType);
+
+      // Response timing headers — let customers see exactly where time is spent
+      const postTimingFetch = result.timing?.fetch ?? 0;
+      const postTimingParse = (result.timing?.convert ?? 0) + (result.timing?.metadata ?? 0) + (result.timing?.prune ?? 0);
+      res.setHeader('X-Response-Time', `${elapsed}ms`);
+      res.setHeader('X-Fetch-Time', `${postTimingFetch}ms`);
+      res.setHeader('X-Parse-Time', `${postTimingParse}ms`);
+      res.setHeader('Server-Timing', `fetch;dur=${postTimingFetch}, parse;dur=${postTimingParse}, total;dur=${elapsed}`);
 
       const responseBody: any = { ...result };
       if (jsonData !== undefined) {

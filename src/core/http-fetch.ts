@@ -49,11 +49,13 @@ const HTTP_STATUS_TEXT: Record<number, string> = {
 
 function createHttpPool(): Agent {
   return new Agent({
-    connections: 20,
-    pipelining: 6,
+    connections: 50,
+    pipelining: 10,
     keepAliveTimeout: 60000,
     keepAliveMaxTimeout: 60000,
     allowH2: true,
+    headersTimeout: 10000,
+    bodyTimeout: 30000,
     connect: {
       lookup: cachedLookup as never,
     },
