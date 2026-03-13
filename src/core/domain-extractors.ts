@@ -1324,8 +1324,8 @@ async function youtubeExtractor(_html: string, url: string): Promise<DomainExtra
   }
 
   // Run transcript fetch and oEmbed fetch in parallel
-  // Browser-rendered fetch takes ~10s — use 15s timeout so browser has time to render
-  const transcriptPromise = withTimeout(getYouTubeTranscript(url), 15000);
+  // Proxy-based extraction takes 2-5s, but retry logic may need more time
+  const transcriptPromise = withTimeout(getYouTubeTranscript(url), 30000);
   const oembedPromise = fetchJson(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
   const noembedPromise = fetchJson(`https://noembed.com/embed?url=${encodeURIComponent(url)}`).catch(() => null);
 
@@ -1398,7 +1398,9 @@ async function youtubeExtractor(_html: string, url: string): Promise<DomainExtra
 
     // Summary section
     if (transcript.summary && hasTranscript) {
-      parts.push(`## Summary\n\n${transcript.summary}`);
+      let summaryText = transcript.summary;
+      summaryText = summaryText.replace(/([.!?])\s+(?=[A-Z])/g, '$1\n\n');
+      parts.push(`## Summary\n\n${summaryText}`);
     } else if (!hasTranscript && transcript.fullText) {
       parts.push(`## Description\n\n${transcript.fullText}`);
     }
@@ -1416,8 +1418,14 @@ async function youtubeExtractor(_html: string, url: string): Promise<DomainExtra
     }
 
     // Full Transcript section (only if we have real transcript segments)
+    // Add intelligent paragraph breaks for readability
     if (hasTranscript) {
-      parts.push(`## Full Transcript\n\n${transcript.fullText}`);
+      let readableText = transcript.fullText;
+      // Break into paragraphs: after sentence-ending punctuation followed by a capital letter
+      readableText = readableText.replace(/([.!?])\s+(?=[A-Z])/g, '$1\n\n');
+      // Collapse any triple+ newlines
+      readableText = readableText.replace(/\n{3,}/g, '\n\n');
+      parts.push(`## Full Transcript\n\n${readableText}`);
     }
 
     const cleanContent = parts.join('\n\n');

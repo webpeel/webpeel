@@ -453,34 +453,52 @@ export default function ReadPage() {
         };
 
       } else if (intent.url && /(?:youtube\.com\/watch|youtu\.be\/|youtube\.com\/embed)/.test(intent.url)) {
-        // ── YouTube mode — use Vercel API route (bypasses Render IP block) ──
+        // ── YouTube mode — use Render API (has Webshare residential proxy) ──
         const res = await fetch(
-          `/api/youtube-transcript?url=${encodeURIComponent(intent.url)}`,
+          `${API_URL}/v1/fetch?url=${encodeURIComponent(intent.url)}&format=markdown`,
+          { headers }
         );
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Failed to fetch YouTube transcript');
+        if (!res.ok) throw new Error(json.error?.message || json.error || 'Failed to fetch YouTube transcript');
 
-        // Format transcript as readable markdown
+        // Extract YouTube video ID for embed
+        const vidMatch = intent.url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+        const videoId = vidMatch?.[1] ?? '';
+
+        // Build clean, readable transcript output
+        const rawText = json.content ?? json.fullText ?? json.text ?? '';
+
+        // Add intelligent paragraph breaks: split on sentence endings followed by
+        // topic shifts (capital letter after period, or >> quote markers)
+        const paragraphed = rawText
+          .replace(/\.\s+(?=[A-Z])/g, '.\n\n')  // Paragraph break after sentence + capital
+          .replace(/>>\s*/g, '\n\n> ')            // Quote markers → blockquotes
+          .replace(/\n{3,}/g, '\n\n');             // Collapse excess newlines
+
+        const title = json.title ?? json.metadata?.title ?? 'YouTube Transcript';
+        const channel = json.metadata?.channel ?? json.channel ?? '';
+        const duration = json.metadata?.duration ?? json.duration ?? '';
+        const wordCount = json.wordCount ?? json.tokens ?? rawText.split(/\s+/).length;
+
+        // Professional header with video embed
         const header = [
-          json.title && `# 🎬 ${json.title}`,
-          json.channel && `**Channel:** ${json.channel}`,
-          json.duration && `**Duration:** ${json.duration}`,
-          json.language && `**Language:** ${json.language}`,
+          `# 🎬 ${title}`,
+          '',
+          channel && `**Channel:** ${channel}`,
+          duration && `**Duration:** ${duration}`,
+          wordCount && `**Words:** ${wordCount.toLocaleString()}`,
           '',
           '---',
           '',
-          '## Transcript',
-          '',
-        ].filter(Boolean).join('\n');
-
-        const transcriptText = json.fullText || json.segments?.map((s: any) => s.text).join(' ') || '';
+        ].filter(x => x !== false && x !== undefined).join('\n');
 
         data = {
           detectedMode: 'read',
-          content: header + transcriptText,
-          title: json.title || 'YouTube Transcript',
-          tokens: json.wordCount,
-          fetchTimeMs: json.elapsed,
+          content: header + paragraphed,
+          title,
+          tokens: wordCount,
+          fetchTimeMs: json.elapsed ?? json.fetchTimeMs,
+          videoId, // Pass to renderer for embed
         };
       } else {
         // ── Read mode — fetch page as markdown ───────────────────────────────
