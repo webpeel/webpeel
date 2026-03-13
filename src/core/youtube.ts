@@ -7,6 +7,9 @@
  */
 
 import { execFile } from 'node:child_process';
+import * as http from 'node:http';
+import * as https from 'node:https';
+import * as tls from 'node:tls';
 import { readFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -309,6 +312,267 @@ export function extractSummary(fullText: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Proxy-based InnerTube transcript extraction
+// ---------------------------------------------------------------------------
+
+// Webshare residential proxy config — reads from env vars on Render.
+// Locally, falls back to direct fetch (residential IP already works).
+const PROXY_HOST = process.env.WEBSHARE_PROXY_HOST || 'p.webshare.io';
+const PROXY_PORT = parseInt(process.env.WEBSHARE_PROXY_PORT || '80', 10);
+const PROXY_USER = process.env.WEBSHARE_PROXY_USER || '';
+const PROXY_PASS = process.env.WEBSHARE_PROXY_PASS || '';
+
+function isProxyConfigured(): boolean {
+  return !!(PROXY_USER && PROXY_PASS);
+}
+
+/**
+ * Make an HTTP(S) request through the Webshare CONNECT proxy with a specific
+ * slotted username (e.g. "argtnlhz-5"). This ensures both the /player call
+ * and the caption XML fetch go through the same residential IP.
+ */
+function proxyRequestSlotted(
+  slottedUser: string,
+  targetUrl: string,
+  opts: { method?: string; body?: string; headers?: Record<string, string>; timeoutMs?: number } = {},
+): Promise<{ status: number; body: string }> {
+  const url = new URL(targetUrl);
+  const timeout = opts.timeoutMs ?? 20000;
+
+  return new Promise((resolve, reject) => {
+    const proxyAuth = Buffer.from(`${slottedUser}:${PROXY_PASS}`).toString('base64');
+    const proxyReq = http.request({
+      host: PROXY_HOST,
+      port: PROXY_PORT,
+      method: 'CONNECT',
+      path: `${url.hostname}:443`,
+      headers: { 'Proxy-Authorization': `Basic ${proxyAuth}` },
+    });
+
+    const timer = setTimeout(() => {
+      proxyReq.destroy();
+      reject(new Error('Proxy request timed out'));
+    }, timeout);
+
+    proxyReq.on('connect', (res, socket) => {
+      if (res.statusCode !== 200) {
+        clearTimeout(timer);
+        socket.destroy();
+        reject(new Error(`Proxy CONNECT failed: ${res.statusCode}`));
+        return;
+      }
+
+      const tlsSocket = tls.connect(
+        { host: url.hostname, socket, servername: url.hostname },
+        () => {
+          const reqHeaders: Record<string, string> = {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cookie': 'CONSENT=YES+; SOCS=CAI',
+            ...(opts.headers ?? {}),
+          };
+
+          const req = https.request(
+            {
+              hostname: url.hostname,
+              path: url.pathname + url.search,
+              method: opts.method ?? 'GET',
+              createConnection: () => tlsSocket as any,
+              headers: reqHeaders,
+            } as https.RequestOptions,
+            (response) => {
+              let data = '';
+              response.on('data', (chunk: Buffer | string) => {
+                data += chunk;
+              });
+              response.on('end', () => {
+                clearTimeout(timer);
+                resolve({ status: response.statusCode ?? 0, body: data });
+              });
+            },
+          );
+
+          req.on('error', (e) => {
+            clearTimeout(timer);
+            reject(e);
+          });
+          if (opts.body) req.write(opts.body);
+          req.end();
+        },
+      );
+
+      tlsSocket.on('error', (e) => {
+        clearTimeout(timer);
+        reject(e);
+      });
+    });
+
+    proxyReq.on('error', (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+    proxyReq.end();
+  });
+}
+
+/**
+ * Fetch YouTube transcript via InnerTube /player API through Webshare proxy.
+ *
+ * This replicates the approach used by the Python `youtube-transcript-api` library:
+ * 1. POST to /youtubei/v1/player with ANDROID client context
+ * 2. Get caption track URLs WITHOUT the `exp=xpe` parameter
+ * 3. Fetch caption XML from those clean URLs (returns actual data, not 0 bytes)
+ *
+ * All requests go through the residential proxy to bypass YouTube's cloud IP blocking.
+ */
+async function getTranscriptViaProxy(
+  videoId: string,
+  preferredLang: string,
+): Promise<YouTubeTranscript | null> {
+  // Try multiple proxy slots — some may be rate-limited by other Webshare users.
+  // Shuffle slot order for even distribution across requests.
+  const maxSlots = parseInt(process.env.WEBSHARE_PROXY_SLOTS || '10', 10);
+  const slots = Array.from({ length: maxSlots }, (_, i) => i + 1);
+  // Fisher-Yates shuffle
+  for (let i = slots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [slots[i], slots[j]] = [slots[j], slots[i]];
+  }
+
+  const INNERTUBE_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+
+  for (const slot of slots) {
+    const proxyUser = `${PROXY_USER}-${slot}`;
+    const doProxyRequest = (
+      url: string,
+      opts: { method?: string; body?: string; headers?: Record<string, string>; timeoutMs?: number } = {},
+    ) => proxyRequestSlotted(proxyUser, url, opts);
+
+    try {
+      // Step 1: Call InnerTube /player with ANDROID client
+      // ANDROID client returns caption URLs WITHOUT exp=xpe (avoids 0-byte responses).
+      const playerResp = await doProxyRequest(
+        `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            context: { client: { clientName: 'ANDROID', clientVersion: '20.10.38' } },
+            videoId,
+          }),
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+
+      if (playerResp.status !== 200) {
+        console.log(`[webpeel] [youtube] Proxy slot ${slot}: /player returned ${playerResp.status}`);
+        continue;
+      }
+
+      const playerData = JSON.parse(playerResp.body);
+      const captionTracks =
+        playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
+      if (!captionTracks || captionTracks.length === 0) {
+        console.log(`[webpeel] [youtube] Proxy slot ${slot}: no caption tracks`);
+        continue;
+      }
+
+      // Pick best matching language track
+      let track = captionTracks.find((t: any) => t.languageCode === preferredLang);
+      if (!track) {
+        track = captionTracks.find((t: any) => t.languageCode === 'en') ?? captionTracks[0];
+      }
+
+      const captionUrl: string = track.baseUrl;
+      if (captionUrl.includes('exp=xpe')) {
+        console.log(`[webpeel] [youtube] Proxy slot ${slot}: caption URL has exp=xpe, skipping`);
+        continue;
+      }
+
+      // Step 2: Fetch caption XML through the SAME proxy slot (same residential IP)
+      const capResp = await doProxyRequest(captionUrl);
+
+      if (
+        !capResp.body ||
+        capResp.body.length === 0 ||
+        capResp.status === 429 ||
+        capResp.body.includes('<title>Sorry...</title>')
+      ) {
+        console.log(
+          `[webpeel] [youtube] Proxy slot ${slot}: caption XML failed (status=${capResp.status}, bytes=${capResp.body?.length ?? 0})`,
+        );
+        continue; // Try next slot
+      }
+
+      // Parse XML segments — handles both <text start="" dur=""> and <p t="" d=""> formats
+      const xmlSegments = [
+        ...capResp.body.matchAll(
+          /<(?:text|p)\s[^>]*?(?:start|t)="([^"]*)"[^>]*?(?:dur|d)="([^"]*)"[^>]*>([\s\S]*?)<\/(?:text|p)>/g,
+        ),
+      ];
+
+      if (xmlSegments.length === 0) {
+        console.log(`[webpeel] [youtube] Proxy slot ${slot}: no segments parsed from XML`);
+        continue;
+      }
+
+      const segments: TranscriptSegment[] = xmlSegments
+        .map((m) => ({
+          text: decodeHtmlEntities(m[3].replace(/<[^>]+>/g, '').replace(/\n/g, ' ').trim()),
+          start: parseFloat(m[1]) / (m[1].includes('.') ? 1 : 1000),
+          duration: parseFloat(m[2]) / (m[2].includes('.') ? 1 : 1000),
+        }))
+        .filter((s) => s.text.length > 0);
+
+      if (segments.length === 0) continue;
+
+      // Extract metadata from player response
+      const vd = playerData.videoDetails ?? {};
+      const mf = playerData.microformat?.playerMicroformatRenderer ?? {};
+      const title = vd.title ?? '';
+      const channel = vd.author ?? '';
+      const lengthSeconds = parseInt(vd.lengthSeconds ?? mf.lengthSeconds ?? '0', 10);
+      const description = (vd.shortDescription ?? mf.description?.simpleText ?? '').trim();
+      const publishDate = mf.publishDate ?? mf.uploadDate ?? '';
+      const availableLanguages = captionTracks.map((t: any) => t.languageCode);
+
+      const fullText = segments.map((s) => s.text).join(' ').replace(/\s+/g, ' ').trim();
+      const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+      const chapters = parseChaptersFromDescription(description);
+      const keyPoints = extractKeyPoints(segments, chapters, lengthSeconds);
+      const summary = extractSummary(fullText);
+
+      console.log(`[webpeel] [youtube] Proxy slot ${slot} success: ${segments.length} segments, ${wordCount} words`);
+
+      return {
+        videoId,
+        title,
+        channel,
+        duration: formatDuration(lengthSeconds),
+        language: track.languageCode ?? preferredLang,
+        segments,
+        fullText,
+        availableLanguages,
+        description,
+        publishDate,
+        chapters: chapters.length > 0 ? chapters : undefined,
+        keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
+        summary,
+        wordCount,
+      };
+    } catch (err: any) {
+      console.log(`[webpeel] [youtube] Proxy slot ${slot} error:`, err?.message);
+      continue;
+    }
+  }
+
+  // All slots exhausted
+  console.log('[webpeel] [youtube] All proxy slots exhausted');
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Transcript extraction
 // ---------------------------------------------------------------------------
 
@@ -329,6 +593,26 @@ export async function getYouTubeTranscript(
 
   const preferredLang = options.language ?? 'en';
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+  // --- Path P: Proxy-based InnerTube (primary for cloud servers) ---
+  // Uses Webshare residential proxy + ANDROID InnerTube /player API.
+  // This is the approach used by every major YouTube transcript service
+  // (youtubetotranscript.com, youtube-transcript.io, etc.)
+  if (!process.env.VITEST && isProxyConfigured()) {
+    console.log('[webpeel] [youtube] Trying path P: proxy-based InnerTube (residential proxy)');
+    try {
+      const proxyResult = await getTranscriptViaProxy(videoId, preferredLang);
+      if (proxyResult && proxyResult.segments.length > 0) {
+        console.log(
+          `[webpeel] [youtube] Path P success: ${proxyResult.segments.length} segments, ${proxyResult.wordCount} words`,
+        );
+        return proxyResult;
+      }
+      console.log('[webpeel] [youtube] Path P returned empty/null, falling through');
+    } catch (err: any) {
+      console.log('[webpeel] [youtube] Path P failed:', err?.message);
+    }
+  }
 
   // --- Path 0: youtube-transcript-plus (fastest — uses InnerTube API, ~1s) ---
   // This library calls YouTube's internal InnerTube API directly via POST request,
