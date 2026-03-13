@@ -309,22 +309,53 @@ export async function handleYouTube(ctx: PipelineContext): Promise<PeelResult | 
       language: (ctx.options as any).language ?? 'en',
     });
 
+    // Format view count
+    let viewStr = '';
+    if (transcript.viewCount) {
+      const v = parseInt(transcript.viewCount, 10);
+      if (!isNaN(v)) {
+        if (v >= 1_000_000) viewStr = `${(v / 1_000_000).toFixed(1).replace(/\.0$/, '')}M views`;
+        else if (v >= 1_000) viewStr = `${(v / 1_000).toFixed(1).replace(/\.0$/, '')}K views`;
+        else viewStr = `${v.toLocaleString()} views`;
+      }
+    }
+
+    // Format publish date
+    let publishStr = '';
+    if (transcript.publishDate) {
+      try {
+        const d = new Date(transcript.publishDate);
+        publishStr = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', day: 'numeric' });
+      } catch { publishStr = transcript.publishDate; }
+    }
+
+    // Build header metadata line
+    const headerParts = [`**Channel:** ${transcript.channel}`];
+    if (transcript.duration && transcript.duration !== '0:00') headerParts.push(`**Duration:** ${transcript.duration}`);
+    if (viewStr) headerParts.push(`**${viewStr}**`);
+    if (publishStr) headerParts.push(`**Published:** ${publishStr}`);
+
+    // Add paragraph breaks to transcript for readability
+    let readableText = transcript.fullText;
+    readableText = readableText.replace(/([.!?])\s+(?=[A-Z])/g, '$1\n\n');
+    readableText = readableText.replace(/\n{3,}/g, '\n\n');
+
     // Build a clean markdown representation of the video + transcript
-    const videoInfoLines = [
-      `# ${transcript.title}`,
-      '',
-      `**Channel:** ${transcript.channel}`,
-      `**Duration:** ${transcript.duration}`,
-      `**Language:** ${transcript.language}`,
-      transcript.availableLanguages.length > 1
-        ? `**Available Languages:** ${transcript.availableLanguages.join(', ')}`
-        : '',
-      '',
-      '## Transcript',
-      '',
-      transcript.fullText,
-    ].filter(l => l !== undefined);
-    const videoInfoContent = videoInfoLines.join('\n');
+    const parts: string[] = [`# ${transcript.title}`, headerParts.join(' | ')];
+    if (transcript.summary) {
+      let summaryText = transcript.summary;
+      summaryText = summaryText.replace(/([.!?])\s+(?=[A-Z])/g, '$1\n\n');
+      parts.push(`## Summary\n\n${summaryText}`);
+    }
+    if (transcript.keyPoints && transcript.keyPoints.length > 0) {
+      parts.push(`## Key Points\n\n${transcript.keyPoints.map(kp => `- ${kp}`).join('\n')}`);
+    }
+    if (transcript.chapters && transcript.chapters.length > 0) {
+      parts.push(`## Chapters\n\n${transcript.chapters.map(ch => `- ${ch.time} — ${ch.title}`).join('\n')}`);
+    }
+    parts.push(`## Full Transcript\n\n${readableText}`);
+
+    const videoInfoContent = parts.join('\n\n');
 
     const elapsed = Date.now() - ytStartTime;
     const tokens = estimateTokens(videoInfoContent);

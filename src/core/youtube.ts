@@ -78,6 +78,10 @@ export interface YouTubeTranscript {
   summary?: string;
   /** Total word count of transcript */
   wordCount?: number;
+  /** View count (numeric string) */
+  viewCount?: string;
+  /** Like count (numeric string, may be empty) */
+  likeCount?: string;
 }
 
 export interface YouTubeVideoInfo {
@@ -551,6 +555,9 @@ async function getTranscriptViaProxy(
       const keyPoints = extractKeyPoints(segments, chapters, lengthSeconds);
       const summary = extractSummary(fullText);
 
+      const viewCount = vd.viewCount ?? mf.viewCount ?? '';
+      const likeCount = vd.likeCount ?? '';
+
       console.log(`[webpeel] [youtube] Proxy slot ${slot} success: ${segments.length} segments, ${wordCount} words`);
 
       return {
@@ -568,6 +575,8 @@ async function getTranscriptViaProxy(
         keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
         summary,
         wordCount,
+        viewCount: viewCount || undefined,
+        likeCount: likeCount || undefined,
       };
     } catch (err: any) {
       console.log(`[webpeel] [youtube] Proxy slot ${slot} error:`, err?.message);
@@ -686,6 +695,8 @@ export async function getYouTubeTranscript(
         keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
         summary,
         wordCount,
+        viewCount: undefined, // not available in this path without extra fetch
+        likeCount: undefined,
       };
     }
     console.log('[webpeel] [youtube] Path 0 returned empty segments');
@@ -796,6 +807,8 @@ export async function getYouTubeTranscript(
       keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
       summary,
       wordCount,
+      viewCount: (videoDetails.viewCount ?? microformat.viewCount ?? '') || undefined,
+      likeCount: (videoDetails.likeCount ?? '') || undefined,
     };
   } catch (err: any) {
     // Re-throw definitive failures (browser path won't help)
@@ -921,6 +934,8 @@ async function getTranscriptViaYtDlp(
           keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
           summary,
           wordCount,
+          viewCount: (infoData.view_count?.toString() ?? '') || undefined,
+          likeCount: (infoData.like_count?.toString() ?? '') || undefined,
         });
       } catch {
         resolve(null);
@@ -1059,6 +1074,8 @@ async function getTranscriptViaBrowserIntercept(
       keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
       summary,
       wordCount,
+      viewCount: undefined, // browser path doesn't reliably get this
+      likeCount: undefined,
     };
   } finally {
     await page.close().catch(() => { /* best effort */ });
