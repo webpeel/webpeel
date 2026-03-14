@@ -859,3 +859,217 @@ describe('callLLM - Google mocked', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Source Credibility (getSourceCredibility)
+// ---------------------------------------------------------------------------
+
+import { getSourceCredibility } from '../core/deep-research.js';
+
+describe('getSourceCredibility - official tier (★★★)', () => {
+  it('returns official for .gov domains', () => {
+    const cred = getSourceCredibility('https://www.cdc.gov/page');
+    expect(cred.tier).toBe('official');
+    expect(cred.stars).toBe(3);
+    expect(cred.label).toBe('OFFICIAL SOURCE');
+  });
+
+  it('returns official for .edu domains', () => {
+    const cred = getSourceCredibility('https://mit.edu/research');
+    expect(cred.tier).toBe('official');
+    expect(cred.stars).toBe(3);
+  });
+
+  it('returns official for .mil domains', () => {
+    const cred = getSourceCredibility('https://navy.mil/info');
+    expect(cred.tier).toBe('official');
+    expect(cred.stars).toBe(3);
+  });
+
+  it('returns official for arxiv.org', () => {
+    const cred = getSourceCredibility('https://arxiv.org/abs/2301.00001');
+    expect(cred.tier).toBe('official');
+    expect(cred.stars).toBe(3);
+  });
+
+  it('returns official for developer.mozilla.org', () => {
+    const cred = getSourceCredibility('https://developer.mozilla.org/en-US/docs/Web');
+    expect(cred.tier).toBe('official');
+    expect(cred.stars).toBe(3);
+  });
+
+  it('returns official for who.int', () => {
+    const cred = getSourceCredibility('https://who.int/health-topics');
+    expect(cred.tier).toBe('official');
+    expect(cred.stars).toBe(3);
+  });
+});
+
+describe('getSourceCredibility - verified tier (★★☆)', () => {
+  it('returns verified for wikipedia.org', () => {
+    const cred = getSourceCredibility('https://en.wikipedia.org/wiki/TypeScript');
+    expect(cred.tier).toBe('verified');
+    expect(cred.stars).toBe(2);
+    expect(cred.label).toBe('VERIFIED');
+  });
+
+  it('returns verified for github.com', () => {
+    const cred = getSourceCredibility('https://github.com/microsoft/typescript');
+    expect(cred.tier).toBe('verified');
+    expect(cred.stars).toBe(2);
+  });
+
+  it('returns verified for stackoverflow.com', () => {
+    const cred = getSourceCredibility('https://stackoverflow.com/questions/12345');
+    expect(cred.tier).toBe('verified');
+    expect(cred.stars).toBe(2);
+  });
+
+  it('returns verified for reuters.com', () => {
+    const cred = getSourceCredibility('https://www.reuters.com/article/tech');
+    expect(cred.tier).toBe('verified');
+    expect(cred.stars).toBe(2);
+  });
+});
+
+describe('getSourceCredibility - general tier (★☆☆)', () => {
+  it('returns general for random blog', () => {
+    const cred = getSourceCredibility('https://myblog.medium.com/article');
+    expect(cred.tier).toBe('general');
+    expect(cred.stars).toBe(1);
+    expect(cred.label).toBe('UNVERIFIED');
+  });
+
+  it('returns general for unknown domain', () => {
+    const cred = getSourceCredibility('https://some-random-site-xyz.com/article');
+    expect(cred.tier).toBe('general');
+    expect(cred.stars).toBe(1);
+  });
+
+  it('returns general for invalid URL', () => {
+    const cred = getSourceCredibility('not a url at all!!!');
+    expect(cred.tier).toBe('general');
+    expect(cred.stars).toBe(1);
+    expect(cred.label).toBe('UNVERIFIED');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ProgressEventType includes 'verification'
+// ---------------------------------------------------------------------------
+
+describe('ProgressEventType includes verification', () => {
+  it('verification is a valid ProgressEventType value', async () => {
+    const mod = await import('../core/deep-research.js');
+    // The type is structural; we verify it via the progress event shape
+    const event: import('../core/deep-research.js').DeepResearchProgressEvent = {
+      type: 'verification',
+      message: 'Verification complete — confidence: HIGH',
+      data: {
+        conflicts: [],
+        confidence: 'high',
+        sourceDiversity: true,
+      },
+    };
+    expect(event.type).toBe('verification');
+    expect(event.data?.confidence).toBe('high');
+    expect(Array.isArray(event.data?.conflicts)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cerebras provider
+// ---------------------------------------------------------------------------
+
+describe('Cerebras LLM provider', () => {
+  it('throws if no api key', async () => {
+    const config: LLMConfig = { provider: 'cerebras' };
+    await expect(
+      callLLM(config, { messages: [{ role: 'user', content: 'test' }] }),
+    ).rejects.toThrow('API key');
+  });
+
+  it('calls correct Cerebras endpoint', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'cerebras response' } }],
+        usage: { prompt_tokens: 10, completion_tokens: 20 },
+      }),
+    });
+
+    const originalFetch = global.fetch;
+    global.fetch = mockFetch;
+
+    try {
+      const result = await callLLM({ provider: 'cerebras', apiKey: 'cbr-test' }, {
+        messages: [{ role: 'user', content: 'hello' }],
+      });
+      expect(result.text).toBe('cerebras response');
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cerebras.ai/v1/chat/completions',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ 'Authorization': 'Bearer cbr-test' }),
+        }),
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('uses custom endpoint when provided', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+    const originalFetch = global.fetch;
+    global.fetch = mockFetch;
+    try {
+      await callLLM(
+        { provider: 'cerebras', apiKey: 'key', endpoint: 'https://custom.api/v1/chat/completions' },
+        { messages: [{ role: 'user', content: 'test' }] },
+      );
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://custom.api/v1/chat/completions',
+        expect.any(Object),
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('cerebras preferred over cloudflare when CEREBRAS_API_KEY is set', () => {
+    const saved = process.env.CEREBRAS_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
+    process.env.CEREBRAS_API_KEY = 'cbr-env-key';
+    try {
+      const config = getDefaultLLMConfig();
+      expect(config.provider).toBe('cerebras');
+      expect(config.apiKey).toBe('cbr-env-key');
+    } finally {
+      if (saved !== undefined) process.env.CEREBRAS_API_KEY = saved;
+      else delete process.env.CEREBRAS_API_KEY;
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SourceCredibility stars mapping
+// ---------------------------------------------------------------------------
+
+describe('SourceCredibility stars mapping', () => {
+  it('official tier has 3 stars', () => {
+    expect(getSourceCredibility('https://nih.gov').stars).toBe(3);
+  });
+
+  it('verified tier has 2 stars', () => {
+    expect(getSourceCredibility('https://github.com').stars).toBe(2);
+  });
+
+  it('general tier has 1 star', () => {
+    expect(getSourceCredibility('https://randomsite.xyz').stars).toBe(1);
+  });
+});

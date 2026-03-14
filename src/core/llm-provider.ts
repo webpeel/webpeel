@@ -9,7 +9,7 @@
  *   5. Ollama (local, OpenAI-compatible)
  */
 
-export type DeepResearchLLMProvider = 'cloudflare' | 'openai' | 'anthropic' | 'google' | 'ollama';
+export type DeepResearchLLMProvider = 'cloudflare' | 'openai' | 'anthropic' | 'google' | 'ollama' | 'cerebras';
 
 export interface LLMConfig {
   provider: DeepResearchLLMProvider;
@@ -149,6 +149,8 @@ function defaultModel(provider: DeepResearchLLMProvider): string {
       return 'gemini-1.5-flash';
     case 'ollama':
       return 'llama3';
+    case 'cerebras':
+      return 'llama-3.3-70b';
   }
 }
 
@@ -570,6 +572,84 @@ async function callOllama(
 }
 
 // ---------------------------------------------------------------------------
+// Cerebras (OpenAI-compatible)
+// ---------------------------------------------------------------------------
+
+async function callCerebras(
+  config: LLMConfig,
+  options: LLMCallOptions,
+): Promise<LLMCallResult> {
+  const apiKey = config.apiKey;
+  if (!apiKey) throw new Error('Cerebras requires an API key (llm.apiKey)');
+
+  const endpoint = (config.endpoint || 'https://api.cerebras.ai/v1/chat/completions');
+  const model = config.model || defaultModel('cerebras');
+  const { messages, stream, onChunk, signal, maxTokens = 4096, temperature = 0.2 } = options;
+
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+      stream: stream ?? false,
+    }),
+    signal,
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`Cerebras API error: HTTP ${resp.status}${text ? ` - ${text}` : ''}`);
+  }
+
+  if (!stream) {
+    const json = await resp.json() as any;
+    const text = String(json?.choices?.[0]?.message?.content || '').trim();
+    return {
+      text,
+      usage: {
+        input: Number(json?.usage?.prompt_tokens || 0),
+        output: Number(json?.usage?.completion_tokens || 0),
+      },
+    };
+  }
+
+  if (!resp.body) throw new Error('Cerebras stream: missing body');
+
+  let out = '';
+  let usage = { input: 0, output: 0 };
+
+  await readTextStream(
+    resp.body,
+    (data) => {
+      if (data === '[DONE]') return;
+      let obj: any;
+      try { obj = JSON.parse(data); } catch { return; }
+
+      const delta = obj?.choices?.[0]?.delta?.content;
+      if (typeof delta === 'string' && delta.length > 0) {
+        out += delta;
+        onChunk?.(delta);
+      }
+      if (obj?.usage) {
+        usage = {
+          input: Number(obj.usage.prompt_tokens || usage.input),
+          output: Number(obj.usage.completion_tokens || usage.output),
+        };
+      }
+    },
+    signal,
+  );
+
+  return { text: out.trim(), usage };
+}
+
+// ---------------------------------------------------------------------------
 // Main unified call function
 // ---------------------------------------------------------------------------
 
@@ -596,6 +676,8 @@ export async function callLLM(
       return callGoogle(config, options);
     case 'ollama':
       return callOllama(config, options);
+    case 'cerebras':
+      return callCerebras(config, options);
     default: {
       // TypeScript exhaustiveness
       const _exhaustive: never = provider;
@@ -606,7 +688,10 @@ export async function callLLM(
 
 /**
  * Get the default LLM config based on available environment variables.
- * Falls back to Cloudflare if nothing else is configured.
+ *
+ * Priority order: Anthropic → OpenAI → Google → Cerebras → Cloudflare (free tier fallback).
+ * If no BYOK key and no Cloudflare credentials are configured, returns a cloudflare config
+ * that will throw a clear error when callLLM is invoked (CLOUDFLARE_ACCOUNT_ID missing).
  */
 export function getDefaultLLMConfig(): LLMConfig {
   if (process.env.ANTHROPIC_API_KEY) {
@@ -618,7 +703,10 @@ export function getDefaultLLMConfig(): LLMConfig {
   if (process.env.GOOGLE_API_KEY) {
     return { provider: 'google', apiKey: process.env.GOOGLE_API_KEY };
   }
-  // Default: Cloudflare free tier
+  if (process.env.CEREBRAS_API_KEY) {
+    return { provider: 'cerebras', apiKey: process.env.CEREBRAS_API_KEY };
+  }
+  // Default: Cloudflare free tier (requires CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN at call time)
   return { provider: 'cloudflare' };
 }
 

@@ -36,6 +36,7 @@ export type ProgressEventType =
   | 'scoring'
   | 'gap_check'
   | 'researching'
+  | 'verification'
   | 'synthesizing'
   | 'done'
   | 'error';
@@ -81,12 +82,24 @@ export interface DeepResearchResponse {
   elapsed: number;
 }
 
+/** Source credibility assessment */
+export interface SourceCredibility {
+  /** Credibility tier */
+  tier: 'official' | 'verified' | 'general';
+  /** Star rating (1–3) */
+  stars: number;
+  /** Human-readable label */
+  label: string;
+}
+
 // Internal representation of a fetched source
 interface FetchedSource {
   result: WebSearchResult;
   content: string;
   relevanceScore: number;
   subQuery: string;
+  /** Credibility assessment (populated after fetchSources) */
+  credibility?: SourceCredibility;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,6 +124,92 @@ function normalizeUrl(url: string): string {
   } catch {
     return url.toLowerCase().replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
   }
+}
+
+/** Extract bare hostname (no www) from a URL, or return empty string on failure */
+function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return url.toLowerCase().replace(/^https?:\/\/(www\.)?/, '').split('/')[0] ?? '';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Source Credibility
+// ---------------------------------------------------------------------------
+
+/** Official TLDs and hostnames that indicate high-authority sources */
+const OFFICIAL_TLDS = new Set(['.gov', '.edu', '.mil']);
+
+const OFFICIAL_HOSTNAMES = new Set([
+  // Academic / research
+  'arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'ncbi.nlm.nih.gov',
+  'jstor.org', 'nature.com', 'science.org', 'cell.com', 'nejm.org', 'bmj.com',
+  'thelancet.com', 'plos.org', 'springer.com', 'elsevier.com',
+  // International organisations
+  'who.int', 'un.org', 'worldbank.org', 'imf.org', 'oecd.org', 'europa.eu',
+  // Official tech documentation
+  'docs.python.org', 'developer.mozilla.org', 'nodejs.org', 'rust-lang.org',
+  'docs.microsoft.com', 'learn.microsoft.com', 'developer.apple.com',
+  'developer.android.com', 'php.net', 'ruby-lang.org', 'golang.org', 'go.dev',
+]);
+
+const VERIFIED_HOSTNAMES = new Set([
+  // Encyclopaedia / reference
+  'wikipedia.org', 'en.wikipedia.org',
+  // Reputable news agencies
+  'reuters.com', 'apnews.com', 'bbc.com', 'bbc.co.uk', 'nytimes.com',
+  'washingtonpost.com', 'theguardian.com', 'economist.com', 'ft.com',
+  // Developer resources
+  'github.com', 'stackoverflow.com', 'npmjs.com', 'pypi.org',
+  'crates.io', 'docs.rs', 'packagist.org',
+  // Official cloud / vendor docs  
+  'docs.aws.amazon.com', 'cloud.google.com', 'docs.github.com',
+  'azure.microsoft.com', 'registry.terraform.io',
+]);
+
+/**
+ * Assess the credibility of a source URL.
+ *
+ * Returns:
+ *   - tier: 'official' | 'verified' | 'general'
+ *   - stars: 3 / 2 / 1
+ *   - label: human-readable string for the synthesis prompt
+ */
+export function getSourceCredibility(url: string): SourceCredibility {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+
+    // Check official TLDs
+    for (const tld of OFFICIAL_TLDS) {
+      if (hostname.endsWith(tld)) {
+        return { tier: 'official', stars: 3, label: 'OFFICIAL SOURCE' };
+      }
+    }
+
+    // Check known official hostnames
+    if (OFFICIAL_HOSTNAMES.has(hostname)) {
+      return { tier: 'official', stars: 3, label: 'OFFICIAL SOURCE' };
+    }
+
+    // Check known verified hostnames
+    if (VERIFIED_HOSTNAMES.has(hostname)) {
+      return { tier: 'verified', stars: 2, label: 'VERIFIED' };
+    }
+
+    // Everything else
+    return { tier: 'general', stars: 1, label: 'UNVERIFIED' };
+  } catch {
+    return { tier: 'general', stars: 1, label: 'UNVERIFIED' };
+  }
+}
+
+/** Render stars string for a credibility tier */
+export function starsString(stars: number): string {
+  if (stars >= 3) return '★★★';
+  if (stars >= 2) return '★★☆';
+  return '★☆☆';
 }
 
 // ---------------------------------------------------------------------------
@@ -293,9 +392,11 @@ async function fetchSources(
 
     for (const outcome of settled) {
       if (outcome.status === 'fulfilled') {
+        const src = outcome.value;
         fetched.push({
-          ...outcome.value,
+          ...src,
           relevanceScore: 0, // filled in step 4
+          credibility: getSourceCredibility(src.result.url),
         });
       }
     }
@@ -355,6 +456,10 @@ interface GapDetectionResult {
   hasEnoughInfo: boolean;
   gaps: string[];
   additionalQueries: string[];
+  /** Detected source conflicts (optional, from LLM analysis) */
+  conflicts?: string[];
+  /** Overall confidence level based on source quality */
+  confidence?: 'high' | 'medium' | 'low';
 }
 
 async function detectGaps(
@@ -364,7 +469,52 @@ async function detectGaps(
   tokens: { input: number; output: number },
   signal?: AbortSignal,
 ): Promise<GapDetectionResult> {
-  // Build summary of what we have
+  // ── Heuristic pre-checks (no LLM call needed) ──────────────────────────
+
+  if (sources.length >= 3) {
+    // Heuristic 1: All sources from the same domain → need diversity
+    const domains = sources.map((s) => extractDomain(s.result.url));
+    const uniqueDomains = new Set(domains.filter((d) => d.length > 0));
+    if (uniqueDomains.size === 1) {
+      const soloDomain = [...uniqueDomains][0];
+      return {
+        hasEnoughInfo: false,
+        gaps: [
+          `All ${sources.length} sources are from the same domain (${soloDomain}). Diverse sources needed for reliable research.`,
+        ],
+        additionalQueries: [
+          `${question} alternative perspectives`,
+          `${question} overview explanation`,
+        ],
+        conflicts: [],
+        confidence: 'low',
+      };
+    }
+
+    // Heuristic 2: Question implies need for official docs but no official sources found
+    const hasOfficialSource = sources.some(
+      (s) => (s.credibility || getSourceCredibility(s.result.url)).tier === 'official',
+    );
+    const questionWantsOfficial =
+      /\b(official|documentation|docs|policy|government|authority|academic|standards?|specification|rfc)\b/i.test(
+        question,
+      );
+    if (!hasOfficialSource && questionWantsOfficial) {
+      return {
+        hasEnoughInfo: false,
+        gaps: ['No official or academic sources found. The question requires authoritative documentation.'],
+        additionalQueries: [
+          `${question} site:.gov OR site:.edu`,
+          `${question} official documentation`,
+        ],
+        conflicts: [],
+        confidence: 'low',
+      };
+    }
+  }
+
+  // ── LLM-based gap + conflict detection ─────────────────────────────────
+
   const topSources = sources
     .sort((a, b) => b.relevanceScore - a.relevanceScore)
     .slice(0, 8);
@@ -382,22 +532,27 @@ async function detectGaps(
       content: [
         'You are a research quality assessor. Given a question and the sources collected so far,',
         'determine if there is sufficient information to write a comprehensive answer.',
+        'Also detect any factual conflicts between sources.',
         '',
         'Respond in this EXACT JSON format (no markdown, no code blocks):',
         '{',
         '  "hasEnoughInfo": boolean,',
         '  "gaps": ["gap1", "gap2"],',
-        '  "additionalQueries": ["query1", "query2"]',
+        '  "additionalQueries": ["query1", "query2"],',
+        '  "conflicts": ["Source A says X while Source B says Y"],',
+        '  "confidence": "high" | "medium" | "low"',
         '}',
         '',
         '"gaps" should be 0-3 specific aspects not covered by the sources.',
         '"additionalQueries" should be 0-3 new search queries to fill those gaps.',
+        '"conflicts" should be 0-3 factual disagreements found between sources.',
+        '"confidence": high = consistent official sources, medium = mixed, low = conflicting or poor sources.',
         'If hasEnoughInfo is true, set gaps and additionalQueries to empty arrays.',
       ].join('\n'),
     },
     {
       role: 'user',
-      content: `Question: "${question}"\n\nSources collected:\n\n${contextSummary}\n\nAnalyze coverage and gaps:`,
+      content: `Question: "${question}"\n\nSources collected:\n\n${contextSummary}\n\nAnalyze coverage, gaps, and conflicts:`,
     },
   ];
 
@@ -405,17 +560,16 @@ async function detectGaps(
   try {
     text = await callWithTracking(config, messages, tokens, {
       signal,
-      maxTokens: 600,
+      maxTokens: 700,
     });
   } catch (err) {
     if (isFreeTierLimitError(err)) throw err;
     // On LLM failure, assume we have enough info
-    return { hasEnoughInfo: true, gaps: [], additionalQueries: [] };
+    return { hasEnoughInfo: true, gaps: [], additionalQueries: [], conflicts: [], confidence: 'medium' };
   }
 
   // Parse JSON response
   try {
-    // Strip markdown code fences if present
     const cleaned = text
       .replace(/```json\s*/gi, '')
       .replace(/```\s*/g, '')
@@ -427,11 +581,66 @@ async function detectGaps(
       additionalQueries: Array.isArray(json.additionalQueries)
         ? json.additionalQueries.slice(0, 3)
         : [],
+      conflicts: Array.isArray(json.conflicts) ? json.conflicts.slice(0, 3) : [],
+      confidence: ['high', 'medium', 'low'].includes(String(json.confidence))
+        ? (json.confidence as 'high' | 'medium' | 'low')
+        : 'medium',
     };
   } catch {
-    // Couldn't parse JSON — assume enough info
-    return { hasEnoughInfo: true, gaps: [], additionalQueries: [] };
+    return { hasEnoughInfo: true, gaps: [], additionalQueries: [], conflicts: [], confidence: 'medium' };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Verification Summary
+// ---------------------------------------------------------------------------
+
+interface VerificationSummary {
+  conflicts: string[];
+  confidence: 'high' | 'medium' | 'low';
+  sourceDiversity: boolean;
+  officialCount: number;
+  verifiedCount: number;
+  generalCount: number;
+}
+
+/**
+ * Compute a verification summary from fetched sources and optional gap detection result.
+ * Used to emit the 'verification' progress event before synthesis.
+ */
+export function computeVerificationSummary(
+  sources: FetchedSource[],
+  gapResult?: GapDetectionResult,
+): VerificationSummary {
+  const credibilities = sources.map((s) => s.credibility || getSourceCredibility(s.result.url));
+
+  const officialCount = credibilities.filter((c) => c.tier === 'official').length;
+  const verifiedCount = credibilities.filter((c) => c.tier === 'verified').length;
+  const generalCount = credibilities.filter((c) => c.tier === 'general').length;
+  const total = sources.length || 1;
+
+  // Source diversity: at least 3 unique domains (or all are diverse if < 3 sources)
+  const domains = new Set(sources.map((s) => extractDomain(s.result.url)).filter((d) => d.length > 0));
+  const sourceDiversity = domains.size >= Math.min(3, total);
+
+  // Compute confidence from source quality
+  let confidence: 'high' | 'medium' | 'low';
+  if (gapResult?.confidence) {
+    confidence = gapResult.confidence;
+  } else {
+    const highQualityRatio = (officialCount + verifiedCount) / total;
+    if (officialCount >= 2 || highQualityRatio >= 0.5) {
+      confidence = 'high';
+    } else if (verifiedCount >= 1 || highQualityRatio >= 0.25) {
+      confidence = 'medium';
+    } else {
+      confidence = 'low';
+    }
+  }
+
+  const conflicts = gapResult?.conflicts ?? [];
+
+  return { conflicts, confidence, sourceDiversity, officialCount, verifiedCount, generalCount };
 }
 
 // ---------------------------------------------------------------------------
@@ -445,20 +654,35 @@ async function synthesizeReport(
   tokens: { input: number; output: number },
   opts: { stream?: boolean; onChunk?: (text: string) => void; signal?: AbortSignal },
 ): Promise<{ report: string; citations: Citation[] }> {
-  // Sort by relevance, take best sources (max 15 for context)
+  // Sort by credibility tier first (official > verified > general), then by relevance
+  const tierOrder: Record<string, number> = { official: 0, verified: 1, general: 2 };
   const topSources = sources
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .map((s) => ({ ...s, credibility: s.credibility || getSourceCredibility(s.result.url) }))
+    .sort((a, b) => {
+      const tierDiff = (tierOrder[a.credibility.tier] ?? 2) - (tierOrder[b.credibility.tier] ?? 2);
+      if (tierDiff !== 0) return tierDiff;
+      return b.relevanceScore - a.relevanceScore;
+    })
     .slice(0, 15);
 
-  // Build context
+  // Build context with credibility labels
   const contextParts: string[] = [];
   const citations: Citation[] = [];
 
   topSources.forEach((source, i) => {
     const idx = i + 1;
+    const cred = source.credibility;
+    const stars = starsString(cred.stars);
     const sanitized = sanitizeForLLM(truncate(source.content || source.result.snippet || '', 3000));
     contextParts.push(
-      `SOURCE [${idx}]\nTitle: ${source.result.title}\nURL: ${source.result.url}\n\n${sanitized.content}`,
+      [
+        `SOURCE [${idx}] ${stars}`,
+        `Title: ${source.result.title}`,
+        `URL: ${source.result.url}`,
+        `Credibility: ${cred.label}`,
+        '',
+        sanitized.content,
+      ].join('\n'),
     );
     citations.push({
       index: idx,
@@ -476,19 +700,27 @@ async function synthesizeReport(
       role: 'system',
       content: [
         'You are a research analyst that writes comprehensive, well-cited reports.',
-        'Use ONLY the provided sources to answer the question.',
-        'Cite sources using bracketed numbers like [1], [2], [3].',
-        'Structure your report with:',
-        '  - A brief executive summary',
-        '  - Key findings (with citations)',
-        '  - Detailed analysis',
-        '  - Conclusion',
-        'Do not fabricate URLs or citations. Do not include information not found in the sources.',
+        'Each source is rated by credibility:',
+        '  ★★★ = OFFICIAL SOURCE (government, academic, official docs) — highest authority',
+        '  ★★☆ = VERIFIED (reputable news, Wikipedia, major developer platforms)',
+        '  ★☆☆ = UNVERIFIED (blogs, forums, unknown sites) — use with caution',
+        '',
+        'Rules:',
+        '  - Prioritize official sources [★★★] over unverified ones [★☆☆]',
+        '  - If sources disagree, note the conflict and trust the higher-credibility source',
+        '  - Cite every factual claim with [1], [2], etc.',
+        '  - Use ONLY the provided sources — do not fabricate information or citations',
+        '  - Structure your report with:',
+        '      • Executive Summary',
+        '      • Key Findings (with citations)',
+        '      • Detailed Analysis',
+        '      • Conclusion',
+        '  - End with: **Confidence: HIGH/MEDIUM/LOW** based on source quality and agreement',
       ].join('\n'),
     },
     {
       role: 'user',
-      content: `Research question: "${question}"\n\nSources:\n\n${context}\n\nWrite a comprehensive research report with citations:`,
+      content: `Research question: "${question}"\n\nSources (ranked by credibility):\n\n${context}\n\nWrite a comprehensive research report with citations:`,
     },
   ];
 
@@ -536,6 +768,7 @@ export async function runDeepResearch(req: DeepResearchRequest): Promise<DeepRes
   const allSources: FetchedSource[] = [];
   const seenUrls = new Set<string>();
   let usedQueries = new Set<string>();
+  let lastGapResult: GapDetectionResult | undefined;
 
   // ── Round 0..maxRounds ────────────────────────────────────────────────────
   let currentQueries: string[] = [];
@@ -610,13 +843,14 @@ export async function runDeepResearch(req: DeepResearchRequest): Promise<DeepRes
       round,
     });
 
-    let gapResult: { hasEnoughInfo: boolean; additionalQueries: string[] };
+    let gapResult: GapDetectionResult;
     try {
       gapResult = await detectGaps(question, allSources, config, tokens, req.signal);
     } catch (err) {
       if (isFreeTierLimitError(err)) throw err;
       break;
     }
+    lastGapResult = gapResult;
 
     if (gapResult.hasEnoughInfo || gapResult.additionalQueries.length === 0) {
       break;
@@ -632,6 +866,21 @@ export async function runDeepResearch(req: DeepResearchRequest): Promise<DeepRes
 
     currentQueries = gapResult.additionalQueries;
   }
+
+  // Verification summary (emitted before synthesis so streaming clients can show status)
+  const verifySummary = computeVerificationSummary(allSources, lastGapResult);
+  progress({
+    type: 'verification',
+    message: `Verification complete — confidence: ${verifySummary.confidence.toUpperCase()}`,
+    data: {
+      conflicts: verifySummary.conflicts,
+      confidence: verifySummary.confidence,
+      sourceDiversity: verifySummary.sourceDiversity,
+      officialCount: verifySummary.officialCount,
+      verifiedCount: verifySummary.verifiedCount,
+      generalCount: verifySummary.generalCount,
+    },
+  });
 
   // Step 7: Synthesis
   progress({ type: 'synthesizing', message: 'Synthesizing research report…' });

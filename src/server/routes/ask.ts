@@ -29,6 +29,11 @@ import { Router, Request, Response } from 'express';
 import { peel } from '../../index.js';
 import { quickAnswer } from '../../core/quick-answer.js';
 import { getBestSearchProvider } from '../../core/search-provider.js';
+import {
+  rankSearchResults,
+  scoreFetchedSources,
+  type ScoredSource,
+} from '../../core/source-scoring.js';
 
 // ---------------------------------------------------------------------------
 // In-memory result cache — 5-minute TTL for repeated identical questions
@@ -109,21 +114,22 @@ export function createAskRouter(): Router {
     const totalTimer = setTimeout(() => { timedOut = true; }, TOTAL_TIMEOUT_MS);
 
     try {
-      // Step 1: Search
+      // Step 1: Search — fetch more results so we can intelligently rank/dedup
       const searchStart = Date.now();
       const { provider, apiKey } = getBestSearchProvider();
-      let searchResults: Array<{ url: string; title: string; snippet: string }>;
+      let rawSearchResults: Array<{ url: string; title: string; snippet: string }>;
       try {
-        searchResults = await provider.searchWeb(question.trim(), {
-          count: clampedSources,
+        // Fetch up to 2x more results than needed so ranking has candidates to work with
+        rawSearchResults = await provider.searchWeb(question.trim(), {
+          count: Math.min(clampedSources * 2, 10),
           apiKey,
         });
       } catch {
-        searchResults = [];
+        rawSearchResults = [];
       }
-      if (process.env.DEBUG) console.debug(`[ask] search ${Date.now() - searchStart}ms, ${searchResults.length} results`);
+      if (process.env.DEBUG) console.debug(`[ask] search ${Date.now() - searchStart}ms, ${rawSearchResults.length} results`);
 
-      if (!searchResults.length) {
+      if (!rawSearchResults.length) {
         clearTimeout(totalTimer);
         res.json({
           question,
@@ -137,7 +143,19 @@ export function createAskRouter(): Router {
       }
 
       // -----------------------------------------------------------------------
-      // Step 2: Fetch top sources in parallel
+      // Step 2: Rank search results by authority + primary source (pre-fetch)
+      // This prioritizes official/high-authority sources and deduplicates domains
+      // before we spend time fetching pages.
+      // -----------------------------------------------------------------------
+      const rankedResults = rankSearchResults(rawSearchResults, question.trim(), {
+        maxPerDomain: 2,
+      });
+
+      // Take top N candidates after ranking
+      const sourceUrls = rankedResults.slice(0, clampedSources);
+
+      // -----------------------------------------------------------------------
+      // Step 3: Fetch top sources in parallel
       // - noEscalate: true → skip browser escalation (simple HTTP only)
       // - render: false    → don't start headless browser
       // - timeout: 5000    → 5s per source max
@@ -145,8 +163,6 @@ export function createAskRouter(): Router {
       // -----------------------------------------------------------------------
       const PER_SOURCE_TIMEOUT_MS = 5000;
       const fetchStart = Date.now();
-
-      const sourceUrls = searchResults.slice(0, clampedSources);
 
       const fetchPromises = sourceUrls.map((r) =>
         Promise.race([
@@ -170,15 +186,19 @@ export function createAskRouter(): Router {
       }
 
       // -----------------------------------------------------------------------
-      // Step 3: Score with quickAnswer, sort by confidence
+      // Step 4: BM25 score each fetched page with quickAnswer
       // Early termination: if any source yields >=0.85 confidence, use it now
       // -----------------------------------------------------------------------
       const HIGH_CONFIDENCE_THRESHOLD = 0.85;
 
       const answers: Array<{
         answer: string;
-        confidence: number;
-        source: { url: string; title: string; snippet: string };
+        bm25Score: number;
+        searchResult: { url: string; title: string; snippet: string };
+        fetchedUrl: string;
+        fetchedTitle: string;
+        metadata?: Record<string, unknown>;
+        freshnessData?: { lastModified?: string; fetchedAt?: string };
       }> = [];
 
       for (const f of fetched) {
@@ -186,23 +206,31 @@ export function createAskRouter(): Router {
         if (f.status !== 'fulfilled') continue;
 
         const { result, searchResult } = f.value as {
-          result: { content: string; url: string; title?: string };
+          result: {
+            content: string;
+            url: string;
+            title?: string;
+            metadata?: Record<string, unknown>;
+            freshness?: { lastModified?: string; fetchedAt?: string };
+          };
           searchResult: { url: string; title: string; snippet: string };
         };
+
         const qa = quickAnswer({
           question,
           content: result.content,
           url: result.url,
           maxPassages: 2,
         });
+
         answers.push({
           answer: qa.answer,
-          confidence: qa.confidence,
-          source: {
-            url: result.url,
-            title: result.title || searchResult.title,
-            snippet: searchResult.snippet,
-          },
+          bm25Score: qa.confidence,
+          searchResult,
+          fetchedUrl: result.url,
+          fetchedTitle: result.title || searchResult.title,
+          metadata: result.metadata as Record<string, unknown> | undefined,
+          freshnessData: result.freshness,
         });
 
         // Early termination on high confidence
@@ -212,19 +240,50 @@ export function createAskRouter(): Router {
         }
       }
 
-      answers.sort((a, b) => b.confidence - a.confidence);
-      const best = answers[0];
+      // -----------------------------------------------------------------------
+      // Step 5: Final combined scoring — BM25 + authority + freshness + primary
+      // -----------------------------------------------------------------------
+      const scoredSources = scoreFetchedSources(
+        answers.map(a => ({
+          searchResult: {
+            url: a.fetchedUrl,
+            title: a.fetchedTitle,
+            snippet: a.searchResult.snippet,
+          },
+          bm25Score: a.bm25Score,
+          metadata: a.metadata as import('../../core/source-scoring.js').PageMetadataForScoring | undefined,
+          freshnessData: a.freshnessData,
+        })),
+        question.trim(),
+        { maxPerDomain: 2 },
+      );
+
+      // Sort by final score — best answer is the highest-scored source
+      scoredSources.sort((a, b) => b.finalScore - a.finalScore);
+
+      // Map back to answer text — use BM25 answer from the corresponding fetch
+      const answerMap = new Map(answers.map(a => [a.fetchedUrl, a.answer]));
+      const bestSource = scoredSources[0];
+      const bestAnswer = bestSource ? answerMap.get(bestSource.url) : undefined;
 
       clearTimeout(totalTimer);
 
+      // Build enriched sources array for the response
+      const enrichedSources: ScoredSource[] = scoredSources.map(s => ({
+        url: s.url,
+        title: s.title,
+        snippet: s.snippet,
+        confidence: s.confidence,
+        authority: s.authority,
+        freshness: s.freshness,
+        isPrimarySource: s.isPrimarySource,
+      }));
+
       const response: Record<string, unknown> = {
         question,
-        answer: best?.answer || null,
-        confidence: best?.confidence || 0,
-        sources: answers.map((a) => ({
-          ...a.source,
-          confidence: a.confidence,
-        })),
+        answer: bestAnswer || null,
+        confidence: bestSource?.confidence || 0,
+        sources: enrichedSources,
         method: 'bm25',
         elapsed: elapsed(),
       };
@@ -234,11 +293,11 @@ export function createAskRouter(): Router {
       }
 
       // Cache successful results (only when we have an answer)
-      if (best?.answer && !timedOut) {
+      if (bestAnswer && !timedOut) {
         setInCache(cacheKey, response);
       }
 
-      if (process.env.DEBUG) console.debug(`[ask] done ${elapsed()}ms confidence=${best?.confidence?.toFixed(2) ?? 0}`);
+      if (process.env.DEBUG) console.debug(`[ask] done ${elapsed()}ms confidence=${bestSource?.confidence?.toFixed(2) ?? 0}`);
       res.json(response);
     } catch (err) {
       clearTimeout(totalTimer);

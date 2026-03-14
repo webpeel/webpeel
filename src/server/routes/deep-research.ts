@@ -27,6 +27,7 @@ const VALID_PROVIDERS: DeepResearchLLMProvider[] = [
   'anthropic',
   'google',
   'ollama',
+  'cerebras',
 ];
 
 function parseIntOrUndefined(v: unknown): number | undefined {
