@@ -63,9 +63,9 @@
       <div class="sidebar-section">
         <div class="sidebar-title">Getting Started</div>
         <a href="/docs/" class="sidebar-link">Overview</a>
-        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
         <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
         <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+        <a href="/docs/changelog" class="sidebar-link">Changelog</a>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-title">SDKs</div>
@@ -79,14 +79,17 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-title">API Endpoints</div>
-        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/ask" class="sidebar-link">Ask (Web Q&amp;A)</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
         <a href="/docs/extract" class="sidebar-link active">Structured Extraction</a>
+        <a href="/docs/deep-research" class="sidebar-link">Deep Research</a>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/sessions" class="sidebar-link">Browser Sessions</a>
         <a href="/docs/agents" class="sidebar-link">Research Agents</a>
         <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
-        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
-        <a href="/docs/search" class="sidebar-link">Search</a>
-        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
-        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-title">Features</div>
@@ -230,74 +233,242 @@
       <h2 id="examples">Examples</h2>
 
       <div class="tabs">
-        <button class="tab-btn active" data-tab="curl-schema">curl (schema)</button>
-        <button class="tab-btn" data-tab="curl-prompt">curl (prompt)</button>
-        <button class="tab-btn" data-tab="curl-auto">curl (auto)</button>
+        <button class="tab-btn active" data-tab="curl-schema">cURL (schema)</button>
+        <button class="tab-btn" data-tab="curl-prompt">cURL (prompt)</button>
+        <button class="tab-btn" data-tab="curl-auto">cURL (auto)</button>
         <button class="tab-btn" data-tab="node-extract">Node.js</button>
+        <button class="tab-btn" data-tab="python-product">Python (product)</button>
+        <button class="tab-btn" data-tab="python-company">Python (company)</button>
       </div>
 
       <div class="tab-content active" data-content="curl-schema">
-        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/extract \
+        <pre><code class="language-bash"># Extract company info from a Wikipedia page
+curl -X POST https://api.webpeel.dev/v1/extract \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://en.wikipedia.org/wiki/WebPeel",
+    "url": "https://en.wikipedia.org/wiki/OpenAI",
     "schema": {
       "type": "object",
       "properties": {
-        "title": { "type": "string" },
+        "name": { "type": "string" },
         "founded": { "type": "string" },
         "headquarters": { "type": "string" },
-        "description": { "type": "string" }
+        "ceo": { "type": "string" },
+        "description": { "type": "string" },
+        "products": { "type": "array", "items": { "type": "string" } }
       }
     },
     "llmApiKey": "sk-..."
-  }'</code></pre>
+  }'
+
+# Response:
+# {
+#   "success": true,
+#   "data": {
+#     "name": "OpenAI",
+#     "founded": "2015",
+#     "headquarters": "San Francisco, California",
+#     "ceo": "Sam Altman",
+#     "description": "American artificial intelligence safety company...",
+#     "products": ["ChatGPT", "GPT-4", "DALL-E", "Whisper", "Sora"]
+#   },
+#   "metadata": { "tokensUsed": 1240, "model": "gpt-4o-mini", "elapsed": 2841 }
+# }</code></pre>
       </div>
 
       <div class="tab-content" data-content="curl-prompt">
-        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/extract \
+        <pre><code class="language-bash"># Extract top HN stories with natural language prompt
+curl -X POST https://api.webpeel.dev/v1/extract \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://news.ycombinator.com",
-    "prompt": "Extract the top 5 story titles and their point counts as a JSON array.",
+    "prompt": "Extract the top 5 story titles and their point counts as a JSON array of objects with title and points fields.",
     "llmApiKey": "sk-..."
-  }'</code></pre>
+  }'
+
+# Response:
+# {
+#   "success": true,
+#   "data": [
+#     { "title": "Llama 4 released", "points": 842 },
+#     { "title": "Ask HN: Best tools for...", "points": 634 }
+#   ]
+# }</code></pre>
       </div>
 
       <div class="tab-content" data-content="curl-auto">
-        <pre><code class="language-bash"># No LLM key needed for auto-extraction
-curl "https://api.webpeel.dev/v1/extract/auto?url=https://example.com/article" \
-  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+        <pre><code class="language-bash"># No LLM key needed — heuristic extraction from article page
+curl "https://api.webpeel.dev/v1/extract/auto?url=https://techcrunch.com/2025/01/15/example" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+# Response:
+# {
+#   "url": "https://techcrunch.com/2025/01/15/example",
+#   "pageType": "article",
+#   "structured": {
+#     "type": "article",
+#     "title": "Example Article Title",
+#     "author": "Jane Doe",
+#     "publishedAt": "2025-01-15",
+#     "description": "Article summary..."
+#   }
+# }
+
+# Auto-extraction works on product pages too
+curl "https://api.webpeel.dev/v1/extract/auto?url=https://www.amazon.com/dp/B0EXAMPLE" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+# Returns: { pageType: "product", structured: { name, price, rating, reviewCount, ... } }</code></pre>
       </div>
 
       <div class="tab-content" data-content="node-extract">
-        <pre><code class="language-javascript">const response = await fetch('https://api.webpeel.dev/v1/extract', {
+        <pre><code class="language-javascript">// Extract product info from an e-commerce page
+const response = await fetch('https://api.webpeel.dev/v1/extract', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${process.env.WEBPEEL_API_KEY}`,
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    url: 'https://shop.example.com/product/123',
+    url: 'https://shop.example.com/product/widget-pro',
     schema: {
       type: 'object',
       properties: {
-        name: { type: 'string' },
-        price: { type: 'number' },
-        availability: { type: 'string', enum: ['in_stock', 'out_of_stock'] },
-        images: { type: 'array', items: { type: 'string' } },
+        name:         { type: 'string', description: 'Product name' },
+        price:        { type: 'number', description: 'Price in USD' },
+        currency:     { type: 'string', description: 'Currency code (USD, EUR, etc.)' },
+        availability: { type: 'string', enum: ['in_stock', 'out_of_stock', 'limited'] },
+        rating:       { type: 'number', description: 'Average customer rating (0-5)' },
+        reviewCount:  { type: 'integer', description: 'Number of reviews' },
+        images:       { type: 'array', items: { type: 'string' }, description: 'Image URLs' },
+        features:     { type: 'array', items: { type: 'string' }, description: 'Key features list' },
       },
+      required: ['name', 'price'],
     },
     llmApiKey: process.env.OPENAI_API_KEY,
     model: 'gpt-4o-mini',
   }),
 });
+
 const { data, metadata } = await response.json();
 console.log(data);
-// { name: 'Widget Pro', price: 49.99, availability: 'in_stock', images: [...] }</code></pre>
+// {
+//   name: 'Widget Pro 3000',
+//   price: 49.99,
+//   currency: 'USD',
+//   availability: 'in_stock',
+//   rating: 4.7,
+//   reviewCount: 1842,
+//   images: ['https://...jpg'],
+//   features: ['Wireless charging', 'Waterproof', '2-year warranty']
+// }
+console.log(`Model: ${metadata.model}, tokens: ${metadata.tokensUsed}, ${metadata.elapsed}ms`);</code></pre>
       </div>
+
+      <div class="tab-content" data-content="python-product">
+        <pre><code class="language-python">import requests, os
+
+# Extract product info from any e-commerce page
+response = requests.post(
+    'https://api.webpeel.dev/v1/extract',
+    headers={
+        'Authorization': f'Bearer {os.environ["WEBPEEL_API_KEY"]}',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'url': 'https://shop.example.com/product/widget-pro',
+        'schema': {
+            'type': 'object',
+            'properties': {
+                'name':         {'type': 'string'},
+                'price':        {'type': 'number'},
+                'currency':     {'type': 'string'},
+                'availability': {'type': 'string', 'enum': ['in_stock', 'out_of_stock', 'limited']},
+                'rating':       {'type': 'number'},
+                'reviewCount':  {'type': 'integer'},
+                'features':     {'type': 'array', 'items': {'type': 'string'}},
+            },
+        },
+        'llmApiKey': os.environ['OPENAI_API_KEY'],
+        'model': 'gpt-4o-mini',
+    },
+)
+
+result = response.json()
+product = result['data']
+meta = result['metadata']
+
+print(f"{product['name']} — ${product['price']} ({product['availability']})")
+print(f"Rating: {product.get('rating', 'N/A')} ({product.get('reviewCount', 0)} reviews)")
+print(f"Tokens used: {meta['tokensUsed']}, elapsed: {meta['elapsed']}ms")</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="python-company">
+        <pre><code class="language-python">import requests, os
+
+# Extract company info from a company homepage
+response = requests.post(
+    'https://api.webpeel.dev/v1/extract',
+    headers={
+        'Authorization': f'Bearer {os.environ["WEBPEEL_API_KEY"]}',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'url': 'https://stripe.com',
+        'schema': {
+            'type': 'object',
+            'properties': {
+                'name':        {'type': 'string', 'description': 'Company name'},
+                'tagline':     {'type': 'string', 'description': 'Main tagline or value proposition'},
+                'description': {'type': 'string', 'description': 'What the company does'},
+                'products':    {'type': 'array', 'items': {'type': 'string'}, 'description': 'Main products/services'},
+                'targetAudience': {'type': 'string', 'description': 'Who the product is for'},
+            },
+        },
+        'llmApiKey': os.environ['OPENAI_API_KEY'],
+    },
+)
+
+data = response.json()['data']
+print(f"Company: {data['name']}")
+print(f"Tagline: {data.get('tagline', 'N/A')}")
+print(f"Products: {', '.join(data.get('products', []))}")</code></pre>
+      </div>
+
+      <h2 id="byok">BYOK — Bring Your Own LLM Key</h2>
+      <p>By default, <code>/v1/extract</code> uses OpenAI's API with your <code>llmApiKey</code>. You can point it to any OpenAI-compatible endpoint using the <code>baseUrl</code> parameter:</p>
+
+      <pre><code class="language-json">{
+  "url": "https://example.com",
+  "prompt": "Extract the main headline and summary",
+  "llmApiKey": "your-key-here",
+  "model": "llama3-70b",
+  "baseUrl": "https://api.cerebras.ai/v1"
+}</code></pre>
+
+      <table class="param-table">
+        <thead><tr><th>Provider</th><th>baseUrl</th><th>Example model</th></tr></thead>
+        <tbody>
+          <tr><td>OpenAI (default)</td><td><code>https://api.openai.com/v1</code></td><td><code>gpt-4o-mini</code></td></tr>
+          <tr><td>Cerebras</td><td><code>https://api.cerebras.ai/v1</code></td><td><code>llama3.1-70b</code></td></tr>
+          <tr><td>Groq</td><td><code>https://api.groq.com/openai/v1</code></td><td><code>llama-3.3-70b-versatile</code></td></tr>
+          <tr><td>Ollama (local)</td><td><code>http://localhost:11434/v1</code></td><td><code>llama3.2</code></td></tr>
+          <tr><td>Together AI</td><td><code>https://api.together.xyz/v1</code></td><td><code>mistralai/Mixtral-8x7B</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="heuristic-vs-llm">Heuristic vs. LLM Extraction</h2>
+      <table class="param-table">
+        <thead><tr><th></th><th>POST /v1/extract (LLM)</th><th>GET /v1/extract/auto (heuristic)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>LLM required</strong></td><td>Yes (BYOK)</td><td>No</td></tr>
+          <tr><td><strong>Schema support</strong></td><td>Yes — full JSON Schema</td><td>No — fixed output per page type</td></tr>
+          <tr><td><strong>Page types</strong></td><td>Any page</td><td>article, product, job listing</td></tr>
+          <tr><td><strong>Speed</strong></td><td>2–5 seconds</td><td>Under 1 second</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Custom schemas, complex pages</td><td>Quick scraping of known page types</td></tr>
+        </tbody>
+      </table>
 
       <h2 id="errors">Errors</h2>
       <table class="param-table">
@@ -312,8 +483,30 @@ console.log(data);
           <tr><td><code>extraction_failed</code></td><td>500</td><td>The page was fetched but LLM extraction failed.</td></tr>
         </tbody>
       </table>
+
+      <h2 id="next-steps">See Also</h2>
+      <ul>
+        <li><a href="/docs/deep-research"><strong>Deep Research</strong></a> — Multi-round research agent for comprehensive cited reports</li>
+        <li><a href="/docs/fetch"><strong>Fetch API</strong></a> — Fetch any page as clean markdown</li>
+        <li><a href="/docs/domain-extractors"><strong>Domain Extractors</strong></a> — Pre-built extractors for YouTube, Twitter, GitHub, and more</li>
+        <li><a href="/docs/errors"><strong>Error Reference</strong></a> — All error codes and troubleshooting</li>
+      </ul>
+
     </main>
   </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>

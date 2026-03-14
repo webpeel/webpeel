@@ -62,9 +62,9 @@
       <div class="sidebar-section">
         <div class="sidebar-title">Getting Started</div>
         <a href="/docs/" class="sidebar-link">Overview</a>
-        <a href="/docs/quickstart" class="sidebar-link">Quickstart</a>
         <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
         <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+        <a href="/docs/changelog" class="sidebar-link">Changelog</a>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-title">SDKs</div>
@@ -78,14 +78,17 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-title">API Endpoints</div>
-        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link active">Search</a>
+        <a href="/docs/ask" class="sidebar-link">Ask (Web Q&amp;A)</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
         <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/deep-research" class="sidebar-link">Deep Research</a>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/sessions" class="sidebar-link">Browser Sessions</a>
         <a href="/docs/agents" class="sidebar-link">Research Agents</a>
         <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
-        <a href="/docs/screenshots" class="sidebar-link">Screenshots</a>
-        <a href="/docs/search" class="sidebar-link active">Search</a>
-        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
-        <a href="/docs/deep-fetch" class="sidebar-link">Deep Fetch</a>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-title">Features</div>
@@ -302,8 +305,73 @@ data.web?.forEach(r => console.log(r.title, r.url));</code></pre>
           <tr><td><code>auto</code></td><td>Optional</td><td>Best available</td><td>Automatically selects the best provider based on configured keys.</td></tr>
         </tbody>
       </table>
+
+      <h2 id="smart-search">Smart Search: <code>/v1/ask</code></h2>
+      <p>Need an answer, not just a list of results? Use <a href="/docs/ask"><code>/v1/ask</code></a> — it combines search + fetching + BM25 scoring to return the best passage from the top results, with enriched source metadata.</p>
+
+      <p>Unlike <code>/v1/search</code> which returns raw results, <code>/v1/ask</code> ranks sources using four signals:</p>
+
+      <table class="param-table">
+        <thead><tr><th>Signal</th><th>Weight</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>BM25 relevance</strong></td>
+            <td>40%</td>
+            <td>Term-frequency score of the best matching passage in the fetched page content</td>
+          </tr>
+          <tr>
+            <td><strong>Domain authority</strong></td>
+            <td>25%</td>
+            <td>Tiered trust score: <code>official</code> (.gov, docs.*, official product pages) → <code>institutional</code> (.org, major news) → <code>major</code> (TechCrunch, Ars) → <code>general</code></td>
+          </tr>
+          <tr>
+            <td><strong>Freshness</strong></td>
+            <td>20%</td>
+            <td>Page publish date from Open Graph / article metadata: <code>recent</code> (≤30 days), <code>this-month</code> (≤90 days), <code>this-year</code>, <code>older</code>. Weight doubles for pricing/version queries.</td>
+          </tr>
+          <tr>
+            <td><strong>Primary source</strong></td>
+            <td>15%</td>
+            <td>Whether the source domain matches the query entity (e.g. <code>openai.com</code> for "OpenAI API pricing")</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Each source in the <code>/v1/ask</code> response includes these fields:</p>
+      <pre><code class="language-json">{
+  "url": "https://platform.openai.com/docs/pricing",
+  "title": "Pricing — OpenAI Platform",
+  "snippet": "GPT-4o input: $2.50 / 1M tokens. Output: $10.00 / 1M tokens.",
+  "confidence": 0.91,
+  "authority": "official",
+  "freshness": "recent",
+  "isPrimarySource": true
+}</code></pre>
+
+      <p><a href="/docs/ask" class="cta-link">→ Read the full /v1/ask documentation</a></p>
+
+      <h2 id="next-steps">See Also</h2>
+      <ul>
+        <li><a href="/docs/ask"><strong>Ask API</strong></a> — Smart search with BM25 + source scoring for direct answers</li>
+        <li><a href="/docs/deep-research"><strong>Deep Research</strong></a> — Multi-round research agent for comprehensive reports</li>
+        <li><a href="/docs/extract"><strong>Extract API</strong></a> — Structured JSON extraction from any page</li>
+      </ul>
+
     </main>
   </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>

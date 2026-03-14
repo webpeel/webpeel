@@ -61,6 +61,11 @@ async function runStdin(options: any): Promise<void> {
 
 // Main fetch handler — shared with the `pipe` and `ask` subcommands
 export async function runFetch(url: string | undefined, options: any): Promise<void> {
+    // --silent: suppress all log output (set env var before any logger fires)
+    if (options.silent && !process.env.WEBPEEL_LOG_LEVEL) {
+      process.env.WEBPEEL_LOG_LEVEL = 'silent';
+    }
+
     // --content-only: override all output flags — we just want raw content
     if (options.contentOnly) {
       options.silent = true;
@@ -497,11 +502,24 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
         }
         // Do NOT set extract here — peel runs normally, LLM extraction happens below.
       } else if (options.extract) {
-        // CSS-based extraction
+        // Smart extract: detect schema format vs CSS selectors
+        let extractJson: Record<string, unknown>;
         try {
-          extract = { selectors: JSON.parse(options.extract) };
+          extractJson = JSON.parse(options.extract);
         } catch {
-          throw Object.assign(new Error('--extract must be valid JSON (e.g., \'{"title": "h1", "price": ".price"}\')'), { _code: 'FETCH_FAILED' });
+          throw Object.assign(new Error('--extract must be valid JSON (e.g., \'{"title": "h1", "price": ".price"}\' or \'{"company": "string"}\')'), { _code: 'FETCH_FAILED' });
+        }
+
+        // If all values are type names (string/boolean/number/array/object),
+        // treat as structured schema extraction (routed to extractStructured after fetch).
+        // Otherwise treat as CSS selector map.
+        const { isTypeSchema } = await import('../../core/structured-extract.js');
+        if (isTypeSchema(extractJson as Record<string, unknown>)) {
+          // Mark for post-fetch structured extraction (handled below)
+          (options as any)._structuredSchema = extractJson;
+        } else {
+          // CSS-based extraction
+          extract = { selectors: extractJson };
         }
       }
 
@@ -854,6 +872,40 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
         }
       }
 
+      // --- Structured schema extraction (--extract with type schema or --extract-prompt) ---
+      if ((options as any)._structuredSchema || options.extractPrompt) {
+        const { extractStructured, simpleToExtractionSchema } = await import('../../core/structured-extract.js');
+
+        const rawSchema = (options as any)._structuredSchema;
+
+        const schema = rawSchema
+          ? simpleToExtractionSchema(rawSchema as Record<string, string>)
+          : { type: 'object' as const, properties: { result: { type: 'string', description: options.extractPrompt as string } } };
+
+        const strResult = await extractStructured(
+          result.content,
+          schema,
+          undefined, // No LLM config — use heuristic (no key needed)
+          options.extractPrompt as string | undefined,
+        );
+
+        if (isJson) {
+          await writeStdout(JSON.stringify({
+            success: true,
+            data: strResult.data,
+            confidence: strResult.confidence,
+            method: 'heuristic',
+          }, null, 2) + '\n');
+        } else {
+          await writeStdout(JSON.stringify(strResult.data, null, 2) + '\n');
+          if (!options.silent) {
+            console.error(`\n📊 Structured extraction: confidence=${(strResult.confidence * 100).toFixed(0)}% (heuristic)`);
+          }
+        }
+        await cleanup();
+        process.exit(0);
+      }
+
       // --- LLM-based extraction (post-peel) ---
       if (options.llmExtract || options.extractSchema) {
         const { extractWithLLM } = await import('../../core/llm-extract.js');
@@ -1170,7 +1222,8 @@ export function registerFetchCommands(program: Command): void {
     .option('--full', 'Alias for --raw — full page content, no budget')
     .option('--lite', 'Lite mode — minimal processing, maximum speed (skip pruning, budget, metadata)')
     .option('--action <actions...>', 'Page actions before scraping (e.g., "click:.btn" "wait:2000" "scroll:bottom")')
-    .option('--extract <json>', 'Extract structured data using CSS selectors (JSON object of field:selector pairs)')
+    .option('--extract <json>', 'Extract structured data using CSS selectors or type schema (e.g., \'{"title": "h1"}\' for CSS, \'{"name": "string"}\' for schema)')
+    .option('--extract-prompt <prompt>', 'Natural language prompt for structured extraction (no LLM key needed — uses heuristics)')
     .option('--llm-extract [instruction]', 'Extract structured data using LLM (optional instruction, e.g. "extract hotel names and prices")')
     .option('--extract-schema <schema>', 'JSON schema for structured extraction (requires LLM key). Pass inline JSON or @file.json')
     .option('--llm-key <key>', 'LLM API key for AI features (or use OPENAI_API_KEY env var)')

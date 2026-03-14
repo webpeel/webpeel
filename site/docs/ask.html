@@ -49,38 +49,35 @@
     <aside class="sidebar">
       <div class="sidebar-section">
         <div class="sidebar-title">Getting Started</div>
-        <a href="/docs/getting-started" class="sidebar-link">Getting Started</a>
-        <a href="/docs/authentication" class="sidebar-link">Authentication</a>
         <a href="/docs/" class="sidebar-link">Overview</a>
         <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
         <a href="/docs/errors" class="sidebar-link">Error Reference</a>
         <a href="/docs/changelog" class="sidebar-link">Changelog</a>
       </div>
-
-      <div class="sidebar-section">
-        <div class="sidebar-title">API</div>
-        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
-        <a href="/docs/screenshot" class="sidebar-link">Screenshot</a>
-        <a href="/docs/search" class="sidebar-link">Search</a>
-        <a href="/docs/crawl" class="sidebar-link">Crawl</a>
-        <a href="/docs/extract" class="sidebar-link">Extract</a>
-        <a href="/docs/batch" class="sidebar-link">Batch</a>
-        <a href="/docs/ask" class="sidebar-link active">/v1/ask — Web Q&amp;A</a>
-        <a href="/docs/sessions" class="sidebar-link">/v1/session — Browser Sessions</a>
-      </div>
-
       <div class="sidebar-section">
         <div class="sidebar-title">SDKs</div>
         <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
         <a href="/docs/cli" class="sidebar-link">CLI</a>
         <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
       </div>
-
       <div class="sidebar-section">
         <div class="sidebar-title">Deployment</div>
         <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
       </div>
-
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/ask" class="sidebar-link active">Ask (Web Q&amp;A)</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/deep-research" class="sidebar-link">Deep Research</a>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/sessions" class="sidebar-link">Browser Sessions</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+      </div>
       <div class="sidebar-section">
         <div class="sidebar-title">Features</div>
         <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
@@ -89,6 +86,10 @@
         <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
         <a href="/docs/proxy" class="sidebar-link">Proxy Support</a>
         <a href="/docs/sessions-cookies" class="sidebar-link">Sessions &amp; Cookies</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
       </div>
     </aside>
 
@@ -107,13 +108,14 @@
       </div>
 
       <h2 id="how-it-works">How It Works</h2>
-      <p>The ask pipeline runs three steps automatically:</p>
+      <p>The ask pipeline runs four steps automatically:</p>
       <ol>
         <li><strong>Search</strong> — Query DuckDuckGo (or Brave if configured) for the question</li>
-        <li><strong>Fetch</strong> — Retrieve and extract clean text from the top <code>sources</code> results</li>
-        <li><strong>Score</strong> — Use BM25 sentence scoring to rank the most relevant sentences and assemble an answer</li>
+        <li><strong>Pre-rank</strong> — Score results by domain authority + primary source detection before fetching (saves time by only fetching the best candidates)</li>
+        <li><strong>Fetch</strong> — Retrieve and extract clean text from the top <code>sources</code> results in parallel (5s timeout per source)</li>
+        <li><strong>Score &amp; Rank</strong> — Compute a combined score using BM25 + domain authority + freshness + primary source, then return the highest-scoring passage</li>
       </ol>
-      <p>The response includes the ranked answer, confidence score, source URLs, and the method used — so you always know where the answer came from.</p>
+      <p>The response includes the ranked answer, confidence score, enriched source metadata (authority, freshness, isPrimarySource), and the method used — so you always know where the answer came from and why it was ranked first.</p>
 
       <h2 id="get-request">GET /v1/ask</h2>
       <p>Ask a question using query parameters.</p>
@@ -165,12 +167,20 @@
     {
       "url": "https://en.wikipedia.org/wiki/Okapi_BM25",
       "title": "Okapi BM25 — Wikipedia",
-      "snippet": "BM25 is a bag-of-words retrieval function..."
+      "snippet": "BM25 is a bag-of-words retrieval function that ranks documents by term frequency...",
+      "confidence": 0.87,
+      "authority": "institutional",
+      "freshness": "this-year",
+      "isPrimarySource": false
     },
     {
-      "url": "https://www.elastic.co/blog/practical-bm25",
-      "title": "Practical BM25 — Elastic",
-      "snippet": "BM25 remains the gold standard for keyword search..."
+      "url": "https://www.elastic.co/blog/practical-bm25-part-1-how-shards-affect-relevance-scoring-in-elasticsearch",
+      "title": "Practical BM25 — Elastic Blog",
+      "snippet": "BM25 remains the gold standard for keyword search relevance in production systems...",
+      "confidence": 0.71,
+      "authority": "major",
+      "freshness": "this-year",
+      "isPrimarySource": false
     }
   ],
   "method": "bm25",
@@ -186,13 +196,36 @@
           <tbody>
             <tr><td><code>question</code></td><td>string</td><td>The original question</td></tr>
             <tr><td><code>answer</code></td><td>string</td><td>Best answer assembled from ranked sentences</td></tr>
-            <tr><td><code>confidence</code></td><td>number</td><td>BM25 confidence score (0–1)</td></tr>
-            <tr><td><code>sources</code></td><td>array</td><td>List of web sources used (url, title, snippet)</td></tr>
+            <tr><td><code>confidence</code></td><td>number</td><td>BM25 relevance score for the top passage (0–1)</td></tr>
+            <tr><td><code>sources</code></td><td>array</td><td>Ranked source list with enriched scoring metadata</td></tr>
+            <tr><td><code>sources[].url</code></td><td>string</td><td>Source URL</td></tr>
+            <tr><td><code>sources[].title</code></td><td>string</td><td>Page title</td></tr>
+            <tr><td><code>sources[].snippet</code></td><td>string</td><td>Relevant excerpt from the page</td></tr>
+            <tr><td><code>sources[].confidence</code></td><td>number</td><td>BM25 score for the best passage found in this source (0–1)</td></tr>
+            <tr><td><code>sources[].authority</code></td><td>string</td><td>Domain authority tier: <code>official</code>, <code>institutional</code>, <code>major</code>, <code>general</code></td></tr>
+            <tr><td><code>sources[].freshness</code></td><td>string</td><td>Content freshness: <code>recent</code> (≤30 days), <code>this-month</code> (≤90 days), <code>this-year</code>, <code>older</code></td></tr>
+            <tr><td><code>sources[].isPrimarySource</code></td><td>boolean</td><td><code>true</code> if the source domain matches the query entity (e.g. openai.com for an OpenAI question)</td></tr>
             <tr><td><code>method</code></td><td>string</td><td>Scoring method used (always <code>"bm25"</code>)</td></tr>
             <tr><td><code>elapsed</code></td><td>number</td><td>Total time in milliseconds</td></tr>
           </tbody>
         </table>
       </div>
+
+      <h2 id="ranking">How Ranking Works</h2>
+      <p>Sources are scored using a weighted combination of four signals:</p>
+      <table>
+        <thead>
+          <tr><th>Signal</th><th>Weight (standard)</th><th>Weight (factual queries)</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>BM25</strong></td><td>40%</td><td>35%</td><td>Term-frequency relevance of the best passage to your question</td></tr>
+          <tr><td><strong>Domain authority</strong></td><td>25%</td><td>15%</td><td>Tier-based trust score: .gov/official docs score highest, general blogs lowest</td></tr>
+          <tr><td><strong>Freshness</strong></td><td>20%</td><td>35%</td><td>How recently the page was published/updated (from Open Graph / article metadata)</td></tr>
+          <tr><td><strong>Primary source</strong></td><td>15%</td><td>15%</td><td>Whether the source domain is the subject of the query (e.g. openai.com for "OpenAI pricing")</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Factual queries</strong> (questions about pricing, limits, rates, versions) automatically double the freshness weight so stale pricing pages don't rank first.</p>
+      <p><strong>Domain deduplication:</strong> A maximum of 2 results per registered domain are kept, so you get diverse sources rather than 5 results from wikipedia.org.</p>
 
       <h2 id="cli">CLI Usage</h2>
       <p>The <code>webask</code> CLI command is a wrapper around <code>/v1/ask</code>:</p>
@@ -223,6 +256,7 @@ npx webpeel webask "What is WebPeel?"</code></pre>
 
       <h2 id="next-steps">Related</h2>
       <ul>
+        <li><a href="/docs/deep-research"><strong>Deep Research</strong></a> — Multi-round research agent for comprehensive cited reports (requires LLM key)</li>
         <li><a href="/docs/quick-answer"><strong>LLM-Free Q&amp;A</strong></a> — BM25 scoring on a single page via <code>/v1/fetch?question=</code></li>
         <li><a href="/docs/fetch"><strong>Fetch API</strong></a> — Full parameter reference including <code>question=</code> and <code>summary=</code></li>
         <li><a href="/docs/sessions"><strong>Browser Sessions</strong></a> — Stateful sessions for multi-step web interaction</li>

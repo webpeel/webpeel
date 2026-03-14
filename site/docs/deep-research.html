@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@webpeel_dev">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Deep Research API — WebPeel</title>
+  <link rel="canonical" href="https://webpeel.dev/docs/deep-research">
+  <meta name="description" content="WebPeel Deep Research API — multi-step search agent that turns one question into a comprehensive, cited research report. Supports SSE streaming and BYOK LLM providers.">
+  <meta property="og:title" content="Deep Research API — WebPeel">
+  <meta property="og:description" content="Multi-step search agent that turns one question into a comprehensive, cited research report. Supports SSE streaming and BYOK LLM providers.">
+  <meta property="og:url" content="https://webpeel.dev/docs/deep-research">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="../styles/docs.css">
+  <style>
+    .method-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-right: 8px; vertical-align: middle; }
+    .method-post { background: #DBEAFE; color: #2563EB; }
+    .method-get { background: #DCFCE7; color: #16A34A; }
+    .endpoint-block { border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 24px 0; background: var(--surface); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--text); vertical-align: middle; }
+    .auth-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .auth-required { background: #FEF3C7; color: #92400E; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .param-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+    .param-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+    .param-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7C3AED; }
+    .param-required { font-size: 11px; font-weight: 600; color: #DC2626; }
+    .param-optional { font-size: 11px; font-weight: 600; color: #6B7280; }
+    .provider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin: 20px 0; }
+    .provider-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; background: var(--surface); }
+    .provider-card h4 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+    .provider-card p { margin: 0; font-size: 13px; color: var(--text-2); }
+    .provider-card code { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .pipeline-steps { counter-reset: step; list-style: none; padding: 0; margin: 20px 0; }
+    .pipeline-steps li { counter-increment: step; display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+    .pipeline-steps li::before { content: counter(step); display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #18181B; color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+    .pipeline-steps li div strong { display: block; font-size: 14px; margin-bottom: 3px; }
+    .pipeline-steps li div p { margin: 0; font-size: 14px; color: var(--text-2); }
+    .sse-event { border-left: 3px solid #6366F1; padding: 12px 16px; margin: 12px 0; background: var(--surface); border-radius: 0 6px 6px 0; }
+    .sse-event-type { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: #6366F1; margin-bottom: 6px; }
+    .sse-event p { margin: 0; font-size: 13px; color: var(--text-2); }
+  </style>
+</head>
+<body>
+  <nav class="docs-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/docs/" class="active">Docs</a>
+        <a href="/playground">Playground</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="/docs/" class="sidebar-link">Overview</a>
+        <a href="/docs/api-reference" class="sidebar-link">API Reference</a>
+        <a href="/docs/errors" class="sidebar-link">Error Reference</a>
+        <a href="/docs/changelog" class="sidebar-link">Changelog</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">SDKs</div>
+        <a href="/docs/sdks" class="sidebar-link">Node.js &amp; Python</a>
+        <a href="/docs/cli" class="sidebar-link">CLI</a>
+        <a href="/docs/mcp" class="sidebar-link">MCP Server</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Deployment</div>
+        <a href="/docs/self-hosting" class="sidebar-link">Self-Hosting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">API Endpoints</div>
+        <a href="/docs/fetch" class="sidebar-link">Fetch</a>
+        <a href="/docs/screenshot" class="sidebar-link">Screenshots</a>
+        <a href="/docs/search" class="sidebar-link">Search</a>
+        <a href="/docs/ask" class="sidebar-link">Ask (Web Q&amp;A)</a>
+        <a href="/docs/crawl" class="sidebar-link">Crawl &amp; Map</a>
+        <a href="/docs/extract" class="sidebar-link">Structured Extraction</a>
+        <a href="/docs/deep-research" class="sidebar-link active">Deep Research</a>
+        <a href="/docs/batch" class="sidebar-link">Batch Scraping</a>
+        <a href="/docs/sessions" class="sidebar-link">Browser Sessions</a>
+        <a href="/docs/agents" class="sidebar-link">Research Agents</a>
+        <a href="/docs/monitoring" class="sidebar-link">Page Monitoring</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Features</div>
+        <a href="/docs/youtube" class="sidebar-link">YouTube Transcripts</a>
+        <a href="/docs/quick-answer" class="sidebar-link">LLM-Free Q&amp;A</a>
+        <a href="/docs/domain-extractors" class="sidebar-link">Domain Extractors</a>
+        <a href="/docs/readability" class="sidebar-link">Reader Mode</a>
+        <a href="/docs/proxy" class="sidebar-link">Proxy Support</a>
+        <a href="/docs/sessions-cookies" class="sidebar-link">Sessions &amp; Cookies</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Migration</div>
+        <a href="/docs/migrate-from-firecrawl" class="sidebar-link">From Firecrawl</a>
+      </div>
+    </aside>
+
+    <main class="docs-content">
+      <div class="breadcrumbs">
+        <a href="/docs/">Documentation</a>
+        <span>/</span>
+        <span>Deep Research</span>
+      </div>
+
+      <h1>Deep Research</h1>
+      <p class="lead">Turn any question into a comprehensive, cited research report. WebPeel's deep research agent automatically decomposes your question, searches multiple sources across multiple rounds, and synthesizes a verified report — all in one API call.</p>
+
+      <div class="callout callout-tip">
+        <strong>BYOK (Bring Your Own Key):</strong> Deep research requires an LLM for synthesis. Pass your key in the <code>llm</code> field. Supported providers: <strong>openai</strong>, <strong>anthropic</strong>, <strong>google</strong>, <strong>ollama</strong>, <strong>cerebras</strong>. If your server has a default LLM configured, the <code>llm</code> field is optional.
+      </div>
+
+      <h2 id="how-it-works">How It Works</h2>
+      <ul class="pipeline-steps">
+        <li>
+          <div>
+            <strong>Query Decomposition</strong>
+            <p>The LLM breaks your question into focused sub-queries to maximize search coverage.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Multi-Round Search</strong>
+            <p>Each sub-query runs against DuckDuckGo (or Brave), deduplicating URLs across rounds. Up to 5 rounds, 30 sources total.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Source Fetching &amp; Scoring</strong>
+            <p>Top sources are fetched in parallel. Each source is scored by credibility tier (official ★★★, verified ★★☆, general ★☆☆) and relevance.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Gap Detection</strong>
+            <p>After each round, the LLM identifies gaps in coverage and generates new sub-queries to fill them.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Report Synthesis</strong>
+            <p>The LLM writes a structured report — Executive Summary, Key Findings, Detailed Analysis, Conclusion — with inline citations to every source used.</p>
+          </div>
+        </li>
+      </ul>
+
+      <h2 id="endpoint">Endpoint</h2>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/deep-research</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Multi-step research agent. Returns a comprehensive cited report. Supports SSE streaming for real-time progress.</p>
+      </div>
+
+      <h2 id="request">Request Body</h2>
+      <table class="param-table">
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">question</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><span class="param-required">Required</span></td>
+            <td>The research question (max 5000 characters).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">llm</span></td>
+            <td><span class="param-type">object</span></td>
+            <td><span class="param-optional">BYOK</span></td>
+            <td>LLM configuration object. Required if no server-side default is configured. See <a href="#byok">BYOK Setup</a> below.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">maxRounds</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Research rounds (1–5). Default: <code>3</code>. More rounds = deeper coverage, more time.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">maxSources</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Maximum sources to consider (5–30). Default: <code>20</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">stream</span></td>
+            <td><span class="param-type">boolean</span></td>
+            <td><span class="param-optional">Optional</span></td>
+            <td>Enable SSE streaming for real-time progress and incremental report text. Default: <code>false</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>LLM Object (<code>llm</code>)</h3>
+      <table class="param-table">
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">provider</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>LLM provider: <code>openai</code>, <code>anthropic</code>, <code>google</code>, <code>ollama</code>, <code>cerebras</code>. Default: <code>openai</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">apiKey</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>Your API key for the selected provider. Not required for <code>ollama</code> (local).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">model</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>Model name override (e.g. <code>gpt-4o-mini</code>, <code>claude-3-5-haiku-20241022</code>, <code>gemini-2.0-flash</code>).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">endpoint</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>Custom API endpoint URL. Useful for Ollama (<code>http://localhost:11434</code>) or OpenAI-compatible proxies.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="response">Response (Non-Streaming)</h2>
+      <pre><code class="language-json">{
+  "success": true,
+  "report": "## Executive Summary\n\nBased on 14 sources across 3 research rounds, quantum computing has achieved significant milestones in 2024–2025...\n\n## Key Findings\n\n1. **Error correction breakthroughs** — Google's Willow chip demonstrated below-threshold error correction for the first time [1][3]\n2. **Commercial availability** — IBM, Google, and IonQ now offer cloud access to 100+ qubit processors [2]\n3. **Timeline revised** — Most experts now project fault-tolerant quantum computers by 2030–2035 [5][7]\n\n## Detailed Analysis\n\n### Hardware Progress\nThe past 18 months saw rapid progress in qubit fidelity...\n\n## Conclusion\n\nQuantum computing is transitioning from research to early commercial use, but broad practical advantage remains 5–10 years away.\n\n**Confidence: HIGH**",
+  "citations": [
+    {
+      "index": 1,
+      "title": "Google Willow: Our New Quantum Chip",
+      "url": "https://blog.google/technology/research/google-willow-quantum-chip/",
+      "snippet": "Willow can perform a computation in under five minutes that would take today's fastest supercomputers 10 septillion years.",
+      "relevanceScore": 0.94
+    },
+    {
+      "index": 2,
+      "title": "IBM Quantum Network",
+      "url": "https://www.ibm.com/quantum/network",
+      "snippet": "Access IBM quantum systems with 127–1000+ qubits through the IBM Quantum Network.",
+      "relevanceScore": 0.87
+    }
+  ],
+  "sourcesUsed": 14,
+  "roundsCompleted": 3,
+  "totalSearchQueries": 9,
+  "llmProvider": "openai",
+  "tokensUsed": { "input": 18420, "output": 2341 },
+  "elapsed": 34201
+}</code></pre>
+
+      <h3>Response Fields</h3>
+      <table class="param-table">
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="param-name">report</span></td><td><span class="param-type">string</span></td><td>Full Markdown research report with inline citations.</td></tr>
+          <tr><td><span class="param-name">citations</span></td><td><span class="param-type">array</span></td><td>All cited sources with index, title, URL, snippet, and relevance score.</td></tr>
+          <tr><td><span class="param-name">sourcesUsed</span></td><td><span class="param-type">number</span></td><td>Total sources fetched and analyzed.</td></tr>
+          <tr><td><span class="param-name">roundsCompleted</span></td><td><span class="param-type">number</span></td><td>Research rounds completed (≤ <code>maxRounds</code>).</td></tr>
+          <tr><td><span class="param-name">totalSearchQueries</span></td><td><span class="param-type">number</span></td><td>Total search queries run across all rounds.</td></tr>
+          <tr><td><span class="param-name">llmProvider</span></td><td><span class="param-type">string</span></td><td>The LLM provider that was used.</td></tr>
+          <tr><td><span class="param-name">tokensUsed</span></td><td><span class="param-type">object</span></td><td><code>{ input: number, output: number }</code> — LLM tokens consumed.</td></tr>
+          <tr><td><span class="param-name">elapsed</span></td><td><span class="param-type">number</span></td><td>Total time in milliseconds.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="streaming">SSE Streaming</h2>
+      <p>Set <code>"stream": true</code> to receive real-time progress events via Server-Sent Events. The connection stays open while research runs; events stream as they occur.</p>
+
+      <p>Each event is a JSON object on a <code>data:</code> SSE line:</p>
+
+      <div class="sse-event">
+        <div class="sse-event-type">type: "progress"</div>
+        <p>Progress updates during research. Fields: <code>type</code>, <code>message</code>, <code>round</code>, <code>data</code> (optional extra info).</p>
+        <pre style="margin: 8px 0 0;"><code class="language-json">data: {"eventType":"progress","type":"decomposing","message":"Decomposing question into sub-queries…","round":0}
+data: {"eventType":"progress","type":"searching","message":"Searching: quantum error correction 2024","round":0}
+data: {"eventType":"progress","type":"fetching","message":"Fetching 8 sources…","round":0}
+data: {"eventType":"progress","type":"synthesizing","message":"Synthesizing report from 14 sources…"}</code></pre>
+      </div>
+
+      <div class="sse-event">
+        <div class="sse-event-type">type: "chunk"</div>
+        <p>Incremental report text as the LLM generates it. Concatenate all chunks to build the full report.</p>
+        <pre style="margin: 8px 0 0;"><code class="language-json">data: {"type":"chunk","text":"## Executive Summary\n\n"}
+data: {"type":"chunk","text":"Based on 14 sources across 3 research rounds"}</code></pre>
+      </div>
+
+      <div class="sse-event">
+        <div class="sse-event-type">type: "done"</div>
+        <p>Final event with metadata. The full report is assembled from all <code>chunk</code> events.</p>
+        <pre style="margin: 8px 0 0;"><code class="language-json">data: {"type":"done","citations":[...],"sourcesUsed":14,"roundsCompleted":3,"totalSearchQueries":9,"llmProvider":"openai","tokensUsed":{"input":18420,"output":2341},"elapsed":34201}</code></pre>
+      </div>
+
+      <div class="sse-event">
+        <div class="sse-event-type">type: "error"</div>
+        <p>Emitted if research fails. Check <code>message</code> for details.</p>
+        <pre style="margin: 8px 0 0;"><code class="language-json">data: {"type":"error","message":"LLM API key rejected by provider"}</code></pre>
+      </div>
+
+      <h2 id="byok">BYOK — Bring Your Own LLM Key</h2>
+      <p>Deep research uses LLMs for query decomposition, gap detection, and report synthesis. You provide your own key — WebPeel never stores it.</p>
+
+      <div class="provider-grid">
+        <div class="provider-card">
+          <h4>OpenAI</h4>
+          <p><code>"provider": "openai"</code><br>Default model: <code>gpt-4o-mini</code><br>Best for: speed + quality balance</p>
+        </div>
+        <div class="provider-card">
+          <h4>Anthropic</h4>
+          <p><code>"provider": "anthropic"</code><br>Default model: <code>claude-3-5-haiku-20241022</code><br>Best for: long-context synthesis</p>
+        </div>
+        <div class="provider-card">
+          <h4>Google</h4>
+          <p><code>"provider": "google"</code><br>Default model: <code>gemini-2.0-flash</code><br>Best for: cost efficiency</p>
+        </div>
+        <div class="provider-card">
+          <h4>Ollama (local)</h4>
+          <p><code>"provider": "ollama"</code><br>No API key needed<br>Best for: privacy / self-hosted</p>
+        </div>
+        <div class="provider-card">
+          <h4>Cerebras</h4>
+          <p><code>"provider": "cerebras"</code><br>Default model: <code>llama3.1-70b</code><br>Best for: ultra-fast inference</p>
+        </div>
+      </div>
+
+      <h2 id="examples">Code Examples</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl-basic">cURL (basic)</button>
+        <button class="tab-btn" data-tab="curl-stream">cURL (streaming)</button>
+        <button class="tab-btn" data-tab="node-basic">Node.js</button>
+        <button class="tab-btn" data-tab="node-stream">Node.js (streaming)</button>
+        <button class="tab-btn" data-tab="python-basic">Python</button>
+        <button class="tab-btn" data-tab="python-stream">Python (streaming)</button>
+      </div>
+
+      <div class="tab-content active" data-content="curl-basic">
+        <pre><code class="language-bash">curl -X POST https://api.webpeel.dev/v1/deep-research \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What are the current state and limitations of quantum computing?",
+    "llm": {
+      "provider": "openai",
+      "apiKey": "sk-...",
+      "model": "gpt-4o-mini"
+    },
+    "maxRounds": 3,
+    "maxSources": 20
+  }'</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="curl-stream">
+        <pre><code class="language-bash"># Stream progress and report text in real-time
+curl -X POST https://api.webpeel.dev/v1/deep-research \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "question": "What are the current state and limitations of quantum computing?",
+    "llm": { "provider": "openai", "apiKey": "sk-..." },
+    "stream": true
+  }'
+
+# Example SSE output:
+# data: {"eventType":"progress","type":"decomposing","message":"Decomposing question...","round":0}
+# data: {"eventType":"progress","type":"searching","message":"Searching: quantum computing 2025","round":0}
+# data: {"type":"chunk","text":"## Executive Summary\n\n"}
+# data: {"type":"done","sourcesUsed":12,"roundsCompleted":3,...}</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="node-basic">
+        <pre><code class="language-javascript">const response = await fetch('https://api.webpeel.dev/v1/deep-research', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.WEBPEEL_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    question: 'What are the current state and limitations of quantum computing?',
+    llm: {
+      provider: 'openai',
+      apiKey: process.env.OPENAI_API_KEY,
+      model: 'gpt-4o-mini',
+    },
+    maxRounds: 3,
+    maxSources: 20,
+  }),
+});
+
+const data = await response.json();
+
+console.log(data.report);            // Full markdown report
+console.log(data.citations.length);  // Number of cited sources
+console.log(`${data.sourcesUsed} sources, ${data.roundsCompleted} rounds, ${data.elapsed}ms`);</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="node-stream">
+        <pre><code class="language-javascript">import { createParser } from 'eventsource-parser';
+
+const response = await fetch('https://api.webpeel.dev/v1/deep-research', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.WEBPEEL_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    question: 'What is the current state of quantum computing?',
+    llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY },
+    stream: true,
+  }),
+});
+
+let report = '';
+const parser = createParser((event) => {
+  if (event.type !== 'event') return;
+  const data = JSON.parse(event.data);
+
+  if (data.eventType === 'progress') {
+    process.stdout.write(`[${data.type}] ${data.message}\n`);
+  } else if (data.type === 'chunk') {
+    process.stdout.write(data.text);
+    report += data.text;
+  } else if (data.type === 'done') {
+    console.log(`\n\nDone: ${data.sourcesUsed} sources, ${data.elapsed}ms`);
+    console.log('Citations:', data.citations.length);
+  } else if (data.type === 'error') {
+    console.error('Error:', data.message);
+  }
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  parser.feed(decoder.decode(value));
+}</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="python-basic">
+        <pre><code class="language-python">import requests, os
+
+response = requests.post(
+    'https://api.webpeel.dev/v1/deep-research',
+    headers={
+        'Authorization': f'Bearer {os.environ["WEBPEEL_API_KEY"]}',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'question': 'What are the current state and limitations of quantum computing?',
+        'llm': {
+            'provider': 'openai',
+            'apiKey': os.environ['OPENAI_API_KEY'],
+            'model': 'gpt-4o-mini',
+        },
+        'maxRounds': 3,
+        'maxSources': 20,
+    },
+    timeout=120,  # deep research can take 30-90s
+)
+
+data = response.json()
+print(data['report'])
+print(f"\n{data['sourcesUsed']} sources, {data['roundsCompleted']} rounds, {data['elapsed']}ms")
+print(f"Citations: {len(data['citations'])}")
+for cite in data['citations']:
+    print(f"  [{cite['index']}] {cite['title']} — {cite['url']}")</code></pre>
+      </div>
+
+      <div class="tab-content" data-content="python-stream">
+        <pre><code class="language-python">import requests, json, os
+
+with requests.post(
+    'https://api.webpeel.dev/v1/deep-research',
+    headers={
+        'Authorization': f'Bearer {os.environ["WEBPEEL_API_KEY"]}',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'question': 'What is the current state of quantum computing?',
+        'llm': {'provider': 'openai', 'apiKey': os.environ['OPENAI_API_KEY']},
+        'stream': True,
+    },
+    stream=True,
+    timeout=120,
+) as resp:
+    report_parts = []
+    for line in resp.iter_lines():
+        if not line or not line.startswith(b'data: '):
+            continue
+        event = json.loads(line[6:])
+        if event.get('eventType') == 'progress':
+            print(f"[{event['type']}] {event['message']}")
+        elif event.get('type') == 'chunk':
+            print(event['text'], end='', flush=True)
+            report_parts.append(event['text'])
+        elif event.get('type') == 'done':
+            print(f"\n\nComplete: {event['sourcesUsed']} sources, {event['elapsed']}ms")
+        elif event.get('type') == 'error':
+            print(f"Error: {event['message']}")
+
+report = ''.join(report_parts)</code></pre>
+      </div>
+
+      <h2 id="rate-limits">Rate Limits &amp; Scopes</h2>
+      <table class="param-table">
+        <thead>
+          <tr><th>Plan</th><th>Requests/hour</th><th>Max rounds</th><th>Max sources</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Free</td><td>5</td><td>2</td><td>10</td></tr>
+          <tr><td>Starter</td><td>20</td><td>3</td><td>20</td></tr>
+          <tr><td>Pro</td><td>60</td><td>5</td><td>30</td></tr>
+          <tr><td>Enterprise</td><td>Unlimited</td><td>5</td><td>30</td></tr>
+        </tbody>
+      </table>
+      <p>Deep research requires a <strong>full or read</strong> scope API key. Create one at <a href="https://app.webpeel.dev/keys" target="_blank">app.webpeel.dev/keys</a>.</p>
+
+      <h2 id="errors">Error Codes</h2>
+      <table class="param-table">
+        <thead>
+          <tr><th>Error Code</th><th>Status</th><th>Cause</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>authentication_required</code></td><td>401</td><td>Missing or invalid API key.</td></tr>
+          <tr><td><code>invalid_request</code></td><td>400</td><td>Missing <code>question</code>, question too long (&gt;5000 chars), or invalid <code>llm.provider</code>.</td></tr>
+          <tr><td><code>llm_required</code></td><td>400</td><td>No <code>llm</code> config provided and no server default configured.</td></tr>
+          <tr><td><code>llm_auth_failed</code></td><td>401</td><td>The LLM provider rejected the API key.</td></tr>
+          <tr><td><code>rate_limit_exceeded</code></td><td>429</td><td>WebPeel rate limit hit. Retry after the indicated interval.</td></tr>
+          <tr><td><code>free_tier_limit</code></td><td>429</td><td>Free tier LLM quota exhausted. Provide your own API key to continue.</td></tr>
+          <tr><td><code>deep_research_failed</code></td><td>500</td><td>Internal error during research. Check <code>hint</code> for details.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="vs-ask">Deep Research vs. /v1/ask</h2>
+      <table class="param-table">
+        <thead>
+          <tr><th></th><th>/v1/deep-research</th><th>/v1/ask</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Output</strong></td><td>Full cited research report (Markdown)</td><td>Single best-answer sentence</td></tr>
+          <tr><td><strong>LLM required</strong></td><td>Yes (BYOK)</td><td>No (BM25 scoring)</td></tr>
+          <tr><td><strong>Search rounds</strong></td><td>1–5 (iterative, gap-filling)</td><td>1</td></tr>
+          <tr><td><strong>Sources</strong></td><td>Up to 30</td><td>Up to 5</td></tr>
+          <tr><td><strong>Time</strong></td><td>30–120 seconds</td><td>1–5 seconds</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Research reports, deep dives</td><td>Quick facts, RAG pipelines</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="next-steps">See Also</h2>
+      <ul>
+        <li><a href="/docs/ask"><strong>Ask API</strong></a> — Fast LLM-free web Q&amp;A with BM25 source scoring</li>
+        <li><a href="/docs/search"><strong>Search API</strong></a> — Raw search results from DuckDuckGo/Brave/Google</li>
+        <li><a href="/docs/extract"><strong>Extract API</strong></a> — Structured JSON extraction from any page</li>
+        <li><a href="/docs/errors"><strong>Error Reference</strong></a> — All error codes and troubleshooting</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 WebPeel. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/docs/">Docs</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="mailto:hello@webpeel.dev">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.tab-content[data-content="${tab}"]`)?.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

@@ -31,6 +31,12 @@ import { registerAuthCommands } from './cli/commands/auth.js';
 import { registerScreenshotCommands } from './cli/commands/screenshot.js';
 import { registerJobsCommands } from './cli/commands/jobs.js';
 
+// ── Early silent/log-level detection (must happen before any async module code) ──
+// Set WEBPEEL_LOG_LEVEL early so logger checks see it when async IIFEs fire.
+if (!process.env.WEBPEEL_LOG_LEVEL && process.argv.includes('--silent')) {
+  process.env.WEBPEEL_LOG_LEVEL = 'silent';
+}
+
 // ── Verb alias intercept (before Commander parses) ────────────────────────────
 // "webpeel fetch <url>" → "webpeel <url>"
 // Note: 'read' is intentionally excluded — it's a registered subcommand.

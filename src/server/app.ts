@@ -304,6 +304,8 @@ export function createApp(config: ServerConfig = {}): Express {
   // Compat routes (/v1/scrape, /v1/search) — all scopes allowed, no guard needed
   app.use(createCompatRouter(jobQueue));
   app.use(createSessionRouter());
+  // /v1/extract — full or read only (router uses absolute paths, guard before router)
+  app.use('/v1/extract', requireScope('full', 'read'));
   app.use(createExtractRouter());
   // /v1/deep-fetch — full or read only (router uses absolute paths, guard before router)
   app.use('/v1/deep-fetch', requireScope('full', 'read'));

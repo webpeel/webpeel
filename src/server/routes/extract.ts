@@ -1,49 +1,83 @@
 /**
- * POST /v1/extract — Firecrawl-compatible JSON Schema extraction endpoint.
+ * POST /v1/extract — Structured JSON Schema extraction endpoint.
  *
- * Body: { url: string, schema?: object, prompt?: string, llmApiKey?: string, model?: string }
- * Returns: { success: true, data: <extracted data> }
+ * Firecrawl-compatible: pass a URL + JSON schema, get structured data back.
+ *
+ * Auth: API key required (full or read scope)
+ * Body: { url, schema, prompt?, llm?, render? }
+ *
+ * Also exposes:
+ *   GET  /v1/extract/auto  — Auto-extract known structured types from a URL
+ *   POST /v1/extract/auto  — Same but via POST body
  */
 
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { peel } from '../../index.js';
-import { extractWithLLM } from '../../core/llm-extract.js';
+import {
+  extractStructured,
+  type ExtractionSchema,
+} from '../../core/structured-extract.js';
+import {
+  type LLMConfig,
+  type DeepResearchLLMProvider,
+  getDefaultLLMConfig,
+  isFreeTierLimitError,
+} from '../../core/llm-provider.js';
+
+const VALID_PROVIDERS: DeepResearchLLMProvider[] = [
+  'cloudflare',
+  'openai',
+  'anthropic',
+  'google',
+  'ollama',
+  'cerebras',
+];
+
+function reqId(req: Request): string {
+  return (req as any).requestId || crypto.randomUUID();
+}
 
 export function createExtractRouter(): Router {
   const router = Router();
+
+  // ── POST /v1/extract ─────────────────────────────────────────────────────
 
   router.post('/v1/extract', async (req: Request, res: Response) => {
     try {
       const {
         url,
-        schema,
+        schema: schemaRaw,
         prompt,
+        llm: llmRaw,
+        render,
+        // Legacy fields for backward compat
         llmApiKey,
         llmProvider,
-        model,
-        baseUrl,
+        model: legacyModel,
       } = req.body as {
-        url?: string;
-        schema?: object;
-        prompt?: string;
-        llmApiKey?: string;
-        llmProvider?: string;
-        model?: string;
-        baseUrl?: string;
+        url?: unknown;
+        schema?: unknown;
+        prompt?: unknown;
+        llm?: unknown;
+        render?: unknown;
+        llmApiKey?: unknown;
+        llmProvider?: unknown;
+        model?: unknown;
       };
 
-      // Validate URL
+      // ── Validate URL ────────────────────────────────────────────────────
+
       if (!url || typeof url !== 'string') {
         res.status(400).json({
           success: false,
           error: {
             type: 'invalid_request',
             message: 'Missing or invalid "url" field in request body.',
-            hint: 'Pass a URL in the request body: { "url": "https://example.com", "schema": { ... } }',
+            hint: 'Pass a URL: { "url": "https://example.com", "schema": { ... } }',
             docs: 'https://webpeel.dev/docs/errors#invalid-request',
           },
-          requestId: req.requestId || crypto.randomUUID(),
+          requestId: reqId(req),
         });
         return;
       }
@@ -54,28 +88,24 @@ export function createExtractRouter(): Router {
           error: {
             type: 'invalid_url',
             message: 'URL too long (max 2048 characters)',
-            hint: 'Shorten the URL to under 2048 characters.',
             docs: 'https://webpeel.dev/docs/errors#invalid-url',
           },
-          requestId: req.requestId || crypto.randomUUID(),
+          requestId: reqId(req),
         });
         return;
       }
 
-      // Validate URL format
-      let parsedUrl: URL;
       try {
-        parsedUrl = new URL(url);
-        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        const parsed = new URL(url);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
           res.status(400).json({
             success: false,
             error: {
               type: 'invalid_url',
               message: 'Only HTTP and HTTPS URLs are supported',
-              hint: 'Ensure the URL starts with http:// or https://',
               docs: 'https://webpeel.dev/docs/errors#invalid-url',
             },
-            requestId: req.requestId || crypto.randomUUID(),
+            requestId: reqId(req),
           });
           return;
         }
@@ -88,110 +118,183 @@ export function createExtractRouter(): Router {
             hint: 'Ensure the URL is well-formed: https://example.com',
             docs: 'https://webpeel.dev/docs/errors#invalid-url',
           },
-          requestId: req.requestId || crypto.randomUUID(),
+          requestId: reqId(req),
         });
         return;
       }
 
-      // Require at least schema or prompt
-      if (!schema && !prompt) {
+      // ── Validate schema ─────────────────────────────────────────────────
+
+      if (!schemaRaw && !prompt) {
         res.status(400).json({
           success: false,
           error: {
             type: 'invalid_request',
             message: 'Either "schema" or "prompt" is required for structured extraction.',
-            hint: 'Include a JSON schema or a natural language prompt in the request body.',
+            hint: 'Include a JSON schema in the request body: { "schema": { "type": "object", "properties": { ... } } }',
             docs: 'https://webpeel.dev/docs/errors#invalid-request',
           },
-          requestId: req.requestId || crypto.randomUUID(),
+          requestId: reqId(req),
         });
         return;
       }
 
-      // Resolve provider and API key
-      const resolvedProvider = (['openai', 'anthropic', 'google'].includes(llmProvider || ''))
-        ? (llmProvider as 'openai' | 'anthropic' | 'google')
-        : 'openai';
+      // Build or validate schema
+      let schema: ExtractionSchema;
 
-      // Resolve API key from request body or environment
-      const resolvedApiKey = llmApiKey || process.env.OPENAI_API_KEY;
-      if (!resolvedApiKey) {
-        res.status(400).json({
-          success: false,
-          error: {
-            type: 'missing_api_key',
-            message: 'LLM API key required. Provide "llmApiKey" in the request body or set OPENAI_API_KEY on the server.',
-            hint: 'Pass your API key: { "llmApiKey": "sk-...", "llmProvider": "openai" }',
-            docs: 'https://webpeel.dev/docs/errors#missing-api-key',
-          },
-          requestId: req.requestId || crypto.randomUUID(),
-        });
-        return;
+      if (schemaRaw) {
+        if (typeof schemaRaw !== 'object' || schemaRaw === null || Array.isArray(schemaRaw)) {
+          res.status(400).json({
+            success: false,
+            error: {
+              type: 'invalid_request',
+              message: '"schema" must be a JSON object',
+              hint: '{ "type": "object", "properties": { "field": { "type": "string" } } }',
+              docs: 'https://webpeel.dev/docs/errors#invalid-request',
+            },
+            requestId: reqId(req),
+          });
+          return;
+        }
+
+        const schemaObj = schemaRaw as Record<string, unknown>;
+
+        // Accept both full JSON Schema and shorthand { field: "type" }
+        if (schemaObj.type === 'object' && schemaObj.properties) {
+          schema = schemaObj as unknown as ExtractionSchema;
+        } else {
+          // Shorthand: { "company_mission": "string", "is_open_source": "boolean" }
+          const props: Record<string, { type: string }> = {};
+          for (const [k, v] of Object.entries(schemaObj)) {
+            props[k] = { type: typeof v === 'string' ? v : 'string' };
+          }
+          schema = { type: 'object', properties: props };
+        }
+      } else {
+        // No schema provided but prompt is — create a minimal schema
+        schema = { type: 'object', properties: { result: { type: 'string', description: prompt as string } } };
       }
 
-      // Fetch the page content
+      // ── Resolve LLM config ──────────────────────────────────────────────
+
+      let llmConfig: LLMConfig | undefined;
+
+      if (llmRaw && typeof llmRaw === 'object' && !Array.isArray(llmRaw)) {
+        // New format: { "provider": "openai", "apiKey": "sk-...", "model": "..." }
+        const llmObj = llmRaw as Record<string, unknown>;
+        const provider = typeof llmObj.provider === 'string' ? llmObj.provider : 'openai';
+
+        if (!VALID_PROVIDERS.includes(provider as DeepResearchLLMProvider)) {
+          res.status(400).json({
+            success: false,
+            error: {
+              type: 'invalid_request',
+              message: `Invalid "llm.provider". Must be one of: ${VALID_PROVIDERS.join(', ')}`,
+              docs: 'https://webpeel.dev/docs/errors#invalid-request',
+            },
+            requestId: reqId(req),
+          });
+          return;
+        }
+
+        llmConfig = {
+          provider: provider as DeepResearchLLMProvider,
+          apiKey: typeof llmObj.apiKey === 'string' ? llmObj.apiKey : undefined,
+          model: typeof llmObj.model === 'string' ? llmObj.model : undefined,
+          endpoint: typeof llmObj.endpoint === 'string' ? llmObj.endpoint : undefined,
+        };
+      } else if (typeof llmApiKey === 'string' && llmApiKey) {
+        // Legacy format: llmApiKey + llmProvider at top level
+        const provider = (typeof llmProvider === 'string' && VALID_PROVIDERS.includes(llmProvider as DeepResearchLLMProvider))
+          ? (llmProvider as DeepResearchLLMProvider)
+          : 'openai';
+
+        llmConfig = {
+          provider,
+          apiKey: llmApiKey,
+          model: typeof legacyModel === 'string' ? legacyModel : undefined,
+        };
+      } else {
+        // Try server-side default (env vars)
+        const defaultCfg = getDefaultLLMConfig();
+        // Only use server default if it has a real key (not bare cloudflare)
+        if (defaultCfg.provider !== 'cloudflare' || (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN)) {
+          llmConfig = defaultCfg;
+        }
+        // If still no config, we'll use heuristic extraction
+      }
+
+      // ── Fetch page content ──────────────────────────────────────────────
+
+      const useRender = render === true || render === 'true';
+
       const peelResult = await peel(url, {
         format: 'markdown',
+        render: useRender,
         timeout: 30000,
+        readable: true,
       });
 
-      const startTime = Date.now();
+      const content = peelResult.content || '';
 
-      // Extract structured data with LLM
-      const extractResult = await extractWithLLM({
-        content: peelResult.content,
-        instruction: prompt,
-        prompt,
+      // ── Extract structured data ─────────────────────────────────────────
+
+      const extractResult = await extractStructured(
+        content,
         schema,
-        apiKey: resolvedApiKey,
-        llmApiKey: resolvedApiKey,
-        llmProvider: resolvedProvider,
-        model: model || process.env.WEBPEEL_LLM_MODEL || undefined,
-        llmModel: model || process.env.WEBPEEL_LLM_MODEL || undefined,
-        baseUrl: baseUrl || process.env.WEBPEEL_LLM_BASE_URL || 'https://api.openai.com/v1',
-      });
+        llmConfig,
+        typeof prompt === 'string' ? prompt : undefined,
+      );
 
-      const elapsed = Date.now() - startTime;
+      const method: 'llm' | 'heuristic' = llmConfig ? 'llm' : 'heuristic';
 
-      // Return in Firecrawl-compatible format with llm metadata
       res.json({
         success: true,
-        data: extractResult.items.length === 1 ? extractResult.items[0] : extractResult.items,
-        llm: {
-          provider: extractResult.provider || resolvedProvider,
-          model: extractResult.model,
-          tokens: extractResult.tokensUsed,
-        },
-        url: peelResult.url,
-        elapsed,
-        metadata: {
-          url: peelResult.url,
-          title: peelResult.title,
+        data: {
+          url: peelResult.url || url,
+          extracted: extractResult.data,
+          confidence: extractResult.confidence,
           tokensUsed: extractResult.tokensUsed,
-          model: extractResult.model,
-          cost: extractResult.cost,
-          elapsed: peelResult.elapsed,
+          method,
         },
       });
     } catch (error) {
-      console.error('[/v1/extract] Error:', error instanceof Error ? error.message : String(error));
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('[/v1/extract] Error:', msg);
 
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-
-      if (msg.includes('authentication failed') || msg.includes('401')) {
-        res.status(401).json({ success: false, error: { type: 'llm_auth_failed', message: msg }, requestId: req.requestId });
+      if (isFreeTierLimitError(error)) {
+        res.status(429).json({
+          success: false,
+          error: {
+            type: 'free_tier_limit',
+            message: (error as { message: string }).message,
+            hint: 'Provide your own API key in the "llm" config object for unlimited use.',
+            docs: 'https://webpeel.dev/docs/extract#free-tier',
+          },
+          requestId: reqId(req),
+        });
         return;
       }
-      if (msg.includes('rate limit') || msg.includes('429')) {
+
+      if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('authentication failed')) {
+        res.status(401).json({
+          success: false,
+          error: { type: 'llm_auth_failed', message: msg },
+          requestId: reqId(req),
+        });
+        return;
+      }
+
+      if (msg.includes('429') || msg.includes('rate limit')) {
         res.status(429).json({
           success: false,
           error: {
             type: 'llm_rate_limited',
             message: msg,
-            hint: 'You have hit the LLM provider rate limit. Try again in a moment.',
+            hint: 'Try again in a moment or use a different LLM provider.',
             docs: 'https://webpeel.dev/docs/errors#llm-rate-limited',
           },
-          requestId: req.requestId || crypto.randomUUID(),
+          requestId: reqId(req),
         });
         return;
       }
@@ -203,10 +306,12 @@ export function createExtractRouter(): Router {
           message: msg,
           docs: 'https://webpeel.dev/docs/errors#extraction-failed',
         },
-        requestId: req.requestId || crypto.randomUUID(),
+        requestId: reqId(req),
       });
     }
   });
+
+  // ── GET /v1/extract/auto ─────────────────────────────────────────────────
 
   router.get('/v1/extract/auto', async (req: Request, res: Response) => {
     const url = req.query.url as string;
@@ -219,7 +324,7 @@ export function createExtractRouter(): Router {
           hint: 'Pass a URL: GET /v1/extract/auto?url=https://example.com',
           docs: 'https://webpeel.dev/docs/errors#missing-url',
         },
-        requestId: req.requestId || crypto.randomUUID(),
+        requestId: reqId(req),
       });
       return;
     }
@@ -228,6 +333,8 @@ export function createExtractRouter(): Router {
     const extracted = autoExtract(result.content || '', url);
     res.json({ url, pageType: extracted.type, structured: extracted });
   });
+
+  // ── POST /v1/extract/auto ────────────────────────────────────────────────
 
   router.post('/v1/extract/auto', async (req: Request, res: Response) => {
     const { url, ...rest } = req.body as { url?: string; [key: string]: unknown };
@@ -240,7 +347,7 @@ export function createExtractRouter(): Router {
           hint: 'Pass a URL in the request body: { "url": "https://example.com" }',
           docs: 'https://webpeel.dev/docs/errors#missing-url',
         },
-        requestId: req.requestId || crypto.randomUUID(),
+        requestId: reqId(req),
       });
       return;
     }
@@ -259,7 +366,7 @@ export function createExtractRouter(): Router {
           message: msg,
           docs: 'https://webpeel.dev/docs/errors#extraction-failed',
         },
-        requestId: req.requestId || crypto.randomUUID(),
+        requestId: reqId(req),
       });
     }
   });

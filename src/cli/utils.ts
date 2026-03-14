@@ -39,7 +39,10 @@ export async function checkForUpdates(): Promise<void> {
     const data = await res.json() as { version: string };
     const latest = data.version;
     if (latest && latest !== cliVersion && cliVersion !== '0.0.0') {
-      console.error(`\n💡 WebPeel v${latest} available (you have v${cliVersion}). Update: npm i -g webpeel@latest\n`);
+      // Skip update notice in silent mode
+      if (process.env.WEBPEEL_LOG_LEVEL !== 'silent') {
+        console.error(`\n💡 WebPeel v${latest} available (you have v${cliVersion}). Update: npm i -g webpeel@latest\n`);
+      }
     }
   } catch { /* silently ignore — don't slow down the user */ }
 }
