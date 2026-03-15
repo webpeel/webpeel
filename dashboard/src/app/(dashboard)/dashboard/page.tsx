@@ -345,9 +345,9 @@ function SearchResults({ results, onReadUrl }: { results: SearchResult[]; onRead
 
           <button
             onClick={(e) => { e.stopPropagation(); onReadUrl(r.url); }}
-            className="mt-2 inline-flex items-center min-h-[44px] px-3 py-2 text-xs text-[#5865F2] hover:text-[#818CF8] hover:bg-zinc-800/50 rounded-lg font-medium transition-colors -ml-3"
+            className="mt-2 inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-[#5865F2]/20 border border-zinc-700/50 hover:border-[#5865F2]/50 rounded-lg font-medium transition-all"
           >
-            📖 Read full page →
+            Read full page →
           </button>
         </div>
       ))}
@@ -495,7 +495,7 @@ function ResultCard({
 
   // Build title bar label
   const titleLabel = (() => {
-    if (detectedMode === 'search') return `Search: ${query}`;
+    if (detectedMode === 'search') return query;
     if (detectedMode === 'ask' && result.title) return `${result.title} — Q&A`;
     return result.title || query;
   })();
@@ -563,7 +563,15 @@ function ResultCard({
         <div className="p-3 sm:p-5 max-h-[60vh] overflow-y-auto">
           {/* Search results */}
           {detectedMode === 'search' && result.results && (
-            <SearchResults results={result.results} onReadUrl={onReadUrl} />
+            result.results.length > 0 ? (
+              <SearchResults results={result.results} onReadUrl={onReadUrl} />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="text-3xl mb-3">🔍</div>
+                <p className="text-zinc-300 font-medium mb-1">No results found</p>
+                <p className="text-zinc-500 text-sm">Try rephrasing your query or adding more context</p>
+              </div>
+            )
           )}
 
           {/* Ask mode: question box + sources + answer */}
@@ -752,7 +760,7 @@ export default function ReadPage() {
       if (intent.mode === 'search') {
         // ── Search mode — server-side enrichment for top 3 results ──────────
         const res = await fetch(
-          `${API_URL}/v1/search?q=${encodeURIComponent(intent.question || raw)}&enrich=3`,
+          `${API_URL}/v1/search?q=${encodeURIComponent(intent.question || raw)}&enrich=2`,
           { headers }
         );
         const json = await res.json();
@@ -872,7 +880,7 @@ export default function ReadPage() {
       // Notify sidebar to refresh usage
       window.dispatchEvent(new Event('webpeel:fetch-completed'));
 
-      // Server-side enrichment via ?enrich=3 — no client-side fetches needed
+      // Server-side enrichment via ?enrich=2 — no client-side fetches needed
     } catch (err: any) {
       const msg = typeof err.message === 'string' ? err.message : String(err.message || err);
       setErrorMsg(msg || 'Something went wrong. Please try again.');
