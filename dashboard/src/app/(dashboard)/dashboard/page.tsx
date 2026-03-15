@@ -708,7 +708,7 @@ export default function ReadPage() {
         );
         const json = await res.json();
         if (!res.ok) throw new Error(json.error?.message || json.message || json.error || 'Search failed');
-        const rawResults = json.results || json.data || [];
+        const rawResults = json.results || json.data?.web || json.data?.results || (Array.isArray(json.data) ? json.data : []);
         data = {
           detectedMode: 'search',
           results: rawResults.map((r: any) => ({
