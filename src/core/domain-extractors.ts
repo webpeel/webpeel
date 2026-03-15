@@ -1433,9 +1433,29 @@ async function youtubeExtractor(_html: string, url: string): Promise<DomainExtra
     parts.push(`# ${title}`);
     parts.push(headerLine);
 
+    /**
+     * Strip music note symbols from transcript/caption text.
+     * YouTube auto-captions include ♪ and 🎵 as music cues.
+     * Patterns cleaned:
+     *   [♪♪♪]  →  (removed)
+     *   ♪ text ♪  →  text
+     *   standalone ♪ / 🎵  →  (removed)
+     */
+    const cleanMusicNotes = (text: string): string =>
+      text
+        // Remove bracketed music cues: [♪], [♪♪♪], [🎵🎵🎵], etc.
+        .replace(/\[[♪🎵]+\]/g, '')
+        // Unwrap ♪ text ♪ → text (keep the words between notes)
+        .replace(/♪\s*([^♪]*?)\s*♪/g, (_, inner) => inner.trim())
+        // Remove any remaining standalone ♪ or 🎵
+        .replace(/[♪🎵]+/g, '')
+        // Collapse extra whitespace introduced by removals
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
     // Summary section
     if (transcript.summary && hasTranscript) {
-      let summaryText = transcript.summary;
+      let summaryText = cleanMusicNotes(transcript.summary);
       summaryText = summaryText.replace(/([.!?])\s+(?=[A-Z])/g, '$1\n\n');
       parts.push(`## Summary\n\n${summaryText}`);
     } else if (!hasTranscript && transcript.fullText) {
@@ -1457,7 +1477,7 @@ async function youtubeExtractor(_html: string, url: string): Promise<DomainExtra
     // Full Transcript section (only if we have real transcript segments)
     // Add intelligent paragraph breaks for readability
     if (hasTranscript) {
-      let readableText = transcript.fullText;
+      let readableText = cleanMusicNotes(transcript.fullText);
       // Break into paragraphs: after sentence-ending punctuation followed by a capital letter
       readableText = readableText.replace(/([.!?])\s+(?=[A-Z])/g, '$1\n\n');
       // Collapse any triple+ newlines

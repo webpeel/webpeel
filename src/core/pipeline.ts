@@ -337,20 +337,35 @@ export async function handleYouTube(ctx: PipelineContext): Promise<PeelResult | 
     if (viewStr) headerParts.push(`**${viewStr}**`);
     if (publishStr) headerParts.push(`**Published:** ${publishStr}`);
 
+    /**
+     * Strip music note symbols from YouTube auto-caption text.
+     * Cleans: [♪♪♪], [🎵🎵🎵], ♪ text ♪ (keeps inner text), standalone ♪ / 🎵
+     */
+    const cleanMusicNotes = (text: string): string =>
+      text
+        .replace(/\[[♪🎵]+\]/g, '')
+        .replace(/♪\s*([^♪]*?)\s*♪/g, (_: string, inner: string) => inner.trim())
+        .replace(/[♪🎵]+/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
     // Add paragraph breaks to transcript for readability
-    let readableText = transcript.fullText;
+    let readableText = cleanMusicNotes(transcript.fullText);
     readableText = readableText.replace(/([.!?])\s+(?=[A-Z])/g, '$1\n\n');
     readableText = readableText.replace(/\n{3,}/g, '\n\n');
 
     // Build a clean markdown representation of the video + transcript
     const parts: string[] = [`# ${transcript.title}`, headerParts.join(' | ')];
     if (transcript.summary) {
-      let summaryText = transcript.summary;
+      let summaryText = cleanMusicNotes(transcript.summary);
       summaryText = summaryText.replace(/([.!?])\s+(?=[A-Z])/g, '$1\n\n');
       parts.push(`## Summary\n\n${summaryText}`);
     }
     if (transcript.keyPoints && transcript.keyPoints.length > 0) {
-      parts.push(`## Key Points\n\n${transcript.keyPoints.map(kp => `- ${kp}`).join('\n')}`);
+      const cleanedKps = transcript.keyPoints.map((kp: string) => cleanMusicNotes(kp)).filter((kp: string) => kp.length > 0);
+      if (cleanedKps.length > 0) {
+        parts.push(`## Key Points\n\n${cleanedKps.map((kp: string) => `- ${kp}`).join('\n')}`);
+      }
     }
     if (transcript.chapters && transcript.chapters.length > 0) {
       parts.push(`## Chapters\n\n${transcript.chapters.map(ch => `- ${ch.time} — ${ch.title}`).join('\n')}`);
@@ -1097,6 +1112,10 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
       if (ddResult) {
         ctx.domainData = ddResult;
         ctx.content = ddResult.cleanContent;
+        // Update title from domain extractor (takes precedence over HTML page title)
+        if (ddResult.structured?.title) {
+          ctx.title = ddResult.structured.title;
+        }
       }
     } catch (e) {
       // Domain extraction failure is non-fatal; continue with normal content

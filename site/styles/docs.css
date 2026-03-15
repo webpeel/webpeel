@@ -953,3 +953,206 @@ pre:hover .copy-btn {
     word-wrap: break-word;
   }
 }
+
+/* ==========================================================================
+   Visual Polish — Added 2026-03
+   ========================================================================== */
+
+/* ---------- Stronger Active Sidebar Link ---------- */
+.sidebar-link.active {
+  color: var(--accent) !important;
+  background: var(--accent-light);
+  font-weight: 700;
+  border-left: 3px solid var(--accent);
+  padding-left: 9px; /* 12px - 3px border = 9px to keep text alignment */
+}
+
+/* ---------- Try It Hint Box ---------- */
+.try-it-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.07), rgba(88, 101, 242, 0.03));
+  border: 1px solid rgba(88, 101, 242, 0.22);
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.try-it-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.try-it-box a {
+  color: var(--accent) !important;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: opacity 0.15s ease;
+}
+
+.try-it-box a:hover {
+  opacity: 0.8;
+  text-decoration: underline !important;
+}
+
+/* ---------- Tables — Alternating Rows & Rounded Container ---------- */
+.docs-content table {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-card);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.docs-content table:not(.param-table) thead tr th:first-child,
+.param-table thead tr th:first-child {
+  border-radius: 0; /* inner corners handled by container */
+}
+
+.docs-content table:not(.param-table) tbody tr:nth-child(even),
+.param-table tbody tr:nth-child(even),
+.params-table tbody tr:nth-child(even) {
+  background: var(--surface-muted);
+}
+
+.docs-content table:not(.param-table) tbody tr:last-child td,
+.param-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ---------- Response Card (dark JSON example block) ---------- */
+.response-card {
+  background: var(--bg-dark);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.response-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 9px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #71717A;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.response-card-header::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22C55E;
+  flex-shrink: 0;
+}
+
+.response-card pre {
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  border-top: none;
+}
+
+/* Wrap any pre immediately after a .response-label in a card */
+.response-label + pre {
+  background: var(--bg-dark);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0 0 8px 8px;
+  margin-top: 0;
+}
+
+.response-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #71717A;
+  padding: 9px 16px;
+  background: rgba(28, 28, 26, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  display: block;
+  margin-top: 16px;
+}
+
+/* ---------- API Method Badges — More Vivid ---------- */
+.api-method-get,
+.method-badge.get,
+.method-get {
+  background: #DCFCE7;
+  color: #15803D;
+  font-weight: 700;
+}
+
+.api-method-post,
+.method-badge.post,
+.method-post {
+  background: #DBEAFE;
+  color: #1D4ED8;
+  font-weight: 700;
+}
+
+.api-method-put,
+.method-badge.put {
+  background: #FEF3C7;
+  color: #B45309;
+  font-weight: 700;
+}
+
+.api-method-delete,
+.method-badge.delete {
+  background: #FEE2E2;
+  color: #B91C1C;
+  font-weight: 700;
+}
+
+/* ---------- Breadcrumbs — Slightly More Prominent ---------- */
+.breadcrumbs {
+  background: transparent;
+}
+
+.breadcrumbs a:hover {
+  color: var(--accent);
+}
+
+/* ---------- Code Block — Language Label ---------- */
+pre[class*="language-"]::before {
+  content: attr(data-lang);
+}
+
+/* ---------- Endpoint Block (used in deep-research etc.) ---------- */
+.endpoint-block {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* ---------- Callout — Try It variant ---------- */
+.callout-try {
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.07), rgba(88, 101, 242, 0.03));
+  border: 1px solid rgba(88, 101, 242, 0.22);
+}
+
+.callout-try .callout-title {
+  color: var(--accent);
+}
+
+/* ---------- Active sidebar bold fix on mobile ---------- */
+@media (max-width: 768px) {
+  .sidebar-link.active {
+    padding-left: 9px;
+  }
+}

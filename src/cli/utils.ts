@@ -215,7 +215,17 @@ export async function fetchViaApi(url: string, options: PeelOptions, apiKey: str
   }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`API error ${res.status}: ${body.slice(0, 200)}`);
+    // Sanitize error message — don't expose raw HTML (e.g. Cloudflare 502 pages)
+    const isHtml = body.trimStart().startsWith('<');
+    let errorMsg: string;
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      errorMsg = `Could not reach this website (gateway error)`;
+    } else if (isHtml) {
+      errorMsg = `Server returned an error page`;
+    } else {
+      errorMsg = body.slice(0, 200) || 'Unknown error';
+    }
+    throw new Error(`API error ${res.status}: ${errorMsg}`);
   }
 
   const data = await res.json();

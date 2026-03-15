@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -14,6 +14,8 @@ import {
   Globe,
   BookOpen,
   Search,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
@@ -22,6 +24,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
 
 type DetectedMode = 'read' | 'search' | 'ask';
 type AppState = 'idle' | 'loading' | 'success' | 'error';
+
+interface Source {
+  url: string;
+  title?: string;
+  domain?: string;
+  authority?: 'Official' | 'Verified' | 'General';
+}
 
 interface ResultData {
   content?: string;
@@ -38,6 +47,7 @@ interface ResultData {
   duration?: string;
   viewCount?: string;
   publishDate?: string;
+  sources?: Source[];
 }
 
 interface SearchResult {
@@ -86,9 +96,14 @@ function detectIntent(input: string): { mode: DetectedMode; url?: string; questi
   return { mode: 'search', question: input.trim() };
 }
 
-/** Strip JSON/HTML artifacts that leak into markdown content */
+/** Strip JSON/HTML artifacts + music markers from transcript content */
 function sanitizeContent(raw: string): string {
   return raw
+    // Strip music note markers (YouTube transcripts)
+    .replace(/\[(?:🎵|♪)+\]/g, '')
+    .replace(/\[(?:🎵🎵🎵|♪♪♪|Music|Applause|Laughter|Cheering)\]/gi, '')
+    .replace(/🎵/g, '')
+    .replace(/♪/g, '')
     // Strip raw HTML blocks (tables, divs, spans with attributes)
     .replace(/<table[\s\S]*?<\/table>/gi, '')
     // Strip remaining HTML tags with attributes
@@ -112,6 +127,34 @@ function sanitizeContent(raw: string): string {
     .trim();
 }
 
+/** Extract first 2-3 sentences for TL;DR */
+function extractTldr(content: string): string {
+  const plain = content
+    .replace(/#{1,6}\s+[^\n]+/g, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/`(.+?)`/g, '$1')
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/^>\s+/gm, '')
+    .replace(/\n+/g, ' ')
+    .trim();
+  const sentences = plain.match(/[^.!?]+[.!?]+(?:\s|$)/g) || [];
+  const tldr = sentences.slice(0, 3).join('').trim();
+  return tldr.length > 50 ? tldr : '';
+}
+
+/** Count words */
+function getWordCount(content: string): number {
+  return content.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Estimated reading time in minutes (200 wpm) */
+function getReadingTime(wordCount: number): number {
+  return Math.max(1, Math.ceil(wordCount / 200));
+}
+
 // ─── Mode badge ───────────────────────────────────────────────────────────────
 
 const MODE_BADGES: Record<DetectedMode, { emoji: string; label: string }> = {
@@ -120,29 +163,121 @@ const MODE_BADGES: Record<DetectedMode, { emoji: string; label: string }> = {
   ask:    { emoji: '❓', label: 'Q&A' },
 };
 
+// ─── Example URLs ─────────────────────────────────────────────────────────────
+
+const EXAMPLE_URLS = [
+  { label: 'github.com/facebook/react', url: 'https://github.com/facebook/react' },
+  { label: 'en.wikipedia.org/wiki/Mars', url: 'https://en.wikipedia.org/wiki/Mars' },
+  { label: 'bbc.com/news', url: 'https://www.bbc.com/news' },
+];
+
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
 function LoadingSkeleton({ query }: { query: string }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+    const interval = setInterval(() => setElapsed(Date.now() - start), 100);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="w-full max-w-2xl mx-auto mt-6 animate-pulse">
+    <div className="w-full max-w-2xl mx-auto mt-6">
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded-full bg-[#5865F2] animate-pulse" />
-          <span className="text-sm text-zinc-400">
-            Processing{' '}
+          <div className="w-3 h-3 rounded-full bg-[#5865F2] animate-pulse shrink-0" />
+          <span className="text-sm text-zinc-400 truncate flex-1">
+            Fetching{' '}
             <span className="text-zinc-300 font-mono text-xs">
-              {query.length > 60 ? query.slice(0, 60) + '…' : query}
+              {query.length > 55 ? query.slice(0, 55) + '…' : query}
             </span>
           </span>
+          <span className="ml-auto text-xs text-zinc-600 tabular-nums font-mono shrink-0">
+            {(elapsed / 1000).toFixed(1)}s
+          </span>
         </div>
-        <div className="space-y-3">
-          <div className="h-4 bg-zinc-800 rounded w-3/4" />
-          <div className="h-4 bg-zinc-800 rounded w-full" />
-          <div className="h-4 bg-zinc-800 rounded w-5/6" />
-          <div className="h-4 bg-zinc-800 rounded w-2/3" />
-          <div className="h-4 bg-zinc-800 rounded w-full" />
-          <div className="h-4 bg-zinc-800 rounded w-4/5" />
+        <div className="space-y-3 animate-pulse">
+          <div className="h-5 bg-zinc-800 rounded-md w-2/3" />
+          <div className="h-3 bg-zinc-800/80 rounded w-full" />
+          <div className="h-3 bg-zinc-800/80 rounded w-[92%]" />
+          <div className="h-3 bg-zinc-800/80 rounded w-[84%]" />
+          <div className="h-3 bg-zinc-800/60 rounded w-full" />
+          <div className="h-3 bg-zinc-800/60 rounded w-[78%]" />
+          <div className="h-3 bg-zinc-800/60 rounded w-[88%]" />
+          <div className="h-3 bg-zinc-800/40 rounded w-3/4" />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TL;DR card ───────────────────────────────────────────────────────────────
+
+function TldrCard({ content }: { content: string }) {
+  const tldr = extractTldr(content);
+  if (!tldr) return null;
+
+  return (
+    <div className="mb-5 p-4 rounded-xl bg-[#5865F2]/10 border border-[#5865F2]/25">
+      <div className="flex items-start gap-3">
+        <span className="text-[10px] font-bold text-[#818CF8] uppercase tracking-widest shrink-0 mt-1 bg-[#5865F2]/20 px-2 py-0.5 rounded-full">
+          TL;DR
+        </span>
+        <p className="text-sm text-zinc-300 leading-relaxed">{tldr}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Source cards ─────────────────────────────────────────────────────────────
+
+function SourceCards({ sources }: { sources: Source[] }) {
+  if (!sources.length) return null;
+
+  const authorityStyles: Record<string, string> = {
+    Official: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
+    Verified: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+    General: 'bg-zinc-800 text-zinc-500 border-zinc-700',
+  };
+
+  return (
+    <div className="mb-4">
+      <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Sources</p>
+      <div className="flex flex-wrap gap-2">
+        {sources.map((src, i) => {
+          const domain = src.domain || (() => {
+            try { return new URL(src.url).hostname.replace(/^www\./, ''); }
+            catch { return src.url; }
+          })();
+          const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+          return (
+            <a
+              key={i}
+              href={src.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 transition-all group max-w-[220px]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={faviconUrl}
+                alt=""
+                className="w-3.5 h-3.5 rounded-sm shrink-0 opacity-75"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <span className="text-xs text-zinc-400 group-hover:text-zinc-300 truncate transition-colors flex-1 min-w-0">
+                {src.title ? (src.title.length > 28 ? src.title.slice(0, 28) + '…' : src.title) : domain}
+              </span>
+              {src.authority && src.authority !== 'General' && (
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full border shrink-0 font-medium ${authorityStyles[src.authority] || authorityStyles.General}`}>
+                  {src.authority}
+                </span>
+              )}
+              <ExternalLink className="h-2.5 w-2.5 text-zinc-700 group-hover:text-zinc-500 shrink-0 transition-colors" />
+            </a>
+          );
+        })}
       </div>
     </div>
   );
@@ -177,30 +312,47 @@ function SearchResults({ results, onReadUrl }: { results: SearchResult[]; onRead
 
 const markdownComponents = {
   pre: ({ children }: any) => (
-    <pre className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-xs">{children}</pre>
+    <pre className="bg-zinc-800/90 border border-zinc-700/60 rounded-xl p-4 overflow-x-auto text-xs my-4 shadow-inner">{children}</pre>
   ),
   code: ({ children, className }: any) => {
     const isInline = !className;
     return isInline ? (
-      <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-[#818CF8] text-xs font-mono">{children}</code>
+      <code className="bg-zinc-800/90 px-1.5 py-0.5 rounded-md text-[#818CF8] text-xs font-mono">{children}</code>
     ) : (
-      <code className="font-mono text-zinc-200">{children}</code>
+      <code className="font-mono text-zinc-200 text-xs">{children}</code>
     );
   },
   a: ({ href, children }: any) => (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{children}</a>
   ),
-  h1: ({ children }: any) => <h1 className="text-xl font-bold text-zinc-100 mt-6 mb-3">{children}</h1>,
-  h2: ({ children }: any) => <h2 className="text-lg font-semibold text-zinc-100 mt-5 mb-2">{children}</h2>,
-  h3: ({ children }: any) => <h3 className="text-base font-semibold text-zinc-200 mt-4 mb-2">{children}</h3>,
-  p: ({ children }: any) => <p className="text-zinc-300 leading-relaxed mb-3">{children}</p>,
-  ul: ({ children }: any) => <ul className="text-zinc-300 list-disc list-inside space-y-1 mb-3">{children}</ul>,
-  ol: ({ children }: any) => <ol className="text-zinc-300 list-decimal list-inside space-y-1 mb-3">{children}</ol>,
+  h1: ({ children }: any) => (
+    <h1 className="text-2xl font-bold text-white mt-8 mb-4 pb-3 border-b border-zinc-800 tracking-tight">{children}</h1>
+  ),
+  h2: ({ children }: any) => (
+    <h2 className="text-xl font-semibold text-zinc-100 mt-7 mb-3 pl-3 border-l-2 border-[#5865F2]">{children}</h2>
+  ),
+  h3: ({ children }: any) => (
+    <h3 className="text-base font-semibold text-zinc-200 mt-5 mb-2 pl-3 border-l border-zinc-700">{children}</h3>
+  ),
+  p: ({ children }: any) => <p className="text-zinc-300 leading-relaxed mb-4">{children}</p>,
+  ul: ({ children }: any) => <ul className="text-zinc-300 list-disc list-inside space-y-1.5 mb-4">{children}</ul>,
+  ol: ({ children }: any) => <ol className="text-zinc-300 list-decimal list-inside space-y-1.5 mb-4">{children}</ol>,
   li: ({ children }: any) => <li className="text-zinc-300">{children}</li>,
   blockquote: ({ children }: any) => (
-    <blockquote className="border-l-2 border-[#5865F2] pl-4 my-3 text-zinc-400 italic">{children}</blockquote>
+    <blockquote className="border-l-2 border-[#5865F2] pl-4 my-4 text-zinc-400 italic bg-zinc-800/20 py-2 pr-3 rounded-r-lg">{children}</blockquote>
   ),
-  hr: () => <hr className="border-zinc-700 my-4" />,
+  hr: () => <hr className="border-zinc-800 my-6" />,
+  table: ({ children }: any) => (
+    <div className="overflow-x-auto my-4 rounded-lg border border-zinc-800">
+      <table className="w-full text-sm border-collapse">{children}</table>
+    </div>
+  ),
+  th: ({ children }: any) => (
+    <th className="text-left px-3 py-2.5 bg-zinc-800/80 border-b border-zinc-700 text-zinc-200 font-semibold text-xs uppercase tracking-wider">{children}</th>
+  ),
+  td: ({ children }: any) => (
+    <td className="px-3 py-2 border-b border-zinc-800/60 text-zinc-400 last:border-b-0">{children}</td>
+  ),
 };
 
 // ─── Result card ─────────────────────────────────────────────────────────────
@@ -228,6 +380,12 @@ function ResultCard({
 
   const textContent = result.content || result.answer || '';
 
+  // Word count + reading time from actual text
+  const cleanedText = textContent ? sanitizeContent(textContent) : '';
+  const wordCount = cleanedText ? getWordCount(cleanedText) : 0;
+  const readingTime = getReadingTime(wordCount);
+  const isLongContent = wordCount > 500;
+
   const handleCopy = () => {
     copyToClipboard(textContent);
     setCopied(true);
@@ -240,7 +398,6 @@ function ResultCard({
 
   const handleShare = async () => {
     if (shareState === 'done' && shareUrl) {
-      // Already have a share URL — just copy it again
       copyToClipboard(shareUrl);
       setShareUrlCopied(true);
       setShareToast('Link copied! Expires in 30 days.');
@@ -248,12 +405,11 @@ function ResultCard({
       return;
     }
 
-    // Determine the URL to share
     const intentUrl = (() => {
       const lines = query.split('\n').map((l) => l.trim());
       return lines.find((l) => /^https?:\/\//i.test(l)) || '';
     })();
-    if (!intentUrl) return; // no URL to share (search mode etc.)
+    if (!intentUrl) return;
 
     setShareState('loading');
     try {
@@ -297,7 +453,6 @@ function ResultCard({
     return result.title || query;
   })();
 
-  // Count search results
   const resultCount = result.results?.length;
 
   return (
@@ -310,33 +465,34 @@ function ResultCard({
         <div className="px-3 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-900/40">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <span className="text-sm font-medium text-zinc-200 truncate flex-1 min-w-0">{titleLabel}</span>
-            <div className="flex items-center gap-2 text-xs text-zinc-500 shrink-0 ml-auto">
-            {resultCount != null && (
-              <span>{resultCount} results</span>
-            )}
-            {result.tokens != null && (
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#5865F2] inline-block" />
-                {result.tokens.toLocaleString()} tokens
+            <div className="flex items-center gap-2 text-xs text-zinc-500 shrink-0 ml-auto flex-wrap justify-end">
+              {resultCount != null && (
+                <span>{resultCount} results</span>
+              )}
+              {/* Word count + reading time */}
+              {wordCount > 0 && detectedMode !== 'search' && (
+                <span className="flex items-center gap-1 text-zinc-500">
+                  <Clock className="h-3 w-3" />
+                  {wordCount.toLocaleString()} words · {readingTime} min
+                </span>
+              )}
+              {result.fetchTimeMs != null && (
+                <span>{result.fetchTimeMs}ms</span>
+              )}
+              {/* AI vs BM25 method badge */}
+              {result.method && (
+                <span className={`px-2 py-0.5 rounded-full border capitalize text-xs ${
+                  result.method === 'ai'
+                    ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                }`}>
+                  {result.method === 'ai' ? '✨ AI' : result.method}
+                </span>
+              )}
+              {/* Mode badge */}
+              <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
+                {badge.emoji} {badge.label}
               </span>
-            )}
-            {result.fetchTimeMs != null && (
-              <span>{result.fetchTimeMs}ms</span>
-            )}
-            {/* AI vs BM25 method badge */}
-            {result.method && (
-              <span className={`px-2 py-0.5 rounded-full border capitalize text-xs ${
-                result.method === 'ai'
-                  ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400'
-              }`}>
-                {result.method === 'ai' ? '✨ AI' : result.method}
-              </span>
-            )}
-            {/* Mode badge */}
-            <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
-              {badge.emoji} {badge.label}
-            </span>
             </div>
           </div>
           {/* YouTube metadata row */}
@@ -352,7 +508,6 @@ function ResultCard({
                   : v.toLocaleString();
                 return <span>{formatted} views</span>;
               })()}
-              {result.tokens != null && <span><span className="text-zinc-500">Words:</span> {result.tokens.toLocaleString()}</span>}
             </div>
           )}
         </div>
@@ -364,7 +519,7 @@ function ResultCard({
             <SearchResults results={result.results} onReadUrl={onReadUrl} />
           )}
 
-          {/* Ask mode: question box + answer */}
+          {/* Ask mode: question box + sources + answer */}
           {detectedMode === 'ask' && (
             <div className="space-y-4">
               {result.question && (
@@ -373,6 +528,12 @@ function ResultCard({
                   <p className="text-sm text-zinc-200">{result.question}</p>
                 </div>
               )}
+
+              {/* Source cards */}
+              {result.sources && result.sources.length > 0 && (
+                <SourceCards sources={result.sources} />
+              )}
+
               <div className="prose prose-invert prose-sm max-w-none">
                 <ReactMarkdown components={markdownComponents}>
                   {sanitizeContent(result.answer || '')}
@@ -383,7 +544,7 @@ function ResultCard({
               {result.content && (
                 <details className="mt-4 border-t border-zinc-800 pt-4">
                   <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors select-none">
-                    📄 View full page content ({result.tokens?.toLocaleString()} tokens)
+                    📄 View full page content ({result.tokens?.toLocaleString()} words)
                   </summary>
                   <div className="mt-3 prose prose-invert prose-sm max-w-none">
                     <ReactMarkdown components={markdownComponents}>
@@ -395,12 +556,15 @@ function ResultCard({
             </div>
           )}
 
-          {/* Read mode: plain markdown */}
+          {/* Read mode: TL;DR card + markdown */}
           {detectedMode === 'read' && textContent && (
-            <div className="prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown components={markdownComponents}>
-                {sanitizeContent(textContent)}
-              </ReactMarkdown>
+            <div>
+              {isLongContent && <TldrCard content={cleanedText} />}
+              <div className="prose prose-invert prose-sm max-w-none">
+                <ReactMarkdown components={markdownComponents}>
+                  {cleanedText}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
         </div>
@@ -457,7 +621,7 @@ function ResultCard({
           </button>
         </div>
 
-        {/* Share URL strip — shown after successful share */}
+        {/* Share URL strip */}
         {shareState === 'done' && shareUrl && (
           <div className="px-3 sm:px-5 py-3 border-t border-zinc-800 bg-emerald-500/5 flex items-center gap-2 flex-wrap">
             <span className="text-xs text-emerald-400 shrink-0">🔗 Share link:</span>
@@ -478,7 +642,7 @@ function ResultCard({
         )}
 
         {/* Toast notification */}
-        {shareToast && (
+        {shareToast && shareState !== 'error' && (
           <div className="px-3 sm:px-5 py-2 bg-emerald-500/10 border-t border-emerald-500/20 text-xs text-emerald-400 text-center">
             {shareToast}
           </div>
@@ -572,8 +736,14 @@ export default function ReadPage() {
           tokens: json.tokens,
           fetchTimeMs: json.fetchTimeMs,
           question: intent.question,
-          method: json.method, // 'ai' or 'bm25'
-          content: json.content, // page content for collapsible section
+          method: json.method,
+          content: json.content,
+          sources: json.sources?.map((s: any) => ({
+            url: s.url || '',
+            title: s.title,
+            domain: s.domain,
+            authority: s.authority,
+          })),
         };
 
       } else if (intent.url && /(?:youtube\.com\/watch|youtu\.be\/|youtube\.com\/embed)/.test(intent.url)) {
@@ -585,22 +755,16 @@ export default function ReadPage() {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error?.message || json.error || 'Failed to fetch YouTube transcript');
 
-        // Extract YouTube video ID for embed
         const vidMatch = intent.url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
         const videoId = vidMatch?.[1] ?? '';
 
         const rawContent = json.content ?? json.fullText ?? json.text ?? '';
 
-        // Strip the title + metadata header from API content (dashboard renders its own header)
-        // The API returns markdown starting with "# Title\n\n**Channel:**..." — remove that
+        // Strip the title + metadata header (dashboard renders its own)
         let transcriptBody = rawContent;
-        // Remove leading "# Title" line
         transcriptBody = transcriptBody.replace(/^#\s+[^\n]+\n*/, '');
-        // Remove metadata lines like "**Channel:**...", "**Duration:**...", "**Published:**..."
         transcriptBody = transcriptBody.replace(/^\*\*(?:Channel|Duration|Published|Language|Available Languages|Words)[:\*][^\n]*\n*/gm, '');
-        // Remove leading horizontal rules
         transcriptBody = transcriptBody.replace(/^---\n*/m, '');
-        // Clean up excess leading newlines
         transcriptBody = transcriptBody.replace(/^\n+/, '');
 
         const title = json.title ?? json.metadata?.title ?? 'YouTube Transcript';
@@ -735,13 +899,33 @@ export default function ReadPage() {
             </div>
           </div>
 
-          {/* Hint text */}
-          <p className="text-center text-xs text-zinc-500 mt-3">
-            Try: paste a URL to read&nbsp;•&nbsp;add a question on the next line for Q&amp;A&nbsp;•&nbsp;or just type to search
-          </p>
+          {/* Example URLs (idle) or hint text (active) */}
+          {isIdle ? (
+            <div className="mt-3 text-center space-y-2">
+              <p className="text-xs text-zinc-600">Try one of these →</p>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {EXAMPLE_URLS.map(({ label, url }) => (
+                  <button
+                    key={url}
+                    onClick={() => {
+                      setInput(url);
+                      handleSubmitRaw(url);
+                    }}
+                    className="text-xs text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 px-3 py-1.5 rounded-full border border-zinc-800 hover:border-zinc-700 transition-all"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-xs text-zinc-500 mt-3">
+              Try: paste a URL to read&nbsp;•&nbsp;add a question on the next line for Q&amp;A&nbsp;•&nbsp;or just type to search
+            </p>
+          )}
         </div>
 
-        {/* Loading skeleton */}
+        {/* Loading skeleton with elapsed timer */}
         {isLoading && <LoadingSkeleton query={submittedQuery} />}
 
         {/* Error state */}
@@ -782,7 +966,7 @@ export default function ReadPage() {
         )}
       </div>
 
-      {/* Idle hints at the bottom */}
+      {/* Idle capability hints */}
       {isIdle && (
         <div className="flex items-center justify-center gap-6 pb-6 px-4 flex-wrap">
           {[
