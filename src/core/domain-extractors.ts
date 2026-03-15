@@ -864,7 +864,10 @@ async function githubExtractor(_html: string, url: string): Promise<DomainExtrac
 
   if (pathParts.length === 0) return null;
 
-  const ghHeaders = { Accept: 'application/vnd.github.v3+json' };
+  const ghHeaders: Record<string, string> = { Accept: 'application/vnd.github.v3+json' };
+  // Use GITHUB_TOKEN if available for higher rate limits (5000/hr vs 60/hr)
+  const ghToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  if (ghToken) ghHeaders.Authorization = `token ${ghToken}`;
 
   // User profile: /username (single segment)
   if (pathParts.length === 1) {
