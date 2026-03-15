@@ -193,6 +193,13 @@ function heuristicExtractString(fieldName: string, content: string, pageUrl?: st
     if (pageUrl) return pageUrl;
   }
 
+  // Creator / designer / founder / inventor
+  if (/creator|designer|founder|inventor|invented_by|created_by/.test(lf)) {
+    const m = content.match(/(?:created?|designed?|founded?|invented?)\s+by\s+([A-Z][^\n,·|–—]+?)(?:\s*[,·|–—]|\s+in\s+\d{4}|\.)/i)
+      ?? content.match(/(?:creator|designer|founder|inventor)[:\s]+([A-Z][^\n,·|]+?)(?:\s*[,·|–—]|\.)/i);
+    if (m?.[1]) return m[1].replace(/[*_`[\]]/g, '').trim().slice(0, 80);
+  }
+
   // Director (for movies/films)
   if (/director/.test(lf)) {
     const m = content.match(/Director[:\s*]+([^\n|,]+)/i) ?? content.match(/Directed by[:\s]+([^\n|,]+)/i);
@@ -339,9 +346,17 @@ function heuristicExtractNumber(fieldName: string, content: string): number | nu
 
   // Year
   if (/year/.test(lf)) {
-    // Match 4-digit years (1900-2099), prefer explicit "Year: YYYY" pattern first
+    // Explicit "Year: YYYY" label first
     const explicit = content.match(/\bYear[:\s]+(\d{4})\b/i);
     if (explicit?.[1]) { const n = parseInt(explicit[1]); return isNaN(n) ? null : n; }
+    // For "created_year" / "founded_year" / "released_year" — look for context
+    if (/creat|found|release|launch|start|born|inception/.test(lf)) {
+      const ctxMatch = content.match(/(?:created?|founded?|released?|launched?|started?|born|inception)[^\d]*(\b(?:19|20)\d{2}\b)/i)
+        ?? content.match(/\b(?:in|year)\s+(\b(?:19|20)\d{2}\b)/i)
+        ?? content.match(/(\b(?:19|20)\d{2}\b)/);
+      if (ctxMatch?.[1]) { const n = parseInt(ctxMatch[1]); return isNaN(n) ? null : n; }
+    }
+    // Fallback: first year found
     const m = content.match(/\b((?:19|20)\d{2})\b/);
     if (m?.[1]) { const n = parseInt(m[1]); return isNaN(n) ? null : n; }
   }

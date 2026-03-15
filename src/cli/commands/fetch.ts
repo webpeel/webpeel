@@ -164,6 +164,17 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
       process.exit(0);
     }
 
+    // --- #4b: Read URL from stdin (pipe mode) if no URL argument provided ---
+    if ((!url || url.trim() === '') && !process.stdin.isTTY) {
+      try {
+        const stdinData = await readStdin();
+        const stdinUrl = stdinData.trim().split('\n')[0].trim();
+        if (stdinUrl && (stdinUrl.startsWith('http://') || stdinUrl.startsWith('https://'))) {
+          url = stdinUrl;
+        }
+      } catch { /* ignore stdin read errors */ }
+    }
+
     // --- #5: Concise error for missing URL (no help dump) ---
     if (!url || url.trim() === '') {
       if (isJson) {
