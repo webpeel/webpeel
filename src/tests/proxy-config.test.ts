@@ -108,13 +108,14 @@ describe('getWebshareProxy()', () => {
     }, () => {
       const config = getWebshareProxy();
       expect(config).not.toBeNull();
-      expect(config!.server).toMatch(/^http:\/\/p\.webshare\.io:\d+$/);
-      expect(config!.username).toMatch(/^myuser-US-\d+$/);
+      // Backbone proxy: fixed base port, slot routing via username suffix
+      expect(config!.server).toBe('http://p.webshare.io:10000');
+      expect(config!.username).toMatch(/^myuser-\d+$/);
       expect(config!.password).toBe('mypass');
     });
   });
 
-  it('port is within valid range (basePort to basePort + slots - 1)', () => {
+  it('uses fixed base port regardless of slot', () => {
     const BASE_PORT = 10000;
     const SLOTS = 50;
     withProxyEnv({
@@ -124,31 +125,31 @@ describe('getWebshareProxy()', () => {
       WEBSHARE_PROXY_PASS: 'pass',
       WEBSHARE_PROXY_SLOTS: String(SLOTS),
     }, () => {
-      // Run multiple times to check random slot selection stays in bounds
+      // Backbone proxy: all connections use the same base port
       for (let i = 0; i < 20; i++) {
         const config = getWebshareProxy()!;
         const port = parseInt(new URL(config.server).port, 10);
-        expect(port).toBeGreaterThanOrEqual(BASE_PORT);
-        expect(port).toBeLessThanOrEqual(BASE_PORT + SLOTS - 1);
+        expect(port).toBe(BASE_PORT);
       }
     });
   });
 
-  it('username slot matches the port offset', () => {
-    const BASE_PORT = 10000;
+  it('username contains slot number within valid range', () => {
     const SLOTS = 100;
     withProxyEnv({
       WEBSHARE_PROXY_HOST: 'p.webshare.io',
-      WEBSHARE_PROXY_PORT: String(BASE_PORT),
+      WEBSHARE_PROXY_PORT: '10000',
       WEBSHARE_PROXY_USER: 'argtnlhz',
       WEBSHARE_PROXY_PASS: 'secret',
       WEBSHARE_PROXY_SLOTS: String(SLOTS),
     }, () => {
       for (let i = 0; i < 10; i++) {
         const config = getWebshareProxy()!;
-        const port = parseInt(new URL(config.server).port, 10);
-        const slot = port - BASE_PORT + 1;
-        expect(config.username).toBe(`argtnlhz-US-${slot}`);
+        const match = config.username.match(/^argtnlhz-(\d+)$/);
+        expect(match).not.toBeNull();
+        const slot = parseInt(match![1], 10);
+        expect(slot).toBeGreaterThanOrEqual(1);
+        expect(slot).toBeLessThanOrEqual(SLOTS);
       }
     });
   });
@@ -203,7 +204,7 @@ describe('getWebshareProxyUrl()', () => {
       expect(parsed.protocol).toBe('http:');
       expect(parsed.hostname).toBe('p.webshare.io');
       // Credentials should be URL-encoded in the URL
-      expect(url).toContain('user-US-');
+      expect(url).toMatch(/user-\d+/);
       expect(url).toContain('pass');
     });
   });

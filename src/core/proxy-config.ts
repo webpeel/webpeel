@@ -41,12 +41,13 @@ export function getWebshareProxy(): ProxyConfig | null {
 
   if (!host || !user || !pass || slots <= 0) return null;
 
+  // Webshare backbone proxy: slot routing via username suffix, fixed base port.
+  // Format: user-SLOT:pass@host:basePort (e.g. argtnlhz-1:pass@p.webshare.io:10000)
   const slot = Math.floor(Math.random() * slots) + 1;
-  const port = basePort + slot - 1;
 
   return {
-    server: `http://${host}:${port}`,
-    username: `${user}-US-${slot}`,
+    server: `http://${host}:${basePort}`,
+    username: `${user}-${slot}`,
     password: pass,
   };
 }
