@@ -451,6 +451,31 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
     // Suppress spinner when --progress is active (progress lines replace it)
     const spinner = (options.silent || options.progress) ? null : ora('Fetching...').start();
 
+    // Auto progress: after 3 s, update spinner text with elapsed time + method hints
+    // Updated every 2 s so the user knows we're still working.
+    const autoProgressStart = Date.now();
+    const autoProgressSteps = [
+      { afterMs: 3000,  text: '⏳ Fetching... (slow response)' },
+      { afterMs: 6000,  text: '⏳ Fetching with browser... ({s}s)' },
+      { afterMs: 12000, text: '⏳ Fetching with browser... ({s}s — stealth may be needed)' },
+      { afterMs: 20000, text: '⏳ Fetching with stealth browser + proxy... ({s}s)' },
+    ];
+    let autoProgressStepIdx = 0;
+    const autoProgressInterval = spinner ? setInterval(() => {
+      const elapsed = Date.now() - autoProgressStart;
+      const secs = Math.round(elapsed / 1000);
+      while (
+        autoProgressStepIdx < autoProgressSteps.length &&
+        elapsed >= autoProgressSteps[autoProgressStepIdx].afterMs
+      ) {
+        autoProgressStepIdx++;
+      }
+      if (autoProgressStepIdx > 0 && spinner) {
+        const tmpl = autoProgressSteps[autoProgressStepIdx - 1].text;
+        spinner.text = tmpl.replace('{s}', String(secs));
+      }
+    }, 2000) : null;
+
     try {
       // Validate options
       if (options.wait && (options.wait < 0 || options.wait > 60000)) {
@@ -720,11 +745,12 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
         touchProfile(resolvedProfileName);
       }
 
-      // Stop progress interval and show final result
+      // Stop progress intervals and show final result
       if (progressInterval) {
         clearInterval(progressInterval);
         progressInterval = undefined;
       }
+      if (autoProgressInterval) clearInterval(autoProgressInterval);
 
       if (options.progress) {
         const method = result.method || 'simple';
@@ -1151,6 +1177,7 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
       await cleanup();
       process.exit(0);
     } catch (error) {
+      if (autoProgressInterval) clearInterval(autoProgressInterval);
       if (spinner) {
         spinner.fail('Failed to fetch');
       }
