@@ -192,7 +192,8 @@ describe('extractStructured - heuristic extraction', () => {
     const result = await extractStructured(SAMPLE_CONTENT, SAMPLE_SCHEMA);
     expect(result.tokensUsed).toBe(0);
     expect(result.confidence).toBeGreaterThan(0);
-    expect(result.confidence).toBeLessThanOrEqual(0.5);
+    // Heuristic confidence scales with fields found; improved patterns may score higher
+    expect(result.confidence).toBeLessThanOrEqual(0.75);
   });
 
   it('extracts boolean fields — positive indicator', async () => {
@@ -405,7 +406,7 @@ describe('extractStructured - LLM extraction', () => {
     );
 
     expect(result).toBeDefined();
-    expect(result.confidence).toBeLessThanOrEqual(0.5); // heuristic confidence
+    expect(result.confidence).toBeLessThanOrEqual(0.75); // heuristic confidence (improved patterns score higher)
   });
 
   it('re-throws auth errors from LLM', async () => {

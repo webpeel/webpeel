@@ -199,6 +199,14 @@ function heuristicExtractString(fieldName: string, content: string, pageUrl?: st
     if (m?.[1]) return m[1].replace(/[*_`]/g, '').trim().slice(0, 100);
   }
 
+  // Version (semver: x.y.z or x.y.z.w)
+  if (/^version$/.test(lf)) {
+    const m = content.match(/\*\*Version:\*\*\s*([\d]+\.[\d]+[\.\d]*)/i)
+      ?? content.match(/version[:\s]+v?([\d]+\.[\d]+[\.\d]*)/i)
+      ?? content.match(/v?([\d]+\.[\d]+\.[\d]+)/);
+    if (m?.[1]) return m[1];
+  }
+
   // Author/writer/by
   if (/author|writer|by/.test(lf)) {
     const m = content.match(/\*By\s+([^·\n*]+)/i) ?? content.match(/Author[:\s]+([^\n,]+)/i);
@@ -338,9 +346,22 @@ function heuristicExtractNumber(fieldName: string, content: string): number | nu
     if (m?.[1]) { const n = parseInt(m[1]); return isNaN(n) ? null : n; }
   }
 
-  // Generic: find number near field name
+  // Downloads / weekly_downloads (npm, pypi)
+  if (/downloads?/.test(lf)) {
+    const m = content.match(/weekly\s+downloads[^\d]*([\d,]+)/i)
+      ?? content.match(/downloads?[^\d]*([\d,]+)/i);
+    if (m?.[1]) { const n = parseFloat(m[1].replace(/,/g, '')); return isNaN(n) ? null : n; }
+  }
+
+  // Population (Wikipedia infoboxes)
+  if (/population/.test(lf)) {
+    const m = content.match(/population[^\d]*([\d,]+)/i);
+    if (m?.[1]) { const n = parseFloat(m[1].replace(/,/g, '')); return isNaN(n) ? null : n; }
+  }
+
+  // Generic: find number near field name — use [^\d]* to skip non-digit separators
   const humanName = fieldName.replace(/_/g, '[\\s_-]*');
-  const pattern = new RegExp(`${humanName}[:\\s$]*([\\d,]+\\.?\\d*)`, 'i');
+  const pattern = new RegExp(`${humanName}[^\\d]*(\\d[\\d,]*\\.?\\d*)`, 'i');
   const match = content.match(pattern);
   if (match?.[1]) {
     const num = parseFloat(match[1].replace(/,/g, ''));
