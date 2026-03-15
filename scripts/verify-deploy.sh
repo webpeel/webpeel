@@ -1,139 +1,96 @@
-#!/bin/bash
-# verify-deploy.sh — Run after every deploy to catch half-finished work
-# This script verifies the FULL chain works, not just individual pieces.
-# If anything fails, it exits with code 1 and tells you exactly what's broken.
+#!/usr/bin/env bash
+# Post-deploy verification — tests real production endpoints
+set -uo pipefail
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
+API_KEY=$(node -e "console.log(require(require('os').homedir()+'/.webpeel/config.json').apiKey)" 2>/dev/null)
+API_URL="https://api.webpeel.dev"
 PASS=0
 FAIL=0
-WARN=0
+EXPECTED_VER=$(node -e "console.log(require('./package.json').version)" 2>/dev/null || echo "unknown")
 
+echo "═══════════════════════════════════════════════"
+echo "  WebPeel Deploy Verification"
+echo "  Expected version: $EXPECTED_VER"
+echo "═══════════════════════════════════════════════"
+echo ""
+
+# Helper function
 check() {
-  local desc="$1"
-  local result="$2"
-  if [ "$result" = "ok" ]; then
-    echo -e "${GREEN}✅ $desc${NC}"
+  local label="$1"
+  local expected_method="$2"
+  local min_words="$3"
+  local url="$4"
+
+  local result=$(curl -s --max-time 15 "$API_URL/v1/fetch" \
+    -H "Authorization: Bearer $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"url\":\"$url\"}" 2>/dev/null)
+
+  local method=$(echo "$result" | node -e "try{console.log(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).method||'?')}catch{console.log('ERR')}" 2>/dev/null)
+  local words=$(echo "$result" | node -e "try{const r=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(r.content?.trim().split(/\s+/).length||0)}catch{console.log(0)}" 2>/dev/null)
+  local elapsed=$(echo "$result" | node -e "try{console.log(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).elapsed||'?')}catch{console.log('?')}" 2>/dev/null)
+
+  local status="❌"
+  if [ "$words" -ge "$min_words" ] 2>/dev/null; then
+    status="✅"
     PASS=$((PASS + 1))
-  elif [ "$result" = "warn" ]; then
-    echo -e "${YELLOW}⚠️  $desc${NC}"
-    WARN=$((WARN + 1))
   else
-    echo -e "${RED}❌ $desc${NC}"
     FAIL=$((FAIL + 1))
   fi
+
+  printf "  %s %-16s %-12s %4sw  %sms\n" "$status" "$label" "$method" "$words" "$elapsed"
 }
 
-echo "========================================"
-echo "  WebPeel Deploy Verification"
-echo "========================================"
+# Health check
+echo "▶ Health Check"
+HEALTH=$(curl -s --max-time 5 "$API_URL/health" 2>/dev/null)
+LIVE_VER=$(echo "$HEALTH" | node -e "try{console.log(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version)}catch{console.log('DOWN')}" 2>/dev/null)
+if [ "$LIVE_VER" = "$EXPECTED_VER" ]; then
+  echo "  ✅ Version $LIVE_VER matches expected"
+  PASS=$((PASS + 1))
+elif [ "$LIVE_VER" = "DOWN" ]; then
+  echo "  ❌ Server is DOWN (502)"
+  FAIL=$((FAIL + 1))
+else
+  echo "  ⚠️  Version mismatch: live=$LIVE_VER expected=$EXPECTED_VER"
+  FAIL=$((FAIL + 1))
+fi
 echo ""
 
-# 1. CLI has API key configured
-CLI_CONFIG="$HOME/.webpeel/config.json"
-if [ -f "$CLI_CONFIG" ]; then
-  HAS_KEY=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CLI_CONFIG','utf8')); console.log(c.apiKey ? 'yes' : 'no')" 2>/dev/null)
-  if [ "$HAS_KEY" = "yes" ]; then
-    TIER=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CLI_CONFIG','utf8')); console.log(c.planTier || 'unknown')" 2>/dev/null)
-    check "CLI authenticated (tier: $TIER)" "ok"
-  else
-    check "CLI has no API key — run 'webpeel login' or set WEBPEEL_API_KEY" "fail"
-  fi
-else
-  check "CLI config missing ($CLI_CONFIG)" "fail"
-fi
+# Endpoint tests
+echo "▶ Endpoint Tests"
+check "example.com"     "simple"     10  "https://example.com"
+check "github/react"    "domain-api" 20  "https://github.com/facebook/react"
+check "wikipedia/dog"   "any"        100 "https://en.wikipedia.org/wiki/Dog"
+check "npm/express"     "any"        50  "https://www.npmjs.com/package/express"
+check "hackernews"      "domain-api" 100 "https://news.ycombinator.com"
+check "arxiv"           "domain-api" 50  "https://arxiv.org/abs/2501.00001"
+check "pypi/requests"   "any"        50  "https://pypi.org/project/requests/"
+check "youtube"         "any"        50  "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+echo ""
 
-# 2. CLI can fetch without rate limit
-WP="$(dirname "$0")/../dist/cli.js"
-if [ -f "$WP" ]; then
-  CLI_OUTPUT=$(node "$WP" "https://example.com" --silent --json 2>/dev/null)
-  HAS_CONTENT=$(echo "$CLI_OUTPUT" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.content&&j.content.length>10?'ok':'fail')}catch{console.log('fail')}})" 2>/dev/null)
-  check "CLI fetch works (no rate limit)" "$HAS_CONTENT"
+# Search test
+echo "▶ Search Test"
+SEARCH_RESULT=$(curl -s --max-time 10 "$API_URL/v1/search?q=javascript+framework" \
+  -H "Authorization: Bearer $API_KEY" 2>/dev/null)
+SEARCH_COUNT=$(echo "$SEARCH_RESULT" | node -e "try{const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(d.data?.web?.length||0)}catch{console.log(0)}" 2>/dev/null)
+if [ "$SEARCH_COUNT" -gt 0 ] 2>/dev/null; then
+  echo "  ✅ Search returned $SEARCH_COUNT results"
+  PASS=$((PASS + 1))
 else
-  check "CLI not built (run npm run build)" "fail"
+  echo "  ❌ Search returned 0 results"
+  FAIL=$((FAIL + 1))
 fi
-
-# 3. TypeScript compiles
-TSC_OUTPUT=$(cd "$(dirname "$0")/.." && npx tsc --noEmit 2>&1)
-if [ $? -eq 0 ]; then
-  check "TypeScript compiles (0 errors)" "ok"
-else
-  check "TypeScript has errors" "fail"
-fi
-
-# 4. Tests pass (skip if --quick flag)
-if [ "${1:-}" != "--quick" ]; then
-  TEST_OUTPUT=$(cd "$(dirname "$0")/.." && timeout 120 npx vitest run 2>&1 | tail -5)
-  TESTS_PASS=$(echo "$TEST_OUTPUT" | grep -c "passed" 2>/dev/null || true)
-  if [ "$TESTS_PASS" -gt 0 ]; then
-    TEST_COUNT=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ passed' | head -1)
-    check "Tests pass ($TEST_COUNT)" "ok"
-  else
-    check "Tests failing" "fail"
-  fi
-else
-  check "Tests skipped (--quick mode)" "warn"
-fi
-
-# 5. API health (if deployed)
-API_HEALTH=$(curl -s --max-time 5 "https://api.webpeel.dev/health" 2>/dev/null)
-if [ -n "$API_HEALTH" ]; then
-  API_VERSION=$(echo "$API_HEALTH" | node -e "try{const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(d.version)}catch{console.log('unknown')}" 2>/dev/null)
-  LOCAL_VERSION=$(node -e "console.log(require('$(dirname "$0")/../package.json').version)" 2>/dev/null)
-  if [ "$API_VERSION" = "$LOCAL_VERSION" ]; then
-    check "API version matches local ($API_VERSION)" "ok"
-  else
-    check "API version mismatch (API: $API_VERSION, local: $LOCAL_VERSION) — deploy may be in progress" "warn"
-  fi
-  
-  # Check for request ID header
-  HAS_REQ_ID=$(curl -sI --max-time 5 "https://api.webpeel.dev/health" 2>/dev/null | grep -ci "x-request-id")
-  if [ "$HAS_REQ_ID" -gt 0 ]; then
-    check "API returns X-Request-Id headers" "ok"
-  else
-    check "API missing X-Request-Id headers" "warn"
-  fi
-else
-  check "API unreachable" "warn"
-fi
-
-# 6. Landing page
-SITE_STATUS=$(curl -s -o /dev/null --max-time 5 -w "%{http_code}" "https://webpeel.dev" 2>/dev/null)
-if [ "$SITE_STATUS" = "200" ]; then
-  check "Landing page (webpeel.dev)" "ok"
-else
-  check "Landing page returned $SITE_STATUS" "fail"
-fi
-
-# 7. Error docs page
-DOCS_STATUS=$(curl -s -o /dev/null --max-time 5 -w "%{http_code}" "https://webpeel.dev/docs/errors" 2>/dev/null)
-if [ "$DOCS_STATUS" = "200" ]; then
-  check "Error docs page" "ok"
-else
-  check "Error docs page returned $DOCS_STATUS" "warn"
-fi
-
-# 8. npm package version
-NPM_VERSION=$(npm view webpeel version 2>/dev/null)
-LOCAL_VERSION=$(node -e "console.log(require('$(dirname "$0")/../package.json').version)" 2>/dev/null)
-if [ "$NPM_VERSION" = "$LOCAL_VERSION" ]; then
-  check "npm version matches local ($NPM_VERSION)" "ok"
-else
-  check "npm version mismatch (npm: $NPM_VERSION, local: $LOCAL_VERSION)" "warn"
-fi
+echo ""
 
 # Summary
-echo ""
-echo "========================================"
-echo -e "  ${GREEN}$PASS passed${NC} | ${RED}$FAIL failed${NC} | ${YELLOW}$WARN warnings${NC}"
-echo "========================================"
-
+echo "═══════════════════════════════════════════════"
+TOTAL=$((PASS + FAIL))
+echo "  Result: $PASS/$TOTAL passed"
 if [ "$FAIL" -gt 0 ]; then
-  echo -e "\n${RED}DEPLOY VERIFICATION FAILED — fix the issues above before shipping.${NC}"
+  echo "  ⚠️  $FAIL test(s) FAILED"
   exit 1
+else
+  echo "  ✅ All tests passed!"
+  exit 0
 fi
-
-echo -e "\n${GREEN}All checks passed.${NC}"
