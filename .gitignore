@@ -61,3 +61,6 @@ temp/
 tmp/
 yarn-debug.log*
 yarn-error.log*
+
+# Render env var backups (contain secrets)
+render-backups/
