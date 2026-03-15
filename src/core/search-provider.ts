@@ -13,10 +13,10 @@
  * StealthSearchProvider since DDG HTTP is often blocked on datacenter IPs.
  */
 
-import { fetch as undiciFetch } from 'undici';
+import { fetch as undiciFetch, ProxyAgent } from 'undici';
 import { load } from 'cheerio';
 import { getStealthBrowser, getRandomUserAgent, applyStealthScripts } from './browser-pool.js';
-import { getWebshareProxy } from './proxy-config.js';
+import { getWebshareProxy, getWebshareProxyUrl } from './proxy-config.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('search');
@@ -733,7 +733,9 @@ export class DuckDuckGoProvider implements SearchProvider {
     const searchUrl = this.buildSearchUrl(query, options);
 
     // Use realistic browser headers to avoid DDG bot detection on datacenter IPs
-    const response = await undiciFetch(searchUrl, {
+    // Route through residential proxy when available (datacenter IPs are blocked)
+    const proxyUrl = getWebshareProxyUrl();
+    const fetchOpts: Parameters<typeof undiciFetch>[1] = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -748,7 +750,11 @@ export class DuckDuckGoProvider implements SearchProvider {
         'Referer': 'https://duckduckgo.com/',
       },
       signal,
-    });
+    };
+    if (proxyUrl) {
+      (fetchOpts as any).dispatcher = new ProxyAgent(proxyUrl);
+    }
+    const response = await undiciFetch(searchUrl, fetchOpts);
 
     if (!response.ok) {
       throw new Error(`Search failed: HTTP ${response.status}`);
@@ -819,7 +825,8 @@ export class DuckDuckGoProvider implements SearchProvider {
     const params = new URLSearchParams();
     params.set('q', query);
 
-    const response = await undiciFetch(`https://lite.duckduckgo.com/lite/?${params.toString()}`, {
+    const liteProxyUrl = getWebshareProxyUrl();
+    const liteFetchOpts: Parameters<typeof undiciFetch>[1] = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -827,7 +834,11 @@ export class DuckDuckGoProvider implements SearchProvider {
         'Referer': 'https://lite.duckduckgo.com/',
       },
       signal,
-    });
+    };
+    if (liteProxyUrl) {
+      (liteFetchOpts as any).dispatcher = new ProxyAgent(liteProxyUrl);
+    }
+    const response = await undiciFetch(`https://lite.duckduckgo.com/lite/?${params.toString()}`, liteFetchOpts);
 
     if (!response.ok) return [];
 
