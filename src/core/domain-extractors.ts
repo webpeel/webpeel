@@ -191,7 +191,12 @@ async function fetchJson(url: string, customHeaders?: Record<string, string>): P
     Accept: 'application/json',
     ...customHeaders,
   });
-  return tryParseJson(result.html);
+  const parsed = tryParseJson(result.html);
+  // Debug: log GitHub API failures to help diagnose rate limiting issues
+  if (!parsed && url.includes('api.github.com')) {
+    console.error(`[github-debug] fetchJson failed for ${url} — raw response (first 200): ${result.html?.substring(0, 200)}`);
+  }
+  return parsed;
 }
 
 /** Fetch JSON with exponential backoff retry on 429 / rate-limit errors. */
@@ -867,7 +872,12 @@ async function githubExtractor(_html: string, url: string): Promise<DomainExtrac
   const ghHeaders: Record<string, string> = { Accept: 'application/vnd.github.v3+json' };
   // Use GITHUB_TOKEN if available for higher rate limits (5000/hr vs 60/hr)
   const ghToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-  if (ghToken) ghHeaders.Authorization = `token ${ghToken}`;
+  if (ghToken) {
+    ghHeaders.Authorization = `token ${ghToken}`;
+    console.log(`[github-debug] Using token (prefix: ${ghToken.substring(0, 8)}..., len: ${ghToken.length})`);
+  } else {
+    console.warn('[github-debug] No GITHUB_TOKEN found — using anonymous (60/hr limit)');
+  }
 
   // User profile: /username (single segment)
   if (pathParts.length === 1) {
