@@ -972,19 +972,25 @@ export class DuckDuckGoProvider implements SearchProvider {
     // Stage 4: Stealth multi-engine (DDG + Bing + Ecosia in parallel)
     // Bypasses bot-detection on datacenter IPs. This is the reliable
     // last resort — but it spins up a browser so it takes a few seconds.
+    // DISABLED on memory-constrained servers (512MB) — Playwright OOM kills.
+    // Set NO_BROWSER_SEARCH=1 to skip this stage entirely.
     // -----------------------------------------------------------
-    log.debug('Trying stealth browser search (DDG + Bing + Ecosia)...');
-    try {
-      const stealthProvider = new StealthSearchProvider();
-      // StealthSearchProvider already applies filterRelevantResults internally.
-      const stealthResults = await stealthProvider.searchWeb(query, options);
-      if (stealthResults.length > 0) {
-        log.debug(`source=stealth returned ${stealthResults.length} results`);
-        return stealthResults;
+    if (!process.env.NO_BROWSER_SEARCH) {
+      log.debug('Trying stealth browser search (DDG + Bing + Ecosia)...');
+      try {
+        const stealthProvider = new StealthSearchProvider();
+        // StealthSearchProvider already applies filterRelevantResults internally.
+        const stealthResults = await stealthProvider.searchWeb(query, options);
+        if (stealthResults.length > 0) {
+          log.debug(`source=stealth returned ${stealthResults.length} results`);
+          return stealthResults;
+        }
+        log.debug('Stealth search returned 0 results');
+      } catch (e) {
+        log.debug('Stealth search failed:', e instanceof Error ? e.message : e);
       }
-      log.debug('Stealth search returned 0 results');
-    } catch (e) {
-      log.debug('Stealth search failed:', e instanceof Error ? e.message : e);
+    } else {
+      log.debug('Stealth browser search skipped (NO_BROWSER_SEARCH=1)');
     }
 
     return [];

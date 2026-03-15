@@ -420,6 +420,10 @@ export function createFetchRouter(authStore: AuthStore): Router {
         lite: lite === 'true',
         timeout: timeout ? parseInt(timeout as string, 10) : undefined,
         captionImages: captionImages === 'true',
+        // Prevent auto-escalation to browser unless render=true is explicitly requested.
+        // On 512MB containers, surprise browser launches cause OOM kills.
+        // Domain extractors (GitHub, Wikipedia, npm etc.) use HTTP APIs, not the browser.
+        noEscalate: !shouldRender,
       };
 
       // Auto-budget: default to 4000 tokens for API requests when no budget specified
