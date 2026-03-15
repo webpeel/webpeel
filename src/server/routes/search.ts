@@ -8,6 +8,7 @@ import { load } from 'cheerio';
 import { LRUCache } from 'lru-cache';
 import { AuthStore } from '../auth-store.js';
 import { peel } from '../../index.js';
+import { simpleFetch } from '../../core/fetcher.js';
 import {
   getSearchProvider,
   getBestSearchProvider,
@@ -210,27 +211,36 @@ export function createSearchRouter(authStore: AuthStore): Router {
           }
         }
 
-        // Enrich top N results in parallel with timeout (fast alternative to scrapeResults)
-        // IMPORTANT: forceBrowser=false, stealth=false to prevent OOM on 512MB containers
+        // Lightweight enrichment — HTTP-only, no browser, no full pipeline
+        // Uses simpleFetch + cheerio to extract text without launching Playwright
+        // This is intentionally minimal to stay within 512MB container memory limit
         if (enrichCount > 0 && !shouldScrape) {
-          const ENRICH_TIMEOUT = 4000; // 4s hard timeout per URL
+          const ENRICH_TIMEOUT = 4000;
           const toEnrich = results.slice(0, enrichCount);
           const enrichResults = await Promise.allSettled(
             toEnrich.map(async (result) => {
-              const fetchPromise = peel(result.url, {
-                format: 'markdown',
-                maxTokens: 1500,
-                render: false,
-                stealth: false,
-              }).then(peelResult => ({
-                url: result.url,
-                content: peelResult.content?.substring(0, 1500) || null,
-                wordCount: peelResult.content?.trim().split(/\s+/).length || 0,
-                method: peelResult.method || 'unknown',
-                fetchTimeMs: peelResult.elapsed || 0,
-              }));
-              const timeoutPromise = new Promise<{ url: string; content: null; wordCount: 0; method: 'timeout'; fetchTimeMs: 0 }>(
-                resolve => setTimeout(() => resolve({ url: result.url, content: null, wordCount: 0, method: 'timeout', fetchTimeMs: 0 }), ENRICH_TIMEOUT)
+              const t0 = Date.now();
+              const fetchPromise = (async () => {
+                const fetched = await simpleFetch(result.url, undefined, ENRICH_TIMEOUT);
+                if (!fetched.html) return { url: result.url, content: null, wordCount: 0, method: 'empty', fetchTimeMs: 0 };
+                // Extract visible text with cheerio — lightweight, no full pipeline
+                const $ = load(fetched.html);
+                $('script, style, nav, header, footer, [aria-hidden="true"], .ad, .advertisement').remove();
+                // Try main content selectors first, then body
+                const mainEl = $('main, article, [role="main"], .content, .article-body, #content').first();
+                const textEl = mainEl.length ? mainEl : $('body');
+                const text = textEl.text().replace(/\s+/g, ' ').trim().substring(0, 2000);
+                const wordCount = text.split(/\s+/).filter(Boolean).length;
+                return {
+                  url: result.url,
+                  content: text.substring(0, 1500) || null,
+                  wordCount,
+                  method: 'simple',
+                  fetchTimeMs: Date.now() - t0,
+                };
+              })();
+              const timeoutPromise = new Promise<{ url: string; content: null; wordCount: 0; method: 'timeout'; fetchTimeMs: number }>(
+                resolve => setTimeout(() => resolve({ url: result.url, content: null, wordCount: 0, method: 'timeout', fetchTimeMs: ENRICH_TIMEOUT }), ENRICH_TIMEOUT)
               );
               return Promise.race([fetchPromise, timeoutPromise]);
             })
