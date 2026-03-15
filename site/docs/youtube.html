@@ -333,6 +333,52 @@ for seg in result.transcript:
         You don't need to call a special method. Any YouTube URL passed to <code>peel()</code> is automatically routed to the transcript extractor. The <code>content</code> field will contain the full transcript text, ready to feed into an LLM.
       </div>
 
+      <h2 id="export">Transcript Export</h2>
+      <p>Download a transcript as a file in your preferred format — SRT subtitles, plain text, Markdown, or JSON segments. Great for video editors, archiving, or feeding transcripts to LLMs.</p>
+
+      <div class="endpoint-block">
+        <div><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/transcript/export</span><span class="auth-badge auth-required">Auth Required</span></div>
+        <p style="margin: 12px 0 0; color: var(--text-2); font-size: 14px;">Download a YouTube transcript as SRT, TXT, Markdown, or JSON. Returns a file with appropriate Content-Type and filename.</p>
+      </div>
+
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">url</span></td>
+            <td><span class="param-type">string</span></td>
+            <td>—</td>
+            <td><span class="param-required">Required.</span> YouTube video URL.</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">format</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><code>txt</code></td>
+            <td>Output format: <code>srt</code> (SubRip subtitles), <code>txt</code> (plain text), <code>md</code> (Markdown doc), <code>json</code> (timestamped segments).</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">language</span></td>
+            <td><span class="param-type">string</span></td>
+            <td><code>en</code></td>
+            <td>Preferred transcript language code (BCP-47). Falls back to first available track.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <pre><code class="language-bash"># Download as SRT subtitles
+curl "https://api.webpeel.dev/v1/transcript/export?url=https://youtu.be/dQw4w9WgXcQ&format=srt" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -o transcript.srt
+
+# Download as Markdown document
+curl "https://api.webpeel.dev/v1/transcript/export?url=https://youtu.be/dQw4w9WgXcQ&format=md" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -o transcript.md
+
+# JSON segments (start, dur, text)
+curl "https://api.webpeel.dev/v1/transcript/export?url=https://youtu.be/dQw4w9WgXcQ&format=json" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+
       <h2>Error Handling</h2>
       <p>If a video has no transcript (disabled or unavailable), WebPeel returns an error with a descriptive message:</p>
 

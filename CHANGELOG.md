@@ -5,6 +5,91 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+---
+
+## v0.21.12 (2026-03-15)
+
+### ✨ Structured Extraction Polish
+
+- **Emoji stripping** — Extractor output no longer contains raw emoji characters that break JSON parsing
+- **Director field** — Movie/TV extraction now includes `director` as a dedicated field
+- **Confidence scoring** — `confidence` calculation is more accurate and better calibrated (0–1, two decimal places)
+- **Content quality improvements** — Richer domain extractors with smarter fallback behavior; actionable error messages that tell users what to do next
+
+---
+
+## v0.21.11 (2026-03-15)
+
+### 🔧 PeelTLS H2 Fix + Search Relevance + CLI Progress
+
+- **PeelTLS H2 double-decompression fix** — Eliminated a bug where HTTP/2 responses were decompressed twice, causing garbled content on some sites
+- **`forceHttp1` support** — New option to force HTTP/1.1 even when a server advertises H2; useful for sites with broken H2 implementations
+- **Search relevance scoring** — `relevanceScore` (0–1) now attached to search results; reflects BM25 relevance of fetched page content against the query
+- **CLI progress indicators** — Better feedback for long-running fetches in the CLI
+
+---
+
+## v0.21.10 (2026-03-15)
+
+### ✅ Test Verification Pass + Fixes
+
+- Full test suite run and verification after v0.21.9 stealth upgrade
+- Various bug fixes from test coverage gaps uncovered during verification
+
+---
+
+## v0.21.9 (2026-03-15)
+
+### 🕵️ Complete Anti-Bot Stealth Upgrade (9 Patches)
+
+- Nine independent anti-bot detection patches applied across the stack
+- Improved TLS fingerprint realism, header ordering, and timing randomization
+- Better PeelTLS escalation logic — triggers earlier and more reliably on Cloudflare/DataDome sites
+
+---
+
+## v0.21.8 (2026-03-15)
+
+### 🔀 Proxy Routing for Search and Browser
+
+- **Proxy routing for search** — `WEBPEEL_PROXY` and `--proxy` flags now apply to search provider requests (DuckDuckGo, Brave, Google) in addition to fetch
+- **Proxy routing for browser** — Browser rendering mode respects proxy configuration
+- **Shared `proxy-config` module** — Centralized proxy parsing/validation used across all transport layers
+
+---
+
+## v0.21.7 (2026-03-14)
+
+### 🧠 Smart Heuristic Extraction + Improved Error Classification
+
+- **Smart heuristic extraction** — Auto-extraction now uses page-type-specific heuristics (product, article, recipe, job listing) instead of generic DOM parsing
+- **Improved error classification** — Fetch errors now categorized as `blocked`, `timeout`, `parse_error`, or `network_error` with specific `hint` fields
+- **Better error messages** — Errors now include `docs` URL pointing to the relevant documentation
+
+---
+
+## v0.21.6 (2026-03-14)
+
+### 🎨 Dashboard Polish + Docs Visual Upgrade
+
+- **Dashboard consumer polish** — Activity log color coding (green <3s, yellow 3-8s, red >8s) with "Normal for web scraping" hint for slow requests
+- **Docs visual upgrade** — Improved code block styling, better mobile layout, fixed sidebar active states
+- **Bug fixes** — Various small fixes identified during QA pass
+
+---
+
+## v0.21.5 (2026-03-14)
+
+### 📦 Structured JSON Extraction
+
+- **`POST /v1/extract`** — New endpoint for LLM-powered structured data extraction using JSON Schema or natural language prompts
+- **BYOK (Bring Your Own Key)** — Pass your OpenAI-compatible API key in `llmApiKey`; works with OpenAI, Anthropic (via proxy), and any OpenAI-compatible endpoint
+- **`GET /v1/extract/auto`** — Heuristic extraction without an LLM — auto-detects page type and extracts known fields (product price, article author, recipe ingredients, etc.)
+- **`confidence` score** — Both endpoints return a `confidence` field (0–1) indicating extraction quality
+- **Documentation upgrade** — Extract API fully documented at `/docs/extract`
+
+---
+
 ## v0.17.0 (2026-02-26)
 
 ### 🛡️ Anti-Bot Bypass — New Escalation Layers
