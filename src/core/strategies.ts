@@ -90,6 +90,7 @@ function shouldForceBrowser(url: string): DomainRecommendation | null {
       'chewy.com',        // Amazon subsidiary
       'aliexpress.com',   // anti-bot
       'wish.com',         // anti-bot
+      'cargurus.com',     // aggressive bot detection
     ];
     for (const domain of stealthDomains) {
       if (hostname === domain || hostname.endsWith(`.${domain}`)) {
