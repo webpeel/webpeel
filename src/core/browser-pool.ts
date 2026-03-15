@@ -30,7 +30,7 @@ async function getPlaywright(): Promise<ChromiumType> {
   return _chromium;
 }
 
-async function getStealthPlaywright(): Promise<ChromiumType> {
+export async function getStealthPlaywright(): Promise<ChromiumType> {
   if (!_stealthChromium) {
     const pwExtra = await import('playwright-extra');
     const StealthPlugin = (await import('puppeteer-extra-plugin-stealth')).default;
@@ -67,7 +67,7 @@ export const ANTI_DETECTION_ARGS: readonly string[] = [
   '--disable-gpu',
   '--start-maximized',
   // Chrome branding / stealth hardening
-  '--disable-features=ChromeUserAgentDataBranding',
+  '--disable-features=ChromeUserAgentDataBranding,IsolateOrigins,site-per-process',
   '--disable-component-extensions-with-background-pages',
   '--disable-default-apps',
   '--disable-extensions',
@@ -157,6 +157,102 @@ export async function applyStealthScripts(page: Page): Promise<void> {
         configurable: true,
       });
     })();
+  `);
+
+  // 3. Hide navigator.webdriver (THE #1 BOT SIGNAL)
+  await page.addInitScript(`
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => false,
+      configurable: true,
+    });
+    try { delete Object.getPrototypeOf(navigator).webdriver; } catch (e) {}
+  `);
+
+  // 4. Fake navigator.plugins (empty = bot signal, real Chrome has plugins)
+  await page.addInitScript(`
+    Object.defineProperty(navigator, 'plugins', {
+      get: () => {
+        var arr = [
+          { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+          { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' },
+          { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' },
+        ];
+        arr.item = function(i) { return arr[i] || null; };
+        arr.namedItem = function(n) { return arr.find(function(p) { return p.name === n; }) || null; };
+        arr.refresh = function() {};
+        return arr;
+      },
+      configurable: true,
+    });
+  `);
+
+  // 5. Fake navigator.languages
+  await page.addInitScript(`
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['en-US', 'en'],
+      configurable: true,
+    });
+  `);
+
+  // 6. Fake window.chrome object (missing in headless = detected)
+  await page.addInitScript(`
+    if (!window.chrome) {
+      window.chrome = {
+        app: {
+          isInstalled: false,
+          InstallState: { INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' },
+          RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' }
+        },
+        runtime: {
+          OnInstalledReason: {}, OnRestartRequiredReason: {}, PlatformArch: {},
+          PlatformNaclArch: {}, PlatformOs: {}, RequestUpdateCheckStatus: {},
+          connect: function() {}, sendMessage: function() {}
+        },
+      };
+    }
+  `);
+
+  // 7. Fix permissions query (notifications should be 'prompt' not 'denied')
+  await page.addInitScript(`
+    try {
+      var originalQuery = window.Permissions && window.Permissions.prototype && window.Permissions.prototype.query;
+      if (originalQuery) {
+        window.Permissions.prototype.query = function(params) {
+          if (params && params.name === 'notifications') {
+            return Promise.resolve({ state: Notification.permission });
+          }
+          return originalQuery.call(this, params);
+        };
+      }
+    } catch (e) {}
+  `);
+
+  // 8. WebGL vendor/renderer spoofing (headless shows "Google SwiftShader")
+  await page.addInitScript(`
+    try {
+      var getParameter = WebGLRenderingContext.prototype.getParameter;
+      WebGLRenderingContext.prototype.getParameter = function(parameter) {
+        if (parameter === 37445) return 'Intel Inc.';
+        if (parameter === 37446) return 'Intel Iris OpenGL Engine';
+        return getParameter.call(this, parameter);
+      };
+      if (typeof WebGL2RenderingContext !== 'undefined') {
+        var getParameter2 = WebGL2RenderingContext.prototype.getParameter;
+        WebGL2RenderingContext.prototype.getParameter = function(parameter) {
+          if (parameter === 37445) return 'Intel Inc.';
+          if (parameter === 37446) return 'Intel Iris OpenGL Engine';
+          return getParameter2.call(this, parameter);
+        };
+      }
+    } catch (e) {}
+  `);
+
+  // 9. Hide automation-related properties
+  await page.addInitScript(`
+    try { Object.defineProperty(document, '$cdc_asdjflasutopfhvcZLmcfl_', { get: () => undefined }); } catch (e) {}
+    try { delete window.callPhantom; } catch (e) {}
+    try { delete window._phantom; } catch (e) {}
+    try { delete window.__nightmare; } catch (e) {}
   `);
 }
 

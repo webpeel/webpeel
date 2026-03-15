@@ -16,10 +16,13 @@ import {
   recyclePooledPage,
   getBrowser,
   getStealthBrowser,
+  getStealthPlaywright,
   getProfileBrowser,
   PAGE_POOL_SIZE,
   MAX_CONCURRENT_PAGES,
   getPooledPagesCount,
+  ANTI_DETECTION_ARGS,
+  getRandomViewport,
 } from './browser-pool.js';
 // Proprietary stealth module — gitignored, loaded conditionally
 let applyStealthPatches: ((page: any) => Promise<void>) | undefined;
@@ -190,6 +193,8 @@ export async function browserFetch(
   const usingProfileBrowser = !!profileDir;
   // Owned context created when storageState injection is requested
   let ownedContext: import('playwright').BrowserContext | undefined;
+  // Owned browser launched when proxy is specified (dedicated browser with proxy at launch level)
+  let ownedBrowser: import('playwright').Browser | undefined;
 
   try {
     const browser = usingProfileBrowser
@@ -239,11 +244,22 @@ export async function browserFetch(
           playwrightProxy = { server: proxy };
         }
 
-        // Create an isolated context with the proxy and optional storageState
-        ownedContext = await browser.newContext({
-          ...pageOptions,
+        // Launch a DEDICATED fresh browser with proxy at the launch level.
+        // Context-level proxy is unreliable for anti-bot sites — they check the browser's
+        // IP at connection time (set at launch), not at context creation.
+        const pw = stealth ? await getStealthPlaywright() : (await import('playwright')).chromium;
+        const vp = getRandomViewport();
+        ownedBrowser = await pw.launch({
+          headless: true,
+          args: [...ANTI_DETECTION_ARGS, `--window-size=${vp.width},${vp.height}`],
           proxy: playwrightProxy,
-          viewport: { width: effectiveViewportWidth, height: effectiveViewportHeight },
+        });
+        ownedContext = await ownedBrowser.newContext({
+          userAgent: validatedUserAgent || getRandomUserAgent(),
+          locale: 'en-US',
+          timezoneId: 'America/New_York',
+          javaScriptEnabled: true,
+          viewport: { width: effectiveViewportWidth || vp.width, height: effectiveViewportHeight || vp.height },
           ...(storageState ? { storageState } : {}),
         });
         page = await ownedContext.newPage();
@@ -453,6 +469,38 @@ export async function browserFetch(
         throwIfAborted();
       }
 
+      // Human-like delay for proxied requests (helps bypass bot detection on strict sites)
+      if (proxy) {
+        // Realistic human behavior to bypass behavioral analysis
+        const humanDelay = 800 + Math.random() * 1200;
+        await page!.waitForTimeout(humanDelay);
+        throwIfAborted();
+
+        // Realistic mouse movement (simulate human cursor)
+        try {
+          const vw = await page!.evaluate(() => window.innerWidth);
+          const vh = await page!.evaluate(() => window.innerHeight);
+          await page!.mouse.move(
+            100 + Math.random() * (vw - 200),
+            100 + Math.random() * (vh - 200),
+            { steps: 5 + Math.floor(Math.random() * 10) }
+          );
+          // Small scroll to trigger lazy-loaded content
+          await page!.evaluate(() => window.scrollBy(0, 200 + Math.random() * 400));
+          await page!.waitForTimeout(300 + Math.random() * 500);
+          throwIfAborted();
+          // Second mouse move
+          await page!.mouse.move(
+            50 + Math.random() * (vw - 100),
+            50 + Math.random() * (vh - 100),
+            { steps: 3 + Math.floor(Math.random() * 5) }
+          );
+        } catch {
+          // Non-fatal: mouse/scroll simulation failed
+        }
+        throwIfAborted();
+      }
+
       // Wait for additional time if requested (for dynamic content / screenshots)
       if (waitMs > 0) {
         await page!.waitForTimeout(waitMs);
@@ -577,7 +625,8 @@ export async function browserFetch(
         contentType: fetchContentType,
         screenshot: screenshotBuffer,
         page,
-        browser,
+        // Use ownedBrowser for proxy case, otherwise the shared browser
+        browser: ownedBrowser ?? browser,
         ...(fetchAutoInteract !== undefined ? { autoInteract: fetchAutoInteract } : {}),
       };
     }
@@ -624,6 +673,10 @@ export async function browserFetch(
         // so that the next fetch in the same process reuses the session.
         await page.close().catch(() => {});
       }
+    }
+    // Close the dedicated proxy browser if one was launched (not when keeping page open)
+    if (ownedBrowser && !keepPageOpen) {
+      await ownedBrowser.close().catch(() => {});
     }
     activePagesCount--;
   }
