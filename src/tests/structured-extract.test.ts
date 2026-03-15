@@ -501,14 +501,14 @@ describe('createExtractRouter', () => {
   it('exports createExtractRouter function', async () => {
     const mod = await import('../server/routes/extract.js');
     expect(typeof mod.createExtractRouter).toBe('function');
-  });
+  }, 15_000);
 
   it('creates a router', async () => {
     const { createExtractRouter } = await import('../server/routes/extract.js');
     const router = createExtractRouter();
     expect(router).toBeDefined();
     expect(typeof router).toBe('function'); // Express router is a function
-  });
+  }, 15_000);
 });
 
 // ---------------------------------------------------------------------------

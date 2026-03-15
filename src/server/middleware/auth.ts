@@ -162,8 +162,8 @@ export function createAuthMiddleware(authStore: AuthStore) {
           return;
         }
 
-        // Check limits (only for PostgresAuthStore)
-        if (authStore instanceof PostgresAuthStore) {
+        // Check limits (only for PostgresAuthStore, skip for admin tier)
+        if (authStore instanceof PostgresAuthStore && keyInfo?.tier !== 'admin') {
           // HARD LIMIT: Check burst limit first (per-hour cap)
           const { allowed: burstAllowed, burst } = await authStore.checkBurstLimit(apiKey);
           
