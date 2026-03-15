@@ -96,7 +96,9 @@ func doHTTP2fhttp(conn net.Conn, parsedURL *url.URL, method string, headers map[
 		return nil, fmt.Errorf("h2 request failed: %s", err)
 	}
 
-	// Read and decompress body
+	// Read body — fhttp may auto-decompress gzip/br depending on DisableCompression.
+	// Try reading raw first; if Content-Encoding is present and data looks compressed,
+	// decompress manually. Otherwise, use as-is.
 	bodyBytes, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	conn.Close()
@@ -105,14 +107,28 @@ func doHTTP2fhttp(conn net.Conn, parsedURL *url.URL, method string, headers map[
 	}
 
 	encoding := strings.ToLower(resp.Header.Get("Content-Encoding"))
-	decompressed, err := decompressH2(bodyBytes, encoding)
-	if err != nil {
-		return nil, fmt.Errorf("h2 decompress failed: %s", err)
+	var decompressed []byte
+	if encoding != "" && len(bodyBytes) > 0 {
+		// Try decompression; if it fails, the body was likely already decompressed by fhttp
+		result, decErr := decompressH2(bodyBytes, encoding)
+		if decErr != nil {
+			// Decompression failed — body is probably already decompressed
+			decompressed = bodyBytes
+		} else {
+			decompressed = result
+		}
+	} else {
+		decompressed = bodyBytes
 	}
 
-	// Convert fhttp.Header to stdlib http.Header
+	// Convert fhttp.Header to stdlib http.Header.
+	// Remove Content-Encoding since we already decompressed the body —
+	// this prevents doFetch's decompressBody() from double-decompressing.
 	stdHeaders := make(http.Header)
 	for k, vs := range resp.Header {
+		if strings.ToLower(k) == "content-encoding" {
+			continue // already decompressed above
+		}
 		stdHeaders[k] = vs
 	}
 

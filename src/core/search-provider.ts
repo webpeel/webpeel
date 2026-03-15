@@ -27,6 +27,8 @@ export interface WebSearchResult {
   title: string;
   url: string;
   snippet: string;
+  /** Relevance score (0–1) based on keyword overlap with query. Added by filterRelevantResults. */
+  relevanceScore?: number;
 }
 
 export interface WebSearchOptions {
@@ -249,6 +251,102 @@ function normalizeUrlForDedupe(rawUrl: string): string {
       .replace(/[?#].*$/, '')
       .replace(/\/+$/g, '');
   }
+}
+
+// ============================================================
+// Result Relevance Filtering
+// Lightweight keyword-overlap scoring — no external deps.
+// Applied after fetching raw results to remove completely off-
+// topic hits (e.g., a grammar article returned for "used cars").
+// ============================================================
+
+const STOP_WORDS = new Set([
+  'the', 'a', 'an', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'for',
+  'of', 'with', 'how', 'what', 'where', 'when', 'why', 'best', 'top', 'most',
+  'and', 'or', 'but', 'not', 'do', 'does', 'did', 'be', 'been', 'have', 'has',
+  'buy', 'get', 'find', 'about', 'from', 'by', 'its', 'it', 'this', 'that',
+]);
+
+/**
+ * Extract meaningful keywords from a search query by stripping stop words and
+ * short tokens.  Returns lowercase tokens, deduped.
+ */
+function extractKeywords(query: string): string[] {
+  const seen = new Set<string>();
+  return query
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 2 && !STOP_WORDS.has(w))
+    .filter(w => {
+      if (seen.has(w)) return false;
+      seen.add(w);
+      return true;
+    });
+}
+
+/**
+ * Compute a [0, 1] relevance score for a single result against extracted keywords.
+ * Weights: title 0.5, URL 0.3, snippet 0.2.
+ */
+function scoreResult(result: WebSearchResult, keywords: string[]): number {
+  if (keywords.length === 0) return 1;
+
+  const titleLower   = (result.title   || '').toLowerCase();
+  const urlLower     = (result.url     || '').toLowerCase();
+  const snippetLower = (result.snippet || '').toLowerCase();
+
+  let titleHits   = 0;
+  let urlHits     = 0;
+  let snippetHits = 0;
+
+  for (const kw of keywords) {
+    if (titleLower.includes(kw))   titleHits++;
+    if (urlLower.includes(kw))     urlHits++;
+    if (snippetLower.includes(kw)) snippetHits++;
+  }
+
+  const titleScore   = titleHits   / keywords.length;
+  const urlScore     = urlHits     / keywords.length;
+  const snippetScore = snippetHits / keywords.length;
+
+  return titleScore * 0.5 + urlScore * 0.3 + snippetScore * 0.2;
+}
+
+/**
+ * Filter and rank results by relevance to the original query.
+ *
+ * 1. Extract meaningful keywords from the query (remove stop words).
+ * 2. Score each result by keyword overlap with title + URL + snippet.
+ * 3. Remove results with zero overlap (completely irrelevant).
+ * 4. Sort descending by score, keeping original index as tiebreaker.
+ * 5. Attach `relevanceScore` (0–1) to each surviving result.
+ *
+ * Results without any scores (query produced no keywords) are returned as-is.
+ */
+export function filterRelevantResults(
+  results: WebSearchResult[],
+  query: string,
+): WebSearchResult[] {
+  const keywords = extractKeywords(query);
+  if (keywords.length === 0) return results; // no keywords to filter on
+
+  const scored = results.map((r, idx) => ({
+    result: r,
+    score: scoreResult(r, keywords),
+    idx,
+  }));
+
+  // Drop results with zero overlap
+  const relevant = scored.filter(s => s.score > 0);
+
+  // Sort by score descending, original order as tiebreaker
+  relevant.sort((a, b) => (b.score !== a.score ? b.score - a.score : a.idx - b.idx));
+
+  return relevant.map(s => ({
+    ...s.result,
+    relevanceScore: Math.min(1, s.score),
+  }));
 }
 
 /**
@@ -552,7 +650,10 @@ export class StealthSearchProvider implements SearchProvider {
       if (deduped.length >= count) break;
     }
 
-    return deduped;
+    // Relevance filtering: remove completely off-topic results, score the rest
+    const filtered = filterRelevantResults(deduped, query);
+    // Respect the original count limit after filtering
+    return filtered.slice(0, count);
   }
 }
 
@@ -803,7 +904,9 @@ export class DuckDuckGoProvider implements SearchProvider {
             log.debug(`source=ddg-http returned ${results.length} results` +
               (ddgTimeoutMs < 8_000 ? ` (fast-timeout ${ddgTimeoutMs}ms)` : ''),
             );
-            return results;
+            // Apply relevance filtering before returning
+            const filtered = filterRelevantResults(results, query);
+            return filtered.length > 0 ? filtered : results; // fallback to unfiltered if all removed
           }
           ddgSucceeded = true; // connected OK, just 0 results
         } catch (e) {
@@ -836,7 +939,9 @@ export class DuckDuckGoProvider implements SearchProvider {
           providerStats.record('ddg-lite', true);
           log.debug(`source=ddg-lite returned ${liteResults.length} results` +
             (liteTimeoutMs < 8_000 ? ` (fast-timeout ${liteTimeoutMs}ms)` : ''));
-          return liteResults;
+          // Apply relevance filtering before returning
+          const filteredLite = filterRelevantResults(liteResults, query);
+          return filteredLite.length > 0 ? filteredLite : liteResults;
         }
         providerStats.record('ddg-lite', false);
         log.debug('DDG Lite also returned 0 results');
@@ -871,6 +976,7 @@ export class DuckDuckGoProvider implements SearchProvider {
     log.debug('Trying stealth browser search (DDG + Bing + Ecosia)...');
     try {
       const stealthProvider = new StealthSearchProvider();
+      // StealthSearchProvider already applies filterRelevantResults internally.
       const stealthResults = await stealthProvider.searchWeb(query, options);
       if (stealthResults.length > 0) {
         log.debug(`source=stealth returned ${stealthResults.length} results`);
@@ -882,6 +988,14 @@ export class DuckDuckGoProvider implements SearchProvider {
     }
 
     return [];
+  }
+
+  /**
+   * Exposed for testing: score and filter a pre-fetched result list against a query.
+   * Equivalent to calling filterRelevantResults() directly.
+   */
+  filterResults(results: WebSearchResult[], query: string): WebSearchResult[] {
+    return filterRelevantResults(results, query);
   }
 }
 
