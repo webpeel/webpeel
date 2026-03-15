@@ -211,6 +211,7 @@ export function createSearchRouter(authStore: AuthStore): Router {
         }
 
         // Enrich top N results in parallel with timeout (fast alternative to scrapeResults)
+        // IMPORTANT: forceBrowser=false, stealth=false to prevent OOM on 512MB containers
         if (enrichCount > 0 && !shouldScrape) {
           const ENRICH_TIMEOUT = 4000; // 4s hard timeout per URL
           const toEnrich = results.slice(0, enrichCount);
@@ -219,6 +220,8 @@ export function createSearchRouter(authStore: AuthStore): Router {
               const fetchPromise = peel(result.url, {
                 format: 'markdown',
                 maxTokens: 1500,
+                render: false,
+                stealth: false,
               }).then(peelResult => ({
                 url: result.url,
                 content: peelResult.content?.substring(0, 1500) || null,
