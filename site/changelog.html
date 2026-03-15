@@ -134,8 +134,115 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.18.5</div>
+              <div class="release-version mono">v0.21.12</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">March 15, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Structured extraction polish:</strong> Emoji stripping from extractor output, new <code>director</code> field for movies, more accurate <code>confidence</code> scoring (0–1)</li>
+            <li><strong>Content quality improvements:</strong> Richer domain extractors with smarter fallbacks; actionable error messages with docs links</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.21.11</div>
+            </div>
+            <div class="release-meta">March 15, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>PeelTLS H2 fix:</strong> Fixed double-decompression bug on HTTP/2 responses; added <code>forceHttp1</code> option</li>
+            <li><strong>Search relevance scoring:</strong> <code>relevanceScore</code> (0–1) now returned on search results — BM25 score against query</li>
+            <li><strong>CLI progress indicators:</strong> Better feedback for long-running fetches</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.21.9–10</div>
+            </div>
+            <div class="release-meta">March 15, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Complete anti-bot stealth upgrade:</strong> 9 independent patches to TLS fingerprinting, header ordering, and timing randomization</li>
+            <li><strong>Full test verification pass:</strong> All tests run and fixed after stealth upgrade</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.21.8</div>
+            </div>
+            <div class="release-meta">March 15, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Proxy routing for search and browser:</strong> <code>--proxy</code> now applies to search providers and headless browser rendering</li>
+            <li><strong>Shared proxy-config module:</strong> Centralized proxy parsing across all transport layers</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.21.7</div>
+            </div>
+            <div class="release-meta">March 14, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Smart heuristic extraction:</strong> Page-type-specific heuristics for product, article, recipe, job listing, and more</li>
+            <li><strong>Improved error classification:</strong> Errors now categorized as <code>blocked</code>, <code>timeout</code>, <code>parse_error</code>, or <code>network_error</code> with actionable hints</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.21.6</div>
+            </div>
+            <div class="release-meta">March 14, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Dashboard activity log:</strong> Color-coded latency (green &lt;3s, yellow 3–8s, red &gt;8s) with "Normal for web scraping" hint</li>
+            <li><strong>Docs visual upgrade:</strong> Improved code blocks, better mobile layout, fixed sidebar states</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.21.5</div>
+            </div>
+            <div class="release-meta">March 14, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Structured JSON extraction (<code>POST /v1/extract</code>):</strong> LLM-powered extraction with JSON Schema or natural language prompts. BYOK — bring your own OpenAI-compatible key</li>
+            <li><strong>Heuristic auto-extraction (<code>GET /v1/extract/auto</code>):</strong> Zero-LLM extraction with page-type detection. Returns <code>confidence</code> score (0–1)</li>
+            <li><strong>Documentation upgrade:</strong> Extract API fully documented</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.21.0</div>
+            </div>
+            <div class="release-meta">March 13, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Transcript export (<code>GET /v1/transcript/export</code>):</strong> Download YouTube transcripts as SRT, TXT, Markdown, or JSON</li>
+            <li><strong>API key scoping:</strong> Create scoped API keys with per-endpoint permissions</li>
+            <li><strong>Shareable playground links:</strong> Share a playground request via URL</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.18.5</div>
             </div>
             <div class="release-meta">March 6, 2026</div>
           </div>

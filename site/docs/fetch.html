@@ -137,7 +137,22 @@ Authorization: Bearer wp_live_xxxx</code></pre>
         </tbody>
       </table>
 
-      <h3>AI Parameters (New in v0.18.0)</h3>
+      <h3>Anti-Bot Parameters</h3>
+      <table>
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>stealth</code></td><td>boolean</td><td><code>false</code></td><td>Enable stealth mode: human-like headers + timing + auto-escalation through PeelTLS TLS fingerprinting, then browser if needed</td></tr>
+          <tr><td><code>proxy</code></td><td>string</td><td>—</td><td>Proxy URL to route through: <code>http://user:pass@host:port</code> or <code>socks5://...</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-tip">
+        <strong>Automatic escalation:</strong> When <code>stealth=true</code>, WebPeel automatically tries progressively more powerful bypass techniques until one succeeds. The <code>method</code> field in the response tells you which one worked (e.g. <code>peeltls</code> = TLS fingerprint spoofing, <code>browser</code> = full headless browser).
+      </div>
+
+      <h3>AI Parameters</h3>
       <table>
         <thead>
           <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
