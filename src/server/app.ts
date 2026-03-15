@@ -166,8 +166,11 @@ export function createApp(config: ServerConfig = {}): Express {
       // Allow requests with no origin (e.g. curl, server-to-server)
       if (!origin) return callback(null, true);
       if (corsOrigins.includes(origin)) return callback(null, origin);
-      // Unknown origins: allow (API key clients need cross-origin access) but no credentials
-      return callback(null, true);
+      // Unknown origins: allow (API key clients need cross-origin access) but no credentials.
+      // SECURITY: Return '*' instead of reflecting the origin — wildcard is incompatible with
+      // credentials (browsers reject Allow-Credentials + *), prevents origin-specific CORS caching,
+      // and avoids security-scanner false positives from reflected origins.
+      return callback(null, '*');
     },
     // credentials: set conditionally via post-cors middleware below
     credentials: false,

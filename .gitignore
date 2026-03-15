@@ -20,8 +20,15 @@
 *~
 .DS_Store
 .env
+.env.*
 .env.*.local
 .env.local
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
 .idea/
 .internal/
 .mcpregistry_github_token

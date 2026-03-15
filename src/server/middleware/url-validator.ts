@@ -29,6 +29,22 @@ export function validateUrlForSSRF(urlString: string): void {
     throw new SSRFError('Cannot fetch localhost, private networks, or non-HTTP URLs');
   }
 
+  // SECURITY: Block well-known cloud metadata service hostnames.
+  // These hostnames resolve to link-local IPs (169.254.x.x) which are blocked
+  // by IP, but hostname-level blocking provides defense-in-depth against DNS
+  // rebinding attacks where a domain transiently resolves to a valid IP during
+  // validation, then resolves to a private IP for the actual fetch.
+  const metadataHostnames = [
+    'metadata.google.internal',     // GCP: resolves to 169.254.169.254
+    'metadata.goog',                 // GCP alternate
+    'metadata.internal',             // Generic internal
+    'instance-data.ec2.internal',    // AWS alternate
+    'computeMetadata',               // Partial GCP hostname
+  ];
+  if (metadataHostnames.some(m => hostname === m || hostname.endsWith('.' + m))) {
+    throw new SSRFError('Cannot fetch localhost, private networks, or non-HTTP URLs');
+  }
+
   // Parse and validate IP addresses
   const ipv4Info = parseIPv4(hostname);
   if (ipv4Info) {
