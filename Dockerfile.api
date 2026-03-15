@@ -31,7 +31,7 @@ WORKDIR /app
 
 # Install WebPeel from npm FIRST (includes rebrowser-playwright)
 # Pin version to bust Docker layer cache on updates
-# Cache-bust: update this comment to force npm re-fetch (v0.20.19)
+# Cache-bust: update this comment to force npm re-fetch (v0.21.16)
 RUN npm install webpeel@latest --prefer-online
 
 # Install yt-dlp for YouTube transcript extraction
