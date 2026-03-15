@@ -493,6 +493,7 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       blockResources: ctx.options.blockResources,
       cloaked: ctx.options.cloaked,
       cycle: ctx.options.cycle,
+      tls: ctx.options.tls,
       noEscalate: ctx.options.noEscalate,
     });
   } catch (fetchError) {

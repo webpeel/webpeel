@@ -202,6 +202,7 @@
     "rating": 4.5,
     "inStock": true
   },
+  "confidence": 0.91,
   "metadata": {
     "url": "https://example.com/product",
     "title": "Example Product Page",
@@ -211,6 +212,8 @@
     "elapsed": 3241
   }
 }</code></pre>
+
+      <p><strong><code>confidence</code></strong> is a <code>0–1</code> score reflecting extraction quality. LLM extraction scores <code>0.85–0.98</code> based on field fill rate. Heuristic extraction scores <code>0.65–0.70</code>. A score below <code>0.3</code> means most fields returned null.</p>
 
       <h2 id="get-extract-auto">GET /v1/extract/auto</h2>
       <p>Heuristic extraction without LLM — detects page type (product, article, job listing, etc.) and extracts known fields using DOM parsing.</p>
@@ -234,6 +237,7 @@
       <pre><code class="language-json">{
   "url": "https://example.com/article",
   "pageType": "article",
+  "confidence": 0.68,
   "structured": {
     "type": "article",
     "title": "Breaking News: ...",

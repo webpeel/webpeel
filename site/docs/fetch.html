@@ -169,6 +169,7 @@ Content-Type: application/json
   "tokens": 142,
   "elapsed": 312,
   "tokenSavingsPercent": 73,
+  "method": "simple",
   "answer": "The main features include..." // only if question= was set
 }</code></pre>
 
@@ -183,6 +184,7 @@ Content-Type: application/json
           <tr><td><code>tokens</code></td><td>number</td><td>Approximate token count of <code>content</code></td></tr>
           <tr><td><code>elapsed</code></td><td>number</td><td>Request time in milliseconds</td></tr>
           <tr><td><code>tokenSavingsPercent</code></td><td>number</td><td>% reduction vs raw HTML token count</td></tr>
+          <tr><td><code>method</code></td><td>string</td><td>Fetch strategy used: <code>simple</code> | <code>peeltls</code> | <code>stealth</code> | <code>browser</code> | <code>cloaked</code> | <code>cf-worker</code> | <code>google-cache</code>. Reflects automatic escalation — e.g. <code>peeltls</code> means PeelTLS TLS fingerprint spoofing was used to bypass bot detection.</td></tr>
           <tr><td><code>answer</code></td><td>string</td><td>AI answer to your <code>question</code> (if provided)</td></tr>
         </tbody>
       </table>

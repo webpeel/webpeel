@@ -176,6 +176,8 @@ function heuristicExtractString(fieldName: string, content: string, pageUrl?: st
         .replace(/\(https?:\/\/[^)]+\)/g, '')  // remove bare URLs in parens
         .replace(/[*_`[\]]/g, '')
         .replace(/&[a-z]+;/g, '')  // HTML entities
+        // Strip leading emoji (📦🎬🎵🎮 etc.) that domain extractors add as decoration
+        .replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\uFE0F]+\s*/u, '')
         .replace(/\s+/g, ' ')
         .trim().slice(0, 150);
     }
@@ -189,6 +191,12 @@ function heuristicExtractString(fieldName: string, content: string, pageUrl?: st
   // URL/website/link → use the URL if we have it
   if (/^(url|website|link|homepage|site)$/.test(lf)) {
     if (pageUrl) return pageUrl;
+  }
+
+  // Director (for movies/films)
+  if (/director/.test(lf)) {
+    const m = content.match(/Director[:\s*]+([^\n|,]+)/i) ?? content.match(/Directed by[:\s]+([^\n|,]+)/i);
+    if (m?.[1]) return m[1].replace(/[*_`]/g, '').trim().slice(0, 100);
   }
 
   // Author/writer/by

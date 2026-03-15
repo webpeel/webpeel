@@ -108,8 +108,8 @@
         <span>Domain Extractors</span>
       </div>
 
-      <h1>Domain Extractors <span class="badge">v0.15</span></h1>
-      <p class="lead">Pass a Twitter/X, Reddit, GitHub, or Hacker News URL to WebPeel and get back clean, structured data — tweets, comments, repo stats, stories. No special flags. Fully automatic.</p>
+      <h1>Domain Extractors <span class="badge">v0.21</span></h1>
+      <p class="lead">WebPeel has <strong>32 domain-specific extractors</strong> that activate automatically when it detects a supported URL. Get back clean, structured data — tweets, repo stats, product prices, transcripts, articles — no special flags needed.</p>
 
       <h2>What It Does</h2>
       <p>Domain Extractors are purpose-built parsers that activate automatically when WebPeel detects a supported platform URL. Instead of scraping HTML (slow, brittle, blocked), each extractor calls the platform's own data API for reliable, structured output:</p>
@@ -119,6 +119,33 @@
         <li>🟠 <strong>Reddit</strong> — post + comments via Reddit's JSON API</li>
         <li>🐙 <strong>GitHub</strong> — repo stats, README, open issues, recent PRs via GitHub API</li>
         <li>🟧 <strong>Hacker News</strong> — stories + threaded comments via Firebase API</li>
+        <li>📖 <strong>Wikipedia</strong> — article text, sections, categories, metadata</li>
+        <li>▶️ <strong>YouTube</strong> — video metadata, transcript, channel info</li>
+        <li>📄 <strong>arXiv</strong> — paper abstract, authors, categories, PDF link</li>
+        <li>💬 <strong>Stack Overflow</strong> — question, answers, votes, accepted answer</li>
+        <li>📦 <strong>npm</strong> — package info, version history, weekly downloads</li>
+        <li>🛒 <strong>Best Buy</strong> — product price, specs, availability, ratings</li>
+        <li>🛍️ <strong>Walmart</strong> — product price, availability, structured product data</li>
+        <li>📦 <strong>Amazon</strong> — product price, reviews, ASIN, availability</li>
+        <li>📝 <strong>Medium</strong> — article text, author, claps, publication</li>
+        <li>📧 <strong>Substack</strong> — newsletter post content, author, subscriber count</li>
+        <li>🍳 <strong>Allrecipes</strong> — recipe ingredients, instructions, nutrition, ratings</li>
+        <li>🎬 <strong>IMDB</strong> — movie/TV metadata, cast, ratings, plot summary</li>
+        <li>💼 <strong>LinkedIn</strong> — profile info, job listings, company pages</li>
+        <li>🐍 <strong>PyPI</strong> — package info, version, downloads, dependencies</li>
+        <li>👩‍💻 <strong>Dev.to</strong> — article content, tags, reactions, comments</li>
+        <li>🏘️ <strong>Craigslist</strong> — listing content, price, location, images</li>
+        <li>🎵 <strong>Spotify</strong> — track/album/artist metadata</li>
+        <li>🎵 <strong>TikTok</strong> — video metadata, author, engagement</li>
+        <li>📌 <strong>Pinterest</strong> — pin content, board info, image metadata</li>
+        <li>📰 <strong>NYTimes</strong> — article text, author, section, publish date</li>
+        <li>📺 <strong>BBC</strong> — article content, category, publish date</li>
+        <li>📡 <strong>CNN</strong> — article text, author, publish date</li>
+        <li>🎮 <strong>Twitch</strong> — channel info, stream status, recent clips</li>
+        <li>🎧 <strong>SoundCloud</strong> — track metadata, artist, plays, waveform</li>
+        <li>📸 <strong>Instagram</strong> — post caption, likes, comments (public posts)</li>
+        <li>🚀 <strong>Product Hunt</strong> — product listing, votes, comments</li>
+        <li>📄 <strong>PDF files</strong> — text extraction from any URL ending in <code>.pdf</code></li>
       </ul>
 
       <p>All extractors are <strong>zero-config</strong>: just fetch the URL as you normally would.</p>

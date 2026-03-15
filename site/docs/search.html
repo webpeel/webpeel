@@ -216,7 +216,8 @@
         "title": "WebPeel — Fast Web Fetching for AI",
         "url": "https://webpeel.dev",
         "snippet": "Smart web scraping that auto-escalates from HTTP to headless browser...",
-        "content": "# WebPeel\n\nFast web fetching for AI agents..."
+        "content": "# WebPeel\n\nFast web fetching for AI agents...",
+        "relevanceScore": 0.87
       }
     ],
     "news": [
@@ -238,6 +239,8 @@
     ]
   }
 }</code></pre>
+
+      <p>Each web result includes a <strong><code>relevanceScore</code></strong> (0–1) when <code>scrapeResults=true</code>: a BM25-based score of how closely the fetched page content matches your query. Use this to rank or filter results before passing them to your LLM.</p>
 
       <h3>Response Headers</h3>
       <table class="param-table">
