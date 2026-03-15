@@ -30,18 +30,11 @@ export function createHealthRouter(): Router {
   router.get('/health', (_req: Request, res: Response) => {
     const uptime = Math.floor((Date.now() - startTime) / 1000);
     
-    // Count env vars for diagnostics (never expose values)
-    const envKeys = ['DATABASE_URL', 'JWT_SECRET', 'GITHUB_TOKEN', 'GH_TOKEN',
-      'WEBSHARE_PROXY_USER', 'STRIPE_SECRET_KEY', 'ENABLE_CACHE_WARM', 'NODE_ENV', 'CORS_ORIGINS'];
-    const envStatus: Record<string, boolean> = {};
-    for (const k of envKeys) envStatus[k] = !!process.env[k];
-
     res.json({
       status: 'healthy',
       version,
       uptime,
       timestamp: new Date().toISOString(),
-      env: envStatus,
     });
   });
 
