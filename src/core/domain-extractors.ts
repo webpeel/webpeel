@@ -1115,6 +1115,27 @@ async function hackerNewsExtractor(_html: string, url: string): Promise<DomainEx
     );
     if (!storyData) return null;
 
+    // Comment items — fetch parent story for context
+    if (storyData.type === 'comment') {
+      const parentId = storyData.parent;
+      let parentTitle = '';
+      if (parentId) {
+        try {
+          const parentData = await fetchJson(`https://hacker-news.firebaseio.com/v0/item/${parentId}.json`);
+          parentTitle = parentData?.title || '';
+          // Walk up to root story if parent is also a comment
+          if (!parentTitle && parentData?.parent) {
+            const rootData = await fetchJson(`https://hacker-news.firebaseio.com/v0/item/${parentData.parent}.json`);
+            parentTitle = rootData?.title || '';
+          }
+        } catch { /* non-fatal */ }
+      }
+      const text = storyData.text ? stripHtml(storyData.text) : '';
+      const titleStr = parentTitle ? `Comment on: ${parentTitle}` : 'HN Comment';
+      const cleanContent = `## 🟠 ${titleStr}\n\n**Author:** ${storyData.by || '[deleted]'} | **Posted:** ${unixToIso(storyData.time)}\n\n${text}`;
+      return { domain: 'news.ycombinator.com', type: 'comment', structured: { title: titleStr, author: storyData.by, text }, cleanContent };
+    }
+
     const type = storyData.type === 'story' ? 'story' :
       storyData.type === 'ask' ? 'ask_hn' :
       storyData.type === 'show' ? 'show_hn' :

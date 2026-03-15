@@ -429,13 +429,9 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
         if (ddResult.rawHtmlSize && ddResult.rawHtmlSize > 0) {
           ctx.rawHtmlSize = ddResult.rawHtmlSize;
         } else {
-          // For API-first extractors (HN, Reddit, GitHub), estimate what the raw page
-          // would cost by doing a quick HEAD request for Content-Length
-          try {
-            const headResp = await fetch(ctx.url, { method: 'HEAD', signal: AbortSignal.timeout(2000) });
-            const cl = headResp.headers.get('content-length');
-            if (cl) ctx.rawHtmlSize = parseInt(cl, 10);
-          } catch { /* non-fatal — token estimate will be undefined */ }
+          // For API-first extractors (HN, Reddit, GitHub), the raw HTML page is typically
+          // 6-10x larger than the extracted content. Estimate conservatively at 7x.
+          ctx.rawHtmlSize = ddResult.cleanContent.length * 7;
         }
         // Create minimal fetchResult so downstream stages don't crash
         ctx.fetchResult = {
@@ -507,6 +503,9 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
           ctx.content = ddResult.cleanContent;
           if (ddResult.rawHtmlSize && ddResult.rawHtmlSize > 0) {
             ctx.rawHtmlSize = ddResult.rawHtmlSize;
+          } else {
+            // Estimate raw HTML size for API-first extractors (7x compression factor)
+            ctx.rawHtmlSize = ddResult.cleanContent.length * 7;
           }
           ctx.fetchResult = {
             html: ddResult.cleanContent,
