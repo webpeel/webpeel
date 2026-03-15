@@ -259,14 +259,15 @@ describe('extractStructured - heuristic extraction', () => {
     expect(typeof result.data.company_mission).toBe('string');
   });
 
-  it('confidence is 0.3 when no fields found', async () => {
+  it('confidence is 0.1 when no fields found (all null)', async () => {
     const content = 'A page with completely unrelated content about the weather.';
     const schema: ExtractionSchema = {
       type: 'object',
       properties: { turnip_count: { type: 'number' }, pixel_density: { type: 'number' } },
     };
     const result = await extractStructured(content, schema);
-    expect(result.confidence).toBeCloseTo(0.3);
+    // When all fields are null (nothing extracted), confidence should be very low (0.1)
+    expect(result.confidence).toBeCloseTo(0.1);
   });
 });
 

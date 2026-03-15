@@ -558,6 +558,18 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       } catch { /* Search fallback also failed — rethrow original BlockedError */ }
     }
 
+    // Enhance error messages with actionable advice
+    if (fetchError instanceof BlockedError) {
+      const actionableMsg = `${fetchError.message}\n\nThis site blocks automated access. Try using \`stealth: true\` and a residential proxy.`;
+      const enhancedError = new BlockedError(actionableMsg);
+      throw enhancedError;
+    }
+    const errMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+    if (errMsg.toLowerCase().includes('timeout') || errMsg.toLowerCase().includes('timed out') || errMsg.includes('AbortError')) {
+      const ms = ctx.timeout ?? 30000;
+      const enhancedMsg = `Request timed out after ${Math.round(ms / 1000)}s. This site may require browser rendering — try \`render: true\`.`;
+      throw new Error(enhancedMsg);
+    }
     throw fetchError;
   }
   const fetchDuration = ctx.timer.end('fetch');
@@ -1361,6 +1373,16 @@ export function buildResult(ctx: PipelineContext): PeelResult {
   let warning: string | undefined;
   const contentLen = ctx.content.length;
   const htmlLen = ctx.fetchResult?.html?.length || 0;
+
+  // Add contentQuality metadata for thin content (< 100 words)
+  const wordCount = ctx.content.trim().split(/\s+/).filter((w) => w.length > 0).length;
+  if (wordCount < 100 && wordCount > 0) {
+    ctx.warnings.push(`Content is thin (${wordCount} words). The page may be paywalled, require authentication, or block automated access.`);
+    if (ctx.metadata) {
+      (ctx.metadata as any).contentQuality = 'thin';
+    }
+  }
+
   if (contentLen < 100 && htmlLen > 1000) {
     warning = 'Content extraction produced very little text from a substantial page. The site may use heavy JavaScript rendering. Try adding render: true.';
   } else if (ctx.budgetFallback) {

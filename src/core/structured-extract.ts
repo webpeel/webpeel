@@ -366,9 +366,19 @@ async function heuristicExtract(
     data[field] = value;
   }
 
-  // Confidence: 0.3 base, up to 0.5 based on fill rate
+  // Confidence based on fill rate:
+  // - ALL fields null → 0.1 (extraction found nothing useful)
+  // - Some fields null → 0.3-0.5 based on fill ratio
+  // - ALL fields populated → 0.6-0.7 (heuristic max — values may still be imprecise)
   const fillRate = totalFields > 0 ? fieldsFound / totalFields : 0;
-  const confidence = 0.3 + fillRate * 0.2;
+  let confidence: number;
+  if (fieldsFound === 0) {
+    confidence = 0.1; // All null — heuristic found nothing
+  } else if (fieldsFound === totalFields) {
+    confidence = 0.65 + fillRate * 0.05; // 0.7 for fully populated heuristic
+  } else {
+    confidence = 0.3 + fillRate * 0.2; // 0.3–0.5 based on fill ratio
+  }
 
   return {
     data,
@@ -438,12 +448,21 @@ export async function extractStructured(
 
       const { data, missingRequired } = validateAndCoerce(parsed, schema);
 
-      // Confidence: 0.9 base, penalised for missing required fields
-      const penalty = missingRequired.length * 0.05;
+      // Confidence for LLM extraction:
+      // - ALL fields null → 0.1 (LLM couldn't extract anything)
+      // - Partial fill → 0.85+ (LLM is generally reliable when it finds data)
+      // - All populated → 0.90-0.98 based on fill rate
       const filledCount = Object.values(data).filter((v) => v !== null && v !== undefined).length;
       const totalCount = Object.keys(schema.properties).length;
-      const fillBonus = totalCount > 0 ? (filledCount / totalCount) * 0.05 : 0;
-      const confidence = Math.max(0.5, Math.min(0.98, 0.9 + fillBonus - penalty));
+      const fillRate = totalCount > 0 ? filledCount / totalCount : 0;
+      const penalty = missingRequired.length * 0.05;
+      let confidence: number;
+      if (filledCount === 0) {
+        confidence = 0.1; // LLM returned all nulls — extraction failed
+      } else {
+        const fillBonus = fillRate * 0.08; // Up to +0.08 for fully populated
+        confidence = Math.min(0.98, 0.85 + fillBonus - penalty); // 0.85–0.93+ for LLM
+      }
 
       return {
         data,

@@ -1712,14 +1712,29 @@ async function npmExtractor(_html: string, url: string): Promise<DomainExtractRe
     };
 
     // Include README if available (some packages have it, some don't)
-    const readmeText = data.readme && data.readme.length > 10 ? data.readme.slice(0, 5000) : '';
+    let readmeText = data.readme && data.readme.length > 10 ? data.readme.slice(0, 5000) : '';
+
+    // If no README in registry, try fetching from unpkg.com
+    if (!readmeText) {
+      try {
+        const unpkgUrl = `https://unpkg.com/${encodeURIComponent(packageName)}/README.md`;
+        const readmeResult = await simpleFetch(unpkgUrl, undefined, 10000);
+        if (readmeResult?.html && readmeResult.html.length > 10 && !readmeResult.html.trim().startsWith('<')) {
+          readmeText = readmeResult.html.slice(0, 5000);
+        }
+      } catch { /* README from unpkg optional */ }
+    }
 
     // Add to structured data
     structured.readme = readmeText;
 
     const keywordsLine = structured.keywords.length ? `\n**Keywords:** ${structured.keywords.join(', ')}` : '';
+    // Show ALL dependencies (not capped at 15)
     const depsLine = structured.dependencies.length
-      ? `\n**Dependencies (${structured.dependencies.length}):** ${structured.dependencies.slice(0, 15).join(', ')}${structured.dependencies.length > 15 ? '...' : ''}`
+      ? `\n**Dependencies (${structured.dependencies.length}):** ${structured.dependencies.join(', ')}`
+      : '';
+    const devDepsLine = structured.devDependencies.length
+      ? `\n**Dev Dependencies (${structured.devDependencies.length}):** ${structured.devDependencies.slice(0, 10).join(', ')}${structured.devDependencies.length > 10 ? '...' : ''}`
       : '';
     const repoLine = structured.repository ? `\n**Repository:** ${structured.repository.replace('git+', '').replace('.git', '')}` : '';
     const homepageLine = structured.homepage ? `\n**Homepage:** ${structured.homepage}` : '';
@@ -1734,7 +1749,7 @@ async function npmExtractor(_html: string, url: string): Promise<DomainExtractRe
 ${structured.description}
 
 **License:** ${structured.license} | **Weekly Downloads:** ${structured.weeklyDownloads?.toLocaleString() || 'N/A'}
-**Author:** ${structured.author || 'N/A'} | **Maintainers:** ${structured.maintainers.join(', ') || 'N/A'}${keywordsLine}${depsLine}${repoLine}${homepageLine}${datesLine}${readmeSection}`;
+**Author:** ${structured.author || 'N/A'} | **Maintainers:** ${structured.maintainers.join(', ') || 'N/A'}${keywordsLine}${depsLine}${devDepsLine}${repoLine}${homepageLine}${datesLine}${readmeSection}`;
 
     return { domain: 'npmjs.com', type: 'package', structured, cleanContent };
   } catch (e) {
@@ -2049,7 +2064,28 @@ async function mediumExtractor(html: string, url: string): Promise<DomainExtract
 async function substackExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
   try {
     const { load } = await import('cheerio');
-    const $ = load(html);
+
+    // Handle open.substack.com/pub/{publication}/p/{slug} redirect URLs
+    // These are share links that redirect to the actual post. Redirect to the real URL.
+    const urlObj = new URL(url);
+    let workingHtml = html;
+    let workingUrl = url;
+    if (urlObj.hostname === 'open.substack.com') {
+      const openMatch = urlObj.pathname.match(/\/pub\/([^/]+)\/p\/([^/]+)/);
+      if (openMatch) {
+        const [, publication, slug] = openMatch;
+        const actualUrl = `https://${publication}.substack.com/p/${slug}`;
+        try {
+          const fetchResult = await simpleFetch(actualUrl, undefined, 15000);
+          if (fetchResult?.html && fetchResult.html.length > 500) {
+            workingHtml = fetchResult.html;
+            workingUrl = actualUrl;
+          }
+        } catch { /* fall through with original HTML */ }
+      }
+    }
+
+    const $ = load(workingHtml);
 
     // JSON-LD
     let jsonLdData: any = null;
@@ -2077,16 +2113,16 @@ async function substackExtractor(html: string, url: string): Promise<DomainExtra
       $('time').first().attr('datetime') || '';
 
     const publication = $('meta[property="og:site_name"]').attr('content') ||
-      $('a.navbar-title-link').text().trim() || new URL(url).hostname.replace('.substack.com', '');
+      $('a.navbar-title-link').text().trim() || new URL(workingUrl).hostname.replace('.substack.com', '');
 
     const description = jsonLdData?.description ||
       $('meta[property="og:description"]').attr('content') || '';
 
-    // Article content
+    // Article content — try multiple Substack CSS patterns
     let articleBody = '';
-    const postContent = $('.body.markup, .post-content, article').first();
+    const postContent = $('.body.markup, .post-content, article, [class*="post-content"], .available-content').first();
     if (postContent.length) {
-      postContent.find('script, style, nav, .paywall, .subscribe-widget').remove();
+      postContent.find('script, style, nav, .paywall, .subscribe-widget, .subscription-widget').remove();
       const parts: string[] = [];
       postContent.find('h1, h2, h3, h4, p, blockquote, pre, li').each((_: any, el: any) => {
         const tag = (el as any).name;
@@ -2101,7 +2137,23 @@ async function substackExtractor(html: string, url: string): Promise<DomainExtra
       articleBody = parts.join('\n\n');
     }
 
+    // If no article body found, try broader search
+    if (!articleBody) {
+      const parts: string[] = [];
+      $('main p, article p, [class*="content"] p').each((_: any, el: any) => {
+        const text = $(el).text().trim();
+        if (text && text.length > 20) parts.push(text);
+      });
+      articleBody = parts.slice(0, 20).join('\n\n');
+    }
+
     const contentBody = articleBody || description;
+
+    // Detect if the post appears paywalled (short content with no article body)
+    const isPaywalled = !articleBody && description.length > 0;
+    const paywallNote = isPaywalled
+      ? '\n\n---\n*⚠️ This post appears to be behind a paywall. Only the preview/description is available. Full content requires a subscription.*'
+      : '';
 
     const structured: Record<string, any> = {
       title,
@@ -2109,14 +2161,15 @@ async function substackExtractor(html: string, url: string): Promise<DomainExtra
       publication,
       publishDate,
       description,
-      url,
+      paywalled: isPaywalled,
+      url: workingUrl,
     };
 
     const authorLine = author ? `\n**Author:** ${author}` : '';
     const pubLine = publication ? `\n**Publication:** ${publication}` : '';
     const dateLine = publishDate ? `\n**Published:** ${publishDate.split('T')[0]}` : '';
 
-    const cleanContent = `# ${title}${authorLine}${pubLine}${dateLine}\n\n${contentBody.substring(0, 8000)}`;
+    const cleanContent = `# ${title}${authorLine}${pubLine}${dateLine}\n\n${contentBody.substring(0, 8000)}${paywallNote}`;
 
     return { domain: 'substack.com', type: 'post', structured, cleanContent };
   } catch {
@@ -2299,11 +2352,20 @@ async function imdbExtractor(html: string, url: string): Promise<DomainExtractRe
         : jsonLd.director?.name || String(jsonLd.director))
       : $('a[href*="/name/"][class*="ipc-metadata-list-item__list-content-item"]').first().text().trim() || '';
 
-    // Cast (top few from JSON-LD actor field)
-    const cast: string[] = jsonLd?.actor
+    // Cast — JSON-LD has top actors, also parse HTML for broader cast list
+    const castFromLd: string[] = jsonLd?.actor
       ? (Array.isArray(jsonLd.actor) ? jsonLd.actor : [jsonLd.actor])
-          .map((a: any) => a.name || a).slice(0, 6)
+          .map((a: any) => a.name || a)
       : [];
+
+    // Parse additional cast from HTML (IMDB cast section)
+    const castFromHtml: string[] = [];
+    // Try multiple IMDB cast selectors across page versions
+    $('[data-testid="title-cast-item"] a[href*="/name/nm"], a[data-testid*="cast"] span[class*="title"], .cast_list td.itemprop a').each((_: any, el: any) => {
+      const name = $(el).text().trim();
+      if (name && name.length > 1 && !castFromHtml.includes(name)) castFromHtml.push(name);
+    });
+    const cast = [...new Set([...castFromLd, ...castFromHtml])].slice(0, 15);
 
     // Runtime
     const runtime = jsonLd?.duration
@@ -2314,20 +2376,63 @@ async function imdbExtractor(html: string, url: string): Promise<DomainExtractRe
         })()
       : '';
 
+    // Full plot/storyline — try to get the longer version from HTML
+    const fullPlot = $('[data-testid="storyline-plot-summary"] span, [data-testid="plot-xl"] span, span[data-testid="plot-l"], #titleStoryLine p, .plot_summary .summary_text').first().text().trim() || description;
+
+    // Additional details: Writers, Keywords, Awards
+    const writers: string[] = [];
+    $('[data-testid="title-pc-wide-screen"] li[data-testid="title-pc-principal-credit"]:nth-child(2) a, .credit_summary_item:contains("Writer") a').each((_: any, el: any) => {
+      const name = $(el).text().trim();
+      if (name && !writers.includes(name)) writers.push(name);
+    });
+
+    // Keywords — try HTML first, fall back to JSON-LD keywords
+    let keywords: string[] = [];
+    $('[data-testid="storyline-plot-keywords"] a, .see-more.inline.canwrap span a, a[href*="keyword"]').each((_: any, el: any) => {
+      const kw = $(el).text().trim();
+      if (kw && kw.length < 30 && !keywords.includes(kw)) keywords.push(kw);
+    });
+    // Fall back to JSON-LD keywords if HTML didn't yield any
+    if (!keywords.length && jsonLd?.keywords) {
+      keywords = (typeof jsonLd.keywords === 'string'
+        ? jsonLd.keywords.split(',')
+        : Array.isArray(jsonLd.keywords) ? jsonLd.keywords : []
+      ).map((k: string) => k.trim()).filter(Boolean);
+    }
+
+    // Writers — also try JSON-LD creator field
+    if (!writers.length && jsonLd?.creator) {
+      const creators = Array.isArray(jsonLd.creator) ? jsonLd.creator : [jsonLd.creator];
+      for (const c of creators) {
+        const name = c?.name || (typeof c === 'string' ? c : '');
+        if (name && !writers.includes(name)) writers.push(name);
+      }
+    }
+
+    // Content rating & release date from JSON-LD
+    const contentRating = jsonLd?.contentRating || '';
+    const datePublished = jsonLd?.datePublished || '';
+
     const structured: Record<string, any> = {
-      title, year, contentType, description, ratingValue, ratingCount,
-      genres, director, cast, runtime, url,
+      title, year, contentType, description: fullPlot, ratingValue, ratingCount,
+      genres, director, writers, cast, runtime, keywords, contentRating, datePublished, url,
     };
 
     const ratingLine = ratingValue ? `⭐ ${ratingValue}/10${ratingCount ? ` (${Number(ratingCount).toLocaleString()} votes)` : ''}` : '';
     const genreLine = genres.length ? genres.join(', ') : '';
     const directorLine = director ? `**Director:** ${director}` : '';
+    const writersLine = writers.length ? `**Writers:** ${writers.slice(0, 5).join(', ')}` : '';
     const castLine = cast.length ? `**Cast:** ${cast.join(', ')}` : '';
     const runtimeLine = runtime ? `**Runtime:** ${runtime}` : '';
+    const ratedLine = contentRating ? `**Rated:** ${contentRating}` : '';
+    const releaseLine = datePublished ? `**Released:** ${datePublished}` : '';
+    const keywordsLine = keywords.length ? `\n**Keywords:** ${keywords.slice(0, 10).join(', ')}` : '';
 
     const metaParts = [ratingLine, genreLine, runtimeLine, year ? `**Year:** ${year}` : ''].filter(Boolean).join(' | ');
 
-    const cleanContent = `# 🎬 ${title}\n\n${metaParts}\n\n${directorLine ? directorLine + '\n' : ''}${castLine ? castLine + '\n' : ''}\n## Plot\n\n${description}`;
+    const detailParts = [directorLine, writersLine, castLine, ratedLine, releaseLine].filter(Boolean).join('\n');
+
+    const cleanContent = `# 🎬 ${title}\n\n${metaParts}\n\n${detailParts}${keywordsLine}\n\n## Plot\n\n${fullPlot}`;
 
     return { domain: 'imdb.com', type: contentType === 'TVSeries' ? 'tv_show' : 'movie', structured, cleanContent };
   } catch {
@@ -2483,11 +2588,29 @@ async function pypiExtractor(_html: string, url: string): Promise<DomainExtractR
       classifiers: (info.classifiers || []).slice(0, 10),
     };
 
+    // Full description/README from PyPI (info.description is the full README in markdown)
+    const fullDescription = info.description && info.description.length > 100 &&
+      info.description !== 'UNKNOWN' && info.description !== info.summary
+      ? info.description.slice(0, 8000)
+      : null;
+
+    // Store full description in structured
+    structured.fullDescription = fullDescription;
+
     const installCmd = `pip install ${info.name}`;
     const keywordsLine = structured.keywords.length ? `\n**Keywords:** ${structured.keywords.join(', ')}` : '';
     const pyVersionLine = structured.requiresPython ? `\n**Requires Python:** ${structured.requiresPython}` : '';
+    // Show all dependencies
     const depsLine = structured.requiresDist.length
       ? `\n\n## Dependencies\n\n${structured.requiresDist.map((d: string) => `- ${d}`).join('\n')}`
+      : '';
+
+    // Classifiers — extract useful ones (license, status, Python versions)
+    const usefulClassifiers = structured.classifiers.filter((c: string) =>
+      c.startsWith('Programming Language') || c.startsWith('License') || c.startsWith('Development Status')
+    );
+    const classifiersSection = usefulClassifiers.length
+      ? `\n\n## Classifiers\n\n${usefulClassifiers.map((c: string) => `- ${c}`).join('\n')}`
       : '';
 
     // Find project URLs
@@ -2495,6 +2618,11 @@ async function pypiExtractor(_html: string, url: string): Promise<DomainExtractR
     for (const [label, u] of Object.entries(structured.projectUrls)) {
       projectUrlLines.push(`- **${label}:** ${u}`);
     }
+
+    // Full description section (package README from PyPI)
+    const descSection = fullDescription
+      ? `\n\n## Description\n\n${fullDescription}`
+      : '';
 
     const cleanContent = `# 📦 ${info.name} ${info.version}
 
@@ -2506,7 +2634,7 @@ ${installCmd}
 
 **Author:** ${info.author || 'N/A'} | **License:** ${info.license || 'N/A'}${keywordsLine}${pyVersionLine}
 
-${projectUrlLines.length ? `## Links\n\n${projectUrlLines.join('\n')}\n` : ''}${depsLine}`;
+${projectUrlLines.length ? `## Links\n\n${projectUrlLines.join('\n')}\n` : ''}${depsLine}${classifiersSection}${descSection}`;
 
     return { domain: 'pypi.org', type: 'package', structured, cleanContent };
   } catch (e) {
@@ -2532,6 +2660,41 @@ async function devtoExtractor(html: string, url: string): Promise<DomainExtractR
     const slug = pathParts.length >= 2
       ? pathParts.slice(0, 2).join('/').replace(/^@/, '')
       : null;
+
+    // Homepage: no slug → fetch recent top articles from Dev.to API
+    if (!slug) {
+      try {
+        const topArticles = await fetchJson('https://dev.to/api/articles?page=1&per_page=20&top=1');
+        if (Array.isArray(topArticles) && topArticles.length > 0) {
+          const articles = topArticles.map((a: any) => ({
+            title: a.title || '',
+            author: a.user?.name || '',
+            authorUsername: a.user?.username || '',
+            tags: a.tag_list || [],
+            reactions: a.public_reactions_count || 0,
+            comments: a.comments_count || 0,
+            readingTime: a.reading_time_minutes ? `${a.reading_time_minutes} min` : '',
+            url: a.url || '',
+            publishDate: a.published_at ? a.published_at.split('T')[0] : '',
+          }));
+
+          const listMd = articles.map((a: any, i: number) => {
+            const tags = a.tags.length ? ` · #${a.tags.slice(0, 3).join(' #')}` : '';
+            const stats = `❤️ ${a.reactions} | 💬 ${a.comments}${a.readingTime ? ` | ${a.readingTime}` : ''}`;
+            return `${i + 1}. **[${a.title}](${a.url})**\n   by @${a.authorUsername}${tags}\n   ${stats} · ${a.publishDate}`;
+          }).join('\n\n');
+
+          const structured: Record<string, any> = {
+            title: 'DEV Community — Top Articles',
+            articles,
+            fetchedAt: new Date().toISOString(),
+          };
+
+          const cleanContent = `# 🧑‍💻 DEV Community — Top Articles\n\n*${articles.length} articles from the community*\n\n${listMd}`;
+          return { domain: 'dev.to', type: 'listing', structured, cleanContent };
+        }
+      } catch { /* fall through to HTML */ }
+    }
 
     if (slug) {
       try {
