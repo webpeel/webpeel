@@ -7,7 +7,7 @@ import { timingSafeEqual } from 'crypto';
 
 export interface ApiKeyInfo {
   key: string;
-  tier: 'free' | 'starter' | 'pro' | 'enterprise' | 'max';
+  tier: 'free' | 'starter' | 'pro' | 'enterprise' | 'max' | 'admin';
   rateLimit: number;
   accountId?: string;
   createdAt: Date;
