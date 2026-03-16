@@ -161,6 +161,7 @@ function isDdgAdSnippet(snippet: string): boolean {
 
 interface _AttemptRecord {
   success: boolean;
+  ts: number; // timestamp ms — used for decay (failures older than decayMs are ignored)
 }
 
 class ProviderStatsTracker {
@@ -168,17 +169,19 @@ class ProviderStatsTracker {
   private readonly windowSize: number;
   private readonly failThreshold: number;
   private readonly minSamples: number;
+  private readonly decayMs: number; // failures older than this are ignored
 
-  constructor(windowSize = 10, failThreshold = 0.8, minSamples = 3) {
+  constructor(windowSize = 10, failThreshold = 0.8, minSamples = 5, decayMs = 5 * 60 * 1000) {
     this.windowSize = windowSize;
     this.failThreshold = failThreshold;
     this.minSamples = minSamples;
+    this.decayMs = decayMs; // default 5 minutes: old failures don't permanently lock a provider
   }
 
   /** Record the outcome of a single attempt for the given source. */
   record(sourceId: string, success: boolean): void {
     const arr = this.history.get(sourceId) ?? [];
-    arr.push({ success });
+    arr.push({ success, ts: Date.now() });
     if (arr.length > this.windowSize) arr.splice(0, arr.length - this.windowSize);
     this.history.set(sourceId, arr);
   }
@@ -186,18 +189,23 @@ class ProviderStatsTracker {
   /**
    * Returns the failure rate (0–1) for the given source based on
    * the sliding window of recorded attempts.  Returns 0 if fewer
-   * than minSamples have been recorded.
+   * than minSamples have been recorded, or if all samples are older
+   * than decayMs (failures expire so cold-start blips don't permanently
+   * lock out a provider).
    */
   getFailureRate(sourceId: string): number {
     const arr = this.history.get(sourceId);
     if (!arr || arr.length < this.minSamples) return 0;
-    const failures = arr.filter(a => !a.success).length;
-    return failures / arr.length;
+    const cutoff = Date.now() - this.decayMs;
+    const recent = arr.filter(a => a.ts >= cutoff);
+    if (recent.length < this.minSamples) return 0; // not enough recent samples
+    const failures = recent.filter(a => !a.success).length;
+    return failures / recent.length;
   }
 
   /**
    * Returns true when the source should be skipped (failure rate >=
-   * failThreshold with at least minSamples recorded).
+   * failThreshold with at least minSamples recent recorded).
    */
   shouldSkip(sourceId: string): boolean {
     return this.getFailureRate(sourceId) >= this.failThreshold;
