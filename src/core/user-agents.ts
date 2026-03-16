@@ -47,8 +47,50 @@ const LINUX_UAS: readonly string[] = [
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
 ];
 
-/** All UAs combined (fallback when no platform is specified) */
+/** All Chrome UAs combined (fallback when no platform is specified) */
 const ALL_UAS: readonly string[] = [...WINDOWS_UAS, ...MAC_UAS, ...LINUX_UAS];
+
+// ── Extended pools for non-Chrome browsers (HTTP-only use) ───────────────────
+
+/** Firefox UAs — Windows, Mac, Linux */
+const FIREFOX_UAS: readonly string[] = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:133.0) Gecko/20100101 Firefox/133.0',
+  'Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0',
+];
+
+/** Safari UAs — macOS */
+const SAFARI_UAS: readonly string[] = [
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+];
+
+/** Microsoft Edge UAs */
+const EDGE_UAS: readonly string[] = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0',
+];
+
+/** Mobile Chrome UAs */
+const MOBILE_CHROME_UAS: readonly string[] = [
+  'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36',
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0.6778.103 Mobile/15E148 Safari/604.1',
+];
+
+/**
+ * Full UA pool for HTTP-only requests (Chrome + Firefox + Safari + Edge + Mobile).
+ * NOT for browser contexts — use getRealisticUserAgent() there (Chrome-only).
+ */
+export const HTTP_UAS: readonly string[] = [
+  ...ALL_UAS,
+  ...FIREFOX_UAS,
+  ...SAFARI_UAS,
+  ...EDGE_UAS,
+  ...MOBILE_CHROME_UAS,
+];
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -103,7 +145,49 @@ export function getRandomUA(): string {
 }
 
 /**
- * The full curated list of realistic user agents.
+ * Returns a realistic user agent for HTTP-only (non-browser) requests.
+ * Unlike `getRealisticUserAgent()` which is Chrome-only for browser contexts,
+ * this function returns from a wider pool: Chrome, Firefox, Safari, Edge, and Mobile.
+ *
+ * Weight distribution (approximate):
+ * - Chrome Windows:  ~30%
+ * - Chrome macOS:    ~25%
+ * - Chrome Linux:    ~10%
+ * - Firefox:         ~15%
+ * - Safari:          ~10%
+ * - Edge:             ~5%
+ * - Mobile Chrome:    ~5%
+ *
+ * @example
+ * ```ts
+ * const ua = getHttpUA(); // e.g. "Mozilla/5.0 ... Firefox/133.0"
+ * ```
+ */
+export function getHttpUA(): string {
+  const roll = Math.random();
+  let pool: readonly string[];
+
+  if (roll < 0.30) {
+    pool = WINDOWS_UAS;
+  } else if (roll < 0.55) {
+    pool = MAC_UAS;
+  } else if (roll < 0.65) {
+    pool = LINUX_UAS;
+  } else if (roll < 0.80) {
+    pool = FIREFOX_UAS;
+  } else if (roll < 0.90) {
+    pool = SAFARI_UAS;
+  } else if (roll < 0.95) {
+    pool = EDGE_UAS;
+  } else {
+    pool = MOBILE_CHROME_UAS;
+  }
+
+  return pool[Math.floor(Math.random() * pool.length)]!;
+}
+
+/**
+ * The full curated list of realistic user agents (Chrome-only, all platforms).
  * Exported for inspection / testing.
  */
 export const REALISTIC_USER_AGENTS: readonly string[] = ALL_UAS;

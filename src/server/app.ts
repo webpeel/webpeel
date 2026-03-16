@@ -31,6 +31,7 @@ import { createJobsRouter } from './routes/jobs.js';
 import { createBatchRouter } from './routes/batch.js';
 import { createAnswerRouter } from './routes/answer.js';
 import { createDeepResearchRouter } from './routes/deep-research.js';
+import { createResearchRouter } from './routes/research.js';
 import { createAskRouter } from './routes/ask.js';
 import { createMcpRouter } from './routes/mcp.js';
 import { createDoRouter } from './routes/do.js';
@@ -324,6 +325,9 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use('/v1/screenshot', requireScope('full', 'read'));
   app.use(createScreenshotRouter(authStore));
   app.use(createSearchRouter(authStore));
+  // /v1/research — lightweight research (search → fetch → compile), BYOK LLM optional
+  app.use('/v1/research', requireScope('full', 'read'));
+  app.use(createResearchRouter());
   app.use(createBillingPortalRouter(pool));
   app.use(createUserRouter());
   app.use(createOAuthRouter());

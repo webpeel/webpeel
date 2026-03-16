@@ -10,7 +10,8 @@
 import dns from 'dns';
 dns.setDefaultResultOrder('ipv4first');
 
-import { getRealisticUserAgent, getSecCHUA, getSecCHUAPlatform } from './user-agents.js';
+import { getHttpUA, getSecCHUA, getSecCHUAPlatform } from './user-agents.js';
+import { getWebshareProxyUrl } from './proxy-config.js';
 import { fetch as undiciFetch, Agent, ProxyAgent, type Response } from 'undici';
 import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types.js';
 import { getCached } from './cache.js';
@@ -178,6 +179,158 @@ export function createAbortError(): Error {
   const error = new Error('Operation aborted');
   error.name = 'AbortError';
   return error;
+}
+
+// ── Stealth headers & proxy routing ──────────────────────────────────────────
+
+/**
+ * Domains known to aggressively block datacenter IPs.
+ * Requests to these domains automatically route through the Webshare residential
+ * proxy when proxy credentials are configured (WEBSHARE_PROXY_* env vars).
+ */
+export const PROXY_PREFERRED_DOMAINS: readonly string[] = [
+  'reddit.com',
+  'old.reddit.com',
+  'forbes.com',
+  'fortune.com',
+  'cargurus.com',
+  'edmunds.com',
+  'cars.com',
+  'truecar.com',
+  'autotrader.com',
+  'carfax.com',
+  'tesla.com',
+  'nerdwallet.com',
+  'bankrate.com',
+  'homeadvisor.com',
+  'angi.com',
+  'insideevs.com',
+  'electrek.co',
+  'motortrend.com',
+  'jdpower.com',
+];
+
+/**
+ * Returns true if the URL's domain is on the proxy-preferred blocklist.
+ * Matches exact hostname (sans www.) and all subdomains.
+ *
+ * @example
+ * shouldUseProxy('https://www.reddit.com/r/news') // true
+ * shouldUseProxy('https://example.com')           // false
+ */
+export function shouldUseProxy(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    return PROXY_PREFERRED_DOMAINS.some(d => host === d || host.endsWith('.' + d));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Generate browser-like request headers tailored to the User-Agent type.
+ *
+ * - Chrome/Edge:  full Sec-CH-UA + Sec-Fetch-* header set
+ * - Firefox:      adjusted Accept, TE header, partial Sec-Fetch-* (no Sec-CH-UA)
+ * - Safari:       minimal headers, no Sec-Fetch-* or Sec-CH-UA
+ * - Other:        basic headers only
+ *
+ * Automatically adds a Google referer for domains where it helps bypass blocks.
+ *
+ * @param url        - Target URL (used for domain-specific header additions)
+ * @param userAgent  - User-Agent string (determines which header set is applied)
+ */
+export function getStealthHeaders(url: string, userAgent: string): Record<string, string> {
+  const isFirefox = userAgent.includes('Firefox');
+  const isSafari = userAgent.includes('Safari') && !userAgent.includes('Chrome');
+  const isChrome = !isFirefox && !isSafari && (userAgent.includes('Chrome') || userAgent.includes('Chromium'));
+  const isMobile = userAgent.includes('Mobile') || userAgent.includes('Android');
+
+  // Base headers all browsers send
+  const headers: Record<string, string> = {
+    'User-Agent': userAgent,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Cache-Control': 'max-age=0',
+    'DNT': '1',
+    'Upgrade-Insecure-Requests': '1',
+  };
+
+  if (isFirefox) {
+    // Firefox: different Accept, TE, and partial Sec-Fetch (no Sec-CH-UA)
+    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8';
+    headers['Accept-Language'] = 'en-US,en;q=0.5';
+    headers['TE'] = 'trailers';
+    headers['Sec-Fetch-Dest'] = 'document';
+    headers['Sec-Fetch-Mode'] = 'navigate';
+    headers['Sec-Fetch-Site'] = 'none';
+    // Firefox omits Sec-Fetch-User in many navigations
+  } else if (isSafari) {
+    // Safari: minimal headers, no Sec-Fetch-* or Sec-CH-UA
+    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+    // Safari does not send Sec-Fetch headers at all
+  } else if (isChrome) {
+    // Chrome/Edge: full set of Sec-Fetch-* and Sec-CH-UA headers
+    headers['Sec-Fetch-Dest'] = 'document';
+    headers['Sec-Fetch-Mode'] = 'navigate';
+    headers['Sec-Fetch-Site'] = 'none';
+    headers['Sec-Fetch-User'] = '?1';
+    headers['Sec-CH-UA'] = getSecCHUA(userAgent);
+    headers['Sec-CH-UA-Mobile'] = isMobile ? '?1' : '?0';
+    headers['Sec-CH-UA-Platform'] = getSecCHUAPlatform(userAgent);
+    headers['Connection'] = 'keep-alive';
+    headers['Priority'] = 'u=0, i';
+  }
+  // else: custom/API UAs (e.g. "WebPeel/1.0") — basic headers only, no browser fingerprints
+
+  // Add Google Referer for domains where it's known to help bypass blocks
+  try {
+    const domain = new URL(url).hostname;
+    const referrerDomains = [
+      'reddit.com', 'forbes.com', 'cargurus.com', 'edmunds.com',
+      'cars.com', 'truecar.com', 'nerdwallet.com', 'homeadvisor.com',
+      'angi.com', 'motortrend.com', 'jdpower.com', 'electrek.co', 'insideevs.com',
+    ];
+    if (referrerDomains.some(d => domain.includes(d))) {
+      headers['Referer'] = 'https://www.google.com/';
+    }
+  } catch {
+    // Non-fatal: URL parsing failed, skip Referer
+  }
+
+  return headers;
+}
+
+/** Pick a different UA than the one currently in use (for 403/503 retries). */
+function getDifferentUA(current: string): string {
+  for (let i = 0; i < 10; i++) {
+    const ua = getHttpUA();
+    if (ua !== current) return ua;
+  }
+  return getHttpUA();
+}
+
+/**
+ * Build the merged request headers: stealth defaults + caller custom headers.
+ * Throws WebPeelError if customHeaders attempts to override the Host header.
+ */
+function buildMergedHeaders(
+  url: string,
+  userAgent: string,
+  customHeaders?: Record<string, string>,
+): Record<string, string> {
+  const merged = { ...getStealthHeaders(url, userAgent) };
+  if (customHeaders) {
+    for (const [key, value] of Object.entries(customHeaders)) {
+      // SECURITY: Block Host header override
+      if (key.toLowerCase() === 'host') {
+        throw new WebPeelError('Custom Host header is not allowed');
+      }
+      merged[key] = value;
+    }
+  }
+  return merged;
 }
 
 // ── SSRF / URL validation ─────────────────────────────────────────────────────
@@ -464,46 +617,23 @@ export async function simpleFetch(
   // SEC.gov requires a User-Agent with contact info (their documented automated access policy)
   const hostname = new URL(url).hostname.toLowerCase();
   const isSecGov = hostname === 'sec.gov' || hostname.endsWith('.sec.gov');
-  const validatedUserAgent = isSecGov
+  let activeUserAgent = isSecGov
     ? 'WebPeel/1.0 (support@webpeel.dev)'
-    : (userAgent ? validateUserAgent(userAgent) : getRealisticUserAgent());
+    : (userAgent ? validateUserAgent(userAgent) : getHttpUA());
 
-  // SECURITY: Merge custom headers with defaults, block Host header override
-  const defaultHeaders: Record<string, string> = {
-    'User-Agent': validatedUserAgent,
-    'Accept': 'text/markdown, text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Accept-Encoding': 'br, gzip, deflate',
-    'DNT': '1',
-    'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1',
-    'Sec-CH-UA': getSecCHUA(validatedUserAgent),
-    'Sec-CH-UA-Mobile': '?0',
-    'Sec-CH-UA-Platform': getSecCHUAPlatform(validatedUserAgent),
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
-    'Sec-Fetch-User': '?1',
-    'Cache-Control': 'max-age=0',
-    'Priority': 'u=0, i',
-  };
+  // Build stealth headers merged with any caller-supplied custom headers
+  let mergedHeaders = buildMergedHeaders(url, activeUserAgent, customHeaders);
 
-  const mergedHeaders = { ...defaultHeaders };
-  
-  if (customHeaders) {
-    for (const [key, value] of Object.entries(customHeaders)) {
-      // SECURITY: Block Host header override
-      if (key.toLowerCase() === 'host') {
-        throw new WebPeelError('Custom Host header is not allowed');
-      }
-      mergedHeaders[key] = value;
-    }
-  }
+  // Auto-route through residential proxy for sites known to block datacenter IPs.
+  // The explicit `proxy` param always wins; auto-proxy only kicks in when unset.
+  const effectiveProxy: string | undefined =
+    proxy ?? (shouldUseProxy(url) ? (getWebshareProxyUrl() ?? undefined) : undefined);
 
   const MAX_REDIRECTS = 10;
   let redirectCount = 0;
   let currentUrl = url;
   const seenUrls = new Set<string>();
+  let retried = false; // track whether we've already retried with a different UA
 
   try {
     const hostname = new URL(url).hostname;
@@ -541,8 +671,8 @@ export async function simpleFetch(
         requestHeaders['If-Modified-Since'] = validators.lastModified;
       }
 
-      // Use proxy if provided, otherwise use shared connection pool
-      const dispatcher = proxy ? new ProxyAgent(proxy) : httpPool;
+      // Use proxy if provided or auto-selected, otherwise use shared connection pool
+      const dispatcher = effectiveProxy ? new ProxyAgent(effectiveProxy) : httpPool;
 
       const response = await undiciFetch(currentUrl, {
         headers: requestHeaders,
@@ -586,6 +716,16 @@ export async function simpleFetch(
 
       if (!response.ok) {
         if (response.status === 403 || response.status === 503) {
+          // Retry once with a different UA — cheap and catches UA-based blocks
+          if (!retried && !userAgent) {
+            retried = true;
+            activeUserAgent = getDifferentUA(activeUserAgent);
+            mergedHeaders = buildMergedHeaders(currentUrl, activeUserAgent, customHeaders);
+            // Allow the retry to re-visit the same URL (not a redirect loop)
+            seenUrls.delete(currentUrl);
+            log.debug(`HTTP ${response.status} on first attempt; retrying with different UA`);
+            continue;
+          }
           throw new BlockedError(
             `HTTP ${response.status}: Site may be blocking requests. Try --render for browser mode.`
           );

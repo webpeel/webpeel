@@ -253,6 +253,23 @@ function normalizeUrlForDedupe(rawUrl: string): string {
   }
 }
 
+/**
+ * Merge results from multiple sources, deduplicating by normalized URL.
+ * Preserves original order (first occurrence wins) and limits to maxCount.
+ */
+export function mergeSearchResults(results: WebSearchResult[], maxCount: number): WebSearchResult[] {
+  const seen = new Set<string>();
+  const merged: WebSearchResult[] = [];
+  for (const r of results) {
+    if (merged.length >= maxCount) break;
+    const key = normalizeUrlForDedupe(r.url);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(r);
+  }
+  return merged;
+}
+
 // ============================================================
 // Result Relevance Filtering
 // Lightweight keyword-overlap scoring — no external deps.
@@ -265,6 +282,9 @@ const STOP_WORDS = new Set([
   'of', 'with', 'how', 'what', 'where', 'when', 'why', 'best', 'top', 'most',
   'and', 'or', 'but', 'not', 'do', 'does', 'did', 'be', 'been', 'have', 'has',
   'buy', 'get', 'find', 'about', 'from', 'by', 'its', 'it', 'this', 'that',
+  'much', 'very', 'can', 'will', 'would', 'could', 'should', 'per', 'than',
+  'some', 'just', 'also', 'more', 'like', 'make', 'any', 'each', 'all', 'my',
+  'your', 'our', 'their', 'me', 'us', 'them', 'so', 'if', 'then', 'here',
 ]);
 
 /**
@@ -337,8 +357,10 @@ export function filterRelevantResults(
     idx,
   }));
 
-  // Drop results with zero overlap
-  const relevant = scored.filter(s => s.score > 0);
+  // Drop results with insufficient overlap — require ≥15% keyword match
+  // to filter out dictionary/definition pages that match on a single common word
+  const minScore = keywords.length >= 3 ? 0.15 : 0.01;
+  const relevant = scored.filter(s => s.score >= minScore);
 
   // Sort by score descending, original order as tiebreaker
   relevant.sort((a, b) => (b.score !== a.score ? b.score - a.score : a.idx - b.idx));
@@ -669,9 +691,23 @@ export class DuckDuckGoProvider implements SearchProvider {
 
     // Required retry strategy order:
     // 1) original query
-    // 2) quoted query
-    // 3) query site:*
+    // 2) keywords-only (strip question words, articles, prepositions)
+    // 3) quoted query
+    // 4) query site:*
     attempts.push(q);
+
+    // For long queries (>5 words), extract just the meaningful keywords
+    // "how much does a used 2023 Tesla Model 3 cost per month" → "2023 Tesla Model 3 cost month"
+    const words = q.split(/\s+/);
+    if (words.length > 5) {
+      const keywordsOnly = words
+        .filter(w => !STOP_WORDS.has(w.toLowerCase()) && w.length >= 2)
+        .join(' ');
+      if (keywordsOnly && keywordsOnly !== q) {
+        attempts.push(keywordsOnly);
+      }
+    }
+
     if (!/^".*"$/.test(q)) attempts.push(`"${q}"`);
     attempts.push(`${q} site:*`);
 
@@ -898,6 +934,228 @@ export class DuckDuckGoProvider implements SearchProvider {
     return results;
   }
 
+  /**
+   * HTTP-only Bing scraping via undici + cheerio. No browser required.
+   * Routes through Webshare proxy (proxy first, direct fallback).
+   * Tracks stats via providerStats('bing-http').
+   */
+  // @ts-expect-error Disabled Stage 3.5 — kept for future re-enablement
+  private async _searchBingHttp(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
+    const { count, signal } = options;
+
+    const bingRate = providerStats.getFailureRate('bing-http');
+    const timeoutMs = bingRate > 0.5 ? 3_000 : 8_000;
+    const bingSignal = createTimeoutSignal(timeoutMs, signal);
+
+    const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}&count=10`;
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+    };
+
+    const proxyUrl = getWebshareProxyUrl();
+    let response: Awaited<ReturnType<typeof undiciFetch>>;
+
+    try {
+      if (proxyUrl) {
+        try {
+          const dispatcher = new ProxyAgent(proxyUrl);
+          response = await undiciFetch(url, { headers, signal: bingSignal, dispatcher } as any);
+        } catch (proxyErr) {
+          log.debug('Bing HTTP proxy failed, falling back to direct:', proxyErr instanceof Error ? proxyErr.message : proxyErr);
+          response = await undiciFetch(url, { headers, signal: bingSignal });
+        }
+      } else {
+        response = await undiciFetch(url, { headers, signal: bingSignal });
+      }
+
+      if (!response.ok) {
+        providerStats.record('bing-http', false);
+        return [];
+      }
+
+      const html = await response.text();
+      const $ = load(html);
+      const results: WebSearchResult[] = [];
+      const seen = new Set<string>();
+
+      // Parse Bing organic results; skip ad containers
+      $('li.b_algo').each((_i, elem) => {
+        if (results.length >= count) return;
+        const $r = $(elem);
+
+        // Skip if inside a .b_ad block or is itself an ad container
+        if ($r.hasClass('b_ad') || $r.closest('.b_ad').length > 0) return;
+
+        const $a = $r.find('h2 > a').first();
+        const title = cleanText($a.text(), { maxLen: 200 });
+        const rawUrl = $a.attr('href') || '';
+        if (!title || !rawUrl) return;
+
+        // Decode Bing redirect URLs:
+        //   Relative:  /ck/a?!&&p=...&u=a1<base64url>&ntb=1
+        //   Absolute:  https://www.bing.com/ck/a?...&u=a1<base64url>&ntb=1
+        let finalUrl = rawUrl;
+        try {
+          const base = rawUrl.startsWith('/') ? `https://www.bing.com${rawUrl}` : rawUrl;
+          const ckUrl = new URL(base);
+          if (ckUrl.hostname.endsWith('bing.com') && ckUrl.pathname.startsWith('/ck/')) {
+            const u = ckUrl.searchParams.get('u');
+            if (u && u.startsWith('a1')) {
+              const decoded = Buffer.from(u.slice(2), 'base64url').toString('utf-8');
+              if (decoded.startsWith('http')) finalUrl = decoded;
+            }
+          }
+        } catch { /* use rawUrl as-is */ }
+
+        // Validate: HTTP/HTTPS only
+        try {
+          const parsed = new URL(finalUrl);
+          if (!['http:', 'https:'].includes(parsed.protocol)) return;
+          finalUrl = parsed.href;
+        } catch { return; }
+
+        const key = normalizeUrlForDedupe(finalUrl);
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        const snippetRaw =
+          $r.find('.b_caption p').first().text() ||
+          $r.find('.b_caption').first().text();
+        const snippet = cleanText(snippetRaw, { maxLen: 500, stripEllipsisPadding: true });
+
+        results.push({ title, url: finalUrl, snippet });
+      });
+
+      providerStats.record('bing-http', results.length > 0);
+      return results;
+    } catch (e) {
+      log.debug('Bing HTTP search failed:', e instanceof Error ? e.message : e);
+      providerStats.record('bing-http', false);
+      return [];
+    }
+  }
+
+  /**
+   * HTTP-only Google scraping via undici + cheerio. No browser required.
+   * Routes through Webshare proxy (proxy first, direct fallback).
+   * Sends CONSENT cookie to bypass Google consent page.
+   * Tracks stats via providerStats('google-http').
+   */
+  // @ts-expect-error Disabled Stage 3.5 — kept for future re-enablement
+  private async _searchGoogleHttp(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
+    const { count, signal } = options;
+
+    const googleRate = providerStats.getFailureRate('google-http');
+    const timeoutMs = googleRate > 0.5 ? 3_000 : 8_000;
+    const googleSignal = createTimeoutSignal(timeoutMs, signal);
+
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=10&hl=en`;
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      // Skip Google consent/cookie wall
+      'Cookie': 'CONSENT=YES+; SOCS=CAESEwgDEgk0OTg3ODQ2NzMaAmVuIAEaBgiA0LqmBg',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+    };
+
+    const proxyUrl = getWebshareProxyUrl();
+    let response: Awaited<ReturnType<typeof undiciFetch>>;
+
+    try {
+      if (proxyUrl) {
+        try {
+          const dispatcher = new ProxyAgent(proxyUrl);
+          response = await undiciFetch(url, { headers, signal: googleSignal, dispatcher } as any);
+        } catch (proxyErr) {
+          log.debug('Google HTTP proxy failed, falling back to direct:', proxyErr instanceof Error ? proxyErr.message : proxyErr);
+          response = await undiciFetch(url, { headers, signal: googleSignal });
+        }
+      } else {
+        response = await undiciFetch(url, { headers, signal: googleSignal });
+      }
+
+      if (!response.ok) {
+        providerStats.record('google-http', false);
+        return [];
+      }
+
+      const html = await response.text();
+      const $ = load(html);
+      const results: WebSearchResult[] = [];
+      const seen = new Set<string>();
+
+      // Google organic results live in div.g blocks.
+      // Skip ad blocks (data-text-ad attr), People Also Ask, and related searches.
+      $('div.g').each((_i, elem) => {
+        if (results.length >= count) return;
+        const $r = $(elem);
+
+        // Skip ad containers (data-text-ad may be on div.g itself or on a descendant)
+        if ($r.attr('data-text-ad') !== undefined || $r.find('[data-text-ad]').length > 0) return;
+        if ($r.closest('.commercial-unit-desktop-top, .ads-ad').length > 0) return;
+
+        const $h3 = $r.find('h3').first();
+        if (!$h3.length) return;
+
+        // Find a valid external link (starts with http, not a Google domain)
+        const $a = $r.find('a[href]').filter((_j, el) => {
+          const href = $(el).attr('href') || '';
+          return href.startsWith('http') && !href.includes('google.com/');
+        }).first();
+
+        if (!$a.length) return;
+
+        const href = $a.attr('href') || '';
+
+        // Validate URL
+        let finalUrl: string;
+        try {
+          const parsed = new URL(href);
+          if (!['http:', 'https:'].includes(parsed.protocol)) return;
+          if (parsed.hostname.includes('google.com')) return;
+          finalUrl = parsed.href;
+        } catch { return; }
+
+        const key = normalizeUrlForDedupe(finalUrl);
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        const title = cleanText($h3.text(), { maxLen: 200 });
+        if (!title) return;
+
+        // Snippet: try multiple known Google snippet CSS classes/attrs
+        const snippetRaw =
+          $r.find('.VwiC3b').first().text() ||
+          $r.find('[data-sncf]').first().text() ||
+          $r.find('[style*="-webkit-line-clamp"]').first().text() ||
+          $r.find('.st').first().text() ||
+          '';
+        const snippet = cleanText(snippetRaw, { maxLen: 500, stripEllipsisPadding: true });
+
+        results.push({ title, url: finalUrl, snippet });
+      });
+
+      providerStats.record('google-http', results.length > 0);
+      return results;
+    } catch (e) {
+      log.debug('Google HTTP search failed:', e instanceof Error ? e.message : e);
+      providerStats.record('google-http', false);
+      return [];
+    }
+  }
+
   async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
     const attempts = this.buildQueryAttempts(query);
 
@@ -990,6 +1248,18 @@ export class DuckDuckGoProvider implements SearchProvider {
         log.debug('Brave search failed:', e instanceof Error ? e.message : e);
       }
     }
+
+    // -----------------------------------------------------------
+    // Stage 3.5: HTTP-based Bing + Google (no browser, no API key)
+    // DISABLED: Both Bing and Google detect non-browser HTTP clients and
+    // serve different/irrelevant content (dictionary pages, random sites).
+    // The scrapers are built (searchBingHttp, searchGoogleHttp) but need
+    // further work on request fingerprinting to get real results.
+    // TODO: Re-enable when fingerprinting is improved.
+    // -----------------------------------------------------------
+    // const skipBingHttp = providerStats.shouldSkip('bing-http');
+    // const skipGoogleHttp = providerStats.shouldSkip('google-http');
+    // if (!skipBingHttp || !skipGoogleHttp) { ... }
 
     // -----------------------------------------------------------
     // Stage 4: Stealth multi-engine (DDG + Bing + Ecosia in parallel)
