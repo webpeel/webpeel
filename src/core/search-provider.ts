@@ -793,25 +793,37 @@ export class DuckDuckGoProvider implements SearchProvider {
       'Referer': 'https://duckduckgo.com/',
     };
 
-    // Try with proxy first (bypasses datacenter IP blocks), fall back to direct
+    // Try direct first, then proxy as fallback.
+    // Webshare backbone IPs are blocked by DDG (returns empty results).
+    // Render datacenter IPs work intermittently — direct has better odds.
     let response: Awaited<ReturnType<typeof undiciFetch>>;
-    if (proxyUrl) {
+    let html: string;
+    // let usedProxy = false;
+
+    // Attempt 1: Direct fetch (no proxy)
+    try {
+      response = await undiciFetch(searchUrl, { headers: baseHeaders, signal });
+      html = response.ok ? await response.text() : '';
+    } catch (directErr) {
+      log.debug('DDG direct fetch failed:', directErr instanceof Error ? directErr.message : directErr);
+      html = '';
+    }
+
+    // Check if direct returned actual results (not empty/CAPTCHA)
+    const hasResults = html.includes('class="result"') || html.includes('class="result ');
+    if (!hasResults && proxyUrl) {
+      // Attempt 2: Proxy fallback
+      log.debug('DDG direct returned no results, trying proxy...');
       try {
+        // usedProxy = true;
         const dispatcher = new ProxyAgent(proxyUrl);
         response = await undiciFetch(searchUrl, { headers: baseHeaders, signal, dispatcher } as any);
+        if (response.ok) html = await response.text();
       } catch (proxyErr) {
-        log.debug('DDG proxy fetch failed, falling back to direct:', proxyErr instanceof Error ? proxyErr.message : proxyErr);
-        response = await undiciFetch(searchUrl, { headers: baseHeaders, signal });
+        log.debug('DDG proxy also failed:', proxyErr instanceof Error ? proxyErr.message : proxyErr);
       }
-    } else {
-      response = await undiciFetch(searchUrl, { headers: baseHeaders, signal });
     }
 
-    if (!response.ok) {
-      throw new Error(`Search failed: HTTP ${response.status}`);
-    }
-
-    const html = await response.text();
     const $ = load(html);
 
     const results: WebSearchResult[] = [];
@@ -884,21 +896,22 @@ export class DuckDuckGoProvider implements SearchProvider {
       'Referer': 'https://lite.duckduckgo.com/',
     };
     const liteUrl = `https://lite.duckduckgo.com/lite/?${params.toString()}`;
-    let response: Awaited<ReturnType<typeof undiciFetch>>;
-    if (liteProxyUrl) {
+    // Direct first, proxy fallback (same reasoning as searchOnce — Webshare IPs blocked by DDG)
+    let html = '';
+    try {
+      const resp = await undiciFetch(liteUrl, { headers: liteHeaders, signal });
+      if (resp.ok) html = await resp.text();
+    } catch { /* direct failed */ }
+
+    if (!html.includes('result-link') && liteProxyUrl) {
       try {
         const dispatcher = new ProxyAgent(liteProxyUrl);
-        response = await undiciFetch(liteUrl, { headers: liteHeaders, signal, dispatcher } as any);
-      } catch {
-        response = await undiciFetch(liteUrl, { headers: liteHeaders, signal });
-      }
-    } else {
-      response = await undiciFetch(liteUrl, { headers: liteHeaders, signal });
+        const resp = await undiciFetch(liteUrl, { headers: liteHeaders, signal, dispatcher } as any);
+        if (resp.ok) html = await resp.text();
+      } catch { /* proxy also failed */ }
     }
 
-    if (!response.ok) return [];
-
-    const html = await response.text();
+    if (!html) return [];
     const $ = load(html);
 
     const results: WebSearchResult[] = [];
