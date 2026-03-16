@@ -207,7 +207,7 @@ const VALID_LLM_PROVIDERS: DeepResearchLLMProvider[] = [
   'cloudflare',
 ];
 
-const MAX_SOURCES_HARD_LIMIT = 8;
+const MAX_SOURCES_HARD_LIMIT = 4;   // 512MB container — never fetch more than 4 sources
 const PER_URL_TIMEOUT_MS = 8_000;
 const TOTAL_TIMEOUT_MS = 60_000;
 
@@ -371,8 +371,10 @@ export function createResearchRouter(): Router {
           ]);
 
           const fetchTime = Date.now() - fetchStart;
+          // Cap HTML at 100KB before parsing — huge pages (Reddit 500KB+) OOM 512MB container
+          const rawHtml = (fetchResult.html || '').slice(0, 100_000);
           // Extract clean text via cheerio (no Readability.js, no markdown pipeline)
-          const $ = cheerioLoad(fetchResult.html || '');
+          const $ = cheerioLoad(rawHtml);
           $('script,style,nav,footer,header,aside,noscript,[aria-hidden]').remove();
           const pageTitle = ($('title').text() || $('h1').first().text() || title).trim().slice(0, 200);
           const rawText = $('main, article, [role=main], body').first().text()
