@@ -457,7 +457,7 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       }
     } catch (e) {
       // Domain API failed — fall through to normal fetch
-      log.debug('domain API first-pass failed, falling back to fetch:', e instanceof Error ? e.message : e);
+      log.warn('domain API first-pass failed, falling back to fetch:', e instanceof Error ? e.message : e);
     }
   }
 
@@ -1131,7 +1131,7 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
       }
     } catch (e) {
       // Domain extraction failure is non-fatal; continue with normal content
-      log.debug('domain extraction failed:', e instanceof Error ? e.message : e);
+      log.warn('domain extraction (second pass) failed:', e instanceof Error ? e.message : e);
     }
   }
 
