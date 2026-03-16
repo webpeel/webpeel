@@ -24,6 +24,342 @@ import { createLogger } from './logger.js';
 
 const log = createLogger('challenge-solver');
 
+// ── Image CAPTCHA solver constants ────────────────────────────────────────────
+
+const OLLAMA_VISION_URL = 'http://178.156.229.86:11435/api/generate';
+const OLLAMA_AUTH_TOKEN = 'c996233de4addb47e4cdec8bc5ff8776397f813ca7bd444e7258e0e2ed251963';
+const OLLAMA_VISION_MODEL = 'moondream';
+/** moondream on the 4GB Hetzner VPS takes ~30s per image */
+const VISION_TIMEOUT_MS = 45_000;
+const IMAGE_CAPTCHA_MAX_ROUNDS = 3;
+
+/** Grid element selectors to try (reCAPTCHA, hCaptcha, generic) */
+const CAPTCHA_GRID_SELECTORS = [
+  '.rc-imageselect-table',
+  '.task-grid',
+  '.task-image',
+  'table.rc-imageselect-table',
+  '[class*="grid"]:not(body):not(html)',
+  '.captcha-grid',
+];
+
+/** Verify/Submit button selectors */
+const CAPTCHA_VERIFY_SELECTORS = [
+  '#recaptcha-verify-button',
+  'button[data-action="verify"]',
+  'button[class*="verify"]',
+  'button[class*="submit"]',
+  '.rc-button-default',
+  '[id*="verify"]',
+  '[class*="verify"]',
+];
+
+/** Instruction text containers to extract the target object from */
+const CAPTCHA_INSTRUCTION_SELECTORS = [
+  '.rc-imageselect-desc-wrapper',
+  '.rc-imageselect-desc',
+  '.prompt-text',
+  '[class*="prompt"]',
+  '[class*="instruction"]',
+  '[class*="task-desc"]',
+  '[aria-label*="select"]',
+  '[aria-label*="click"]',
+];
+
+/** Patterns to extract the object name from instruction text */
+const CAPTCHA_OBJECT_PATTERNS = [
+  /select all (?:images|squares|tiles) (?:with|containing|that (?:have|contain)) (?:a |an )?(.+?)(?:\.|$)/i,
+  /click (?:all )?(?:images|squares|tiles) (?:containing|with|that (?:have|contain)) (?:a |an )?(.+?)(?:\.|$)/i,
+  /please click each image containing (?:a |an )?(.+?)(?:\.|$)/i,
+  /select all (?:the )?(?:image|picture)s? of (?:a |an )?(.+?)(?:\.|$)/i,
+  /identify all (?:images|pictures|squares) (?:with|showing|of) (?:a |an )?(.+?)(?:\.|$)/i,
+];
+
+// ── Image CAPTCHA result type ─────────────────────────────────────────────────
+
+export interface ImageCaptchaResult {
+  solved: boolean;
+  rounds: number;
+  error?: string;
+}
+
+// ── Vision API call ───────────────────────────────────────────────────────────
+
+/**
+ * Ask the moondream vision model which grid cells contain the target object.
+ * Returns an array of 1-indexed grid positions (1–9), or null if the call fails.
+ */
+export async function askVisionModel(base64Image: string, targetObject: string): Promise<number[] | null> {
+  const prompt = `This is a 3x3 image grid CAPTCHA. Select all squares containing "${targetObject}". Reply with ONLY the grid positions as numbers 1-9 (left to right, top to bottom), separated by commas. Example: 1,3,7`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(OLLAMA_VISION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OLLAMA_AUTH_TOKEN}`,
+      },
+      body: JSON.stringify({
+        model: OLLAMA_VISION_MODEL,
+        prompt,
+        images: [base64Image],
+        stream: false,
+        options: { num_predict: 50, temperature: 0.1 },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      log.debug(`Vision API returned HTTP ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json() as { response?: string };
+    const text = data.response ?? '';
+    log.debug(`Vision model response: "${text}"`);
+
+    // Match whole numbers only (not individual digits from multi-digit numbers like 10, 11)
+    const positions = text.match(/\b[1-9]\b/g)?.map(Number) ?? [];
+
+    if (positions.length === 0) {
+      log.debug('Vision model returned no valid grid positions');
+      return null;
+    }
+
+    return positions;
+  } catch (err) {
+    clearTimeout(timer);
+    log.debug('Vision model call failed:', err instanceof Error ? err.message : String(err));
+    return null;
+  }
+}
+
+// ── Target object extraction ──────────────────────────────────────────────────
+
+/**
+ * Detect if the page has an image grid CAPTCHA and extract the target object.
+ * Returns the object name (e.g. "traffic lights") or null if not detected.
+ */
+export async function detectImageCaptchaTarget(
+  page: import('playwright').Page
+): Promise<string | null> {
+  for (const selector of CAPTCHA_INSTRUCTION_SELECTORS) {
+    try {
+      const el = await page.$(selector);
+      if (!el) continue;
+
+      const text = await el.innerText().catch(() => '');
+      if (!text) continue;
+
+      const normalized = text.trim().replace(/\s+/g, ' ');
+
+      for (const pattern of CAPTCHA_OBJECT_PATTERNS) {
+        const match = normalized.match(pattern);
+        if (match?.[1]) {
+          const target = match[1].trim().toLowerCase();
+          log.debug(`Detected image CAPTCHA target: "${target}" from selector ${selector}`);
+          return target;
+        }
+      }
+    } catch {
+      // Continue to next selector
+    }
+  }
+
+  return null;
+}
+
+// ── Image CAPTCHA solver ──────────────────────────────────────────────────────
+
+/**
+ * Solve an image grid CAPTCHA using the moondream vision model.
+ *
+ * Flow per round:
+ *  1. Screenshot the CAPTCHA grid element
+ *  2. Send to moondream → get grid positions
+ *  3. Click identified cells
+ *  4. Click Verify button
+ *  5. Check if solved; if a new round appears, repeat (max 3 rounds)
+ */
+export async function solveImageCaptcha(
+  page: import('playwright').Page,
+  targetObject: string
+): Promise<ImageCaptchaResult> {
+  // Guard: only run when explicitly enabled or remote worker configured
+  const enabled = process.env.ENABLE_LOCAL_CHALLENGE_SOLVE === 'true' || !!process.env.BROWSER_WORKER_URL;
+  if (!enabled) {
+    return { solved: false, rounds: 0, error: 'Image CAPTCHA solving not enabled (set ENABLE_LOCAL_CHALLENGE_SOLVE=true)' };
+  }
+
+  let rounds = 0;
+
+  for (let attempt = 0; attempt < IMAGE_CAPTCHA_MAX_ROUNDS; attempt++) {
+    rounds++;
+
+    // ── 1. Screenshot the grid element ─────────────────────────────────────
+    let base64Screenshot: string | null = null;
+
+    for (const selector of CAPTCHA_GRID_SELECTORS) {
+      try {
+        const gridEl = await page.$(selector);
+        if (!gridEl) continue;
+
+        const screenshot = await gridEl.screenshot({ type: 'png' });
+        base64Screenshot = screenshot.toString('base64');
+        log.debug(`Captured CAPTCHA grid with selector: ${selector}`);
+        break;
+      } catch {
+        // Try next selector
+      }
+    }
+
+    if (!base64Screenshot) {
+      // Fall back to a viewport screenshot if no grid element found
+      try {
+        const fullshot = await page.screenshot({ type: 'png' });
+        base64Screenshot = fullshot.toString('base64');
+        log.debug('Fell back to full-page screenshot for CAPTCHA');
+      } catch (err) {
+        return {
+          solved: false,
+          rounds,
+          error: `Screenshot failed: ${err instanceof Error ? err.message : String(err)}`,
+        };
+      }
+    }
+
+    // ── 2. Ask vision model ────────────────────────────────────────────────
+    log.debug(`Round ${rounds}: asking moondream to find "${targetObject}"…`);
+    const positions = await askVisionModel(base64Screenshot, targetObject);
+
+    if (!positions || positions.length === 0) {
+      log.debug(`Round ${rounds}: vision model returned no positions — stopping`);
+      return { solved: false, rounds, error: 'Vision model returned no valid positions' };
+    }
+
+    log.debug(`Round ${rounds}: vision model selected positions: ${positions.join(',')}`);
+
+    // ── 3. Click grid cells ────────────────────────────────────────────────
+    let clickedCount = 0;
+    for (const pos of positions) {
+      for (const gridSelector of CAPTCHA_GRID_SELECTORS) {
+        try {
+          const gridEl = await page.$(gridSelector);
+          if (!gridEl) continue;
+
+          // Each grid cell: nth-child or direct child
+          const cells = await gridEl.$$('td, div[class*="cell"], div[class*="tile"], div[class*="image"]');
+          if (cells.length === 0) {
+            // Try direct children
+            const children = await gridEl.$$(':scope > *');
+            const target = children[pos - 1];
+            if (target) {
+              await target.click({ timeout: 5000 });
+              clickedCount++;
+            }
+          } else {
+            const target = cells[pos - 1];
+            if (target) {
+              await target.click({ timeout: 5000 });
+              clickedCount++;
+            }
+          }
+          break;
+        } catch {
+          // Try next selector
+        }
+      }
+    }
+
+    log.debug(`Round ${rounds}: clicked ${clickedCount}/${positions.length} cells`);
+
+    // Short delay before verify (let animation/state settle)
+    await page.waitForTimeout(500);
+
+    // ── 4. Click Verify button ─────────────────────────────────────────────
+    let clicked = false;
+    for (const btnSelector of CAPTCHA_VERIFY_SELECTORS) {
+      try {
+        const btn = await page.$(btnSelector);
+        if (btn) {
+          await btn.click({ timeout: 3000 });
+          clicked = true;
+          log.debug(`Round ${rounds}: clicked verify button (${btnSelector})`);
+          break;
+        }
+      } catch {
+        // Try next
+      }
+    }
+
+    if (!clicked) {
+      log.debug(`Round ${rounds}: could not find verify button`);
+    }
+
+    // ── 5. Check if solved ─────────────────────────────────────────────────
+    await page.waitForTimeout(2000);
+
+    // Check for success indicators
+    const solved = await checkCaptchaSolved(page);
+    if (solved) {
+      log.debug(`Round ${rounds}: CAPTCHA solved!`);
+      return { solved: true, rounds };
+    }
+
+    // Check if a new round appeared (grid refreshed)
+    const newTarget = await detectImageCaptchaTarget(page);
+    if (!newTarget) {
+      // No more instructions — likely solved or error
+      log.debug(`Round ${rounds}: no more instruction text — assuming solved`);
+      return { solved: true, rounds };
+    }
+
+    // Update target object for next round (may change between rounds)
+    // eslint-disable-next-line no-param-reassign
+    targetObject = newTarget;
+    log.debug(`Round ${rounds}: new target for next round: "${targetObject}"`);
+  }
+
+  return { solved: false, rounds, error: `Reached max rounds (${IMAGE_CAPTCHA_MAX_ROUNDS}) without solving` };
+}
+
+/**
+ * Check if the CAPTCHA appears to have been solved (challenge gone, success message, etc.)
+ */
+async function checkCaptchaSolved(page: import('playwright').Page): Promise<boolean> {
+  // Check for reCAPTCHA success state
+  try {
+    const successEl = await page.$('.recaptcha-checkbox-checked, .rc-anchor-normal-footer, [aria-checked="true"]');
+    if (successEl) return true;
+  } catch { /* ignore */ }
+
+  // Check if CAPTCHA challenge overlay disappeared (grid gone)
+  try {
+    const gridEl = await page.$('.rc-imageselect-table, .task-grid');
+    // If we were on a CAPTCHA page and the grid is now gone, it was likely solved
+    if (!gridEl) {
+      // Only count as solved if we're no longer on a CAPTCHA title page
+      const title = await page.title().catch(() => '');
+      const isCaptchaTitle = title.toLowerCase().includes('captcha') || title.toLowerCase().includes('robot');
+      if (!isCaptchaTitle) return true;
+    }
+  } catch { /* ignore */ }
+
+  // Check page URL changed (successful solve often triggers redirect)
+  try {
+    const title = await page.title();
+    const isCaptchaPage = title.toLowerCase().includes('captcha') || title.toLowerCase().includes('robot');
+    if (!isCaptchaPage) return true;
+  } catch { /* ignore */ }
+
+  return false;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface SolveOptions {
@@ -91,8 +427,7 @@ export async function solveChallenge(
       return solveCloudflare(url, html, timeout, options.proxy);
 
     case 'captcha':
-      // TODO: hCaptcha accessibility bypass — see comment below
-      return { solved: false, html, error: 'No free captcha solver available for generic captcha' };
+      return solveCaptchaWithVision(url, html, timeout, options.proxy);
 
     case 'datadome':
       // DataDome can sometimes be bypassed with a stealth browser
@@ -111,6 +446,87 @@ export async function solveChallenge(
 
     default:
       return { solved: false, html, error: `Unknown challenge type: ${challengeType}` };
+  }
+}
+
+// ── Image CAPTCHA orchestrator ────────────────────────────────────────────────
+
+/**
+ * Solve an image CAPTCHA by opening a stealth browser, detecting the target
+ * object from the page instructions, and calling solveImageCaptcha().
+ */
+async function solveCaptchaWithVision(
+  url: string,
+  _html: string,
+  timeoutMs: number,
+  proxy?: string
+): Promise<SolveResult> {
+  let page: import('playwright').Page | null = null;
+
+  try {
+    const { getStealthBrowser, getRandomUserAgent, getRandomViewport, applyStealthScripts } = await import('./browser-pool.js');
+
+    const browser = await getStealthBrowser();
+    const vp = getRandomViewport();
+    const ctx = await browser.newContext({
+      userAgent: getRandomUserAgent(),
+      viewport: { width: vp.width, height: vp.height },
+      ...(proxy ? { proxy: { server: proxy } } : {}),
+      locale: 'en-US',
+      timezoneId: 'America/New_York',
+    });
+
+    page = await ctx.newPage();
+    await applyStealthScripts(page);
+
+    await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: timeoutMs,
+    });
+
+    // Wait for CAPTCHA to render
+    await page.waitForTimeout(2000);
+
+    // Detect the target object from the CAPTCHA instructions
+    const targetObject = await detectImageCaptchaTarget(page);
+
+    if (!targetObject) {
+      const html = await page.content().catch(() => _html);
+      await ctx.close().catch(() => {});
+      return { solved: false, html, error: 'Could not detect image CAPTCHA target object from page' };
+    }
+
+    log.debug(`Image CAPTCHA target: "${targetObject}"`);
+
+    // Solve the CAPTCHA — may take up to VISION_TIMEOUT_MS * IMAGE_CAPTCHA_MAX_ROUNDS
+    const captchaResult = await solveImageCaptcha(page, targetObject);
+
+    const html = await page.content().catch(() => _html);
+    const cookies = await ctx.cookies();
+    const cookieStrings = cookies.map(c => `${c.name}=${c.value}; Path=${c.path || '/'}${c.domain ? `; Domain=${c.domain}` : ''}`);
+
+    if (cookieStrings.length > 0) {
+      cacheCookiesForUrl(url, cookieStrings);
+    }
+
+    await ctx.close().catch(() => {});
+
+    if (captchaResult.solved) {
+      console.log(`[challenge-solver] Image CAPTCHA solved for ${getDomain(url)} in ${captchaResult.rounds} round(s)`);
+      return { solved: true, html, cookies: cookieStrings, method: 'local-browser' };
+    }
+
+    return {
+      solved: false,
+      html,
+      error: captchaResult.error ?? `Image CAPTCHA not solved after ${captchaResult.rounds} round(s)`,
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    log.debug('Image CAPTCHA solve failed:', error);
+    return { solved: false, html: _html, error };
+  } finally {
+    page = null;
   }
 }
 
