@@ -1,0 +1,21 @@
+[Unit]
+Description=WebPeel Research Worker
+Documentation=https://webpeel.dev
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/research-worker
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=webpeel-research
+
+# Production environment
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

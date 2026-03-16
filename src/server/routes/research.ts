@@ -233,6 +233,33 @@ export function createResearchRouter(): Router {
       return;
     }
 
+    // ── Hetzner research worker proxy ────────────────────────────────────
+    // When RESEARCH_WORKER_URL is set, forward the entire request to the
+    // Hetzner VPS worker (local SearXNG + Ollama). Falls back to local if proxy fails.
+    if (process.env.RESEARCH_WORKER_URL) {
+      try {
+        const resp = await fetch(process.env.RESEARCH_WORKER_URL + '/research', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (process.env.OLLAMA_SECRET || ''),
+          },
+          body: JSON.stringify(req.body),
+          signal: AbortSignal.timeout(55_000),
+        });
+        const result = await resp.json();
+        // Attach requestId for consistency
+        if (result && typeof result === 'object') {
+          result.requestId = req.requestId;
+        }
+        res.json(result);
+        return;
+      } catch (proxyErr: any) {
+        console.warn('[research] Hetzner proxy failed, falling back to local:', proxyErr.message);
+        // Fall through to local research pipeline
+      }
+    }
+
     // ── Parse & validate body ─────────────────────────────────────────────
     const body = req.body as Partial<ResearchRequest>;
 
