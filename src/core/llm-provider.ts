@@ -516,14 +516,56 @@ async function callOllama(
   const model = config.model || process.env.OLLAMA_MODEL || defaultModel('ollama');
   const { messages, stream, onChunk, signal, maxTokens = 4096, temperature = 0.2 } = options;
 
-  const url = `${endpoint}/v1/chat/completions`;
-
   // Support bearer token auth (for nginx reverse proxy on Hetzner)
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const secret = config.apiKey || process.env.OLLAMA_SECRET;
   if (secret) headers['Authorization'] = `Bearer ${secret}`;
 
-  const resp = await fetch(url, {
+  // ── Non-streaming: use /api/generate with think:false for speed ──────
+  // Qwen3 thinking mode wastes 300-400 tokens on CoT and takes 25s+.
+  // With think:false via /api/generate, response comes in ~8s.
+  if (!stream) {
+    // Build a single prompt from messages (system + user)
+    const systemMsg = messages.find((m) => m.role === 'system')?.content || '';
+    const userMsg = messages.filter((m) => m.role === 'user').map((m) => m.content).join('\n\n');
+    const prompt = systemMsg ? `${systemMsg}\n\n${userMsg}` : userMsg;
+
+    const resp = await fetch(`${endpoint}/api/generate`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        think: false,  // Critical: disables Qwen3 CoT thinking (8s vs 25s+)
+        options: {
+          temperature,
+          num_predict: maxTokens,
+        },
+      }),
+      signal,
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      throw new Error(`Ollama API error: HTTP ${resp.status}${text ? ` - ${text}` : ''}`);
+    }
+
+    const json = await resp.json() as any;
+    let text = String(json?.response || '').trim();
+    // Strip any residual <think> tags
+    text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    return {
+      text,
+      usage: {
+        input: Number(json?.prompt_eval_count || 0),
+        output: Number(json?.eval_count || 0),
+      },
+    };
+  }
+
+  // ── Streaming: use OpenAI-compatible /v1/chat/completions ────────────
+  const resp = await fetch(`${endpoint}/v1/chat/completions`, {
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -531,7 +573,7 @@ async function callOllama(
       messages,
       temperature,
       max_tokens: maxTokens,
-      stream: stream ?? false,
+      stream: true,
     }),
     signal,
   });
@@ -539,23 +581,6 @@ async function callOllama(
   if (!resp.ok) {
     const text = await resp.text().catch(() => '');
     throw new Error(`Ollama API error: HTTP ${resp.status}${text ? ` - ${text}` : ''}`);
-  }
-
-  if (!stream) {
-    const json = await resp.json() as any;
-    const msg = json?.choices?.[0]?.message;
-    // Ollama Qwen3 thinking: content may be empty, CoT goes to `reasoning` field
-    let text = String(msg?.content || '').trim();
-    if (!text && msg?.reasoning) text = String(msg.reasoning).trim();
-    // Strip <think> tags from Qwen3 models
-    text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-    return {
-      text,
-      usage: {
-        input: Number(json?.usage?.prompt_tokens || 0),
-        output: Number(json?.usage?.completion_tokens || 0),
-      },
-    };
   }
 
   if (!resp.body) throw new Error('Ollama stream: missing body');
@@ -578,7 +603,9 @@ async function callOllama(
     signal,
   );
 
-  return { text: out.trim(), usage: { input: 0, output: 0 } };
+  // Strip thinking from streamed output
+  out = out.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  return { text: out, usage: { input: 0, output: 0 } };
 }
 
 // ---------------------------------------------------------------------------
