@@ -458,7 +458,7 @@ export function createResearchRouter(): Router {
               { role: 'system', content: systemPrompt },
               { role: 'user', content: `Question: ${query}\n\nSources:\n\n${sourcesText}${sandwichSuffix}` },
             ],
-            maxTokens: 600,
+            maxTokens: 1200, // Qwen3 thinking uses ~300-400 tokens for CoT, need headroom for actual response
             temperature: 0.3,
           });
 
