@@ -41,10 +41,22 @@ function mockNotFound(): void {
 
 beforeEach(() => {
   mockFetch.mockReset();
+  // Also intercept globalThis.fetch (used by fetchJson for GitHub, Reddit, HN, YouTube, etc.)
+  // Route through the same mockFetch queue so tests only need one mock setup.
+  vi.stubGlobal('fetch', async (url: string, options?: RequestInit) => {
+    const result = await mockFetch(url, undefined, 15000, options?.headers as Record<string, string> | undefined);
+    const text = result?.html ?? '{}';
+    return {
+      text: async () => text,
+      status: 200,
+      ok: true,
+    } as unknown as Response;
+  });
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 // ===========================================================================
