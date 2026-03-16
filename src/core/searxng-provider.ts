@@ -57,7 +57,7 @@ export async function searchViaSearXNG(
   const {
     count = 10,
     signal,
-    timeoutMs = 8000,
+    timeoutMs = 15000,
     engines = '',
     language = 'en',
   } = options;
@@ -139,7 +139,7 @@ export async function searchViaSearXNG(
  */
 export async function isSearXNGHealthy(): Promise<boolean> {
   try {
-    const results = await searchViaSearXNG('test', { count: 1, timeoutMs: 5000 });
+    const results = await searchViaSearXNG('test', { count: 1, timeoutMs: 10000 });
     return results.length > 0;
   } catch {
     return false;

@@ -204,6 +204,12 @@
         <a href="#crawl" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v1/crawl</span></a>
         <a href="#batch" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v1/batch/scrape</span></a>
         <a href="#map" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v1/map</span></a>
+        <a href="#extract" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v1/extract</span></a>
+        <a href="#ask" class="toc-item"><span class="toc-method get">GET</span><span class="toc-path">/v1/ask</span></a>
+        <a href="#deep-research" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v1/deep-research</span></a>
+        <a href="#research" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v1/research</span></a>
+        <a href="#watch" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v1/watch</span></a>
+        <a href="#youtube" class="toc-item"><span class="toc-method get">GET</span><span class="toc-path">/v1/youtube</span></a>
         <a href="#compat-scrape" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v1/scrape</span></a>
         <a href="#compat-v2-scrape" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/v2/scrape</span></a>
         <a href="#mcp" class="toc-item"><span class="toc-method post">POST</span><span class="toc-path">/mcp</span></a>
@@ -1713,6 +1719,83 @@ print(f"Done! {len(job['data'])} pages.")</code></pre>
     }
   ]
 }</code></pre>
+
+      <!-- ================================================================== -->
+      <!-- EXTRACT                                                              -->
+      <!-- ================================================================== -->
+
+      <h2 id="extract">POST /v1/extract</h2>
+      <p>Structured JSON extraction using LLM or heuristics. Pass a JSON schema or natural-language prompt, and WebPeel returns structured data from any page.</p>
+      <div class="api-endpoint">
+        <span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/extract</span><span class="auth-badge auth-required">Auth Required</span>
+      </div>
+      <p>Also available: <code>GET /v1/extract/auto</code> — zero-LLM heuristic extraction with domain-specific extractors.</p>
+      <p>→ <a href="/docs/extract">Full Extract API documentation</a></p>
+
+      <!-- ================================================================== -->
+      <!-- ASK                                                                  -->
+      <!-- ================================================================== -->
+
+      <h2 id="ask">GET /v1/ask</h2>
+      <p>Smart web Q&amp;A — searches the web, fetches top results, and returns the best-matching passage with BM25 + domain authority + freshness scoring.</p>
+      <div class="api-endpoint">
+        <span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/ask</span><span class="auth-badge auth-required">Auth Required</span>
+      </div>
+      <p>Also available as <code>POST /v1/ask</code> with JSON body.</p>
+      <p>→ <a href="/docs/ask">Full Ask API documentation</a></p>
+
+      <!-- ================================================================== -->
+      <!-- DEEP RESEARCH                                                        -->
+      <!-- ================================================================== -->
+
+      <h2 id="deep-research">POST /v1/deep-research</h2>
+      <p>Multi-step research agent that generates comprehensive cited reports. Supports SSE streaming for real-time progress.</p>
+      <div class="api-endpoint">
+        <span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/deep-research</span><span class="auth-badge auth-required">Auth Required</span>
+      </div>
+      <p>→ <a href="/docs/deep-research">Full Deep Research documentation</a></p>
+
+      <!-- ================================================================== -->
+      <!-- RESEARCH (LIGHTWEIGHT)                                               -->
+      <!-- ================================================================== -->
+
+      <h2 id="research">POST /v1/research</h2>
+      <p>Lightweight research endpoint that chains search → fetch → compile. Uses WebPeel's self-hosted LLM (Ollama) by default — no BYOK needed.</p>
+      <div class="api-endpoint">
+        <span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/research</span><span class="auth-badge auth-required">Auth Required</span>
+      </div>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>query</code></td><td>string</td><td>Required</td><td>Research question</td></tr>
+          <tr><td><code>depth</code></td><td>string</td><td>Optional</td><td><code>quick</code> (default) or <code>deep</code></td></tr>
+          <tr><td><code>maxSources</code></td><td>number</td><td>Optional</td><td>Maximum sources to fetch (default: 5)</td></tr>
+          <tr><td><code>llm</code></td><td>object</td><td>Optional</td><td>BYOK LLM config: <code>{ provider, apiKey, model }</code></td></tr>
+        </tbody>
+      </table>
+
+      <!-- ================================================================== -->
+      <!-- WATCH                                                                -->
+      <!-- ================================================================== -->
+
+      <h2 id="watch">POST /v1/watch</h2>
+      <p>Monitor a URL for content changes. Creates a watch job that tracks page mutations over time.</p>
+      <div class="api-endpoint">
+        <span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/watch</span><span class="auth-badge auth-required">Auth Required</span>
+      </div>
+      <p>Also available: <code>GET /v1/watch</code> (list watches), <code>GET /v1/watch/:id</code> (status), <code>DELETE /v1/watch/:id</code> (remove).</p>
+      <p>→ <a href="/docs/monitoring">Full Monitoring documentation</a></p>
+
+      <!-- ================================================================== -->
+      <!-- YOUTUBE                                                              -->
+      <!-- ================================================================== -->
+
+      <h2 id="youtube">GET /v1/youtube</h2>
+      <p>Extract YouTube video transcripts, metadata, and chapter information.</p>
+      <div class="api-endpoint">
+        <span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/youtube</span><span class="auth-badge auth-required">Auth Required</span>
+      </div>
+      <p>→ <a href="/docs/youtube">Full YouTube Transcripts documentation</a></p>
 
       <!-- ================================================================== -->
       <!-- FIRECRAWL COMPATIBILITY                                             -->

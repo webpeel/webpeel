@@ -170,49 +170,82 @@ const MODE_BADGES: Record<DetectedMode, { emoji: string; label: string }> = {
   ask:    { emoji: '❓', label: 'Q&A' },
 };
 
-// ─── Example URLs ─────────────────────────────────────────────────────────────
+// ─── Example prompts ──────────────────────────────────────────────────────────
 
-const EXAMPLE_URLS = [
-  { label: 'github.com/facebook/react', url: 'https://github.com/facebook/react' },
-  { label: 'en.wikipedia.org/wiki/Mars', url: 'https://en.wikipedia.org/wiki/Mars' },
-  { label: 'bbc.com/news', url: 'https://www.bbc.com/news' },
+const EXAMPLE_PROMPTS = [
+  { label: 'github.com/facebook/react', url: 'https://github.com/facebook/react', type: 'url' },
+  { label: 'en.wikipedia.org/wiki/Mars', url: 'https://en.wikipedia.org/wiki/Mars', type: 'url' },
+  { label: 'best AI coding assistants 2025', url: 'best AI coding assistants 2025', type: 'search' },
+  { label: 'youtube.com/watch?v=dQw4w9WgXcQ', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', type: 'url' },
 ];
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+const LOADING_STAGES = [
+  { ms: 0,    text: 'Analyzing your request…' },
+  { ms: 800,  text: 'Connecting to source…' },
+  { ms: 2200, text: 'Extracting content…' },
+  { ms: 5000, text: 'Processing with AI…' },
+  { ms: 9000, text: 'Almost there…' },
+];
 
 function LoadingSkeleton({ query }: { query: string }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     const start = Date.now();
-    const interval = setInterval(() => setElapsed(Date.now() - start), 100);
+    const interval = setInterval(() => setElapsed(Date.now() - start), 80);
     return () => clearInterval(interval);
   }, []);
 
+  const stage = [...LOADING_STAGES].reverse().find((s) => elapsed >= s.ms) ?? LOADING_STAGES[0];
+  const isUrl = /^https?:\/\//i.test(query);
+  const shortQuery = query.length > 50 ? query.slice(0, 50) + '…' : query;
+
   return (
-    <div className="w-full max-w-2xl mx-auto mt-6">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-[#5865F2] animate-pulse shrink-0" />
-          <span className="text-sm text-zinc-400 truncate flex-1">
-            Fetching{' '}
-            <span className="text-zinc-300 font-mono text-xs">
-              {query.length > 55 ? query.slice(0, 55) + '…' : query}
-            </span>
+    <div className="w-full max-w-2xl mx-auto mt-6 animate-float-up">
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+        {/* Status bar */}
+        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-zinc-800/80 bg-zinc-900/40">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-2 h-2 rounded-full bg-[#5865F2] animate-pulse" />
+          </div>
+          <span className="text-sm text-zinc-400 truncate flex-1 min-w-0">
+            <span className="text-zinc-500 text-xs">{stage.text}</span>
+            {' '}
+            <span className="text-zinc-500 font-mono text-xs">{isUrl ? shortQuery : ''}</span>
           </span>
           <span className="ml-auto text-xs text-zinc-600 tabular-nums font-mono shrink-0">
             {(elapsed / 1000).toFixed(1)}s
           </span>
         </div>
-        <div className="space-y-3 animate-pulse">
-          <div className="h-5 bg-zinc-800 rounded-md w-2/3" />
-          <div className="h-3 bg-zinc-800/80 rounded w-full" />
-          <div className="h-3 bg-zinc-800/80 rounded w-[92%]" />
-          <div className="h-3 bg-zinc-800/80 rounded w-[84%]" />
-          <div className="h-3 bg-zinc-800/60 rounded w-full" />
-          <div className="h-3 bg-zinc-800/60 rounded w-[78%]" />
-          <div className="h-3 bg-zinc-800/60 rounded w-[88%]" />
-          <div className="h-3 bg-zinc-800/40 rounded w-3/4" />
+
+        {/* Shimmer content */}
+        <div className="p-5 space-y-4">
+          {/* Title skeleton */}
+          <div className="shimmer h-5 rounded-lg w-[58%]" />
+
+          {/* Body lines */}
+          <div className="space-y-2.5">
+            <div className="shimmer h-3.5 rounded-md w-full" />
+            <div className="shimmer h-3.5 rounded-md w-[94%]" />
+            <div className="shimmer h-3.5 rounded-md w-[87%]" />
+          </div>
+
+          {/* Paragraph break */}
+          <div className="space-y-2.5 pt-1">
+            <div className="shimmer h-3.5 rounded-md w-full opacity-70" />
+            <div className="shimmer h-3.5 rounded-md w-[90%] opacity-70" />
+            <div className="shimmer h-3.5 rounded-md w-[82%] opacity-70" />
+            <div className="shimmer h-3.5 rounded-md w-[76%] opacity-70" />
+          </div>
+
+          {/* Sub-section */}
+          <div className="space-y-2 pt-1">
+            <div className="shimmer h-4 rounded-md w-[40%] opacity-50" />
+            <div className="shimmer h-3 rounded-md w-full opacity-40" />
+            <div className="shimmer h-3 rounded-md w-[70%] opacity-40" />
+          </div>
         </div>
       </div>
     </div>

@@ -1192,7 +1192,7 @@ export class DuckDuckGoProvider implements SearchProvider {
         const searxResults = await searchViaSearXNG(query, {
           count: options.count ?? 10,
           signal: options.signal,
-          timeoutMs: 6000,
+          timeoutMs: 12000,
         });
         if (searxResults.length > 0) {
           providerStats.record('searxng', true);

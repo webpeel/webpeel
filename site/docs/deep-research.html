@@ -568,23 +568,28 @@ report = ''.join(report_parts)</code></pre>
         </tbody>
       </table>
 
-      <h2 id="vs-ask">Deep Research vs. /v1/ask</h2>
+      <h2 id="vs-ask">Deep Research vs. /v1/research vs. /v1/ask</h2>
       <table class="param-table">
         <thead>
-          <tr><th></th><th>/v1/deep-research</th><th>/v1/ask</th></tr>
+          <tr><th></th><th>/v1/deep-research</th><th>/v1/research</th><th>/v1/ask</th></tr>
         </thead>
         <tbody>
-          <tr><td><strong>Output</strong></td><td>Full cited research report (Markdown)</td><td>Single best-answer sentence</td></tr>
-          <tr><td><strong>LLM required</strong></td><td>Yes (BYOK)</td><td>No (BM25 scoring)</td></tr>
-          <tr><td><strong>Search rounds</strong></td><td>1–5 (iterative, gap-filling)</td><td>1</td></tr>
-          <tr><td><strong>Sources</strong></td><td>Up to 30</td><td>Up to 5</td></tr>
-          <tr><td><strong>Time</strong></td><td>30–120 seconds</td><td>1–5 seconds</td></tr>
-          <tr><td><strong>Best for</strong></td><td>Research reports, deep dives</td><td>Quick facts, RAG pipelines</td></tr>
+          <tr><td><strong>Output</strong></td><td>Full cited research report (Markdown)</td><td>Concise synthesis paragraph</td><td>Single best-answer sentence</td></tr>
+          <tr><td><strong>LLM required</strong></td><td>Yes (BYOK)</td><td>No (self-hosted Ollama by default, BYOK optional)</td><td>No (BM25 scoring)</td></tr>
+          <tr><td><strong>Search rounds</strong></td><td>1–5 (iterative, gap-filling)</td><td>1</td><td>1</td></tr>
+          <tr><td><strong>Sources</strong></td><td>Up to 30</td><td>Up to 5</td><td>Up to 5</td></tr>
+          <tr><td><strong>Time</strong></td><td>30–120 seconds</td><td>5–15 seconds</td><td>1–5 seconds</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Research reports, deep dives</td><td>Quick research with AI summary</td><td>Quick facts, RAG pipelines</td></tr>
         </tbody>
       </table>
 
+      <div class="callout callout-tip">
+        <strong>New: /v1/research</strong> — A lightweight research endpoint that chains search → fetch → compile using WebPeel's self-hosted LLM. No API key needed for the LLM — works on the free tier. See the <a href="/docs/api-reference#research">API Reference</a> for details.
+      </div>
+
       <h2 id="next-steps">See Also</h2>
       <ul>
+        <li><a href="/docs/api-reference#research"><strong>Research API</strong></a> — Lightweight research with self-hosted LLM (no BYOK needed)</li>
         <li><a href="/docs/ask"><strong>Ask API</strong></a> — Fast LLM-free web Q&amp;A with BM25 source scoring</li>
         <li><a href="/docs/search"><strong>Search API</strong></a> — Raw search results from DuckDuckGo/Brave/Google</li>
         <li><a href="/docs/extract"><strong>Extract API</strong></a> — Structured JSON extraction from any page</li>
