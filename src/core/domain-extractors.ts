@@ -187,7 +187,7 @@ function unixToIso(sec: number): string {
 
 /** Fetch JSON from a URL using simpleFetch (reuses WebPeel's HTTP stack). */
 async function fetchJson(url: string, customHeaders?: Record<string, string>): Promise<any> {
-  const result = await simpleFetch(url, undefined, 15000, {
+  const result = await simpleFetch(url, 'webpeel/0.21 (https://webpeel.dev)', 15000, {
     Accept: 'application/json',
     ...customHeaders,
   });
