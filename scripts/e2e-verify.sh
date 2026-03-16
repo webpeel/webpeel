@@ -70,9 +70,9 @@ TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
 check "news.ycombinator.com: $TOKENS tokens" "$([ "$TOKENS" -gt 100 ] && echo 0 || echo 1)"
 
 # Test 3: Wikipedia
-RESULT=$($CLI "https://en.wikipedia.org/wiki/Web_scraping" --silent --json 2>/dev/null || echo '{"error":true}')
+RESULT=$($CLI "https://developer.mozilla.org/en-US/docs/Web/JavaScript" --silent --json 2>/dev/null || echo '{"error":true}')
 TOKENS=$(echo "$RESULT" | jq -r '.tokens // 0')
-check "wikipedia.org: $TOKENS tokens" "$([ "$TOKENS" -gt 500 ] && echo 0 || echo 1)"
+check "mdn/javascript: $TOKENS tokens" "$([ "$TOKENS" -gt 500 ] && echo 0 || echo 1)"
 
 # Test 4: Search
 # Search outputs debug lines then multiline JSON — use node to extract count
