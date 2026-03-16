@@ -191,7 +191,12 @@ async function fetchJson(url: string, customHeaders?: Record<string, string>): P
     Accept: 'application/json',
     ...customHeaders,
   });
-  return tryParseJson(result.html);
+  const parsed = tryParseJson(result.html);
+  if (parsed === null && result.html.length > 0) {
+    // Log when we get non-JSON back (likely an HTML error page)
+    console.warn(`[webpeel:fetchJson] Non-JSON response from ${url} (${result.html.length} bytes, status: ${result.statusCode}): ${result.html.slice(0, 120)}`);
+  }
+  return parsed;
 }
 
 /** Fetch JSON with exponential backoff retry on 429 / rate-limit errors. */
@@ -1015,9 +1020,15 @@ ${commentsMd || '*No comments.*'}`;
   if (pathParts.length >= 2) {
     // Sequential fetches to avoid secondary rate limits on popular repos
     const repoData = await fetchJsonWithRetry(`https://api.github.com/repos/${owner}/${repo}`, ghHeaders, 2, 1000);
-    if (!repoData || repoData.message === 'Not Found') return null;
-    // Secondary rate limit check
-    if (repoData.message?.includes('secondary rate limit') || repoData.message?.includes('abuse')) return null;
+    if (!repoData) {
+      console.warn(`[webpeel:github] repo API returned null for ${owner}/${repo}`);
+      return null;
+    }
+    if (repoData.message) {
+      console.warn(`[webpeel:github] repo API error for ${owner}/${repo}: ${repoData.message}`);
+      if (repoData.message === 'Not Found') return null;
+      if (repoData.message.includes('secondary rate limit') || repoData.message.includes('abuse')) return null;
+    }
     const readmeData = await fetchJsonWithRetry(`https://api.github.com/repos/${owner}/${repo}/readme`, ghHeaders, 1, 500).catch(() => null);
 
     // README content is base64 encoded

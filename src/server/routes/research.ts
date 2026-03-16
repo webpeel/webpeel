@@ -207,7 +207,7 @@ const VALID_LLM_PROVIDERS: DeepResearchLLMProvider[] = [
 ];
 
 const MAX_SOURCES_HARD_LIMIT = 8;
-const PER_URL_TIMEOUT_MS = 15_000;
+const PER_URL_TIMEOUT_MS = 8_000;
 const TOTAL_TIMEOUT_MS = 60_000;
 
 export function createResearchRouter(): Router {
@@ -390,8 +390,12 @@ export function createResearchRouter(): Router {
             fetchTime,
           });
 
-          if (content.length > 0) {
+          if (wordCount >= 50) {
             fetchedContents.push({ url, content });
+          } else if (snippet.length > 20) {
+            // Content too thin — use search snippet + title as surrogate
+            const surrogateContent = `${pageTitle}\n\n${snippet}`;
+            fetchedContents.push({ url, content: surrogateContent });
           }
         } catch {
           // Skip failed URLs, continue to next
@@ -426,10 +430,18 @@ export function createResearchRouter(): Router {
           : undefined
       );
 
-      if (effectiveLLMConfig && fetchedContents.length > 0 && Date.now() < overallDeadline - 3_000) {
+      if (effectiveLLMConfig && fetchedContents.length > 0 && Date.now() < overallDeadline - 1_000) {
         try {
+          // Filter to sources with 30+ words; fall back to all if none pass the threshold
+          const contentsForLLM = (() => {
+            const filtered = fetchedContents.filter(
+              fc => fc.content.split(/\s+/).filter(Boolean).length >= 30,
+            );
+            return filtered.length > 0 ? filtered : fetchedContents;
+          })();
+
           // Sanitize web content before sending to LLM (prompt injection defense layer 1)
-          const sourcesText = fetchedContents
+          const sourcesText = contentsForLLM
             .map((fc, i) => {
               const sanitized = sanitizeForLLM(fc.content.slice(0, 1200));
               if (sanitized.injectionDetected) {
