@@ -318,7 +318,7 @@ data.web?.forEach(r => console.log(r.title, r.url));</code></pre>
           <tr><td><code>brave</code></td><td>Brave API key (BYOK)</td><td>Excellent</td><td>Best quality. Supports <code>tbs</code>, <code>country</code>, <code>location</code> filtering.</td></tr>
           <tr><td><code>google</code></td><td>Google API key (BYOK)</td><td>Excellent</td><td>Google Custom Search JSON API.</td></tr>
           <tr><td><code>stealth</code></td><td>Not required</td><td>Good</td><td>Stealthy DDG variant for restricted environments.</td></tr>
-          <tr><td><code>auto</code></td><td>Optional</td><td>Best available</td><td>Automatically selects the best provider based on configured keys.</td></tr>
+          <tr><td><code>auto</code></td><td>Optional</td><td>Best available</td><td>Automatically selects the best provider. Uses SearXNG (self-hosted meta-search aggregating Google, Bing, Brave, Startpage, and more) when available, then falls back to DuckDuckGo or configured keys.</td></tr>
         </tbody>
       </table>
 

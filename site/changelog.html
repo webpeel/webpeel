@@ -134,8 +134,28 @@
         <div class="release">
           <div class="release-header">
             <div class="release-title">
-              <div class="release-version mono">v0.21.16</div>
+              <div class="release-version mono">v0.21.39</div>
               <span class="badge">Latest</span>
+            </div>
+            <div class="release-meta">March 16, 2026</div>
+          </div>
+          <ul class="release-notes">
+            <li><strong>Self-hosted AI research:</strong> WebPeel AI on Hetzner (Ollama + Qwen3 0.6B) — free-tier users get AI-powered research synthesis with zero configuration</li>
+            <li><strong>SearXNG search integration:</strong> Self-hosted meta-search engine as Stage 0 provider — aggregates Google, Bing, Brave, Startpage, and more via residential IP</li>
+            <li><strong>New <code>/v1/research</code> endpoint:</strong> Lightweight research that chains search → fetch → compile with self-hosted LLM</li>
+            <li><strong>Search enrichment:</strong> New <code>?enrich=N</code> parameter fetches top N search result pages server-side with 4s timeout</li>
+            <li><strong>Domain hints for extraction:</strong> Structured extraction now overlays domain-specific hints for better field matching</li>
+            <li><strong>Enterprise tiers:</strong> Admin burst bypass, enterprise tier (50K weekly / 2K burst / 500 rate limits)</li>
+            <li><strong>Search reliability:</strong> Proxy-routed DDG search, provider lockout fix with decay stats, reverse search order (direct-first)</li>
+            <li><strong>Research LLM optimization:</strong> Compact prompts, <code>think:false</code> mode — synthesis from 26s down to 8.5s</li>
+            <li><strong>OOM prevention:</strong> Guards against out-of-memory in search enrichment and browser escalation</li>
+          </ul>
+        </div>
+
+        <div class="release">
+          <div class="release-header">
+            <div class="release-title">
+              <div class="release-version mono">v0.21.16</div>
             </div>
             <div class="release-meta">March 15, 2026</div>
           </div>

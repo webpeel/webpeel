@@ -181,6 +181,223 @@
       <h1>Changelog</h1>
       <p class="lead">Full release history for WebPeel. New versions ship frequently — follow <a href="https://github.com/webpeel/webpeel/releases">GitHub Releases</a> or <a href="https://x.com/webpeel_dev">@webpeel_dev</a> for updates.</p>
 
+      <!-- v0.21.39 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.39 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Domain Extraction Error Diagnostics <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Domain extraction errors now exposed in the <code>warnings</code> response field for easier debugging</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.38 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.38 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Research LLM Prompt Optimization <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Compact Ollama prompt — research synthesis now 8.5s (was 26s)</li>
+          <li>Reduced source content to 800 chars with 30s timeout for faster responses</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.37 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.37 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Research Quality Overhaul <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Research quality overhaul with SearXNG Google boost and debug logging</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.36 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.36 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Ollama Performance Fix <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Ollama <code>think:false</code> — 8s synthesis (was 25s+)</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.35 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.35 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Research LLM Tuning <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Reduced source content to 1200 chars, 25s timeout, 800 max tokens for research LLM</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.34 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.34 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Research LLM Token Fix <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Bumped research LLM <code>maxTokens</code> to 1200 — Qwen3 thinking mode needs extra headroom</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.33 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.33 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Self-Hosted LLM for Research <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li><strong>WebPeel AI on Hetzner:</strong> Self-hosted Ollama (Qwen3 0.6B) for research synthesis — no external LLM API needed</li>
+          <li>Free-tier users get AI-powered research with zero BYOK configuration</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.32 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.32 &mdash; 2026-03-16</div>
+        <div class="changelog-title">SearXNG Integration <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li><strong>SearXNG Stage 0 search provider:</strong> Self-hosted meta-search engine aggregating Google, Bing, Brave, Startpage, and more</li>
+          <li>Runs on Mac Mini with residential IP, exposed via Cloudflare Tunnel — highest reliability for search</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.31 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.31 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Search Order Fix <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Reversed DDG search order — direct requests first, proxy as fallback (better latency)</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.30 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.30 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Search Lockout Fix <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Fixed search provider lockout — <code>providerStats</code> now decays over time with higher <code>minSamples</code> threshold</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.29 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.29 &mdash; 2026-03-16</div>
+        <div class="changelog-title">Research Endpoint + Stealth Headers <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li><strong>New <code>POST /v1/research</code> endpoint:</strong> Lightweight research that chains search → fetch → compile</li>
+          <li>Improved stealth headers for better anti-bot bypass</li>
+          <li>Search provider improvements and better error handling</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.28 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.28 &mdash; 2026-03-15</div>
+        <div class="changelog-title">DDG Search Proxy Fallback <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>DuckDuckGo search now falls back to proxy on direct failure — improved reliability on datacenter IPs</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.27 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.27 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Webshare Proxy Format Fix <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Fixed Webshare backbone proxy format — uses fixed port + slot username</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.26 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.26 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Proxy-Routed Search <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>DuckDuckGo search now routed through proxy — fixes 0-result issue on datacenter IPs</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.25 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.25 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Domain Hints for Structured Extraction <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li>Structured extraction now overlays domain-specific hints for better field matching</li>
+          <li>Added <code>noEscalate</code> flag to prevent unnecessary browser escalation during extraction</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.24 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.24 &mdash; 2026-03-15</div>
+        <div class="changelog-title">OOM Prevention <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Added <code>noEscalate</code> on fetch and <code>NO_BROWSER_SEARCH</code> guard to prevent out-of-memory crashes</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.23 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.23 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Lightweight Enrichment <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Search enrichment now uses <code>simpleFetch</code> + cheerio — no browser, no OOM risk</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.22 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.22 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Search Enrichment OOM Hotfix <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Prevent OOM in search enrichment — forces <code>render:false</code> and <code>stealth:false</code></li>
+        </ul>
+      </div>
+
+      <!-- v0.21.21 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.21 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Server-Side Search Enrichment <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li><strong>New <code>?enrich=N</code> parameter:</strong> Server-side fetch of top N search result pages with 4s timeout</li>
+          <li>Returns full markdown content alongside search snippets — no extra API calls needed</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.20 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.20 &mdash; 2026-03-15</div>
+        <div class="changelog-title">GitHub Domain Extractor Debug <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Debug fixes for GitHub domain extractor; removed health endpoint env diagnostics</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.19 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.19 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Health Endpoint Diagnostics <span class="changelog-badge patch">Patch</span></div>
+        <ul>
+          <li>Added env var diagnostics to health endpoint for debugging GITHUB_TOKEN issues</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.18 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.18 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Admin + Enterprise Tiers <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li>Fixed admin tier type and burst bypass; added enterprise tier support</li>
+          <li>Structured extraction improvements for edge cases</li>
+        </ul>
+      </div>
+
+      <!-- v0.21.17 -->
+      <div class="changelog-entry">
+        <div class="changelog-version">v0.21.17 &mdash; 2026-03-15</div>
+        <div class="changelog-title">Admin Burst Bypass + Enterprise Tiers <span class="changelog-badge minor">Minor</span></div>
+        <ul>
+          <li>Admin burst bypass for unrestricted API access</li>
+          <li>Enterprise tier with 50K weekly / 2K burst / 500 rate limits</li>
+          <li>Structured extraction improvements</li>
+        </ul>
+      </div>
+
       <!-- v0.21.16 -->
       <div class="changelog-entry">
         <div class="changelog-version">v0.21.16 &mdash; 2026-03-15</div>
