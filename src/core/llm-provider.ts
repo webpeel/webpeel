@@ -512,15 +512,20 @@ async function callOllama(
   config: LLMConfig,
   options: LLMCallOptions,
 ): Promise<LLMCallResult> {
-  const endpoint = (config.endpoint || 'http://localhost:11434').replace(/\/$/, '');
-  const model = config.model || defaultModel('ollama');
+  const endpoint = (config.endpoint || process.env.OLLAMA_URL || 'http://localhost:11434').replace(/\/$/, '');
+  const model = config.model || process.env.OLLAMA_MODEL || defaultModel('ollama');
   const { messages, stream, onChunk, signal, maxTokens = 4096, temperature = 0.2 } = options;
 
   const url = `${endpoint}/v1/chat/completions`;
 
+  // Support bearer token auth (for nginx reverse proxy on Hetzner)
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const secret = config.apiKey || process.env.OLLAMA_SECRET;
+  if (secret) headers['Authorization'] = `Bearer ${secret}`;
+
   const resp = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       model,
       messages,
@@ -538,7 +543,12 @@ async function callOllama(
 
   if (!stream) {
     const json = await resp.json() as any;
-    const text = String(json?.choices?.[0]?.message?.content || '').trim();
+    const msg = json?.choices?.[0]?.message;
+    // Ollama Qwen3 thinking: content may be empty, CoT goes to `reasoning` field
+    let text = String(msg?.content || '').trim();
+    if (!text && msg?.reasoning) text = String(msg.reasoning).trim();
+    // Strip <think> tags from Qwen3 models
+    text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     return {
       text,
       usage: {
