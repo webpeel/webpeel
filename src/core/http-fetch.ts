@@ -17,6 +17,7 @@ import { TimeoutError, BlockedError, NetworkError, WebPeelError } from '../types
 import { getCached } from './cache.js';
 import { cachedLookup, resolveAndCache, startDnsWarmup } from './dns-cache.js';
 import { detectChallenge } from './challenge-detection.js';
+import { getCookieHeader } from './cookie-cache.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('http');
@@ -621,8 +622,16 @@ export async function simpleFetch(
     ? 'WebPeel/1.0 (support@webpeel.dev)'
     : (userAgent ? validateUserAgent(userAgent) : getHttpUA());
 
+  // Inject cached challenge-solve cookies (e.g. cf_clearance) if available.
+  // These are merged into customHeaders so they ride along on every request
+  // to this domain, skipping repeated challenge pages.
+  const cachedCookieHeader = getCookieHeader(url);
+  const effectiveCustomHeaders = cachedCookieHeader
+    ? { Cookie: cachedCookieHeader, ...(customHeaders || {}) }
+    : customHeaders;
+
   // Build stealth headers merged with any caller-supplied custom headers
-  let mergedHeaders = buildMergedHeaders(url, activeUserAgent, customHeaders);
+  let mergedHeaders = buildMergedHeaders(url, activeUserAgent, effectiveCustomHeaders);
 
   // Auto-route through residential proxy for sites known to block datacenter IPs.
   // The explicit `proxy` param always wins; auto-proxy only kicks in when unset.

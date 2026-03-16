@@ -620,9 +620,35 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
 
   ctx.fetchResult = fetchResult;
 
-  // Warn when a challenge/CAPTCHA page was detected
+  // Attempt to solve challenge/CAPTCHA page when detected
   if (fetchResult.challengeDetected) {
-    ctx.warnings.push('Challenge/CAPTCHA page detected. Content may be incomplete or from a bot-detection page.');
+    const hasBrowserWorker = !!process.env.BROWSER_WORKER_URL;
+    // Only attempt solve if we have a browser worker URL or are not on a resource-constrained env
+    const canSolve = hasBrowserWorker || process.env.ENABLE_LOCAL_CHALLENGE_SOLVE === 'true';
+    if (canSolve) {
+      try {
+        const { solveChallenge } = await import('./challenge-solver.js');
+        const { detectChallenge } = await import('./challenge-detection.js');
+        const rawHtml = fetchResult.html || '';
+        const detectionResult = detectChallenge(rawHtml, fetchResult.statusCode);
+        const challengeType = detectionResult.type || 'generic-block';
+        const solveResult = await solveChallenge(ctx.url, challengeType, rawHtml, {
+          timeout: 15000,
+        });
+        if (solveResult.solved && solveResult.html) {
+          fetchResult.html = solveResult.html;
+          (fetchResult as any).challengeDetected = false;
+          log.debug(`Challenge solved (${challengeType}) for ${ctx.url}`);
+        } else {
+          ctx.warnings.push('Challenge/CAPTCHA page detected. Content may be incomplete or from a bot-detection page.');
+        }
+      } catch (e) {
+        ctx.warnings.push('Challenge/CAPTCHA page detected. Content may be incomplete or from a bot-detection page.');
+        log.debug('Challenge solve failed:', e instanceof Error ? e.message : e);
+      }
+    } else {
+      ctx.warnings.push('Challenge/CAPTCHA page detected. Content may be incomplete or from a bot-detection page.');
+    }
   }
 }
 
@@ -1178,21 +1204,59 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
         (ctx.metadata as any).blocked = true;
         (ctx.metadata as any).challengeDetected = true;
       }
-      // Try search fallback for the real content
-      try {
-        // @ts-ignore — proprietary module, gitignored
-        const { searchFallback } = await import('./search-fallback.js');
-        const searchResult = await searchFallback(ctx.url);
-        if (searchResult.cachedContent && searchResult.cachedContent.length > 50) {
-          ctx.content = searchResult.cachedContent;
-          ctx.title = searchResult.title || ctx.title;
-          ctx.quality = 0.4;
-          ctx.warnings.push('Content retrieved from search engine cache because the original page blocked direct access. Results may be incomplete.');
-          if (ctx.metadata) {
-            (ctx.metadata as any).fallbackSource = searchResult.source;
+
+      // Try challenge solver first (if browser worker available or local solve enabled)
+      let solvedViaChallengeSolver = false;
+      const hasBrowserWorker = !!process.env.BROWSER_WORKER_URL;
+      const canSolve = hasBrowserWorker || process.env.ENABLE_LOCAL_CHALLENGE_SOLVE === 'true';
+      if (canSolve && ctx.fetchResult?.html) {
+        try {
+          const { solveChallenge } = await import('./challenge-solver.js');
+          const { detectChallenge } = await import('./challenge-detection.js');
+          const rawHtml = ctx.fetchResult.html;
+          const detectionResult = detectChallenge(rawHtml, ctx.fetchResult.statusCode);
+          const challengeType = detectionResult.type || 'cloudflare';
+          const solveResult = await solveChallenge(ctx.url, challengeType, rawHtml, {
+            timeout: 15000,
+          });
+          if (solveResult.solved && solveResult.html) {
+            // Re-parse the solved HTML
+            const { htmlToMarkdown, htmlToText, cleanForAI } = await import('./markdown.js');
+            const fmt = ctx.format || 'markdown';
+            ctx.content = fmt === 'text' ? htmlToText(solveResult.html)
+              : fmt === 'clean' ? cleanForAI(solveResult.html)
+              : htmlToMarkdown(solveResult.html);
+            ctx.fetchResult.html = solveResult.html;
+            if (ctx.metadata) {
+              (ctx.metadata as any).blocked = false;
+              (ctx.metadata as any).challengeDetected = false;
+              (ctx.metadata as any).challengeSolved = true;
+            }
+            solvedViaChallengeSolver = true;
+            log.debug(`Content-level challenge solved for ${ctx.url}`);
           }
+        } catch (e) {
+          log.debug('Content-level challenge solve failed:', e instanceof Error ? e.message : e);
         }
-      } catch { /* Search fallback failed — continue with challenge page content */ }
+      }
+
+      // Fall back to search fallback if challenge solve didn't work
+      if (!solvedViaChallengeSolver) {
+        try {
+          // @ts-ignore — proprietary module, gitignored
+          const { searchFallback } = await import('./search-fallback.js');
+          const searchResult = await searchFallback(ctx.url);
+          if (searchResult.cachedContent && searchResult.cachedContent.length > 50) {
+            ctx.content = searchResult.cachedContent;
+            ctx.title = searchResult.title || ctx.title;
+            ctx.quality = 0.4;
+            ctx.warnings.push('Content retrieved from search engine cache because the original page blocked direct access. Results may be incomplete.');
+            if (ctx.metadata) {
+              (ctx.metadata as any).fallbackSource = searchResult.source;
+            }
+          }
+        } catch { /* Search fallback failed — continue with challenge page content */ }
+      }
     }
   }
 
