@@ -10,7 +10,8 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { peel } from '../../index.js';
+import { simpleFetch } from '../../core/fetcher.js';
+import { load as cheerioLoad } from 'cheerio';
 import { getSearchProvider } from '../../core/search-provider.js';
 import {
   type LLMConfig,
@@ -361,25 +362,25 @@ export function createResearchRouter(): Router {
 
         const fetchStart = Date.now();
         try {
-          const result = await Promise.race([
-            peel(url, {
-              format: 'markdown',
-              noEscalate: true,  // NEVER launch browser — 512MB container
-              timeout: urlTimeout,
-              readable: true,
-              budget: 3000,
-            }),
+          // Use simpleFetch + cheerio (no peel/pipeline) — keeps memory under 512MB
+          const fetchResult = await Promise.race([
+            simpleFetch(url, undefined, urlTimeout),
             new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error('per-url timeout')), urlTimeout),
             ),
           ]);
 
           const fetchTime = Date.now() - fetchStart;
-          const content = result.content || '';
+          // Extract clean text via cheerio (no Readability.js, no markdown pipeline)
+          const $ = cheerioLoad(fetchResult.html || '');
+          $('script,style,nav,footer,header,aside,noscript,[aria-hidden]').remove();
+          const pageTitle = ($('title').text() || $('h1').first().text() || title).trim().slice(0, 200);
+          const rawText = $('main, article, [role=main], body').first().text()
+            .replace(/\s+/g, ' ').trim();
+          const content = rawText.slice(0, 4000); // ~3000 words max
           const wordCount = content.split(/\s+/).filter(Boolean).length;
-          const pageTitle = result.title || title;
 
-          // Build snippet: prefer LLM-extracted summary, else first 500 chars of content
+          // Build snippet: first 500 chars of content
           const sourceSnippet = content.slice(0, 500).replace(/\s+/g, ' ').trim();
 
           sources.push({
