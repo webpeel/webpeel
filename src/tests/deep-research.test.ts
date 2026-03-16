@@ -260,13 +260,14 @@ describe('callLLM - Google', () => {
 });
 
 describe('callLLM - Ollama', () => {
-  it('uses default endpoint http://localhost:11434', async () => {
-    // Mock fetch to capture the URL
+  it('uses default endpoint http://localhost:11434 with /api/generate', async () => {
+    // Non-streaming Ollama uses /api/generate with think:false
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: 'test response' } }],
-        usage: { prompt_tokens: 10, completion_tokens: 20 },
+        response: 'test response',
+        prompt_eval_count: 10,
+        eval_count: 20,
       }),
     });
 
@@ -280,7 +281,7 @@ describe('callLLM - Ollama', () => {
       });
       expect(result.text).toBe('test response');
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:11434/v1/chat/completions',
+        'http://localhost:11434/api/generate',
         expect.objectContaining({ method: 'POST' }),
       );
     } finally {
@@ -292,7 +293,8 @@ describe('callLLM - Ollama', () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: 'hi' } }],
+        response: 'hi',
+        eval_count: 5,
       }),
     });
 
@@ -309,7 +311,7 @@ describe('callLLM - Ollama', () => {
         messages: [{ role: 'user', content: 'test' }],
       });
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://custom-host:11434/v1/chat/completions',
+        'http://custom-host:11434/api/generate',
         expect.any(Object),
       );
     } finally {
