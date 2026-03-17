@@ -16,7 +16,7 @@ import {
   type SearchProviderId,
   type WebSearchResult,
 } from '../../core/search-provider.js';
-import { getSourceCredibility } from '../../core/deep-research.js';
+import { getSourceCredibility } from '../../core/source-credibility.js';
 
 interface SearchResult {
   title: string;
