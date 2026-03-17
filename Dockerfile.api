@@ -1,47 +1,51 @@
-# ─── Dockerfile.api ─────────────────────────────────────────────────────────
-# Lightweight Node.js API container — NO Chromium, target 512MB.
-# Handles all routes. /v1/fetch and /v1/render enqueue Bull jobs instead of
-# running Playwright directly; results are retrieved via GET /v1/jobs/:id.
-# ─────────────────────────────────────────────────────────────────────────────
+# syntax=docker/dockerfile:1
+# WebPeel API Server — Hosted REST API (Render/Docker)
+# Builds from source (TypeScript), supports linux/amd64 and linux/arm64.
+# Build single-arch: docker build -f Dockerfile.api -t webpeel/api .
+# Run: docker run -p 3000:3000 -e DATABASE_URL=... webpeel/api
 
 FROM node:22-slim AS base
+
+# Shared Playwright browser path — ensures install + runtime use the same location
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
+
+# Install system deps needed by Chromium (fonts, libs) + yt-dlp
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
+    libpango-1.0-0 libcairo2 libasound2 libxshmfence1 \
+    fonts-liberation fonts-noto-color-emoji curl python3 python3-pip \
+    && pip3 install --break-system-packages yt-dlp \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # ── Build stage ───────────────────────────────────────────────────────────────
 FROM base AS builder
 COPY package*.json ./
-# Install ALL deps (including devDeps for tsc)
 RUN npm ci --ignore-scripts
 COPY tsconfig.json ./
 COPY src ./src
-# Build TypeScript
 RUN npm run build
-# Copy static assets that must live next to compiled output
 RUN cp src/server/openapi.yaml dist/server/openapi.yaml 2>/dev/null || true
 
 # ── Production stage ──────────────────────────────────────────────────────────
 FROM base AS production
 
-# Install only production deps; skip optional Playwright browser downloads
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 COPY package*.json ./
+# Install prod deps + allow Playwright to be installed
 RUN npm ci --omit=dev --ignore-scripts
 
-# Copy compiled output
+# Install Playwright browser for fetch escalation
+RUN npx rebrowser-playwright install chromium --with-deps 2>/dev/null || \
+    npx playwright install chromium --with-deps 2>/dev/null || true
+
 COPY --from=builder /app/dist ./dist
 
-# Non-root user
-RUN useradd -r -s /bin/false nodeuser
-USER nodeuser
-
-# Health-check endpoint
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
 
 EXPOSE 3000
-
-# API_MODE=queue tells app.ts to wire Bull queues instead of calling peel() directly
-ENV API_MODE=queue
 ENV NODE_ENV=production
 
 CMD ["node", "dist/server/app.js"]
