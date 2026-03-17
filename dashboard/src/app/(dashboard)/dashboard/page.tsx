@@ -592,10 +592,19 @@ function ResultCard({
                   {result.method === 'ai' ? '✨ AI' : result.method}
                 </span>
               )}
-              {/* Mode badge */}
-              <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
-                {badge.emoji} {badge.label}
-              </span>
+              {/* Mode badge — links to source URL when available */}
+              {(() => {
+                const sourceUrl = query.split('\n').map(l => l.trim()).find(l => /^https?:\/\//i.test(l));
+                return sourceUrl ? (
+                  <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white hover:border-[#5865F2]/50 hover:bg-[#5865F2]/20 transition-all cursor-pointer no-underline">
+                    {badge.emoji} {badge.label} ↗
+                  </a>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
+                    {badge.emoji} {badge.label}
+                  </span>
+                );
+              })()}
             </div>
           </div>
           {/* YouTube metadata row */}
