@@ -847,7 +847,6 @@ export async function applyToJob(options: ApplyOptions): Promise<ApplyResult> {
     // ── 3. Launch persistent browser ──────────────────────────────
     progress('navigating', 'Launching browser with persistent session...');
 
-    // @ts-expect-error rebrowser-playwright types diverge from upstream playwright-core
     context = await stealthChromium.launchPersistentContext(sessionDir, {
       headless: false, // visible so user can monitor (or log in on first run)
       viewport: { width: 1440, height: 900 },

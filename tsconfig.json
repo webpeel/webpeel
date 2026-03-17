@@ -27,6 +27,9 @@
   "exclude": [
     "node_modules",
     "dist",
-    "src/tests"
+    "src/tests",
+    "src/worker/**/*",
+    "src/server/routes/fetch-queue.ts",
+    "src/server/bull-queues.ts"
   ]
 }
