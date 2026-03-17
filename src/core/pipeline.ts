@@ -1397,10 +1397,7 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
   const alreadyTriedBrowser = escalationFetchMethod === 'browser' || escalationFetchMethod === 'stealth'
     || options.render || options.stealth;
   const userDisabledRender = options.render === false;
-  // Auto-escalation disabled — causes OOM crash loops on Render (4GB container)
-  // Browser launch + Chromium = ~500MB+ spike that kills the process
-  // Users can still explicitly request render:true for JS-heavy sites
-  const escalationCandidate = false && preEscalationWords < 200 && preEscalationWords > 0
+  const escalationCandidate = preEscalationWords < 200 && preEscalationWords > 0
     && escalationFetchMethod === 'simple' && !alreadyTriedBrowser && !userDisabledRender
     && !(ctx as any)._escalated;
 
