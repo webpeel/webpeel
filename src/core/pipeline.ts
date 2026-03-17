@@ -1389,50 +1389,6 @@ export async function finalize(ctx: PipelineContext): Promise<void> {
     }
   }
 
-  // ── Auto-escalation: retry thin content with browser rendering ──────────────
-  // If simple fetch returned very little content and user didn't explicitly disable render,
-  // automatically retry with browser rendering to handle JS-heavy/paywalled sites.
-  const preEscalationWords = ctx.content.trim().split(/\s+/).filter((w: string) => w.length > 0).length;
-  const escalationFetchMethod = fetchResult?.method || 'unknown';
-  const alreadyTriedBrowser = escalationFetchMethod === 'browser' || escalationFetchMethod === 'stealth'
-    || options.render || options.stealth;
-  const userDisabledRender = options.render === false;
-  const escalationCandidate = preEscalationWords < 200 && preEscalationWords > 0
-    && escalationFetchMethod === 'simple' && !alreadyTriedBrowser && !userDisabledRender
-    && !(ctx as any)._escalated;
-
-  if (escalationCandidate) {
-    log.info(`thin content (${preEscalationWords}w) from simple fetch, auto-escalating to browser render for ${ctx.url}`);
-    (ctx as any)._escalated = true;
-    try {
-      const { smartFetch } = await import('./strategies.js');
-      const browserResult = await smartFetch(ctx.url, {
-        forceBrowser: true,
-        stealth: false,
-        timeoutMs: options.timeout || 15000,
-        proxy: options.proxy,
-      });
-      if (browserResult.html && browserResult.html.length > (fetchResult?.html?.length || 0)) {
-        const { htmlToMarkdown } = await import('./markdown.js');
-        const browserContent = htmlToMarkdown(browserResult.html);
-        const browserWords = browserContent.trim().split(/\s+/).filter((w: string) => w.length > 0).length;
-        if (browserWords > preEscalationWords) {
-          log.info(`browser escalation improved content: ${preEscalationWords}w → ${browserWords}w`);
-          ctx.content = browserContent;
-          ctx.fetchResult = browserResult;
-          ctx.fetchResult.method = 'browser-escalation';
-        } else {
-          log.debug(`browser escalation did not improve (${browserWords}w vs ${preEscalationWords}w)`);
-        }
-        // Always clean up browser resources
-        if (browserResult.page) await browserResult.page.close().catch(() => {});
-        if (browserResult.browser) await browserResult.browser.close().catch(() => {});
-      }
-    } catch (e) {
-      log.debug('browser escalation failed:', e instanceof Error ? e.message : e);
-    }
-  }
-
   // Generate AI summary if requested
   if (options.summary && options.llm) {
     try {
