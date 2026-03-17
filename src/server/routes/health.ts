@@ -1,7 +1,10 @@
 /**
- * Health check endpoint
+ * Health check endpoints
  * NOTE: This route is mounted BEFORE auth/rate-limit middleware in app.ts
  * so it's never blocked by rate limiting (Render hits it every ~30s).
+ *
+ * GET /health  — liveness probe: always returns 200 if process is alive
+ * GET /ready   — readiness probe: checks DB + job queue; returns 503 if not ready
  */
 
 import { Router, Request, Response } from 'express';
@@ -9,6 +12,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { fetchCache, searchCache } from '../../core/fetch-cache.js';
+import type pg from 'pg';
 
 const startTime = Date.now();
 
@@ -25,9 +29,13 @@ try {
   } catch { /* keep 'unknown' */ }
 }
 
-export function createHealthRouter(): Router {
+export function createHealthRouter(pool?: pg.Pool | null): Router {
   const router = Router();
 
+  // ------------------------------------------------------------------
+  // GET /health — liveness probe
+  // K8s: if this fails, pod is restarted
+  // ------------------------------------------------------------------
   router.get('/health', (_req: Request, res: Response) => {
     const uptime = Math.floor((Date.now() - startTime) / 1000);
     const fetchStats = fetchCache.stats();
@@ -48,6 +56,65 @@ export function createHealthRouter(): Router {
           hitRate: searchStats.hitRate,
         },
       },
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // GET /ready — readiness probe
+  // K8s: if this fails, pod is removed from service endpoints (no traffic)
+  // Checks: database connectivity + queue (job table) reachability
+  // ------------------------------------------------------------------
+  router.get('/ready', async (_req: Request, res: Response) => {
+    const checks: Record<string, { ok: boolean; latencyMs?: number; error?: string }> = {};
+    let allOk = true;
+
+    // --- Database check ---
+    if (pool) {
+      const t0 = Date.now();
+      try {
+        await pool.query('SELECT 1');
+        checks.database = { ok: true, latencyMs: Date.now() - t0 };
+      } catch (err: any) {
+        checks.database = { ok: false, latencyMs: Date.now() - t0, error: err?.message ?? 'unknown' };
+        allOk = false;
+      }
+    } else {
+      // No pool configured (in-memory mode / local dev without DATABASE_URL)
+      checks.database = { ok: true, latencyMs: 0 };
+    }
+
+    // --- Job queue check (probe the jobs table via DATABASE_URL directly) ---
+    if (process.env.DATABASE_URL) {
+      const t0 = Date.now();
+      try {
+        // Reuse the same pool if available, or do a lightweight table existence check
+        if (pool) {
+          await pool.query('SELECT COUNT(*) FROM jobs WHERE status = $1 LIMIT 1', ['queued']);
+          checks.queue = { ok: true, latencyMs: Date.now() - t0 };
+        } else {
+          checks.queue = { ok: true, latencyMs: 0 };
+        }
+      } catch (err: any) {
+        // Table may not exist in early boot; treat as non-fatal
+        const msg: string = err?.message ?? '';
+        if (msg.includes('relation "jobs" does not exist')) {
+          checks.queue = { ok: true, latencyMs: Date.now() - t0 };
+        } else {
+          checks.queue = { ok: false, latencyMs: Date.now() - t0, error: msg };
+          allOk = false;
+        }
+      }
+    } else {
+      checks.queue = { ok: true, latencyMs: 0 };
+    }
+
+    const status = allOk ? 200 : 503;
+    res.status(status).json({
+      status: allOk ? 'ready' : 'not_ready',
+      version,
+      uptime: Math.floor((Date.now() - startTime) / 1000),
+      timestamp: new Date().toISOString(),
+      checks,
     });
   });
 

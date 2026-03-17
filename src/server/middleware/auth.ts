@@ -46,7 +46,7 @@ export function createAuthMiddleware(authStore: AuthStore) {
       // SECURITY: Skip API key auth for public/JWT-protected endpoints
       // These routes either need no auth or use their own JWT middleware
       const isPublicEndpoint = 
-        req.path === '/health' || 
+        req.path === '/health' || req.path === '/ready' ||
         req.path.startsWith('/v1/auth/') ||
         req.path === '/v1/webhooks/stripe' ||
         req.path === '/v1/me' ||

@@ -98,6 +98,7 @@ const TIER_BURST_LIMITS: Record<string, number> = {
  */
 const EXEMPT_PATHS = [
   '/health',
+  '/ready',
   '/openapi.json',
   '/openapi.yaml',
   '/docs',
