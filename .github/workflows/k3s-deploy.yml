@@ -1,0 +1,115 @@
+name: Build & Deploy to K3s
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to K3s after build'
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'Dockerfile.api'
+      - 'Dockerfile.worker'
+      - 'k8s/**'
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/webpeel/api
+  WORKER_IMAGE: ghcr.io/webpeel/worker
+
+jobs:
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: echo "version=$(node -p 'require("./package.json").version')" >> $GITHUB_OUTPUT
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.api
+          push: true
+          tags: |
+            ${{ env.API_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.API_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Build & push Worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.worker
+          push: true
+          tags: |
+            ${{ env.WORKER_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.WORKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+  deploy:
+    name: Deploy to K3s
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || github.event.inputs.deploy == 'true' }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: root
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            VERSION="${{ needs.build-and-push.outputs.version }}"
+            NS="webpeel"
+            
+            echo "Deploying v${VERSION} to K3s..."
+            
+            # Pull images via containerd (k3s uses containerd, not docker)
+            k3s crictl pull ghcr.io/webpeel/api:${VERSION}
+            k3s crictl pull ghcr.io/webpeel/worker:${VERSION}
+            
+            # Update deployments
+            kubectl set image deployment/api api=ghcr.io/webpeel/api:${VERSION} -n ${NS}
+            kubectl set image deployment/worker worker=ghcr.io/webpeel/worker:${VERSION} -n ${NS}
+            
+            # Rolling restart
+            kubectl rollout restart deployment/api -n ${NS}
+            kubectl rollout restart deployment/worker -n ${NS}
+            
+            # Wait for API rollout
+            kubectl rollout status deployment/api -n ${NS} --timeout=180s
+            
+            # Verify
+            sleep 10
+            HEALTH=$(curl -sf --max-time 10 https://api.webpeel.dev/health)
+            echo "$HEALTH" | python3 -c "import sys,json; d=json.loads(sys.stdin.read()); print('✅ v%s %s' % (d['version'], d['status']))"

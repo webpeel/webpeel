@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: api
-        image: webpeel-api:0.21.59
-        imagePullPolicy: Never
+        image: ghcr.io/webpeel/api:0.21.60
+        imagePullPolicy: Always
         ports:
         - containerPort: 3000
         env:

@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: worker
-        image: webpeel:worker
-        imagePullPolicy: Never
+        image: ghcr.io/webpeel/worker:0.21.60
+        imagePullPolicy: Always
         env:
         - name: NODE_ENV
           value: "production"
