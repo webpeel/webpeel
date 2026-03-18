@@ -170,7 +170,9 @@ export function getDomainExtractor(url: string): DomainExtractor | null {
 // of falling back to garbage browser rendering (cookie walls, "Loading…").
 // Key: normalized URL (no query/hash), Value: { result, timestamp }
 const EXTRACTOR_CACHE = new Map<string, { result: DomainExtractResult; ts: number }>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/** Clear the extractor response cache (used in tests). */
+export function clearExtractorCache(): void { EXTRACTOR_CACHE.clear(); }const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function getCachedExtractorResult(url: string): DomainExtractResult | null {
   const key = url.replace(/[?#].*$/, '').toLowerCase(); // strip query+hash

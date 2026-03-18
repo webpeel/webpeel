@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getDomainExtractor, extractDomainData } from '../core/domain-extractors.js';
+import { getDomainExtractor, extractDomainData, clearExtractorCache } from '../core/domain-extractors.js';
 
 // ---------------------------------------------------------------------------
 // Mock simpleFetch — we don't want real network calls
@@ -41,6 +41,7 @@ function mockNotFound(): void {
 
 beforeEach(() => {
   mockFetch.mockReset();
+  clearExtractorCache();
   // Also intercept globalThis.fetch (used by fetchJson for GitHub, Reddit, HN, YouTube, etc.)
   // Route through the same mockFetch queue so tests only need one mock setup.
   vi.stubGlobal('fetch', async (url: string, options?: RequestInit) => {
