@@ -243,6 +243,20 @@ export function createQueueFetchRouter(): Router {
     const { id } = req.params;
     const requestId = req.requestId || randomUUID();
 
+    // Auth required — prevent IDOR (unauthenticated access to job results)
+    if (!req.auth?.keyInfo) {
+      res.status(401).json({
+        success: false,
+        error: {
+          type: 'unauthorized',
+          message: 'API key required to poll job results.',
+          docs: 'https://webpeel.dev/docs/errors#unauthorized',
+        },
+        requestId,
+      });
+      return;
+    }
+
     if (!id || typeof id !== 'string') {
       res.status(400).json({
         success: false,
