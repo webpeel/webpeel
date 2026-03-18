@@ -282,12 +282,26 @@ export default function BillingPage() {
                 <Button
                   variant="outline"
                   className="gap-2 border-zinc-300 hover:border-zinc-400"
-                  asChild
+                  onClick={async () => {
+                    try {
+                      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
+                      const res = await fetch(`${API_URL}/v1/billing/portal`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      const data = await res.json();
+                      if (data.url) {
+                        window.open(data.url, '_blank');
+                      } else if (data.message) {
+                        alert(data.message);
+                      }
+                    } catch (e) {
+                      alert('Could not open billing portal. Please try again.');
+                    }
+                  }}
                 >
-                  <a href="mailto:support@webpeel.dev?subject=Subscription%20Change%20Request">
-                    Manage Plan
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
+                  Manage Plan
+                  <ExternalLink className="h-4 w-4" />
                 </Button>
               ) : isAdmin ? (
                 <Badge className="bg-[#5865F2]/20 text-[#5865F2] text-sm px-3 py-1.5">
