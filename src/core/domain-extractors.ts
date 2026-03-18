@@ -164,11 +164,40 @@ export function getDomainExtractor(url: string): DomainExtractor | null {
   return null;
 }
 
+// ── Extractor Response Cache ──────────────────────────────────────────────
+// Caches successful API responses for 5 minutes to survive rate limits.
+// If the API rate-limits on the next request, we serve from cache instead
+// of falling back to garbage browser rendering (cookie walls, "Loading…").
+// Key: normalized URL (no query/hash), Value: { result, timestamp }
+const EXTRACTOR_CACHE = new Map<string, { result: DomainExtractResult; ts: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCachedExtractorResult(url: string): DomainExtractResult | null {
+  const key = url.replace(/[?#].*$/, '').toLowerCase(); // strip query+hash
+  const entry = EXTRACTOR_CACHE.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL_MS) {
+    return entry.result;
+  }
+  EXTRACTOR_CACHE.delete(key); // expired — evict
+  return null;
+}
+
+function setCachedExtractorResult(url: string, result: DomainExtractResult): void {
+  const key = url.replace(/[?#].*$/, '').toLowerCase();
+  EXTRACTOR_CACHE.set(key, { result, ts: Date.now() });
+  // Keep cache size bounded at 500 entries (evict oldest)
+  if (EXTRACTOR_CACHE.size > 500) {
+    const oldest = EXTRACTOR_CACHE.keys().next().value;
+    if (oldest) EXTRACTOR_CACHE.delete(oldest);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Convenience: run the extractor for the URL (if one exists).
+ * Internal implementation: run the extractor for the URL (if one exists).
  * Returns null when no extractor matches or extraction fails.
  */
-export async function extractDomainData(
+async function _extractDomainDataImpl(
   html: string,
   url: string
 ): Promise<DomainExtractResult | null> {
@@ -179,6 +208,38 @@ export async function extractDomainData(
   } catch {
     return null;
   }
+}
+
+/**
+ * Convenience: run the extractor for the URL (if one exists).
+ * Wraps _extractDomainDataImpl with a 5-minute LRU cache so that
+ * rate-limited API responses fall back to cached results instead of
+ * garbage browser rendering.
+ */
+export async function extractDomainData(
+  html: string,
+  url: string
+): Promise<DomainExtractResult | null> {
+  // 1. Check fresh cache first
+  const cached = getCachedExtractorResult(url);
+  if (cached) return cached;
+
+  // 2. Try the real extractor
+  const result = await _extractDomainDataImpl(html, url);
+
+  if (result && result.cleanContent.length > 20) {
+    // 3. Cache the successful result
+    setCachedExtractorResult(url, result);
+    return result;
+  }
+
+  // 4. Extractor failed/returned garbage — check for any stale cache entry
+  //    (stale structured data beats a browser "Loading…" page)
+  const stale = getCachedExtractorResult(url);
+  if (stale) return stale;
+
+  // 5. Genuinely nothing — return null so the pipeline falls back to fetch
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,6 +283,13 @@ async function fetchJson(url: string, customHeaders?: Record<string, string>): P
       redirect: 'follow',
     });
     clearTimeout(timer);
+    // Surface 429 as a thrown error so callers can detect rate-limiting
+    // and the cache wrapper can serve stale results instead of garbage.
+    if (resp.status === 429) {
+      const err = new Error(`429 Too Many Requests: ${url}`);
+      (err as any).statusCode = 429;
+      throw err;
+    }
     const text = await resp.text();
     const parsed = tryParseJson(text);
     if (parsed === null && text.length > 0) {
