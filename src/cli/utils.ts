@@ -408,7 +408,7 @@ export function buildCondensedHelp(): string {
     `    --raw                 Full page (disable auto reader mode)`,
     `    --full                Full page, no budget limit`,
     `    --json                JSON output with metadata`,
-    `    --budget: 4000)`,
+    `    --budget <n>          Token budget (default: 4000 in pipe mode)`,
     `    -q, --question <q>    Ask about the content`,
     `    -s, --silent          No spinner output`,
     '',

@@ -8,7 +8,6 @@
   <a href="https://github.com/webpeel/webpeel/actions/workflows/ci.yml"><img src="https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/v/webpeel.svg?style=flat-square" alt="npm version"></a>
   <a href="https://pypi.org/project/webpeel/"><img src="https://img.shields.io/pypi/v/webpeel.svg?style=flat-square" alt="PyPI version"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-WebPeel%20SDK-blue.svg?style=flat-square" alt="License"></a>
   <a href="https://webpeel.dev/status"><img src="https://img.shields.io/badge/status-operational-brightgreen.svg?style=flat-square" alt="Status"></a>
 </p>
@@ -305,20 +304,20 @@ webpeel "https://news.ycombinator.com"
 # Search the web
 webpeel search "typescript orm comparison 2025"
 
-# Extract structured data
-webpeel extract "https://stripe.com/pricing" --schema pricing-schema.json
+# Extract structured data with a JSON schema
+webpeel "https://stripe.com/pricing" --extract-schema pricing-schema.json
 
-# Crawl a site, save to folder
-webpeel crawl "https://docs.example.com" --output ./docs-dump --max-pages 100
+# Crawl a site
+webpeel crawl "https://docs.example.com" --max-pages 100
 
 # Screenshot
 webpeel screenshot "https://webpeel.dev" --full-page --output screenshot.png
 
 # YouTube transcript
-webpeel youtube "https://youtube.com/watch?v=dQw4w9WgXcQ"
+webpeel "https://youtube.com/watch?v=dQw4w9WgXcQ" --json
 
 # Ask a question about a page
-webpeel qa "https://openai.com/pricing" --question "How much does GPT-4o cost per million tokens?"
+webpeel ask "https://openai.com/pricing" "How much does GPT-4o cost per million tokens?"
 
 # Output as JSON
 webpeel "https://example.com" --json
