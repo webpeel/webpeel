@@ -123,6 +123,7 @@ export async function searchFallback(..._args: any[]): Promise<SearchFallbackRes
 export { peelTLSFetch, isPeelTLSAvailable, shutdownPeelTLS, type PeelTLSOptions, type PeelTLSResult } from './core/peel-tls.js';
 export { sanitizeForLLM, type SanitizeResult } from './core/prompt-guard.js';
 export { getSourceCredibility, type SourceCredibility } from './core/source-credibility.js';
+export { verifyDomain, type DomainVerification } from './core/domain-verify.js';
 export { checkUrlSafety, type SafeBrowsingResult } from './core/safe-browsing.js';
 
 /**

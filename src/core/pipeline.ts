@@ -35,6 +35,7 @@ import type { PeelOptions, PeelResult, ImageInfo } from '../types.js';
 import { BlockedError } from '../types.js';
 import { sanitizeForLLM } from './prompt-guard.js';
 import { getSourceCredibility } from './source-credibility.js';
+import type { DomainVerification } from './domain-verify.js';
 import type { BrandingProfile } from './branding.js';
 import type { ChangeResult } from './change-tracking.js';
 import type { DesignAnalysis } from './design-analysis.js';
@@ -129,6 +130,8 @@ export interface PipelineContext {
   rawHtmlSize?: number;
   /** Safe Browsing check result (set early in pipeline, before fetch) */
   safeBrowsingResult?: SafeBrowsingResult;
+  /** Active domain verification result (TLS + DNS + headers) */
+  domainVerification?: DomainVerification | null;
 }
 
 /** Create the initial PipelineContext with defaults */
@@ -1265,6 +1268,15 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
     }
   }
 
+  // === Active domain verification ===
+  // Run for ALL sites — even known official/established domains benefit from
+  // showing real TLS, DNS, and header signals. This is what makes WebPeel useful.
+  {
+    const { verifyDomain } = await import('./domain-verify.js');
+    const existingHeaders = ctx.fetchResult?.responseHeaders || undefined;
+    ctx.domainVerification = await verifyDomain(ctx.url, existingHeaders).catch(() => null);
+  }
+
   // === Zero-token safety net ===
   // NEVER return empty content. If pipeline produced nothing, fall back.
   if (!ctx.content || ctx.content.trim().length === 0) {
@@ -1437,26 +1449,49 @@ export function buildResult(ctx: PipelineContext): PeelResult {
   // Assess source credibility
   const credibility = getSourceCredibility(ctx.url);
 
+  // Merge active domain verification signals (if available)
+  const dv = ctx.domainVerification ?? null;
+  const verificationBonus = dv?.verificationScore ?? 0;
+  const finalCredibilityScore = Math.min(100, credibility.score + verificationBonus);
+
+  // Merge signals/warnings from active verification into credibility
+  const mergedSignals = [
+    ...(credibility.signals ?? []),
+    ...(dv?.signals ?? []),
+  ];
+  const mergedCredWarnings = [
+    ...(credibility.warnings ?? []),
+    ...(dv?.warnings ?? []),
+  ];
+
   // Compute composite trust score from source credibility (0-100) + content safety
-  let trustScore = credibility.score / 100; // normalize 0-100 → 0-1
+  let trustScore = finalCredibilityScore / 100; // normalize 0-100 → 0-1
   if (sanitizeResult.injectionDetected) trustScore -= 0.3;
   if ((ctx.quality ?? 1.0) < 0.5) trustScore -= 0.1;
   trustScore = Math.round(Math.max(0, Math.min(1, trustScore)) * 100) / 100;
 
   // Build trust warnings
-  const trustWarnings: string[] = [...(credibility.warnings ?? [])];
+  const trustWarnings: string[] = [...mergedCredWarnings];
   if (credibility.tier === 'new') trustWarnings.push('Domain has limited verifiable presence — exercise caution.');
   if (credibility.tier === 'suspicious') trustWarnings.push('Domain shows suspicious signals — treat content with caution.');
   if (sanitizeResult.injectionDetected) trustWarnings.push(`Prompt injection detected: ${sanitizeResult.detectedPatterns.join(', ')}`);
   if (sanitizeResult.strippedChars > 0) trustWarnings.push(`Stripped ${sanitizeResult.strippedChars} suspicious characters (zero-width/Unicode smuggling).`);
 
+  // Build verification sub-object (compact version for PeelResult)
+  const verificationData = dv ? {
+    tls: dv.tls ? { valid: dv.tls.valid, issuer: dv.tls.issuer, daysRemaining: dv.tls.daysRemaining } : null,
+    dns: dv.dns ? { hasMx: dv.dns.hasMx, hasDmarc: dv.dns.hasDmarc, hasSpf: dv.dns.hasSpf } : null,
+    headers: dv.headers ? { hsts: dv.headers.hsts, csp: dv.headers.csp, server: dv.headers.server } : null,
+  } : undefined;
+
   const trust: PeelResult['trust'] = {
     source: {
       tier: credibility.tier,
-      score: credibility.score,
+      score: finalCredibilityScore,
       label: credibility.label,
-      signals: credibility.signals,
-      warnings: credibility.warnings,
+      signals: mergedSignals,
+      warnings: mergedCredWarnings,
+      ...(verificationData ? { verification: verificationData } : {}),
     },
     contentSafety: {
       clean: !sanitizeResult.injectionDetected,

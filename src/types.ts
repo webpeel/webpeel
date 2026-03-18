@@ -357,6 +357,12 @@ export interface PeelResult {
       label: string;
       signals?: string[];
       warnings?: string[];
+      /** Active runtime verification results (TLS, DNS, HTTP headers) */
+      verification?: {
+        tls: { valid: boolean; issuer: string; daysRemaining: number } | null;
+        dns: { hasMx: boolean; hasDmarc: boolean; hasSpf: boolean } | null;
+        headers: { hsts: boolean; csp: boolean; server: string } | null;
+      };
     };
     /** Prompt injection scan result */
     contentSafety: {
