@@ -1,25 +1,19 @@
 # syntax=docker/dockerfile:1
-# WebPeel API Server — Hosted REST API (Render/Docker)
-# Multi-arch: supports linux/amd64 and linux/arm64 (Apple M-series + x86 servers).
-# Build single-arch: docker build -f Dockerfile.api -t webpeel/api .
-# Build multi-arch:  docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.api -t webpeel/api --push .
-# Run:               docker run -p 3000:3000 -e DATABASE_URL=... webpeel/api
+# WebPeel API Server — Built from source (no npm CDN dependency)
+# Build:  docker build -f Dockerfile.api -t webpeel/api .
+# Run:    docker run -p 3000:3000 -e DATABASE_URL=... webpeel/api
 
-# node:22-slim is an official multi-arch image (amd64 + arm64 manifests on Docker Hub).
-# No extra steps needed — npm packages and Playwright binaries are arch-aware at install time.
 FROM node:22-slim
 
-# Capture the build platform for diagnostic labels (set by buildx automatically)
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 LABEL org.opencontainers.image.description="WebPeel API Server" \
-      org.opencontainers.image.source="https://github.com/webpeel/webpeel" \
-      multi-arch="linux/amd64,linux/arm64"
+      org.opencontainers.image.source="https://github.com/webpeel/webpeel"
 
-# Shared Playwright browser path — ensures install + runtime use the same location
+# Shared Playwright browser path
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
 
-# Install system deps needed by Chromium (fonts, libs)
+# Install system deps needed by Chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
     libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
@@ -27,28 +21,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation fonts-noto-color-emoji curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-# Install WebPeel from npm FIRST (includes rebrowser-playwright)
-# Version-pinned install — change version to bust Docker layer cache automatically
-RUN npm install webpeel@0.21.61 --prefer-online
-
 # Install yt-dlp for YouTube transcript extraction
 RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip && \
     pip3 install --break-system-packages yt-dlp && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright browser + system dependencies
-# 1. Install the Chromium binary (respects PLAYWRIGHT_BROWSERS_PATH)
-# 2. Re-fetch apt lists (cleared earlier) so install-deps can work
-# 3. Install OS-level Chromium dependencies via playwright install-deps
-# 4. Clean apt lists to keep image lean
+WORKDIR /app
+
+# Copy package files first (layer cache: only re-installs if deps change)
+COPY package.json package-lock.json ./
+
+# Install dependencies from source (not from npm registry)
+RUN npm ci --omit=dev
+
+# Copy pre-built dist (TypeScript already compiled locally / in CI)
+COPY dist ./dist
+
+# Install Playwright browser
 RUN npx playwright install chromium \
     && apt-get update \
     && npx playwright install-deps chromium \
     && rm -rf /var/lib/apt/lists/*
 
-# Non-root user for security
+# Non-root user
 RUN groupadd -r webpeel && useradd -r -g webpeel webpeel \
     && chown -R webpeel:webpeel /app \
     && chmod -R o+rx /opt/pw-browsers
@@ -59,5 +54,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1
 
-# Run the API server from the npm-installed package
-CMD ["node", "node_modules/webpeel/dist/server/app.js"]
+CMD ["node", "dist/server/app.js"]

@@ -1,0 +1,102 @@
+# cleanup-cron.yaml — Daily cleanup CronJob for Hetzner K3s node
+#
+# NOTE: K3s uses containerd, not Docker. This CronJob uses kubectl + k3s ctr
+# to clean up unused images. It requires privileged access to the host.
+#
+# For a simpler setup, prefer the shell cron approach:
+#   ./scripts/setup-hetzner-cron.sh
+#
+# Apply with: kubectl apply -f k8s/cleanup-cron.yaml
+#
+# Prerequisites:
+#   - ServiceAccount with cluster-admin or a custom ClusterRole (see below)
+#   - hostPID + privileged required to run k3s ctr
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cleanup
+  namespace: webpeel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: webpeel-cleanup
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: webpeel-cleanup
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: webpeel-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: cleanup
+    namespace: webpeel
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cleanup
+  namespace: webpeel
+spec:
+  schedule: "0 4 * * *"    # 4am UTC daily
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: cleanup
+          hostNetwork: true
+          hostPID: true
+          restartPolicy: OnFailure
+          containers:
+            - name: cleanup
+              image: bitnami/kubectl:latest
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -e
+                  echo "=== WebPeel Cleanup $(date) ==="
+
+                  # Get images in use by running pods
+                  USED=$(kubectl get pods -A \
+                    -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.image}{"\n"}{end}{end}' \
+                    | sort -u)
+
+                  # Remove unused containerd images via host k3s binary
+                  ALL=$(nsenter -t 1 -m -u -i -n -- k3s ctr images list -q 2>/dev/null | sort -u || echo "")
+                  REMOVED=0
+                  for img in $ALL; do
+                    case "$img" in
+                      *pause*|*rancher*) continue ;;
+                    esac
+                    if ! echo "$USED" | grep -qF "$img"; then
+                      echo "Removing: $img"
+                      nsenter -t 1 -m -u -i -n -- k3s ctr images rm "$img" 2>/dev/null || true
+                      REMOVED=$((REMOVED + 1))
+                    fi
+                  done
+
+                  echo "Removed $REMOVED unused images"
+                  echo "Disk: $(nsenter -t 1 -m -u -i -n -- df -h / | tail -1)"
+                  echo "=== Done ==="
+              securityContext:
+                privileged: true
+              volumeMounts:
+                - name: host-root
+                  mountPath: /host
+                  readOnly: true
+          volumes:
+            - name: host-root
+              hostPath:
+                path: /
