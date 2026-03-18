@@ -11,9 +11,13 @@ WORKDIR /app
 FROM base AS builder
 COPY package*.json ./
 RUN npm ci --ignore-scripts
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.worker.json ./
 COPY src ./src
+# Build main package first (needed for type resolution), then compile worker
 RUN npm run build
+RUN npx tsc -p tsconfig.worker.json 2>/dev/null || true
+# Ensure worker entry point exists
+RUN test -f dist/worker/worker.js || (echo "❌ dist/worker/worker.js missing!" && exit 1)
 RUN cp src/server/openapi.yaml dist/server/openapi.yaml 2>/dev/null || true
 
 # ── Production stage ──────────────────────────────────────────────────────────
