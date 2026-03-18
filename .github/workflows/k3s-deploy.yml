@@ -55,8 +55,10 @@ jobs:
           tags: |
             ${{ env.API_IMAGE }}:${{ steps.version.outputs.version }}
             ${{ env.API_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Cache layers EXCEPT the npm install layer (busted by version number in Dockerfile)
+          # Use REGISTRY cache so npm install re-runs when webpeel version changes
+          cache-from: type=registry,ref=${{ env.API_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.API_IMAGE }}:buildcache,mode=max
           platforms: linux/amd64
 
       - name: Build & push Worker image
@@ -68,8 +70,8 @@ jobs:
           tags: |
             ${{ env.WORKER_IMAGE }}:${{ steps.version.outputs.version }}
             ${{ env.WORKER_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=${{ env.WORKER_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.WORKER_IMAGE }}:buildcache,mode=max
           platforms: linux/amd64
 
     outputs:
