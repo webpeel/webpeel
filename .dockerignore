@@ -1,6 +1,7 @@
 node_modules
 .git
-src
+# NOTE: src is needed by Dockerfile.worker (multi-stage build from source)
+# Dockerfile.api installs from npm so doesn't need src
 tests
 *.test.ts
 .env*
