@@ -146,6 +146,11 @@ const REGISTRY: Array<{
   { match: (h) => h === 'open-meteo.com' || h === 'api.open-meteo.com' || h === 'www.open-meteo.com', extractor: weatherExtractor },
   { match: (h) => h === 'weather.com' || h === 'www.weather.com', extractor: weatherExtractor },
   { match: (h) => h === 'accuweather.com' || h === 'www.accuweather.com', extractor: weatherExtractor },
+  // ── Marketplaces & Shopping ───────────────────────────────────────────────
+  { match: (h) => h === 'facebook.com' || h === 'www.facebook.com', extractor: facebookMarketplaceExtractor },
+  { match: (h) => h === 'etsy.com' || h === 'www.etsy.com', extractor: etsyExtractor },
+  { match: (h) => h === 'cars.com' || h === 'www.cars.com', extractor: carsComExtractor },
+  { match: (h) => h === 'ebay.com' || h === 'www.ebay.com', extractor: ebayExtractor },
 ];
 
 /**
@@ -5311,6 +5316,316 @@ async function weatherExtractor(_html: string, url: string): Promise<DomainExtra
     };
   } catch (e) {
     if (process.env.DEBUG) console.debug('[webpeel]', 'Weather API failed:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Facebook Marketplace extractor (login-wall fallback)
+// ---------------------------------------------------------------------------
+
+async function facebookMarketplaceExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  const u = new URL(url);
+  if (!u.pathname.includes('/marketplace')) return null;
+
+  const query = u.searchParams.get('query') || '';
+  const maxPrice = u.searchParams.get('maxPrice') || '';
+  const minPrice = u.searchParams.get('minPrice') || '';
+  // Extract location segment: /marketplace/nyc/search → "nyc"
+  const locationMatch = u.pathname.match(/\/marketplace\/([^/]+)(?:\/|$)/);
+  const location = (locationMatch?.[1] && locationMatch[1] !== 'search' && locationMatch[1] !== 'category') ? locationMatch[1] : '';
+
+  const priceRange = [minPrice && `$${minPrice}`, maxPrice && `$${maxPrice}`].filter(Boolean).join(' – ');
+
+  const lines: string[] = [
+    `# 🛒 Facebook Marketplace`,
+    '',
+    `**Search:** ${query || 'Browse all'}`,
+    ...(location ? [`**Location:** ${location}`] : []),
+    ...(priceRange ? [`**Price range:** ${priceRange}`] : []),
+    '',
+    '> ⚠️ Facebook Marketplace requires authentication. WebPeel cannot access listings directly.',
+    '',
+    '**Alternative searches that work:**',
+  ];
+
+  if (query) {
+    const clUrl = `https://newyork.craigslist.org/search/sss?query=${encodeURIComponent(query)}${maxPrice ? '&max_price=' + maxPrice : ''}`;
+    const carsUrl = `https://www.cars.com/shopping/results/?keyword=${encodeURIComponent(query)}&list_price_max=${maxPrice || ''}&zip=10001&stock_type=used`;
+    const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}${maxPrice ? '&_udhi=' + maxPrice : ''}&LH_BIN=1`;
+    lines.push(
+      `- \`webpeel "${clUrl}"\` — Craigslist`,
+      `- \`webpeel "${carsUrl}"\` — Cars.com`,
+      `- \`webpeel "${ebayUrl}"\` — eBay`,
+    );
+  }
+
+  lines.push('', '*Tip: Craigslist and Cars.com return full structured results with WebPeel.*');
+
+  return {
+    domain: 'facebook.com',
+    type: 'blocked',
+    structured: {
+      query,
+      location,
+      minPrice,
+      maxPrice,
+      reason: 'authentication required',
+      alternatives: ['craigslist', 'cars.com', 'ebay'],
+    },
+    cleanContent: lines.join('\n'),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Etsy extractor (bot-block fallback with Google site-search suggestion)
+// ---------------------------------------------------------------------------
+
+async function etsyExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  const u = new URL(url);
+
+  // Extract search query from various URL patterns
+  // /search?q=handmade+jewelry  OR  /search/handmade-jewelry
+  let query = u.searchParams.get('q') || '';
+  if (!query) {
+    const pathMatch = u.pathname.match(/\/search\/([^?#]+)/);
+    if (pathMatch) query = decodeURIComponent(pathMatch[1].replace(/-/g, ' '));
+  }
+  // Shop page: /shop/ShopName
+  const shopMatch = u.pathname.match(/^\/shop\/([^/?#]+)/);
+  const shopName = shopMatch?.[1] || '';
+
+  if (!query && !shopName) return null;
+
+  const googleUrl = query
+    ? `https://www.google.com/search?q=site:etsy.com+${encodeURIComponent(query)}`
+    : `https://www.google.com/search?q=site:etsy.com+${encodeURIComponent(shopName)}`;
+  const etsySearchUrl = query ? `https://www.etsy.com/search?q=${encodeURIComponent(query)}` : url;
+
+  const displayTitle = query ? `"${query}"` : `Shop: ${shopName}`;
+
+  const cleanContent = [
+    `# 🎨 Etsy — ${displayTitle}`,
+    '',
+    '> ⚠️ Etsy blocks automated access. WebPeel cannot scrape listings directly.',
+    '',
+    '**Alternatives that work:**',
+    `- \`webpeel "${googleUrl}"\` — Google site:etsy.com results`,
+    `- Direct link: [etsy.com/search?q=${encodeURIComponent(query || shopName)}](${etsySearchUrl})`,
+    '',
+    ...(query ? [
+      '**Similar items on open marketplaces:**',
+      `- \`webpeel "https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_BIN=1"\` — eBay`,
+      `- \`webpeel "https://newyork.craigslist.org/search/sss?query=${encodeURIComponent(query)}"\` — Craigslist`,
+    ] : []),
+    '',
+    '*Etsy Open API v3 (free key at etsy.com/developers) can unlock direct access.*',
+  ].join('\n');
+
+  return {
+    domain: 'etsy.com',
+    type: 'blocked',
+    structured: {
+      query,
+      shopName,
+      reason: 'bot-block',
+      googleFallback: googleUrl,
+    },
+    cleanContent,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Cars.com extractor — structured parsing via data-vehicle-details JSON attrs
+// ---------------------------------------------------------------------------
+
+async function carsComExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    const u = new URL(url);
+    const keyword = u.searchParams.get('keyword') || '';
+    const maxPrice = u.searchParams.get('list_price_max') || '';
+    const minPrice = u.searchParams.get('list_price_min') || '';
+    const zip = u.searchParams.get('zip') || '';
+    const stockType = u.searchParams.get('stock_type') || '';
+
+    // Individual vehicle detail page
+    if (u.pathname.includes('/vehicledetail/')) {
+      const title = $('h1').first().text().trim() ||
+        $('title').text().trim().split(' | ')[0];
+      if (!title) return null;
+
+      const price = $('[class*="price"]').first().text().trim();
+      const mileage = $('[class*="mileage"]').first().text().trim();
+
+      return {
+        domain: 'cars.com',
+        type: 'listing',
+        structured: { title, price, mileage, url },
+        cleanContent: [
+          `# 🚗 ${title}`,
+          price && `**Price:** ${price}`,
+          mileage && `**Mileage:** ${mileage}`,
+          `\n[View listing](${url})`,
+        ].filter(Boolean).join('\n'),
+      };
+    }
+
+    // Search results page — Cars.com embeds JSON in fuse-card data-vehicle-details
+    const listings: Array<Record<string, any>> = [];
+
+    $('fuse-card[data-vehicle-details]').each((_: any, el: any) => {
+      try {
+        const raw = $(el).attr('data-vehicle-details');
+        if (!raw) return;
+        const v = JSON.parse(raw);
+        const listingId = v.listingId || $(el).attr('data-listing-id') || '';
+        const cardLink = $(el).find('card-gallery').attr('card-link') || (listingId ? `/vehicledetail/${listingId}/` : '');
+        const title = `${v.stockType || 'Used'} ${v.year} ${v.make} ${v.model}${v.trim ? ' ' + v.trim : ''}`.trim();
+        const price = v.price ? `$${Number(v.price).toLocaleString()}` : '';
+        const mileage = v.mileage ? `${Number(v.mileage).toLocaleString()} mi` : '';
+        const bodyStyle = v.bodyStyle || '';
+        const fuelType = v.fuelType || '';
+        if (title && title !== 'Used  ') {
+          listings.push({ title, price, mileage, bodyStyle, fuelType, url: cardLink });
+        }
+      } catch { /* skip malformed */ }
+    });
+
+    if (listings.length === 0) return null; // Let pipeline handle it
+
+    const priceRange = [minPrice && `$${minPrice}`, maxPrice && `$${maxPrice}`].filter(Boolean).join(' – ');
+    const header = [
+      `# 🚗 Cars.com — ${keyword || 'Vehicle Search'}`,
+      '',
+      keyword && `**Search:** ${keyword}`,
+      zip && `**Location:** ZIP ${zip}`,
+      priceRange && `**Price:** up to $${maxPrice}`,
+      stockType && `**Stock:** ${stockType}`,
+      `**Results:** ${listings.length} listings`,
+      '',
+    ].filter(Boolean).join('\n');
+
+    const rows = listings.slice(0, 20).map((l, i) => {
+      const parts = [
+        `${i + 1}. **${l.title}**`,
+        l.price,
+        l.mileage,
+        l.bodyStyle,
+        l.url && `[→](https://www.cars.com${l.url})`,
+      ].filter(Boolean);
+      return parts.join(' · ');
+    });
+
+    return {
+      domain: 'cars.com',
+      type: 'search',
+      structured: { keyword, zip, minPrice, maxPrice, stockType, count: listings.length, listings },
+      cleanContent: header + rows.join('\n'),
+    };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'Cars.com extractor error:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// eBay extractor — clean up noisy search results
+// ---------------------------------------------------------------------------
+
+async function ebayExtractor(html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const { load } = await import('cheerio');
+    const $ = load(html);
+
+    const u = new URL(url);
+
+    // Individual item page
+    if (u.pathname.startsWith('/itm/')) {
+      const title = $('h1').first().text().trim();
+      if (!title) return null;
+
+      const price = $('[class*="price"]').not('[class*="shipping"]').first().text().trim();
+      const condition = $('[class*="condition"]').first().text().trim();
+
+      return {
+        domain: 'ebay.com',
+        type: 'listing',
+        structured: { title, price, condition, url },
+        cleanContent: [
+          `# 🛍 ${title}`,
+          price && `**Price:** ${price}`,
+          condition && `**Condition:** ${condition}`,
+          `\n[View on eBay](${url})`,
+        ].filter(Boolean).join('\n'),
+      };
+    }
+
+    // Search results page
+    const keyword = u.searchParams.get('_nkw') || '';
+    const maxPrice = u.searchParams.get('_udhi') || '';
+    const minPrice = u.searchParams.get('_udlo') || '';
+
+    const listings: Array<Record<string, string>> = [];
+
+    // eBay search results use li[data-listingid] + .s-card__title / .s-card__price
+    $('li[data-listingid]').each((_: any, el: any) => {
+      const titleRaw = $(el).find('.s-card__title').text().trim()
+        .replace(/Opens in a new window or tab/g, '')
+        .replace(/^New Listing\s*/i, '')
+        .trim();
+      if (!titleRaw || titleRaw === 'Shop on eBay') return;
+      const title = titleRaw;
+
+      const price = $(el).find('.s-card__price').first().text().trim();
+      // .s-card__subtitle contains "DealerNameCondition" as merged text — extract condition keyword
+      const subtitleText = $(el).find('.s-card__subtitle').text().trim();
+      const conditionKeywords = ['Pre-Owned', 'Brand New', 'Open Box', 'Refurbished', 'For Parts'];
+      const condition = conditionKeywords.find((k) => subtitleText.includes(k)) || '';
+
+      // Get clean URL — extract /itm/<id> and strip tracking params
+      let href = '';
+      const itemLink = $(el).find('a[href*="/itm/"]').first().attr('href') || '';
+      const itmMatch = itemLink.match(/(https?:\/\/[^/]*\/itm\/\d+)/);
+      if (itmMatch) href = itmMatch[1];
+      const listingId = $(el).attr('data-listingid') || '';
+      if (!href && listingId) href = `https://www.ebay.com/itm/${listingId}`;
+
+      listings.push({ title, price, condition, url: href });
+    });
+
+    if (listings.length === 0) return null; // Let pipeline handle it
+
+    const priceRange = [minPrice && `$${minPrice}`, maxPrice && `$${maxPrice}`].filter(Boolean).join(' – ');
+    const header = [
+      `# 🛍 eBay — ${keyword || 'Search Results'}`,
+      '',
+      keyword && `**Search:** ${keyword}`,
+      priceRange && `**Price:** up to $${maxPrice}`,
+      `**Results:** ${listings.length} listings`,
+      '',
+    ].filter(Boolean).join('\n');
+
+    const rows = listings.slice(0, 20).map((l, i) => {
+      const parts = [
+        `${i + 1}. **${l.title}**`,
+        l.price,
+        l.condition && `[${l.condition}]`,
+        l.url && `[→](${l.url})`,
+      ].filter(Boolean);
+      return parts.join(' · ');
+    });
+
+    return {
+      domain: 'ebay.com',
+      type: 'search',
+      structured: { keyword, minPrice, maxPrice, count: listings.length, listings },
+      cleanContent: header + rows.join('\n'),
+    };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'eBay extractor error:', e instanceof Error ? e.message : e);
     return null;
   }
 }
