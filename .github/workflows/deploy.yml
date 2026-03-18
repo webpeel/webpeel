@@ -1,18 +1,18 @@
-name: CI/CD → K3s Deploy
+name: CI/CD → npm publish
+
+# This workflow handles CI (build + test) and npm publishing.
+# Docker builds and K8s deployment are handled by k3s-deploy.yml (GHCR pipeline).
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────
-  # JOB 1: Build, test, publish npm
-  # ─────────────────────────────────────────────────────────────────────
   build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
-    outputs:
-      sha_short: ${{ steps.sha.outputs.sha_short }}
 
     steps:
       - name: Checkout
@@ -25,10 +25,6 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
-      - name: Get short SHA
-        id: sha
-        run: echo "sha_short=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
-
       - name: Install dependencies
         run: npm ci
 
@@ -38,7 +34,8 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Publish to npm (if version changed)
+      - name: Publish to npm (if version changed, main only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           PUBLISHED=$(npm view webpeel version 2>/dev/null || echo "0.0.0")
           LOCAL=$(node -p "require('./package.json').version")
@@ -51,294 +48,3 @@ jobs:
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  # ─────────────────────────────────────────────────────────────────────
-  # JOB 2: Build Docker images on Hetzner (avoids GitHub Actions bandwidth)
-  # ─────────────────────────────────────────────────────────────────────
-  docker-build:
-    name: Build Docker Images on Hetzner
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    env:
-      SHA: ${{ needs.build-and-test.outputs.sha_short }}
-
-    steps:
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.HETZNER_SSH_KEY }}
-
-      - name: Add Hetzner to known_hosts
-        run: ssh-keyscan -H ${{ secrets.HETZNER_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Pull latest code on Hetzner & build images
-        run: |
-          ssh root@${{ secrets.HETZNER_HOST }} bash -s << 'ENDSSH'
-          set -euo pipefail
-
-          echo "=== Pulling latest code ==="
-          cd /opt/webpeel-src
-          git fetch origin main
-          git reset --hard origin/main
-
-          SHA="${GITHUB_SHA::8}"
-          echo "Building images with SHA tag: $SHA"
-
-          echo "=== Building API image ==="
-          docker build -f Dockerfile.api -t webpeel:api -t webpeel:api-${SHA} . 2>&1 | tail -20
-
-          echo "=== Building Worker image ==="
-          docker build -f Dockerfile.worker -t webpeel:worker -t webpeel:worker-${SHA} . 2>&1 | tail -20
-
-          echo "=== Importing into K3s containerd ==="
-          docker save webpeel:api-${SHA} | k3s ctr images import -
-          docker save webpeel:worker-${SHA} | k3s ctr images import -
-          # Also import latest tags
-          docker save webpeel:api | k3s ctr images import -
-          docker save webpeel:worker | k3s ctr images import -
-
-          echo "✅ Images built and imported"
-          k3s ctr images list | grep webpeel | grep -E "${SHA}|:api$|:worker$"
-          ENDSSH
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-
-  # ─────────────────────────────────────────────────────────────────────
-  # JOB 3: Smoke test Docker images on Hetzner
-  # ─────────────────────────────────────────────────────────────────────
-  smoke-test:
-    name: Docker Smoke Test
-    runs-on: ubuntu-latest
-    needs: [build-and-test, docker-build]
-    env:
-      SHA: ${{ needs.build-and-test.outputs.sha_short }}
-
-    steps:
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.HETZNER_SSH_KEY }}
-
-      - name: Add Hetzner to known_hosts
-        run: ssh-keyscan -H ${{ secrets.HETZNER_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Run smoke tests on Hetzner
-        run: |
-          ssh root@${{ secrets.HETZNER_HOST }} bash -s << 'ENDSSH'
-          set -euo pipefail
-
-          SHA="${GITHUB_SHA::8}"
-          echo "=== Smoke testing webpeel:api-${SHA} ==="
-
-          # Run API container on port 3001 (avoid conflicting with K3s on 3000)
-          docker rm -f webpeel-smoke 2>/dev/null || true
-          docker run -d --name webpeel-smoke \
-            -p 3001:3000 \
-            -e NODE_ENV=test \
-            -e JWT_SECRET=smoke-test-secret \
-            webpeel:api-${SHA}
-
-          # Wait for startup (up to 60s)
-          echo "Waiting for container to start..."
-          for i in $(seq 1 12); do
-            if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
-              echo "✅ Container healthy after ${i}x5s"
-              break
-            fi
-            if [ $i -eq 12 ]; then
-              echo "❌ Container failed to start after 60s"
-              docker logs webpeel-smoke --tail 50
-              docker rm -f webpeel-smoke
-              exit 1
-            fi
-            sleep 5
-          done
-
-          echo "=== Test 1: GET /health ==="
-          HEALTH=$(curl -sf http://localhost:3001/health)
-          echo "$HEALTH"
-          echo "$HEALTH" | grep -q '"status":"healthy"' && echo "✅ /health OK" || (echo "❌ /health failed"; exit 1)
-
-          echo "=== Test 2: GET /v1/fetch (no auth — expect 401) ==="
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3001/v1/fetch?url=https://example.com")
-          echo "Status: $STATUS"
-          # 401 means server is running and auth is working
-          if [ "$STATUS" = "401" ] || [ "$STATUS" = "200" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ /v1/fetch endpoint responding (status $STATUS)"
-          else
-            echo "❌ Unexpected status $STATUS from /v1/fetch"
-            docker logs webpeel-smoke --tail 20
-            docker rm -f webpeel-smoke
-            exit 1
-          fi
-
-          docker rm -f webpeel-smoke
-          echo "✅ Smoke tests passed"
-          ENDSSH
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-
-  # ─────────────────────────────────────────────────────────────────────
-  # JOB 4: Deploy to K3s on Hetzner
-  # ─────────────────────────────────────────────────────────────────────
-  deploy:
-    name: Deploy to K3s
-    runs-on: ubuntu-latest
-    needs: [build-and-test, docker-build, smoke-test]
-    env:
-      SHA: ${{ needs.build-and-test.outputs.sha_short }}
-
-    steps:
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.HETZNER_SSH_KEY }}
-
-      - name: Add Hetzner to known_hosts
-        run: ssh-keyscan -H ${{ secrets.HETZNER_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy API to K3s
-        run: |
-          ssh root@${{ secrets.HETZNER_HOST }} bash -s << 'ENDSSH'
-          set -euo pipefail
-
-          SHA="${GITHUB_SHA::8}"
-          echo "=== Deploying webpeel:api-${SHA} to K3s ==="
-
-          # Record the previous image for rollback reference
-          PREV_IMAGE=$(kubectl get deployment api -n webpeel -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "webpeel:api")
-          echo "Previous image: $PREV_IMAGE"
-          echo "New image:      webpeel:api-${SHA}"
-
-          # Update deployment
-          kubectl set image deployment/api webpeel=webpeel:api-${SHA} -n webpeel
-          echo "✅ kubectl set image complete"
-
-          # Wait for rollout
-          echo "=== Waiting for rollout ==="
-          if kubectl rollout status deployment/api -n webpeel --timeout=120s; then
-            echo "✅ Rollout successful"
-          else
-            echo "❌ Rollout failed — rolling back"
-            kubectl rollout undo deployment/api -n webpeel
-            kubectl rollout status deployment/api -n webpeel --timeout=120s
-            echo "✅ Rollback complete — previous image restored"
-            exit 1
-          fi
-
-          echo "=== Current pod status ==="
-          kubectl get pods -n webpeel
-          ENDSSH
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-
-      - name: Health check — curl 5 times
-        run: |
-          ssh root@${{ secrets.HETZNER_HOST }} bash -s << 'ENDSSH'
-          set -euo pipefail
-
-          echo "=== Health checks (5x) ==="
-          PASS=0
-          FAIL=0
-          for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health)
-            if [ "$STATUS" = "200" ]; then
-              echo "  Check $i: ✅ 200 OK"
-              PASS=$((PASS + 1))
-            else
-              echo "  Check $i: ❌ Got $STATUS"
-              FAIL=$((FAIL + 1))
-            fi
-            sleep 1
-          done
-
-          echo ""
-          echo "Results: $PASS/5 passed"
-
-          if [ $FAIL -gt 0 ]; then
-            echo "❌ Health checks failed — rolling back"
-            kubectl rollout undo deployment/api -n webpeel
-            kubectl rollout status deployment/api -n webpeel --timeout=120s
-            echo "✅ Rollback complete"
-            exit 1
-          fi
-
-          echo "✅ All 5 health checks passed"
-          ENDSSH
-
-      - name: Checkout (for smoke test script)
-        uses: actions/checkout@v4
-
-      - name: Production smoke test (33 checks)
-        run: |
-          chmod +x scripts/smoke-test-k3s.sh
-          ./scripts/smoke-test-k3s.sh "https://api.webpeel.dev" "${{ secrets.WEBPEEL_API_KEY }}"
-        env:
-          WEBPEEL_API_KEY: ${{ secrets.WEBPEEL_API_KEY }}
-
-      - name: Rollback if smoke test fails
-        if: failure()
-        run: |
-          ssh root@${{ secrets.HETZNER_HOST }} bash -s << 'ENDSSH'
-          echo "🚨 Production smoke test FAILED — rolling back!"
-          kubectl rollout undo deployment/api -n webpeel
-          kubectl rollout status deployment/api -n webpeel --timeout=120s
-          echo "✅ Rollback complete"
-          ENDSSH
-
-      - name: Final status report
-        run: |
-          ssh root@${{ secrets.HETZNER_HOST }} bash -s << 'ENDSSH'
-          set -euo pipefail
-
-          SHA="${GITHUB_SHA::8}"
-          echo "=== Final Deployment Status ==="
-          kubectl get deployment api -n webpeel
-          echo ""
-          echo "Current image: $(kubectl get deployment api -n webpeel -o jsonpath='{.spec.template.spec.containers[0].image}')"
-          echo "Expected image: webpeel:api-${SHA}"
-          echo ""
-          echo "Pod status:"
-          kubectl get pods -n webpeel -l app=api
-          echo ""
-          echo "✅ Deployment complete: webpeel:api-${SHA}"
-          ENDSSH
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-
-  # ─────────────────────────────────────────────────────────────────────
-  # JOB 5: Rollback on any failure (runs if deploy job fails)
-  # ─────────────────────────────────────────────────────────────────────
-  rollback-on-failure:
-    name: Emergency Rollback
-    runs-on: ubuntu-latest
-    needs: deploy
-    if: failure()
-
-    steps:
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.HETZNER_SSH_KEY }}
-
-      - name: Add Hetzner to known_hosts
-        run: ssh-keyscan -H ${{ secrets.HETZNER_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Rollback deployment
-        run: |
-          ssh root@${{ secrets.HETZNER_HOST }} bash -s << 'ENDSSH'
-          set -euo pipefail
-
-          echo "🚨 Emergency rollback triggered"
-          echo "Current deployment state:"
-          kubectl get pods -n webpeel -l app=api
-
-          kubectl rollout undo deployment/api -n webpeel
-          echo "Waiting for rollback to complete..."
-          kubectl rollout status deployment/api -n webpeel --timeout=120s
-
-          echo "=== Post-rollback state ==="
-          kubectl get pods -n webpeel -l app=api
-          echo "Active image: $(kubectl get deployment api -n webpeel -o jsonpath='{.spec.template.spec.containers[0].image}')"
-          echo "✅ Rollback complete"
-          ENDSSH
