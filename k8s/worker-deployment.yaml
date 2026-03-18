@@ -38,11 +38,11 @@ spec:
               key: JWT_SECRET
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "250m"
+            memory: "128Mi"    # reduced from 256Mi to fit more worker pods
+            cpu: "100m"        # reduced from 250m
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "512Mi"    # unchanged
+            cpu: "500m"        # unchanged
         readinessProbe:
           exec:
             command:

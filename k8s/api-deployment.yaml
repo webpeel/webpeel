@@ -64,11 +64,11 @@ spec:
               key: STRIPE_PRICE_MAX
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "200m"
+            memory: "256Mi"    # reduced from 512Mi to fit more pods on 8GB node
+            cpu: "100m"        # reduced from 200m
           limits:
-            memory: "1536Mi"
-            cpu: "1000m"
+            memory: "1024Mi"   # reduced from 1536Mi
+            cpu: "500m"        # reduced from 1000m
         readinessProbe:
           httpGet:
             path: /ready
