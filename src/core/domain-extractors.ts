@@ -4625,14 +4625,9 @@ async function semanticScholarExtractor(_html: string, url: string): Promise<Dom
       const apiUrl = `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=${fields}`;
       const data = await fetchJson(apiUrl);
       if (!data) return null;
-      // Handle rate limiting — return helpful message instead of null
+      // Rate limited — return null so pipeline falls back to browser rendering
       if (data.code === '429' || (data.message && String(data.message).includes('Too Many Requests'))) {
-        return {
-          domain,
-          type: 'paper',
-          structured: { paperId, rateLimited: true },
-          cleanContent: `# Semantic Scholar — Rate Limited\n\n⚠️ API rate limit reached. View paper directly: https://www.semanticscholar.org/paper/${paperId}`,
-        };
+        return null;
       }
       if (!data.title) return null;
 
@@ -4701,22 +4696,10 @@ async function semanticScholarExtractor(_html: string, url: string): Promise<Dom
       const apiUrl = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=10&fields=${fields}`;
       const data = await fetchJson(apiUrl);
 
-      // Handle rate limiting gracefully — return a helpful message instead of null
+      // Rate limited or no data — return null so pipeline falls back to browser rendering
       if (!data) return null;
       if (data.code === '429' || (data.message && String(data.message).includes('Too Many Requests'))) {
-        const cleanContent = [
-          `# 🔍 Semantic Scholar — "${query}"`,
-          '',
-          '⚠️ **Rate limited by Semantic Scholar API.** The free tier has strict limits.',
-          '',
-          `Try again in a few seconds, or search directly: https://www.semanticscholar.org/search?q=${encodeURIComponent(query)}`,
-        ].join('\n');
-        return {
-          domain,
-          type: 'search',
-          structured: { query, total: 0, papers: [], rateLimited: true },
-          cleanContent,
-        };
+        return null;
       }
       if (!Array.isArray(data.data)) return null;
 
