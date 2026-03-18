@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/worker/**/*",
+    "src/core/**/*",
+    "src/index.ts",
+    "src/types.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/tests",
+    "src/server",
+    "src/cli",
+    "src/integrations",
+    "src/mcp"
+  ],
+  "compilerOptions": {
+    "outDir": "./dist"
+  }
+}
