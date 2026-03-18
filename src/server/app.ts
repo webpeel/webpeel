@@ -57,6 +57,7 @@ import { createSentryHooks } from './sentry.js';
 import { requireScope } from './middleware/scope-guard.js';
 import { createCacheWarmRouter, startCacheWarmer } from './routes/cache-warm.js';
 import { warmup, cleanup as cleanupFetcher } from '../core/fetcher.js';
+import { setExtractorRedis } from '../core/domain-extractors.js';
 import { registerPremiumHooks } from './premium/index.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -458,6 +459,30 @@ export function startServer(config: ServerConfig = {}): void {
 
   // Activate premium strategy hooks (SWR cache, domain intelligence, race).
   registerPremiumHooks();
+
+  // Inject Redis into the domain extractor cache for cross-pod cache sharing.
+  // When REDIS_URL is set (multi-pod k8s deployments), all pods share one cache
+  // so the first pod to fetch a URL populates it for all others.
+  if (process.env.REDIS_URL) {
+    // @ts-ignore — ioredis CJS/ESM interop
+    import('ioredis').then((IoRedisModule: any) => {
+      const IoRedis = IoRedisModule.default ?? IoRedisModule;
+      const url = process.env.REDIS_URL!;
+      const parsed = new URL(url);
+      const redis = new IoRedis({
+        host: parsed.hostname,
+        port: parseInt(parsed.port || '6379', 10),
+        db: parseInt(parsed.pathname?.slice(1) || '0', 10) || 0,
+        lazyConnect: true,
+        maxRetriesPerRequest: 3,
+        enableOfflineQueue: false,
+      });
+      setExtractorRedis(redis);
+      log.info('Redis extractor cache initialized (shared cross-pod cache active)');
+    }).catch((err: Error) => {
+      log.warn('Failed to init Redis extractor cache (in-memory only)', { error: err.message });
+    });
+  }
 
   // Pre-warm browser resources in the background to reduce first-request latency.
   void warmup().catch((error) => {

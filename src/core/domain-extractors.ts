@@ -193,6 +193,50 @@ function setCachedExtractorResult(url: string, result: DomainExtractResult): voi
     if (oldest) EXTRACTOR_CACHE.delete(oldest);
   }
 }
+
+// ── Redis Shared Cache (cross-pod cache for multi-replica deployments) ────────
+// When running multiple API pods, each pod has its own in-memory cache.
+// With 6 pods, 5/6 requests for the same URL miss cache.
+// Redis solves this: all pods share one cache, so the first pod to fetch
+// populates it for all others.
+//
+// Redis is injected from the server startup to keep this core module
+// dependency-free (works in CLI mode without Redis too).
+
+let _redisClient: any = null;
+const REDIS_CACHE_PREFIX = 'wp:ext:';
+const REDIS_CACHE_TTL_SECS = 300; // 5 minutes
+
+/**
+ * Inject a Redis client for shared cross-pod caching.
+ * Called from server startup after Redis is initialized.
+ * Safe to call with null to disable Redis caching (e.g., CLI mode).
+ */
+export function setExtractorRedis(redis: any): void {
+  _redisClient = redis;
+}
+
+async function getRedisCache(url: string): Promise<DomainExtractResult | null> {
+  try {
+    if (!_redisClient) return null;
+    const key = REDIS_CACHE_PREFIX + url.replace(/[?#].*$/, '').toLowerCase();
+    const cached = await _redisClient.get(key);
+    if (!cached) return null;
+    return JSON.parse(cached) as DomainExtractResult;
+  } catch {
+    return null; // Redis unavailable — fall back to in-memory cache
+  }
+}
+
+async function setRedisCache(url: string, result: DomainExtractResult): Promise<void> {
+  try {
+    if (!_redisClient) return;
+    const key = REDIS_CACHE_PREFIX + url.replace(/[?#].*$/, '').toLowerCase();
+    await _redisClient.set(key, JSON.stringify(result), 'EX', REDIS_CACHE_TTL_SECS);
+  } catch {
+    // Redis unavailable — in-memory cache still works, this is non-fatal
+  }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -214,33 +258,45 @@ async function _extractDomainDataImpl(
 
 /**
  * Convenience: run the extractor for the URL (if one exists).
- * Wraps _extractDomainDataImpl with a 5-minute LRU cache so that
- * rate-limited API responses fall back to cached results instead of
- * garbage browser rendering.
+ * Wraps _extractDomainDataImpl with a two-tier cache:
+ *   1. In-memory LRU (per-pod, fastest)
+ *   2. Redis shared cache (cross-pod, shared across all replicas)
+ *
+ * With multiple API pods, Redis ensures the first pod to fetch a URL
+ * populates cache for all others — eliminating redundant API calls.
  */
 export async function extractDomainData(
   html: string,
   url: string
 ): Promise<DomainExtractResult | null> {
-  // 1. Check fresh cache first
+  // 1. Check in-memory cache (fastest — no network)
   const cached = getCachedExtractorResult(url);
   if (cached) return cached;
 
-  // 2. Try the real extractor
+  // 2. Check Redis cache (shared across all pods)
+  const redisCached = await getRedisCache(url);
+  if (redisCached) {
+    // Populate local in-memory cache to avoid Redis round-trips on repeat
+    setCachedExtractorResult(url, redisCached);
+    return redisCached;
+  }
+
+  // 3. Try the real extractor
   const result = await _extractDomainDataImpl(html, url);
 
   if (result && result.cleanContent.length > 20) {
-    // 3. Cache the successful result
+    // 4. Cache the successful result in both layers
     setCachedExtractorResult(url, result);
+    void setRedisCache(url, result); // fire-and-forget, non-blocking
     return result;
   }
 
-  // 4. Extractor failed/returned garbage — check for any stale cache entry
+  // 5. Extractor failed/returned garbage — check for any stale cache entry
   //    (stale structured data beats a browser "Loading…" page)
   const stale = getCachedExtractorResult(url);
   if (stale) return stale;
 
-  // 5. Genuinely nothing — return null so the pipeline falls back to fetch
+  // 6. Genuinely nothing — return null so the pipeline falls back to fetch
   return result;
 }
 
