@@ -203,6 +203,34 @@ export function createQueueFetchRouter(): Router {
     });
   }
 
+  // GET /v1/fetch?url=...  — CLI and backward-compatible GET requests
+  // Maps query params into req.body so handleEnqueue works uniformly
+  router.get('/v1/fetch', (req, res) => {
+    // Map query string to body for uniform handling
+    req.body = {
+      url: req.query.url,
+      format: req.query.format || 'markdown',
+      render: req.query.render === 'true',
+      stealth: req.query.stealth === 'true',
+      wait: req.query.wait ? Number(req.query.wait) : undefined,
+      selector: req.query.selector,
+      readable: req.query.readable === 'true',
+      budget: req.query.budget ? Number(req.query.budget) : undefined,
+      question: req.query.question,
+      screenshot: req.query.screenshot === 'true',
+      fullPage: req.query.fullPage === 'true' || req.query['full-page'] === 'true',
+      maxTokens: req.query.maxTokens ? Number(req.query.maxTokens) : undefined,
+      lite: req.query.lite === 'true',
+      raw: req.query.raw === 'true',
+      images: req.query.images === 'true',
+    };
+    void handleEnqueue(req, res, false);
+  });
+  router.get('/v1/render', (req, res) => {
+    req.body = { url: req.query.url, format: req.query.format || 'markdown' };
+    void handleEnqueue(req, res, true);
+  });
+
   router.post('/v1/fetch', (req, res) => void handleEnqueue(req, res, false));
   router.post('/v1/render', (req, res) => void handleEnqueue(req, res, true));
 
