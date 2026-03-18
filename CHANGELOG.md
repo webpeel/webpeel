@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## v0.21.62 (2026-03-18)
+
+### 🔧 CLI & Infrastructure Fixes
+
+- **CLI regression fix** — Added GET `/v1/fetch` handler in queue mode; CLI was falling back to queue path and failing
+- **Post-deploy smoke tests** — CI now runs smoke tests + auto-rollback after npm publish and K3s deploys
+- **Source-based Docker build** — Switched to compiling from source in Docker; auto-cleanup of old images
+- **CI pipeline consolidation** — `deploy.yml` = CI + npm, `k3s-deploy.yml` = Docker + K8s
+
+## v0.21.61 (2026-03-17)
+
+### 🛡️ Active Domain Verification
+
+- **TLS, DNS, and security header checks** at fetch time — verifies domain is live before scraping
+- **GHCR container registry** + automated K3s deploy pipeline
+- **Active domain intelligence** — replaced static whitelist with 500+ dynamically verified domains
+
+## v0.21.59 (2026-03-16)
+
+### 🔒 Trust & Safety Layer
+
+- **Safe browsing integration** — blocks malicious/phishing URLs before fetching
+- **OpenClaw skill** — WebPeel now ships as an installable OpenClaw agent skill
+- **K3s infrastructure** — full Kubernetes deployment with CI/CD, smoke tests, and security hardening
+- **Readiness probe** — added `/ready` endpoint for Kubernetes readiness checks
+
+## v0.21.57 (2026-03-16)
+
+### 🏗️ Microservices Split
+
+- **Bull queue + Worker** — separated API and worker into independent Dockerfiles + docker-compose
+- **Hetzner research worker** — offloads heavy research tasks from Render (eliminates OOM)
+- **CAPTCHA solving** — Cloudflare Turnstile auto-solver + cookie cache
+
+## v0.21.56 (2026-03-16)
+
+### 🏆 Credibility Ranking for Search
+
+- Search results now sorted by trust tier with credibility badges
+- Standalone `credibility` module with 200+ domain trust scores
+
+## v0.21.55 (2026-03-15)
+
+### 🤖 CAPTCHA + Research Improvements
+
+- **Vision-based CAPTCHA solving** — image CAPTCHA auto-solve via moondream model on Hetzner
+- **Research OOM fixes** — cap HTML at 100KB, replace `peel()` with lightweight fetch in research path
+- **SearXNG timeouts** — increased to 12s, disabled DDG (CAPTCHA-prone)
+- **Domain extractor fixes** — `fetchJson` now uses plain UA for API calls (fixes GitHub extractor)
+
+## v0.21.53 (2026-03-15)
+
+### ⚙️ Auto-Escalation + LRU Cache
+
+- **Auto-escalation** — thin content triggers automatic browser re-fetch (rolled back in v0.21.52 due to OOM, restored in v0.21.53)
+- **LRU fetch cache** — in-memory cache for repeated URLs
+- **Search defaults** — increased default results from 5 → 10
+
+## v0.21.39–0.21.48 (2026-03-15)
+
+### 🔬 Research Quality Overhaul
+
+- **Ollama think:false** — synthesis time dropped from 25s → 8s
+- **SearXNG Google boost** — improved search result quality
+- **Compact prompts** — 800-char content limit, 30s timeout, 800 max tokens
+- **No-store on search/research routes** — Cloudflare was caching stale results
+- **Debug logging** — research worker failures now surface proxy errors instead of silent fallback
+
+## v0.21.17 (2026-03-15)
+
+### 🛠️ Minor Fixes
+
+- Fixed dashboard build (add `EXAMPLE_URLS` alias)
+- Added YouTube Transcripts + Web Search feature cards to landing page
+- Made Read badge a clickable link to source URL
+
+---
+
 ## v0.21.16 (2026-03-15)
 
 ### 🔧 Structured Extraction Improvements + GitHub Token Refresh
