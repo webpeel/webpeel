@@ -25,9 +25,11 @@ interface SearchResult {
   content?: string; // Added when scrapeResults=true
   rank?: number;           // Credibility rank (1 = most trustworthy)
   credibility?: {
-    tier: 'official' | 'verified' | 'general';
-    stars: number;         // 3=official, 2=verified, 1=general
-    label: string;         // 'OFFICIAL SOURCE' | 'VERIFIED' | 'UNVERIFIED'
+    tier: 'official' | 'established' | 'community' | 'new' | 'suspicious';
+    score: number;         // 0-100 composite score
+    label: string;
+    signals?: string[];
+    warnings?: string[];
   };
 }
 
@@ -284,16 +286,16 @@ export function createSearchRouter(authStore: AuthStore): Router {
         }
 
         // Add credibility scores and sort by trustworthiness
-        const tierOrder: Record<string, number> = { official: 0, verified: 1, general: 2 };
+        const tierOrder: Record<string, number> = { official: 0, established: 1, community: 2, new: 3, suspicious: 4 };
         results = results
           .map(r => {
             const cred = getSourceCredibility(r.url);
             return { ...r, credibility: cred };
           })
           .sort((a, b) => {
-            const aTier = tierOrder[a.credibility?.tier || 'general'] ?? 2;
-            const bTier = tierOrder[b.credibility?.tier || 'general'] ?? 2;
-            return aTier - bTier; // Official first, then verified, then general
+            const aTier = tierOrder[a.credibility?.tier || 'new'] ?? 3;
+            const bTier = tierOrder[b.credibility?.tier || 'new'] ?? 3;
+            return aTier - bTier; // Official first, then established, community, new, suspicious
           })
           .map((r, i) => ({ ...r, rank: i + 1 }));
 

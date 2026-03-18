@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: webpeel:api
+        image: webpeel-api:0.21.59
         imagePullPolicy: Never
         ports:
         - containerPort: 3000

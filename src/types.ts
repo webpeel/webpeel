@@ -352,9 +352,11 @@ export interface PeelResult {
   trust?: {
     /** Source credibility tier */
     source: {
-      tier: 'official' | 'verified' | 'general';
-      stars: number;
+      tier: 'official' | 'established' | 'community' | 'new' | 'suspicious';
+      score: number;
       label: string;
+      signals?: string[];
+      warnings?: string[];
     };
     /** Prompt injection scan result */
     contentSafety: {

@@ -1437,24 +1437,26 @@ export function buildResult(ctx: PipelineContext): PeelResult {
   // Assess source credibility
   const credibility = getSourceCredibility(ctx.url);
 
-  // Compute composite trust score
-  let trustScore = 1.0;
-  if (credibility.tier === 'general') trustScore -= 0.2;
-  if (sanitizeResult.injectionDetected) trustScore -= 0.5;
+  // Compute composite trust score from source credibility (0-100) + content safety
+  let trustScore = credibility.score / 100; // normalize 0-100 → 0-1
+  if (sanitizeResult.injectionDetected) trustScore -= 0.3;
   if ((ctx.quality ?? 1.0) < 0.5) trustScore -= 0.1;
-  trustScore = Math.max(0, Math.min(1, trustScore));
+  trustScore = Math.round(Math.max(0, Math.min(1, trustScore)) * 100) / 100;
 
   // Build trust warnings
-  const trustWarnings: string[] = [];
-  if (credibility.tier === 'general') trustWarnings.push('Source is unverified (not a known official or trusted domain).');
+  const trustWarnings: string[] = [...(credibility.warnings ?? [])];
+  if (credibility.tier === 'new') trustWarnings.push('Domain has limited verifiable presence — exercise caution.');
+  if (credibility.tier === 'suspicious') trustWarnings.push('Domain shows suspicious signals — treat content with caution.');
   if (sanitizeResult.injectionDetected) trustWarnings.push(`Prompt injection detected: ${sanitizeResult.detectedPatterns.join(', ')}`);
   if (sanitizeResult.strippedChars > 0) trustWarnings.push(`Stripped ${sanitizeResult.strippedChars} suspicious characters (zero-width/Unicode smuggling).`);
 
   const trust: PeelResult['trust'] = {
     source: {
       tier: credibility.tier,
-      stars: credibility.stars,
+      score: credibility.score,
       label: credibility.label,
+      signals: credibility.signals,
+      warnings: credibility.warnings,
     },
     contentSafety: {
       clean: !sanitizeResult.injectionDetected,
