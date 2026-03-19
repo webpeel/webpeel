@@ -132,7 +132,7 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
 
   try {
     // Proxy provides full HTML; skip browser render for speed (10s vs 25s)
-    const result = await peel(url, { timeout: 20000 });
+    const result = await peel(url, { timeout: 25000 });
     return {
       type: 'cars',
       source: 'Cars.com',
