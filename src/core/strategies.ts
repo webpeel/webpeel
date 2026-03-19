@@ -65,6 +65,7 @@ function shouldForceBrowser(url: string): DomainRecommendation | null {
       'glassdoor.com',
       'bloomberg.com',
       'indeed.com',
+      'yelp.com',              // aggressive bot detection
       'amazon.com',       // captcha wall on simple/browser fetch
       'zillow.com',       // aggressive bot detection
       'ticketmaster.com', // Distil Networks / PerimeterX
