@@ -12,6 +12,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import '../types.js'; // Augments Express.Request with requestId, auth
 import { AuthStore } from '../auth-store.js';
 import { peel } from '../../index.js';
 import {
@@ -53,13 +54,16 @@ export function detectSearchIntent(query: string): SearchIntent {
     /\b(buy|cheap|under|budget|price|used|new|for sale|listing|deal)\b/.test(q)
   ) {
     const priceMatch = q.match(/(?:under|\$|budget|max)\s*\$?(\d[\d,]*)/);
-    const zipMatch = q.match(/\b(\d{5})\b/);
+    const priceValue = priceMatch ? priceMatch[1].replace(/,/g, '') : '';
+    // Find all 5-digit numbers, pick the one that isn't the price
+    const allZips = [...q.matchAll(/\b(\d{5})\b/g)].map(m => m[1]);
+    const finalZip = allZips.find(z => z !== priceValue) || '10001';
     return {
       type: 'cars',
       query: q,
       params: {
-        maxPrice: priceMatch ? priceMatch[1].replace(/,/g, '') : '',
-        zip: zipMatch ? zipMatch[1] : '10001',
+        maxPrice: priceValue,
+        zip: finalZip,
       },
     };
   }
