@@ -570,9 +570,21 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
 
     // Enhance error messages with actionable advice
     if (fetchError instanceof BlockedError) {
-      const actionableMsg = `${fetchError.message}\n\nThis site blocks automated access. Try using \`stealth: true\` and a residential proxy.`;
-      const enhancedError = new BlockedError(actionableMsg);
-      throw enhancedError;
+      // Instead of crashing, return a helpful response with the block info
+      ctx.timer.end('fetch');
+      const host = new URL(ctx.url).hostname.replace('www.', '');
+      ctx.content = `# ⚠️ ${host} — Access Blocked\n\nThis site uses advanced bot protection and blocked our request.\n\n**What you can try:**\n- Use a browser profile with saved login: \`webpeel login ${host}\`\n- Try an alternative site that provides similar data\n\n*Direct link: [Open in browser](${ctx.url})*`;
+      ctx.title = `${host} — Blocked`;
+      ctx.quality = 0.2;
+      ctx.warnings.push('Site blocked automated access. Showing fallback content.');
+      ctx.fetchResult = {
+        html: ctx.content,
+        url: ctx.url,
+        status: 403,
+        contentType: 'text/markdown',
+        method: 'blocked-fallback',
+      };
+      return;
     }
     const errMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
     if (errMsg.toLowerCase().includes('timeout') || errMsg.toLowerCase().includes('timed out') || errMsg.includes('AbortError')) {
