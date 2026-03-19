@@ -36,6 +36,12 @@ spec:
             secretKeyRef:
               name: webpeel-secrets
               key: JWT_SECRET
+        - name: YELP_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: webpeel-secrets
+              key: YELP_API_KEY
+              optional: true
         resources:
           requests:
             memory: "128Mi"    # reduced from 256Mi to fit more worker pods

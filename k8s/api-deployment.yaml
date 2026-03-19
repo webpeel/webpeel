@@ -62,6 +62,12 @@ spec:
             secretKeyRef:
               name: webpeel-secrets
               key: STRIPE_PRICE_MAX
+        - name: YELP_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: webpeel-secrets
+              key: YELP_API_KEY
+              optional: true
         resources:
           requests:
             memory: "256Mi"    # reduced from 512Mi to fit more pods on 8GB node
