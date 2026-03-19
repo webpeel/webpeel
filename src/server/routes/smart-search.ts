@@ -589,32 +589,55 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
         const ollamaEndpoint = (process.env.OLLAMA_URL || '').replace(/\/$/, '');
         const ollamaModel = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
         const ollamaSecret = process.env.OLLAMA_SECRET;
-        const ollamaHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (ollamaSecret) ollamaHeaders['Authorization'] = `Bearer ${ollamaSecret}`;
 
-        console.log(`[smart-search] Direct Ollama call: model=${ollamaModel}, prompt_len=${(systemPrompt + userMessage).length}`);
-        const ollamaResp = await fetch(`${ollamaEndpoint}/api/generate`, {
-          method: 'POST',
-          headers: ollamaHeaders,
-          body: JSON.stringify({
+        // Use Node.js http module directly — fetch() has socket hang issues with Ollama on K8s
+        const ollamaText = await new Promise<string>((resolve, reject) => {
+          const body = JSON.stringify({
             model: ollamaModel,
             prompt: `${systemPrompt}\n\n${userMessage}`,
             stream: false,
             think: false,
-            options: { num_predict: 300, temperature: 0.3 },
-          }),
-          signal: llmAbort.signal,
+            options: { num_predict: 200, temperature: 0.3 },
+          });
+
+          const urlObj = new URL(`${ollamaEndpoint}/api/generate`);
+          const opts = {
+            hostname: urlObj.hostname,
+            port: parseInt(urlObj.port || '80'),
+            path: urlObj.pathname,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(body),
+              ...(ollamaSecret ? { 'Authorization': `Bearer ${ollamaSecret}` } : {}),
+            },
+            timeout: 18000,
+          };
+
+          // Kill if abort fires
+          llmAbort.signal.addEventListener('abort', () => req.destroy(new Error('aborted')));
+
+          const http = require('http') as typeof import('http');
+          const req = http.request(opts, (res) => {
+            const chunks: Buffer[] = [];
+            res.on('data', (c: Buffer) => chunks.push(c));
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(Buffer.concat(chunks).toString());
+                resolve(String(json?.response || '').trim());
+              } catch (e) {
+                reject(e);
+              }
+            });
+          });
+          req.on('error', reject);
+          req.on('timeout', () => { req.destroy(); reject(new Error('Ollama request timeout')); });
+          req.write(body);
+          req.end();
         });
 
-        if (!ollamaResp.ok) {
-          const errText = await ollamaResp.text().catch(() => '');
-          throw new Error(`Ollama HTTP ${ollamaResp.status}: ${errText}`);
-        }
-
-        const ollamaJson = await ollamaResp.json() as any;
-        let text = String(ollamaJson?.response || '').trim();
-        text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-        console.log(`[smart-search] Ollama completed: tokens=${ollamaJson?.eval_count}, ms=${(ollamaJson?.eval_duration || 0) / 1000000}`);
+        let text = ollamaText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        console.log(`[smart-search] Ollama answered: ${text.length} chars`);
         if (text) {
           answer = text;
         }
