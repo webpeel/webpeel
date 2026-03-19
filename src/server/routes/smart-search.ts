@@ -16,12 +16,55 @@ import { Router, Request, Response } from 'express';
 import '../types.js'; // Augments Express.Request with requestId, auth
 import { AuthStore } from '../auth-store.js';
 import { peel } from '../../index.js';
+// @ts-ignore — ioredis CJS/ESM interop
+import IoRedisModule from 'ioredis';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const IoRedis: any = (IoRedisModule as any).default ?? IoRedisModule;
+import type { Redis as RedisType } from 'ioredis';
 import {
   getBestSearchProvider,
   type WebSearchResult,
 } from '../../core/search-provider.js';
 import { getSourceCredibility } from '../../core/source-credibility.js';
 import { callLLM } from '../../core/llm-provider.js';
+
+// ─── Redis client (lazy singleton for smart-search caching) ───────────────
+
+function buildSmartRedis(): RedisType {
+  const url = process.env.REDIS_URL || 'redis://redis:6379';
+  const password = process.env.REDIS_PASSWORD || undefined;
+  try {
+    const parsed = new URL(url);
+    return new IoRedis({
+      host: parsed.hostname,
+      port: parseInt(parsed.port || '6379', 10),
+      password,
+      db: parseInt(parsed.pathname?.slice(1) || '0', 10) || 0,
+      lazyConnect: true,
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+    });
+  } catch {
+    return new IoRedis({ host: 'redis', port: 6379, password, lazyConnect: true, maxRetriesPerRequest: 1, enableOfflineQueue: false });
+  }
+}
+
+let _smartRedis: RedisType | null = null;
+function getSmartRedis(): RedisType {
+  if (!_smartRedis) _smartRedis = buildSmartRedis();
+  return _smartRedis;
+}
+
+// TTL by intent type (seconds)
+const CACHE_TTL: Record<string, number> = {
+  restaurants: 180,   // update frequently
+  cars: 300,
+  products: 300,
+  flights: 600,
+  hotels: 600,
+  rental: 600,
+  general: 600,
+};
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -165,28 +208,8 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
   const t0 = Date.now();
   const gfUrl = `https://www.google.com/travel/flights?q=Flights+${encodeURIComponent(intent.query)}+one+way`;
 
-  // Try Google Flights first (short timeout, likely skeleton anyway)
-  try {
-    const result = await peel(gfUrl, { timeout: 8000 });
-    const contentLen = result.content?.trim().length ?? 0;
-    const hasFlightData = contentLen > 500 && (result.domainData?.structured?.listings?.length > 0);
-    if (hasFlightData) {
-      return {
-        type: 'flights',
-        source: 'Google Flights',
-        sourceUrl: gfUrl,
-        content: result.content,
-        title: result.title,
-        domainData: result.domainData,
-        structured: result.domainData?.structured,
-        tokens: result.tokens,
-        fetchTimeMs: Date.now() - t0,
-      };
-    }
-  } catch (_err) { /* fall through to fallback */ }
-
-  // Instant fallback: formatted links without expensive SearXNG search
-  // Just provide direct links to major booking sites with the query
+  // Google Flights is an SPA — always returns skeleton HTML. Skip peel entirely.
+  // Go straight to instant fallback with direct booking links.
   const content = `# ✈️ Flights — ${intent.query}
 
 *Search major booking sites for the best deals:*
@@ -225,26 +248,9 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
   const t0 = Date.now();
   const ghUrl = `https://www.google.com/travel/hotels?q=${encodeURIComponent(intent.query)}`;
 
-  try {
-    const result = await peel(ghUrl, { timeout: 8000 });
-    const contentLen = result.content?.trim().length ?? 0;
-    const hasHotelData = contentLen > 500 && (result.domainData?.structured?.listings?.length > 0);
-    if (hasHotelData) {
-      return {
-        type: 'hotels',
-        source: 'Google Hotels',
-        sourceUrl: ghUrl,
-        content: result.content,
-        title: result.title,
-        domainData: result.domainData,
-        structured: result.domainData?.structured,
-        tokens: result.tokens,
-        fetchTimeMs: Date.now() - t0,
-      };
-    }
-    throw new Error('Google Hotels returned skeleton content');
-  } catch (_err) {
-    // Instant fallback: direct links to major booking sites
+  // Google Hotels is an SPA — always returns skeleton HTML. Skip peel entirely.
+  // Go straight to instant fallback with direct booking links.
+  {
     const content = `# 🏨 Hotels — ${intent.query}
 
 *Search major booking sites:*
@@ -280,39 +286,14 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
 }
 
 async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResult> {
-  const t0 = Date.now();
-  // Build Kayak car rental URL: /cars/<location>/<date-range>
-  // For simplicity, use a search-style URL that will browser-render fine
-  const encodedQuery = encodeURIComponent(intent.query.replace(/\b(rent|rental|car|a|vehicle|suv)\b/gi, '').trim() || intent.query);
-  const kayakUrl = `https://www.kayak.com/cars/${encodedQuery}/2025-04-10/2025-04-13/`;
-
-  try {
-    const result = await peel(kayakUrl, { timeout: 20000 });
-    const contentLen = result.content?.trim().length ?? 0;
-    if (contentLen < 100) {
-      throw new Error('Kayak returned empty/skeleton content');
-    }
-    return {
-      type: 'rental',
-      source: 'Kayak',
-      sourceUrl: kayakUrl,
-      content: result.content,
-      title: result.title,
-      domainData: result.domainData,
-      structured: result.domainData?.structured,
-      tokens: result.tokens,
-      fetchTimeMs: Date.now() - t0,
-      loadingMessage: 'Searching for rental cars...',
-    };
-  } catch (_err) {
-    console.warn(`Kayak rental failed, falling back to general search: ${(_err as Error).message}`);
-    const fallback = await handleGeneralSearch(intent.query);
-    return {
-      ...fallback,
-      type: 'rental',
-      loadingMessage: 'Showing search results for car rentals',
-    };
-  }
+  // Kayak is an SPA — always returns skeleton HTML. Skip peel entirely.
+  // Go straight to general search fallback.
+  const fallback = await handleGeneralSearch(intent.query);
+  return {
+    ...fallback,
+    type: 'rental',
+    loadingMessage: 'Showing search results for car rentals',
+  };
 }
 
 async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearchResult> {
@@ -348,6 +329,91 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
   }
 }
 
+// Known shopping domains and their display names / badge colors
+const SHOPPING_DOMAINS: Array<{ pattern: string; name: string }> = [
+  { pattern: 'amazon.com',      name: 'Amazon' },
+  { pattern: 'bestbuy.com',     name: 'Best Buy' },
+  { pattern: 'walmart.com',     name: 'Walmart' },
+  { pattern: 'target.com',      name: 'Target' },
+  { pattern: 'zappos.com',      name: 'Zappos' },
+  { pattern: 'rei.com',         name: 'REI' },
+  { pattern: 'nordstrom.com',   name: 'Nordstrom' },
+  { pattern: 'macys.com',       name: "Macy's" },
+  { pattern: 'sephora.com',     name: 'Sephora' },
+  { pattern: 'ulta.com',        name: 'Ulta' },
+  { pattern: 'homedepot.com',   name: 'Home Depot' },
+  { pattern: 'lowes.com',       name: "Lowe's" },
+  { pattern: 'ebay.com',        name: 'eBay' },
+  { pattern: 'etsy.com',        name: 'Etsy' },
+];
+
+function getStoreInfo(url: string): { store: string; domain: string } | null {
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '');
+    for (const s of SHOPPING_DOMAINS) {
+      if (hostname === s.pattern || hostname.endsWith('.' + s.pattern)) {
+        return { store: s.name, domain: s.pattern };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse a price string from a snippet/title.
+ * Handles:
+ *   - "$19.99"
+ *   - "$7.98 - $24.99"  → returns "from $7.98"
+ *   - "from $12"
+ *   - "$199"
+ * Returns undefined if no price found.
+ */
+function parsePrice(text: string): string | undefined {
+  if (!text) return undefined;
+
+  // Match a price range: $X - $Y or $X to $Y
+  const rangeMatch = text.match(/\$\s*([\d,]+(?:\.\d{2})?)\s*[-–—to]+\s*\$\s*([\d,]+(?:\.\d{2})?)/i);
+  if (rangeMatch) {
+    const lo = rangeMatch[1].replace(/,/g, '');
+    return `from $${parseFloat(lo).toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
+  }
+
+  // "from $XX"
+  const fromMatch = text.match(/from\s+\$\s*([\d,]+(?:\.\d{2})?)/i);
+  if (fromMatch) {
+    const val = parseFloat(fromMatch[1].replace(/,/g, ''));
+    return `from $${val.toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
+  }
+
+  // Plain "$XX.XX" or "$XX"
+  const plainMatch = text.match(/\$\s*([\d,]+(?:\.\d{2})?)/);
+  if (plainMatch) {
+    const val = parseFloat(plainMatch[1].replace(/,/g, ''));
+    if (isNaN(val)) return undefined;
+    // Don't treat things like "$10000000" as a price (likely not a retail price)
+    if (val > 50000) return undefined;
+    return `$${val.toLocaleString('en-US', { minimumFractionDigits: val % 1 !== 0 ? 2 : 0 })}`;
+  }
+
+  return undefined;
+}
+
+/**
+ * Clean up retailer-prefixed titles.
+ * Removes "Amazon.com: ", "Amazon.com : ", "Amazon.com - ", etc.
+ */
+function cleanProductTitle(title: string): string {
+  return title
+    .replace(/^amazon\.com\s*[:\-–—]\s*/i, '')
+    .replace(/^walmart\s*[:\-–—]\s*/i, '')
+    .replace(/^target\s*[:\-–—]\s*/i, '')
+    .replace(/^best\s*buy\s*[:\-–—]\s*/i, '')
+    .replace(/^ebay\s*[:\-–—]\s*/i, '')
+    .trim();
+}
+
 async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchResult> {
   const t0 = Date.now();
   // Build clean product keyword (strip noise words)
@@ -359,40 +425,42 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
 
   // Use SearXNG to search for products — it aggregates Google Shopping, Amazon, etc.
   const { provider: searchProvider } = getBestSearchProvider();
-  const searchQuery = `${keyword} buy site:amazon.com OR site:bestbuy.com OR site:walmart.com OR site:target.com`;
-  const rawResults = await searchProvider.searchWeb(searchQuery, { count: 12 });
+  const searchQuery = `${keyword} buy site:amazon.com OR site:bestbuy.com OR site:walmart.com OR site:target.com OR site:rei.com OR site:nordstrom.com OR site:sephora.com OR site:homedepot.com`;
+  const rawResults = await searchProvider.searchWeb(searchQuery, { count: 15 });
 
   // Parse structured product listings from search results
   const listings = rawResults
-    .filter(r => r.url && (
-      r.url.includes('amazon.com') ||
-      r.url.includes('bestbuy.com') ||
-      r.url.includes('walmart.com') ||
-      r.url.includes('target.com') ||
-      r.url.includes('zappos.com') ||
-      r.url.includes('rei.com')
-    ))
+    .filter(r => r.url && getStoreInfo(r.url) !== null)
     .map(r => {
-      // Extract price from snippet/title using regex
-      const priceMatch = (r.snippet || r.title || '').match(/\$[\d,]+(?:\.\d{2})?/);
-      const price = priceMatch ? priceMatch[0] : undefined;
+      const storeInfo = getStoreInfo(r.url)!;
+      const textToSearch = `${r.title || ''} ${r.snippet || ''}`;
+
+      // Extract price from snippet/title
+      const price = parsePrice(textToSearch);
+
       // Extract rating from snippet
       const ratingMatch = (r.snippet || '').match(/(\d+(?:\.\d)?)\s*(?:out of 5|stars?|★)/i);
       const rating = ratingMatch ? parseFloat(ratingMatch[1]) : undefined;
+
       // Extract review count
       const reviewMatch = (r.snippet || '').match(/([\d,]+)\s*(?:ratings?|reviews?)/i);
       const reviewCount = reviewMatch ? reviewMatch[1].replace(/,/g, '') : undefined;
-      // Determine store
-      const domain = new URL(r.url).hostname.replace('www.', '');
-      const store = domain.split('.')[0];
+
+      // Clean up title
+      const title = cleanProductTitle(r.title || '');
+
+      // Image from SearXNG (imageUrl field if available)
+      const image = (r as any).imageUrl ?? undefined;
+
       return {
-        title: r.title,
+        title,
         price,
         rating,
         reviewCount,
         url: r.url,
         snippet: r.snippet,
-        store,
+        store: storeInfo.store,
+        image,
       };
     })
     .slice(0, 10);
@@ -513,9 +581,9 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
 
       const tLlm = Date.now();
 
-      // Use AbortController for 10s max LLM timeout
+      // Use AbortController for 15s max LLM timeout (Qwen needs ~5-8s for synthesis)
       const llmAbort = new AbortController();
-      const llmTimer = setTimeout(() => llmAbort.abort(), 10000);
+      const llmTimer = setTimeout(() => llmAbort.abort(), 15000);
 
       try {
         const llmResult = await callLLM(
@@ -632,6 +700,26 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
 
       let smartResult: SmartSearchResult;
 
+      // ── Redis cache check ─────────────────────────────────────────────────
+      const cacheKey = `smart:${intent.type}:${query.toLowerCase().trim()}`;
+      let cacheHit = false;
+      try {
+        const redis = getSmartRedis();
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          const cachedData = JSON.parse(cached) as SmartSearchResult;
+          res.setHeader('X-Intent-Type', intent.type);
+          res.setHeader('X-Source', cachedData.source);
+          res.setHeader('X-Processing-Time', '0');
+          res.setHeader('X-Cache', 'HIT');
+          res.setHeader('Cache-Control', 'no-store');
+          res.json({ success: true, data: cachedData });
+          return;
+        }
+      } catch (_cacheErr) {
+        // Redis unavailable — proceed without cache
+      }
+
       switch (intent.type) {
         case 'cars':
           smartResult = await handleCarSearch(intent);
@@ -658,6 +746,17 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
       // Add loading message hint for frontend UX (use handler's if already set)
       if (!smartResult.loadingMessage) {
         smartResult.loadingMessage = getLoadingMessage(intent.type);
+      }
+
+      // ── Cache result in Redis ─────────────────────────────────────────────
+      if (!cacheHit) {
+        try {
+          const redis = getSmartRedis();
+          const ttl = CACHE_TTL[intent.type] ?? 300;
+          await redis.setex(cacheKey, ttl, JSON.stringify(smartResult));
+        } catch (_cacheErr) {
+          // Redis unavailable — skip caching silently
+        }
       }
 
       // Track usage

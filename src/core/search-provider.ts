@@ -30,6 +30,8 @@ export interface WebSearchResult {
   snippet: string;
   /** Relevance score (0–1) based on keyword overlap with query. Added by filterRelevantResults. */
   relevanceScore?: number;
+  /** Thumbnail/image URL from SearXNG results (img_src or thumbnail field). */
+  imageUrl?: string;
 }
 
 export interface WebSearchOptions {
@@ -1197,8 +1199,15 @@ export class DuckDuckGoProvider implements SearchProvider {
         if (searxResults.length > 0) {
           providerStats.record('searxng', true);
           log.debug(`source=searxng returned ${searxResults.length} results`);
-          const filtered = filterRelevantResults(searxResults as WebSearchResult[], query);
-          return filtered.length > 0 ? filtered : (searxResults as WebSearchResult[]);
+          // Map SearXNG results to WebSearchResult (description → snippet, imageUrl passthrough)
+          const mapped: WebSearchResult[] = searxResults.map(r => ({
+            title: r.title,
+            url: r.url,
+            snippet: r.description ?? '',
+            imageUrl: r.imageUrl,
+          }));
+          const filtered = filterRelevantResults(mapped, query);
+          return filtered.length > 0 ? filtered : mapped;
         }
         providerStats.record('searxng', false);
         log.debug('SearXNG returned 0 results, falling through to DDG');

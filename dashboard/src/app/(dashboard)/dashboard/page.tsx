@@ -747,9 +747,9 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
 
             <div className="flex items-center gap-1.5 mt-2">
               <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#FF9900]/10 text-[#FF9900] border border-[#FF9900]/20">
-                Amazon
+                {item.store || 'Shop'}
               </span>
-              <span className="text-xs text-zinc-600">View on Amazon →</span>
+              <span className="text-xs text-zinc-600">View on {item.store || 'store'} →</span>
             </div>
           </div>
         </div>

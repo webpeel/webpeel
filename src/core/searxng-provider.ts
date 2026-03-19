@@ -23,6 +23,8 @@ interface SearXNGRawResult {
   engine?: string;
   score?: number;
   publishedDate?: string;
+  img_src?: string;
+  thumbnail?: string;
 }
 
 interface SearXNGResponse {
@@ -35,6 +37,7 @@ export interface SearXNGSearchResult {
   description?: string;
   publishedDate?: string;
   score?: number;
+  imageUrl?: string;
 }
 
 /**
@@ -114,6 +117,7 @@ export async function searchViaSearXNG(
         description: r.content ?? undefined,
         publishedDate: r.publishedDate ?? undefined,
         score: r.score ?? undefined,
+        imageUrl: r.img_src ?? r.thumbnail ?? undefined,
       });
 
       if (output.length >= count) break;
