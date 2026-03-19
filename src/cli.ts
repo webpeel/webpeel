@@ -16,6 +16,20 @@
  *   npx webpeel --help-all             - Full option reference
  */
 
+// ── Auto-load .env from cwd (lightweight, no dotenv dependency) ──────────────
+// Must happen BEFORE any imports that read env vars (e.g., WEBPEEL_API_KEY)
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
+{
+  const envPath = resolve(process.cwd(), '.env');
+  if (existsSync(envPath)) {
+    for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
+      const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+  }
+}
+
 import { Command } from 'commander';
 import {
   VERB_ALIASES,

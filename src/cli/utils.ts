@@ -251,7 +251,40 @@ export async function fetchViaApi(url: string, options: PeelOptions, apiKey: str
     throw err;
   }
 
-  const data = await res.json();
+  let data = await res.json();
+
+  // Handle async job queue mode — API returns { jobId, pollUrl } and we need to poll
+  if (data.jobId && data.pollUrl && !data.content) {
+    const pollEndpoint = `${apiUrl}${data.pollUrl}`;
+    const maxPollMs = 90_000; // 90s max
+    const pollInterval = 1_000; // 1s intervals
+    const start = Date.now();
+
+    while (Date.now() - start < maxPollMs) {
+      await new Promise(r => setTimeout(r, pollInterval));
+      const pollRes = await fetch(pollEndpoint, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!pollRes.ok) {
+        throw new Error(`Job poll failed: HTTP ${pollRes.status}`);
+      }
+      const pollData = await pollRes.json();
+      if (pollData.status === 'completed' || pollData.content) {
+        data = pollData.result || pollData;
+        break;
+      }
+      if (pollData.status === 'failed' || pollData.status === 'error') {
+        throw new Error(pollData.error?.message || pollData.error || 'Job failed on server');
+      }
+      // Still processing — keep polling
+    }
+    // If we exited the loop without data, warn
+    if (!data.content && data.jobId) {
+      throw new Error('Job timed out waiting for server response. Try again or use local mode (unset WEBPEEL_API_KEY).');
+    }
+  }
+
   // Map API response to PeelResult shape that the CLI already handles
   return {
     url: data.url || url,

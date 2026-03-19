@@ -743,12 +743,20 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
         // Use the WebPeel API — no local Playwright needed
         result = await fetchViaApi(url, peelOptions, fetchApiKey, fetchApiUrl);
       } else {
-        // No API key — show helpful message instead of trying local mode
-        if (spinner) spinner.fail('Authentication required');
-        console.error('No API key configured. Run: webpeel auth <your-key>');
-        console.error('Get a free key at: https://app.webpeel.dev/keys');
-        await cleanup();
-        process.exit(2);
+        // No API key — fall back to local peel() mode (runs locally, no API needed)
+        if (spinner) spinner.text = 'Fetching locally (no API key)…';
+        const startLocal = Date.now();
+        const { peel } = await import('../../index.js');
+        const localResult = await peel(url, peelOptions);
+        const elapsed = Date.now() - startLocal;
+        // Normalize to the shape fetchViaApi returns
+        result = {
+          ...localResult,
+          elapsed: (localResult as any).elapsed ?? elapsed,
+          method: (localResult as any).method ?? 'local',
+          tokens: (localResult as any).tokens ?? Math.ceil((localResult.content?.length ?? 0) / 4),
+          cached: false,
+        };
       }
 
       // Update lastUsed timestamp for named profiles

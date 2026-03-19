@@ -611,4 +611,103 @@ export function registerSearchCommands(program: Command): void {
         process.exit(1);
       }
     });
+
+  // ── extractors command ────────────────────────────────────────────────────
+  program
+    .command('extractors')
+    .alias('list-extractors')
+    .description('List all supported domain extractors')
+    .option('--json', 'Output as JSON')
+    .action((options) => {
+      const extractors = [
+        // Social
+        { domain: 'twitter.com / x.com',      category: 'Social',    description: 'Tweets, threads, profiles' },
+        { domain: 'reddit.com',                category: 'Social',    description: 'Subreddits, posts, comments' },
+        { domain: 'instagram.com',             category: 'Social',    description: 'Photos, reels, profiles' },
+        { domain: 'tiktok.com',                category: 'Social',    description: 'Video metadata, captions' },
+        { domain: 'pinterest.com',             category: 'Social',    description: 'Pins, boards' },
+        { domain: 'linkedin.com',              category: 'Social',    description: 'Profiles, job listings' },
+        { domain: 'facebook.com',              category: 'Social',    description: 'Marketplace listings' },
+        // Video / Audio
+        { domain: 'youtube.com',               category: 'Video',     description: 'Transcripts, metadata, comments' },
+        { domain: 'twitch.tv',                 category: 'Video',     description: 'Streams, clips, channel info' },
+        { domain: 'soundcloud.com',            category: 'Audio',     description: 'Tracks, playlists' },
+        { domain: 'open.spotify.com',          category: 'Audio',     description: 'Tracks, albums, playlists' },
+        // Tech / Dev
+        { domain: 'github.com',                category: 'Dev',       description: 'Repos, issues, PRs, code' },
+        { domain: 'stackoverflow.com',         category: 'Dev',       description: 'Questions, answers' },
+        { domain: 'npmjs.com',                 category: 'Dev',       description: 'Package metadata, readme' },
+        { domain: 'pypi.org',                  category: 'Dev',       description: 'Package metadata, readme' },
+        { domain: 'dev.to',                    category: 'Dev',       description: 'Articles, comments' },
+        // News / Articles
+        { domain: 'news.ycombinator.com',      category: 'News',      description: 'HN posts, comments, Ask/Show HN' },
+        { domain: 'medium.com',                category: 'Articles',  description: 'Articles, publications' },
+        { domain: 'substack.com / *.substack.com', category: 'Articles', description: 'Newsletters, posts' },
+        { domain: 'nytimes.com',               category: 'News',      description: 'Articles, headlines' },
+        { domain: 'bbc.com',                   category: 'News',      description: 'Articles, headlines' },
+        { domain: 'cnn.com',                   category: 'News',      description: 'Articles, headlines' },
+        // Shopping / E-commerce
+        { domain: 'amazon.com',                category: 'Shopping',  description: 'Products, prices, reviews' },
+        { domain: 'bestbuy.com',               category: 'Shopping',  description: 'Products, prices, specs' },
+        { domain: 'walmart.com',               category: 'Shopping',  description: 'Products, prices' },
+        { domain: 'ebay.com',                  category: 'Shopping',  description: 'Listings, prices' },
+        { domain: 'etsy.com',                  category: 'Shopping',  description: 'Handmade listings' },
+        // Local / Real Estate
+        { domain: 'yelp.com',                  category: 'Local',     description: 'Business info, reviews (needs YELP_API_KEY)' },
+        { domain: 'craigslist.org',            category: 'Local',     description: 'Listings, classifieds' },
+        { domain: 'zillow.com',                category: 'Real Estate', description: 'Property listings, estimates' },
+        { domain: 'redfin.com',                category: 'Real Estate', description: 'Property listings, prices' },
+        { domain: 'cars.com',                  category: 'Automotive', description: 'Car listings, prices' },
+        // Knowledge / Academic
+        { domain: 'en.wikipedia.org',          category: 'Knowledge', description: 'Articles, structured data' },
+        { domain: 'arxiv.org',                 category: 'Academic',  description: 'Papers, abstracts, metadata' },
+        { domain: 'semanticscholar.org',       category: 'Academic',  description: 'Papers, citations' },
+        { domain: 'pubmed.ncbi.nlm.nih.gov',   category: 'Academic',  description: 'Medical papers, abstracts' },
+        { domain: 'imdb.com',                  category: 'Knowledge', description: 'Movies, TV shows, cast' },
+        { domain: 'allrecipes.com',            category: 'Knowledge', description: 'Recipes, ingredients, steps' },
+        // Finance / Markets
+        { domain: 'polymarket.com',            category: 'Finance',   description: 'Prediction markets' },
+        { domain: 'kalshi.com',                category: 'Finance',   description: 'Prediction markets' },
+        { domain: 'tradingview.com',           category: 'Finance',   description: 'Charts, indicators, ideas' },
+        { domain: 'coingecko.com',             category: 'Finance',   description: 'Crypto prices, market data' },
+        { domain: 'coinmarketcap.com',         category: 'Finance',   description: 'Crypto prices, market data' },
+        // Sports / Betting
+        { domain: 'espn.com',                  category: 'Sports',    description: 'Scores, stats, news' },
+        { domain: 'draftkings.com',            category: 'Betting',   description: 'Odds, lines' },
+        { domain: 'fanduel.com',               category: 'Betting',   description: 'Odds, lines' },
+        { domain: 'betmgm.com',                category: 'Betting',   description: 'Odds, lines' },
+        // Entertainment
+        { domain: 'producthunt.com',           category: 'Tech',      description: 'Product launches, upvotes' },
+        // Documents
+        { domain: '*.pdf URLs',                category: 'Documents', description: 'PDF text extraction' },
+        // Weather
+        { domain: 'weather.com',               category: 'Weather',   description: 'Forecasts, conditions' },
+        { domain: 'accuweather.com',           category: 'Weather',   description: 'Forecasts, conditions' },
+        { domain: 'api.open-meteo.com',        category: 'Weather',   description: 'Free weather API' },
+      ];
+
+      if (options.json) {
+        console.log(JSON.stringify(extractors, null, 2));
+        return;
+      }
+
+      // Group by category
+      const byCategory = new Map<string, typeof extractors>();
+      for (const e of extractors) {
+        if (!byCategory.has(e.category)) byCategory.set(e.category, []);
+        byCategory.get(e.category)!.push(e);
+      }
+
+      console.log(`\n🔌 WebPeel Domain Extractors (${extractors.length} total)\n`);
+      for (const [cat, items] of byCategory) {
+        console.log(`  ${cat}`);
+        for (const item of items) {
+          const pad = 35;
+          const domainPad = item.domain.padEnd(pad);
+          console.log(`    ${domainPad} ${item.description}`);
+        }
+        console.log('');
+      }
+      console.log('  Run `webpeel <url>` to use these automatically based on the URL.');
+    });
 }
