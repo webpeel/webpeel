@@ -1167,7 +1167,12 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
   if (getDomainExtractor(fetchResult.url) && !ctx.domainApiHandled) {
     try {
       ctx.timer.mark('domainExtract');
-      const ddResult = await extractDomainData(fetchResult.html, fetchResult.url);
+      // Try raw HTML first, then fall back to readability-processed content
+      // (some SPAs like Google Flights have data only after readability processing)
+      let ddResult = await extractDomainData(fetchResult.html, fetchResult.url);
+      if (!ddResult && ctx.content) {
+        ddResult = await extractDomainData(ctx.content, fetchResult.url);
+      }
       ctx.timer.end('domainExtract');
       if (ddResult) {
         ctx.domainData = ddResult;
