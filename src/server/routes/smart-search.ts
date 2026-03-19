@@ -513,14 +513,14 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
     })
     .map((r, i) => ({ ...r, rank: i + 1 })) as any[];
 
-  // Enrich top 3 results (reduced from 5) with peel() for richer content
+  // Enrich top 2 results only — fast 5s timeout so LLM has time to run
   const tPeel = Date.now();
-  const top3 = results.slice(0, 3);
+  const top2 = results.slice(0, 2);
   const enriched = await Promise.allSettled(
-    top3.map(async (r) => {
+    top2.map(async (r) => {
       try {
-        const peeled = await peel(r.url, { timeout: 8000, maxTokens: 1500 });
-        return { url: r.url, content: peeled.content?.substring(0, 1500), title: r.title, fetchTimeMs: peeled.elapsed };
+        const peeled = await peel(r.url, { timeout: 5000, maxTokens: 1000 });
+        return { url: r.url, content: peeled.content?.substring(0, 1000), title: r.title, fetchTimeMs: peeled.elapsed };
       } catch {
         return { url: r.url, content: null, title: r.title, fetchTimeMs: 0 };
       }
@@ -581,9 +581,9 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
 
       const tLlm = Date.now();
 
-      // Use AbortController for 15s max LLM timeout (Qwen needs ~5-8s for synthesis)
+      // Use AbortController for 20s max LLM timeout (Qwen needs ~5-8s for synthesis)
       const llmAbort = new AbortController();
-      const llmTimer = setTimeout(() => llmAbort.abort(), 15000);
+      const llmTimer = setTimeout(() => llmAbort.abort(), 20000);
 
       try {
         const llmResult = await callLLM(
