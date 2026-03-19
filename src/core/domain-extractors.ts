@@ -6509,6 +6509,27 @@ async function googleFlightsExtractor(_html: string, url: string): Promise<Domai
   if (unique.length === 0) return null;
   unique.sort((a, b) => a.price - b.price);
 
+  // Helper: get airline booking URL
+  function getAirlineBookingUrl(airline: string, from: string, to: string): string {
+    const fromLower = from.toLowerCase();
+    const toLower = to.toLowerCase();
+    const urlMap: Record<string, string> = {
+      'United':    `https://www.united.com/en-us/flights-from-${fromLower}-to-${toLower}`,
+      'Delta':     `https://www.delta.com/flight-search/search`,
+      'JetBlue':   `https://www.jetblue.com/booking/flights`,
+      'American':  `https://www.aa.com/booking/find-flights`,
+      'Spirit':    `https://www.spirit.com/book/flights`,
+      'Frontier':  `https://www.flyfrontier.com/booking/`,
+      'Southwest': `https://www.southwest.com/air/booking/`,
+      'Breeze':    `https://www.flybreeze.com/home`,
+      'Alaska':    `https://www.alaskaair.com/booking/flights`,
+      'Hawaiian':  `https://www.hawaiianairlines.com/book-a-trip`,
+      'Sun Country': `https://www.suncountry.com/booking/search`,
+      'Avelo':     `https://www.aveloair.com/book`,
+    };
+    return urlMap[airline] || `https://www.google.com/search?q=${encodeURIComponent(`${airline} flights ${from} to ${to}`)}`;
+  }
+
   // Parse route from URL
   const u = new URL(url);
   const query = (u.searchParams.get('q') || '').replace(/Flights?\s+(from\s+)?/i, '').replace(/\s+one\s+way/i, '').trim();
@@ -6523,10 +6544,12 @@ async function googleFlightsExtractor(_html: string, url: string): Promise<Domai
 
   for (let idx = 0; idx < unique.length; idx++) {
     const f = unique[idx];
+    const bookingUrl = getAirlineBookingUrl(f.airline, f.fromAirport, f.toAirport);
     md.push(`## ${idx + 1}. ${f.airline} — ${f.priceStr}`);
     md.push(`🕐 Depart **${f.departTime}** → Arrive **${f.arriveTime}**${f.departDate ? ` · ${f.departDate}` : ''}`);
     md.push(`🛫 ${f.fromAirport} → ${f.toAirport} · ${f.duration} · ${f.stops}`);
     if (f.bags) md.push(`🧳 ${f.bags}`);
+    md.push(`🔗 [Book on ${f.airline}](${bookingUrl})`);
     md.push('');
   }
 
