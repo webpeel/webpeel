@@ -471,11 +471,20 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
           ))}
         </div>
       ) : (
-        /* Fall back to markdown content */
+        /* Fall back: no structured data — show clean message */
         <div className="prose prose-invert prose-sm max-w-none">
-          <ReactMarkdown components={markdownComponents}>
-            {smartResult.content || '*No results found. Try a different query.*'}
-          </ReactMarkdown>
+          {smartResult.content && smartResult.content.startsWith('#') ? (
+            <ReactMarkdown components={markdownComponents}>
+              {smartResult.content}
+            </ReactMarkdown>
+          ) : (
+            <div className="text-sm text-zinc-400">
+              <p>We found results on <a href={smartResult.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{smartResult.source}</a>, but couldn&apos;t extract structured listings.</p>
+              <a href={smartResult.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#818CF8]/10 text-[#818CF8] hover:bg-[#818CF8]/20 transition-colors">
+                View results on {smartResult.source} →
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>
