@@ -165,9 +165,9 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
   const t0 = Date.now();
   const gfUrl = `https://www.google.com/travel/flights?q=Flights+${encodeURIComponent(intent.query)}+one+way`;
 
-  // Try Google Flights first (likely skeleton but worth trying)
+  // Try Google Flights first (short timeout, likely skeleton anyway)
   try {
-    const result = await peel(gfUrl, { timeout: 12000 });
+    const result = await peel(gfUrl, { timeout: 8000 });
     const contentLen = result.content?.trim().length ?? 0;
     const hasFlightData = contentLen > 500 && (result.domainData?.structured?.listings?.length > 0);
     if (hasFlightData) {
@@ -183,15 +183,31 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
         fetchTimeMs: Date.now() - t0,
       };
     }
-  } catch (_err) { /* fall through */ }
+  } catch (_err) { /* fall through to fallback */ }
 
-  // Fast fallback: search flight booking sites via SearXNG
-  const { provider: searchProvider } = getBestSearchProvider();
-  const searchResults = await searchProvider.searchWeb(`${intent.query} site:google.com/flights OR site:kayak.com OR site:expedia.com OR site:skyscanner.com`, { count: 8 });
-  const links = searchResults.slice(0, 6);
-  const content = `# ✈️ Flights — ${intent.query}\n\n*Search across booking sites:*\n\n${links.map((r, i) =>
-    `${i + 1}. **[${r.title}](${r.url})**\n   ${r.snippet || ''}`
-  ).join('\n\n')}\n\n---\n[Search on Google Flights](${gfUrl}) · [Kayak](https://www.kayak.com/flights) · [Expedia](https://www.expedia.com/Flights)`;
+  // Instant fallback: formatted links without expensive SearXNG search
+  // Just provide direct links to major booking sites with the query
+  const content = `# ✈️ Flights — ${intent.query}
+
+*Search major booking sites for the best deals:*
+
+1. **[Google Flights](${gfUrl})**  
+   Direct link to Google Flights search
+
+2. **[Kayak](https://www.kayak.com/flights?a=help)**  
+   Compare prices across all airlines
+
+3. **[Expedia](https://www.expedia.com/Flights)**  
+   Flights, hotels, bundles
+
+4. **[Skyscanner](https://www.skyscanner.com/)**  
+   Popular international flight search
+
+5. **[Momondo](https://www.momondo.com/)**  
+   Meta-search with lowest prices
+
+---
+`;
 
   return {
     type: 'flights',
@@ -200,7 +216,6 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
     content,
     title: `Flights — ${intent.query}`,
     structured: { listings: [] },
-    results: links as any,
     tokens: content.split(' ').length,
     fetchTimeMs: Date.now() - t0,
   };
@@ -211,7 +226,7 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
   const ghUrl = `https://www.google.com/travel/hotels?q=${encodeURIComponent(intent.query)}`;
 
   try {
-    const result = await peel(ghUrl, { timeout: 20000 });
+    const result = await peel(ghUrl, { timeout: 8000 });
     const contentLen = result.content?.trim().length ?? 0;
     const hasHotelData = contentLen > 500 && (result.domainData?.structured?.listings?.length > 0);
     if (hasHotelData) {
@@ -229,13 +244,28 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
     }
     throw new Error('Google Hotels returned skeleton content');
   } catch (_err) {
-    // Fast fallback via SearXNG
-    const { provider: searchProvider } = getBestSearchProvider();
-    const searchResults = await searchProvider.searchWeb(`${intent.query} site:booking.com OR site:hotels.com OR site:expedia.com OR site:airbnb.com`, { count: 8 });
-    const links = searchResults.slice(0, 6);
-    const content = `# 🏨 Hotels — ${intent.query}\n\n*Search across booking sites:*\n\n${links.map((r, i) =>
-      `${i + 1}. **[${r.title}](${r.url})**\n   ${r.snippet || ''}`
-    ).join('\n\n')}\n\n---\n[Booking.com](https://www.booking.com) · [Hotels.com](https://www.hotels.com) · [Expedia](https://www.expedia.com/Hotels)`;
+    // Instant fallback: direct links to major booking sites
+    const content = `# 🏨 Hotels — ${intent.query}
+
+*Search major booking sites:*
+
+1. **[Booking.com](https://www.booking.com)**  
+   Largest selection, competitive prices
+
+2. **[Hotels.com](https://www.hotels.com)**  
+   Free night rewards program
+
+3. **[Expedia](https://www.expedia.com/Hotels)**  
+   Bundle with flights for discounts
+
+4. **[Airbnb](https://www.airbnb.com)**  
+   Apartments, houses, unique stays
+
+5. **[Google Hotels](${ghUrl})**  
+   Compare prices across all sites
+
+---
+`;
     return {
       type: 'hotels',
       source: 'Hotel Search',
@@ -243,7 +273,6 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
       content,
       title: `Hotels — ${intent.query}`,
       structured: { listings: [] },
-      results: links as any,
       tokens: content.split(' ').length,
       fetchTimeMs: Date.now() - t0,
     };
