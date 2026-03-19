@@ -299,6 +299,44 @@ export function normalizeOptions(ctx: PipelineContext): void {
   if (autoScrollOpts) {
     ctx.render = true;
   }
+
+  // Auto-detect SPAs that require browser rendering (no --render flag needed)
+  if (!ctx.render) {
+    const SPA_DOMAINS = new Set([
+      'www.google.com',       // Google Flights, Maps, Shopping etc.
+      'flights.google.com',
+      'www.airbnb.com',
+      'www.booking.com',
+      'www.expedia.com',
+      'www.kayak.com',
+      'www.skyscanner.com',
+      'www.tripadvisor.com',
+      'www.indeed.com',
+      'www.glassdoor.com',
+      'www.zillow.com',       // already handled but backup
+      'app.webpeel.dev',      // our own dashboard is a SPA
+    ]);
+
+    // More specific: some google.com paths need render, not all
+    const SPA_URL_PATTERNS = [
+      /google\.com\/travel/,
+      /google\.com\/maps/,
+      /google\.com\/shopping/,
+    ];
+
+    try {
+      const hostname = new URL(ctx.url).hostname;
+      if (SPA_DOMAINS.has(hostname)) {
+        ctx.render = true;
+        log.debug(`Auto-enabling render: SPA domain detected (${hostname})`);
+      } else if (SPA_URL_PATTERNS.some(p => p.test(ctx.url))) {
+        ctx.render = true;
+        log.debug(`Auto-enabling render: SPA URL pattern matched`);
+      }
+    } catch {
+      // Invalid URL — skip SPA detection
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

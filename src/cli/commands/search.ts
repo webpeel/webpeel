@@ -612,6 +612,51 @@ export function registerSearchCommands(program: Command): void {
       }
     });
 
+  // ── flights command ───────────────────────────────────────────────────────
+  program
+    .command('flights <query>')
+    .description('Search for flights (via Google Flights) — e.g. "NYC to Fort Myers Apr 4"')
+    .option('--one-way', 'One-way flight (default)')
+    .option('--round-trip', 'Round-trip flight')
+    .option('-n, --count <n>', 'Max flights to show', '10')
+    .option('--json', 'Output as JSON')
+    .option('-s, --silent', 'Silent mode')
+    .action(async (query: string, options) => {
+      const tripType = options.roundTrip ? '' : ' one way';
+      const encoded = encodeURIComponent(`Flights from ${query}${tripType}`);
+      const url = `https://www.google.com/travel/flights?q=${encoded}`;
+
+      const spinner = options.silent ? null : ora(`Searching flights: ${query}...`).start();
+
+      try {
+        // render is forced automatically by SPA auto-detect, but be explicit here
+        const result = await peel(url, { render: true, timeout: 30000 });
+
+        if (spinner) spinner.succeed('Flights loaded');
+
+        if (options.json) {
+          console.log(JSON.stringify({
+            query,
+            url,
+            flights: (result as any).domainData?.structured?.flights || [],
+            source: 'Google Flights',
+            content: result.content,
+            tokens: result.tokens,
+          }, null, 2));
+        } else {
+          console.log(result.content);
+        }
+
+        await cleanup();
+        process.exit(0);
+      } catch (error) {
+        if (spinner) spinner.fail('Flight search failed');
+        console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        await cleanup();
+        process.exit(1);
+      }
+    });
+
   // ── extractors command ────────────────────────────────────────────────────
   program
     .command('extractors')
