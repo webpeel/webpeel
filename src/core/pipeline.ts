@@ -582,6 +582,23 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
         // @ts-ignore — proprietary module, gitignored
         const { searchFallback } = await import('./search-fallback.js');
         const searchResult = await searchFallback(ctx.url);
+
+        // If DDG/primary returned very little, also try Bing for richer snippets
+        if (!searchResult.cachedContent || searchResult.cachedContent.length < 400) {
+          try {
+            const { simpleFetch } = await import('./http-fetch.js');
+            const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(ctx.url)}`;
+            const bingResult = await simpleFetch(bingUrl, ctx.userAgent, 8000);
+            if (bingResult.html && bingResult.html.length > 500) {
+              const snippetMatch = bingResult.html.match(/<p[^>]*class="[^"]*snippet[^"]*"[^>]*>(.*?)<\/p>/gi);
+              if (snippetMatch) {
+                const bingSnippet = snippetMatch.map(s => s.replace(/<[^>]+>/g, '')).join('\n');
+                searchResult.cachedContent = (searchResult.cachedContent || '') + '\n\n---\n*Additional context from Bing:*\n' + bingSnippet;
+              }
+            }
+          } catch { /* Bing fallback is best-effort */ }
+        }
+
         if (searchResult.cachedContent && searchResult.cachedContent.length > 50) {
           ctx.timer.end('fetch');
           ctx.content = searchResult.cachedContent;
