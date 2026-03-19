@@ -49,6 +49,15 @@ describe('detectSearchIntent', () => {
     expect(detectSearchIntent('best brunch in NYC').type).toBe('restaurants');
   });
 
+  it('detects product search queries', () => {
+    expect(detectSearchIntent('face wash for men').type).toBe('products');
+    expect(detectSearchIntent('bouldering shoes size 10').type).toBe('products');
+    expect(detectSearchIntent('running shoes Nike').type).toBe('products');
+    expect(detectSearchIntent('buy headphones under $100').type).toBe('products');
+    expect(detectSearchIntent('cheap laptop deals').type).toBe('products');
+    expect(detectSearchIntent('best backpack for travel').type).toBe('products');
+  });
+
   it('falls back to general for unrecognized queries', () => {
     expect(detectSearchIntent('latest AI news').type).toBe('general');
     expect(detectSearchIntent('what is TypeScript').type).toBe('general');

@@ -24,7 +24,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
 
 type DetectedMode = 'read' | 'search' | 'ask';
 type AppState = 'idle' | 'loading' | 'success' | 'error';
-type SmartResultType = 'cars' | 'flights' | 'hotels' | 'rental' | 'restaurants' | 'general';
+type SmartResultType = 'cars' | 'flights' | 'hotels' | 'rental' | 'restaurants' | 'products' | 'general';
 
 interface Source {
   url: string;
@@ -356,79 +356,102 @@ function SourceCards({ sources }: { sources: Source[] }) {
 // ─── Search results component ─────────────────────────────────────────────────
 
 function SearchResults({ results, onReadUrl }: { results: SearchResult[]; onReadUrl: (url: string) => void }) {
-  const credBadgeStyles: Record<string, string> = {
-    official: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    verified: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-    general: 'bg-zinc-700/40 text-zinc-500 border-zinc-600/30',
+  const credBadgeStyles: Record<string, { cls: string; label: string; check?: boolean }> = {
+    official: { cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', label: 'Official', check: true },
+    verified: { cls: 'bg-blue-500/15 text-blue-400 border-blue-500/30', label: 'Established' },
+    general:  { cls: 'bg-zinc-700/40 text-zinc-500 border-zinc-600/30', label: 'Community' },
   };
+
   return (
     <div className="space-y-3">
-      {results.map((r, i) => (
-        <div key={i} className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
-          {/* Title row with rank, domain badge, and credibility */}
-          <div className="flex items-start gap-2 mb-1 flex-wrap">
-            {r.rank && (
-              <span className="shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-zinc-700/80 text-zinc-300 text-[10px] font-bold mt-0.5">
-                {r.rank}
-              </span>
-            )}
-            {r.domain && (
-              <span className="shrink-0 bg-zinc-700/60 text-zinc-400 text-xs px-2 py-0.5 rounded-full mt-0.5">
-                {r.domain}
-              </span>
-            )}
-            {r.credibility && (
-              <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full border font-medium mt-0.5 ${credBadgeStyles[r.credibility.tier] || credBadgeStyles.general}`}>
-                {r.credibility.tier === 'official' ? '★★★ Official' : r.credibility.tier === 'verified' ? '★★ Verified' : '★ General'}
-              </span>
-            )}
+      {results.map((r, i) => {
+        const domain = r.domain || (() => {
+          try { return new URL(r.url).hostname.replace(/^www\./, ''); } catch { return ''; }
+        })();
+        const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=16` : '';
+        const cred = r.credibility ? credBadgeStyles[r.credibility.tier] || credBadgeStyles.general : null;
+
+        return (
+          <div key={i} className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all group">
+            {/* Top row: favicon + domain + credibility badge */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {faviconUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={faviconUrl}
+                  alt=""
+                  className="w-4 h-4 rounded-sm shrink-0 opacity-70"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              )}
+              {domain && <span className="text-xs text-zinc-500 shrink-0">{domain}</span>}
+              {cred && (
+                <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${cred.cls}`}>
+                  {cred.check ? '✓ ' : ''}{cred.label}
+                </span>
+              )}
+            </div>
+
+            {/* Title */}
             <a
               href={r.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1 flex-1 min-w-0"
+              className="text-sm font-semibold text-[#818CF8] hover:underline line-clamp-2 leading-snug block mb-2"
             >
               {r.title}
             </a>
-          </div>
-          <div className="text-xs text-zinc-500 mb-2 truncate">{r.url}</div>
 
-          {/* Content area: loading skeleton, rich content, or snippet fallback */}
-          {r.loading ? (
-            <div className="space-y-2 mt-2" aria-label="Loading content">
-              <div className="bg-zinc-700/40 animate-pulse rounded h-4 w-full" />
-              <div className="bg-zinc-700/40 animate-pulse rounded h-4 w-4/5" />
-              <div className="bg-zinc-700/40 animate-pulse rounded h-4 w-3/5" />
-            </div>
-          ) : r.content ? (
-            <div>
-              <p className="text-zinc-300 text-sm line-clamp-4 leading-relaxed">
-                {r.content}
-                {r.content.length >= 1500 ? '…' : ''}
-              </p>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-xs text-zinc-600">
-                  {r.wordCount != null ? `${r.wordCount.toLocaleString()} words` : ''}
-                  {r.wordCount != null && r.method ? ' · ' : ''}
-                  {r.method ?? ''}
-                </span>
-                {r.fetchTimeMs != null && (
-                  <span className="text-xs text-zinc-600">{r.fetchTimeMs}ms</span>
+            {/* Content area: loading skeleton, peeled content preview, or snippet */}
+            {r.loading ? (
+              <div className="space-y-2" aria-label="Loading content">
+                <div className="bg-zinc-700/40 animate-pulse rounded h-3.5 w-full" />
+                <div className="bg-zinc-700/40 animate-pulse rounded h-3.5 w-4/5" />
+                <div className="bg-zinc-700/40 animate-pulse rounded h-3.5 w-3/5" />
+              </div>
+            ) : r.content ? (
+              <div>
+                <p className="text-zinc-400 text-sm line-clamp-2 leading-relaxed">
+                  {r.content}
+                  {r.content.length >= 1500 ? '…' : ''}
+                </p>
+                {(r.wordCount != null || r.method) && (
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span className="text-xs text-zinc-600">
+                      {r.wordCount != null ? `${r.wordCount.toLocaleString()} words` : ''}
+                      {r.wordCount != null && r.method ? ' · ' : ''}
+                      {r.method ?? ''}
+                    </span>
+                    {r.fetchTimeMs != null && (
+                      <span className="text-xs text-zinc-600">{r.fetchTimeMs}ms</span>
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
-          ) : r.snippet ? (
-            <div className="text-sm text-zinc-400 line-clamp-2">{r.snippet}</div>
-          ) : null}
+            ) : r.snippet ? (
+              <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">{r.snippet}</p>
+            ) : null}
 
-          <button
-            onClick={(e) => { e.stopPropagation(); onReadUrl(r.url); }}
-            className="mt-2 inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-[#5865F2]/20 border border-zinc-700/50 hover:border-[#5865F2]/50 rounded-lg font-medium transition-all"
-          >
-            Read full page →
-          </button>
-        </div>
-      ))}
+            {/* Footer: Read more link */}
+            <div className="flex items-center gap-3 mt-3 pt-2 border-t border-zinc-800/60">
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-zinc-500 hover:text-[#818CF8] transition-colors font-medium"
+              >
+                Read more →
+              </a>
+              <button
+                onClick={(e) => { e.stopPropagation(); onReadUrl(r.url); }}
+                className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs text-zinc-500 hover:text-white hover:bg-[#5865F2]/20 border border-zinc-700/50 hover:border-[#5865F2]/50 rounded-lg font-medium transition-all"
+              >
+                Peel full page →
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -441,6 +464,7 @@ const SMART_SOURCE_ICONS: Record<string, string> = {
   hotels: '🏨',
   rental: '🔑',
   restaurants: '🍽️',
+  products: '📦',
   general: '🔍',
 };
 
@@ -603,21 +627,58 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
   }
 
   if (type === 'restaurants') {
+    const priceColor = (price: string) => {
+      if (price === '$') return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+      if (price === '$$') return 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30';
+      if (price === '$$$' || price === '$$$$') return 'bg-orange-500/15 text-orange-400 border-orange-500/30';
+      return 'bg-zinc-700/40 text-zinc-400 border-zinc-600/30';
+    };
+    const phone = item.phone || item.phoneNumber || '';
+    const address = item.address || item.location || '';
+
     return (
       <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
-            <a href={url} target="_blank" rel="noopener noreferrer"
-              className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1">
-              {item.name || item.title || 'Restaurant'}
-            </a>
-            <div className="flex flex-wrap gap-2 mt-1 text-xs text-zinc-400">
-              {item.rating && <span>⭐ {item.rating}</span>}
-              {item.reviewCount && <span>({item.reviewCount} reviews)</span>}
-              {item.price && <span>{item.price}</span>}
-              {item.cuisine && <span>{item.cuisine}</span>}
+            {/* Name + price badge row */}
+            <div className="flex items-start gap-2 flex-wrap">
+              <a href={url} target="_blank" rel="noopener noreferrer"
+                className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1 flex-1 min-w-0">
+                {item.name || item.title || 'Restaurant'}
+              </a>
+              {item.price && (
+                <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full border font-semibold ${priceColor(item.price)}`}>
+                  {item.price}
+                </span>
+              )}
             </div>
-            {(item.address || item.location) && <div className="text-xs text-zinc-500 mt-1">📍 {item.address || item.location}</div>}
+
+            {/* Rating row — prominent star */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+              {item.rating && (
+                <span className="flex items-center gap-1 text-amber-400 font-semibold text-sm">
+                  ⭐ {item.rating}
+                  {item.reviewCount && (
+                    <span className="text-xs text-zinc-500 font-normal ml-0.5">({item.reviewCount} reviews)</span>
+                  )}
+                </span>
+              )}
+              {item.cuisine && <span className="text-xs text-zinc-500">{item.cuisine}</span>}
+            </div>
+
+            {/* Address on its own line */}
+            {address && (
+              <div className="text-xs text-zinc-500 mt-1.5">📍 {address}</div>
+            )}
+
+            {/* Phone — clickable tel: link */}
+            {phone && (
+              <div className="text-xs mt-1">
+                <a href={`tel:${phone.replace(/[^\d+]/g, '')}`} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+                  📞 {phone}
+                </a>
+              </div>
+            )}
           </div>
           {item.image && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -625,6 +686,62 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
           )}
         </div>
       </div>
+    );
+  }
+
+  if (type === 'products') {
+    const productUrl = item.url || item.link || '#';
+    const stars = typeof item.rating === 'number' ? item.rating : parseFloat(item.rating) || 0;
+    const fullStars = Math.floor(stars);
+    const hasHalf = stars - fullStars >= 0.5;
+    const starDisplay = '★'.repeat(fullStars) + (hasHalf ? '½' : '') + '☆'.repeat(Math.max(0, 5 - fullStars - (hasHalf ? 1 : 0)));
+
+    return (
+      <a href={productUrl} target="_blank" rel="noopener noreferrer"
+        className="block p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 hover:border-zinc-700 transition-all cursor-pointer no-underline">
+        <div className="flex items-start gap-3">
+          {item.image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image} alt={item.title || 'Product'} className="w-16 h-16 object-contain rounded-lg shrink-0 bg-zinc-800/60 p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-zinc-100 line-clamp-2 leading-snug">
+              {item.title || item.name || 'Product'}
+            </div>
+
+            {/* Price — prominent green */}
+            {item.price && (
+              <div className="text-base font-bold text-emerald-400 mt-1.5">
+                {typeof item.price === 'number' ? `$${item.price.toFixed(2)}` : item.price}
+              </div>
+            )}
+
+            {/* Rating row */}
+            {(item.rating || item.reviewCount) && (
+              <div className="flex items-center gap-2 mt-1">
+                {item.rating && (
+                  <span className="text-amber-400 text-xs font-mono tracking-tighter">{starDisplay}</span>
+                )}
+                {item.rating && (
+                  <span className="text-xs text-zinc-400">{typeof item.rating === 'number' ? item.rating.toFixed(1) : item.rating}</span>
+                )}
+                {item.reviewCount && (
+                  <span className="text-xs text-zinc-500">
+                    ({typeof item.reviewCount === 'number' ? item.reviewCount.toLocaleString() : item.reviewCount} reviews)
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 mt-2">
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#FF9900]/10 text-[#FF9900] border border-[#FF9900]/20">
+                Amazon
+              </span>
+              <span className="text-xs text-zinc-600">View on Amazon →</span>
+            </div>
+          </div>
+        </div>
+      </a>
     );
   }
 
@@ -1060,11 +1177,12 @@ export default function ReadPage() {
     if (!raw.trim()) return;
 
     const intent = detectIntent(raw.trim());
-    setAppState('loading');
-    setSubmittedQuery(raw.trim());
+    // CRITICAL: clear results immediately before any async work so stale results don't show
     setResult(null);
     setErrorMsg('');
     setLoadingMessage(undefined);
+    setAppState('loading');
+    setSubmittedQuery(raw.trim());
 
     try {
       let data: ResultData = { detectedMode: intent.mode };

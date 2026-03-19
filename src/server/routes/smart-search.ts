@@ -8,7 +8,8 @@
  * - hotels     → Google Hotels with browser rendering
  * - rental     → Kayak with browser rendering + rental extractor
  * - restaurants → Yelp Fusion API extractor
- * - general    → SearXNG with smart enrichment (peel() for top 2)
+ * - products   → Amazon search with structured extraction
+ * - general    → SearXNG with smart enrichment (peel() for top 3)
  */
 
 import { Router, Request, Response } from 'express';
@@ -25,13 +26,13 @@ import { callLLM } from '../../core/llm-provider.js';
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 export interface SearchIntent {
-  type: 'cars' | 'flights' | 'hotels' | 'rental' | 'restaurants' | 'general';
+  type: 'cars' | 'flights' | 'hotels' | 'rental' | 'restaurants' | 'products' | 'general';
   query: string;
   params: Record<string, string>;
 }
 
 export interface SmartSearchResult {
-  type: 'cars' | 'flights' | 'hotels' | 'rental' | 'restaurants' | 'general';
+  type: 'cars' | 'flights' | 'hotels' | 'rental' | 'restaurants' | 'products' | 'general';
   source: string;
   sourceUrl: string;
   content: string;
@@ -107,6 +108,14 @@ export function detectSearchIntent(query: string): SearchIntent {
     return { type: 'restaurants', query: q, params: { location } };
   }
 
+  // Products: shopping intent + product category keywords
+  if (
+    /\b(buy|shop|shopping|purchase|order|cheap|cheapest|best price|under \$|price|deal|discount|sale)\b/.test(q) ||
+    /\b(shoes|sneakers|boots|sandals|heels|loafers|watch|watches|headphones|earbuds|earphones|laptop|laptops|phone|phones|iphone|android|tablet|camera|skincare|face wash|facewash|moisturizer|serum|shampoo|conditioner|sunscreen|sunblock|backpack|bag|jacket|hoodie|shirt|pants|jeans|shorts|dress|coat|glasses|sunglasses|keyboard|mouse|monitor|charger|cable|speaker|bluetooth|tv|television|mattress|pillow|sheets|towel|desk|chair|lamp|wallet|purse|handbag|belt|socks|underwear|perfume|cologne|makeup|lipstick|foundation|mascara|blush|toner)\b/.test(q)
+  ) {
+    return { type: 'products', query: q, params: {} };
+  }
+
   return { type: 'general', query: q, params: {} };
 }
 
@@ -158,6 +167,11 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
 
   try {
     const result = await peel(gfUrl, { timeout: 20000 });
+    // If we got essentially nothing useful (SPA skeleton), fall back
+    const contentLen = result.content?.trim().length ?? 0;
+    if (contentLen < 100) {
+      throw new Error('Google Flights returned empty/skeleton content');
+    }
     return {
       type: 'flights',
       source: 'Google Flights',
@@ -168,9 +182,17 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
       structured: result.domainData?.structured,
       tokens: result.tokens,
       fetchTimeMs: Date.now() - t0,
+      loadingMessage: 'Searching for flights...',
     };
-  } catch (err) {
-    throw new Error(`Google Flights search failed: ${(err as Error).message}`);
+  } catch (_err) {
+    // Graceful fallback to general search
+    console.warn(`Google Flights failed, falling back to general search: ${(_err as Error).message}`);
+    const fallback = await handleGeneralSearch(intent.query);
+    return {
+      ...fallback,
+      type: 'flights',
+      loadingMessage: 'Showing search results for flights',
+    };
   }
 }
 
@@ -180,6 +202,10 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
 
   try {
     const result = await peel(ghUrl, { timeout: 20000 });
+    const contentLen = result.content?.trim().length ?? 0;
+    if (contentLen < 100) {
+      throw new Error('Google Hotels returned empty/skeleton content');
+    }
     return {
       type: 'hotels',
       source: 'Google Hotels',
@@ -190,9 +216,16 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
       structured: result.domainData?.structured,
       tokens: result.tokens,
       fetchTimeMs: Date.now() - t0,
+      loadingMessage: 'Searching for hotels...',
     };
-  } catch (err) {
-    throw new Error(`Google Hotels search failed: ${(err as Error).message}`);
+  } catch (_err) {
+    console.warn(`Google Hotels failed, falling back to general search: ${(_err as Error).message}`);
+    const fallback = await handleGeneralSearch(intent.query);
+    return {
+      ...fallback,
+      type: 'hotels',
+      loadingMessage: 'Showing search results for hotels',
+    };
   }
 }
 
@@ -205,6 +238,10 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
 
   try {
     const result = await peel(kayakUrl, { timeout: 20000 });
+    const contentLen = result.content?.trim().length ?? 0;
+    if (contentLen < 100) {
+      throw new Error('Kayak returned empty/skeleton content');
+    }
     return {
       type: 'rental',
       source: 'Kayak',
@@ -215,23 +252,29 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
       structured: result.domainData?.structured,
       tokens: result.tokens,
       fetchTimeMs: Date.now() - t0,
+      loadingMessage: 'Searching for rental cars...',
     };
-  } catch (err) {
-    throw new Error(`Kayak car rental search failed: ${(err as Error).message}`);
+  } catch (_err) {
+    console.warn(`Kayak rental failed, falling back to general search: ${(_err as Error).message}`);
+    const fallback = await handleGeneralSearch(intent.query);
+    return {
+      ...fallback,
+      type: 'rental',
+      loadingMessage: 'Showing search results for car rentals',
+    };
   }
 }
 
 async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearchResult> {
   const t0 = Date.now();
 
-  // Extract clean search term (strip noise words)
+  // Extract clean search term for find_desc (strip noise words but keep meaningful terms)
   const desc = intent.query
     .replace(/\b(best|top|good|cheap|affordable|near me|near|around|in|find|search|looking for)\b/gi, '')
-    .replace(/\b(new york|manhattan|brooklyn|queens|bronx|chicago|los angeles|san francisco|miami|boston|seattle|denver|austin|portland|philadelphia|houston|dallas|atlanta)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Use parsed location or default
+  // Use parsed location from intent params, or default to New York, NY
   const location = intent.params.location || 'New York, NY';
 
   const yelpUrl = `https://www.yelp.com/search?find_desc=${encodeURIComponent(desc)}&find_loc=${encodeURIComponent(location)}`;
@@ -252,6 +295,35 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
     };
   } catch (err) {
     throw new Error(`Yelp search failed: ${(err as Error).message}`);
+  }
+}
+
+async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchResult> {
+  const t0 = Date.now();
+  // Build clean product keyword (strip noise)
+  const keyword = intent.query
+    .replace(/\b(buy|shop|shopping|purchase|order|deal|discount|sale|price|cheap|cheapest|best price|under)\b/gi, '')
+    .replace(/\$\d[\d,]*/g, '')
+    .replace(/\s+/g, ' ')
+    .trim() || intent.query;
+
+  const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(keyword)}`;
+
+  try {
+    const result = await peel(amazonUrl, { timeout: 20000 });
+    return {
+      type: 'products',
+      source: 'Amazon',
+      sourceUrl: amazonUrl,
+      content: result.content,
+      title: result.title,
+      domainData: result.domainData,
+      structured: result.domainData?.structured,
+      tokens: result.tokens,
+      fetchTimeMs: Date.now() - t0,
+    };
+  } catch (err) {
+    throw new Error(`Amazon search failed: ${(err as Error).message}`);
   }
 }
 
@@ -284,20 +356,25 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
     })
     .map((r, i) => ({ ...r, rank: i + 1 })) as any[];
 
-  // Enrich top 5 results with peel() for richer content
+  // Enrich top 3 results (reduced from 5) with peel() for richer content
   const tPeel = Date.now();
-  const top5 = results.slice(0, 5);
+  const top3 = results.slice(0, 3);
   const enriched = await Promise.allSettled(
-    top5.map(async (r) => {
+    top3.map(async (r) => {
       try {
-        const peeled = await peel(r.url, { timeout: 10000, maxTokens: 3000 });
-        return { url: r.url, content: peeled.content?.substring(0, 3000), title: r.title, fetchTimeMs: peeled.elapsed };
+        const peeled = await peel(r.url, { timeout: 8000, maxTokens: 1500 });
+        return { url: r.url, content: peeled.content?.substring(0, 1500), title: r.title, fetchTimeMs: peeled.elapsed };
       } catch {
         return { url: r.url, content: null, title: r.title, fetchTimeMs: 0 };
       }
     })
   );
   const peelMs = Date.now() - tPeel;
+
+  // Check if any peel succeeded; if none did, skip LLM and return raw results
+  const anyPeelSucceeded = enriched.some(
+    (s) => s.status === 'fulfilled' && s.value.content !== null
+  );
 
   for (const settled of enriched) {
     if (settled.status === 'fulfilled' && settled.value.content) {
@@ -328,7 +405,8 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
   let llmMs = 0;
 
   const ollamaUrl = process.env.OLLAMA_URL;
-  if (ollamaUrl && enriched.some((s) => s.status === 'fulfilled' && (s.value as any).content)) {
+  // Only call LLM if at least one page was successfully peeled
+  if (ollamaUrl && anyPeelSucceeded) {
     try {
       // Build numbered source content for the LLM
       const sourceContent = enriched
@@ -345,27 +423,37 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
       const userMessage = `Query: ${query}\n\nSources:\n\n${sourceContent}`;
 
       const tLlm = Date.now();
-      const llmResult = await callLLM(
-        {
-          provider: 'ollama',
-          endpoint: process.env.OLLAMA_URL,
-          apiKey: process.env.OLLAMA_SECRET,
-          model: process.env.OLLAMA_MODEL,
-        },
-        {
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
-          ],
-          maxTokens: 800,
-          temperature: 0.3,
-        }
-      );
-      llmMs = Date.now() - tLlm;
 
-      if (llmResult.text) {
-        answer = llmResult.text;
+      // Use AbortController for 10s max LLM timeout
+      const llmAbort = new AbortController();
+      const llmTimer = setTimeout(() => llmAbort.abort(), 10000);
+
+      try {
+        const llmResult = await callLLM(
+          {
+            provider: 'ollama',
+            endpoint: process.env.OLLAMA_URL,
+            apiKey: process.env.OLLAMA_SECRET,
+            model: process.env.OLLAMA_MODEL,
+          },
+          {
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userMessage },
+            ],
+            maxTokens: 800,
+            temperature: 0.3,
+            signal: llmAbort.signal,
+          }
+        );
+        if (llmResult.text) {
+          answer = llmResult.text;
+        }
+      } finally {
+        clearTimeout(llmTimer);
       }
+
+      llmMs = Date.now() - tLlm;
     } catch (err) {
       // Graceful degradation: LLM failure → return raw results without answer
       console.warn('General search LLM synthesis failed (graceful fallback):', (err as Error).message);
@@ -391,10 +479,11 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
 function getLoadingMessage(type: SearchIntent['type']): string {
   const msgs: Record<string, string> = {
     cars: 'Searching cars on Cars.com…',
-    flights: 'Finding flights on Google Flights…',
-    hotels: 'Looking up hotels on Google Hotels…',
-    rental: 'Searching rental cars on Kayak…',
+    flights: 'Searching for flights...',
+    hotels: 'Searching for hotels...',
+    rental: 'Searching for rental cars...',
     restaurants: 'Finding restaurants on Yelp…',
+    products: 'Searching Amazon for products…',
     general: '🔍 Searching and analyzing results...',
   };
   return msgs[type] || 'Searching…';
@@ -470,12 +559,17 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
         case 'restaurants':
           smartResult = await handleRestaurantSearch(intent);
           break;
+        case 'products':
+          smartResult = await handleProductSearch(intent);
+          break;
         default:
           smartResult = await handleGeneralSearch(query);
       }
 
-      // Add loading message hint for frontend UX
-      smartResult.loadingMessage = getLoadingMessage(intent.type);
+      // Add loading message hint for frontend UX (use handler's if already set)
+      if (!smartResult.loadingMessage) {
+        smartResult.loadingMessage = getLoadingMessage(intent.type);
+      }
 
       // Track usage
       const pgStore = authStore as any;
