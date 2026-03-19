@@ -468,7 +468,7 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
           await pgStore.trackBurstUsage(req.auth.keyInfo.key);
         }
         if (!req.auth?.softLimited) {
-          await pgStore.trackUsage(req.auth.keyInfo.key, 'smart-search');
+          await pgStore.trackUsage(req.auth.keyInfo.key, 'search');
         }
       }
 
