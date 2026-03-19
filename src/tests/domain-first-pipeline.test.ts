@@ -8,9 +8,12 @@
  *  4. If smartFetch throws AND a domain extractor exists, domain API is tried as fallback
  *  5. Non-domain URLs go straight to smartFetch
  *  6. When domainApiHandled=true, parseContent is a no-op (preserves pre-set content)
+ *
+ * NOTE: pipeline.ts routes domain extraction through strategy hooks.
+ * We register mocked hooks to control the domain extraction behavior in tests.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   createContext,
   fetchContent,
@@ -18,6 +21,7 @@ import {
   parseContent,
   normalizeOptions,
 } from '../core/pipeline.js';
+import { registerStrategyHooks, clearStrategyHooks } from '../core/strategy-hooks.js';
 
 // ---------------------------------------------------------------------------
 // Mocks — must appear before any imports of the mocked modules
@@ -27,17 +31,19 @@ vi.mock('../core/strategies.js', () => ({
   smartFetch: vi.fn(),
 }));
 
-vi.mock('../core/domain-extractors.js', () => ({
-  getDomainExtractor: vi.fn(),
-  extractDomainData: vi.fn(),
+// Mock domain-extractors-basic — we control extraction via hooks instead
+vi.mock('../core/domain-extractors-basic.js', () => ({
+  extractDomainDataBasic: vi.fn().mockResolvedValue(null),
+  getDomainExtractorBasic: vi.fn().mockReturnValue(null),
 }));
 
 import { smartFetch } from '../core/strategies.js';
-import { getDomainExtractor, extractDomainData } from '../core/domain-extractors.js';
 
 const mockSmartFetch = vi.mocked(smartFetch);
-const mockGetDomainExtractor = vi.mocked(getDomainExtractor);
-const mockExtractDomainData = vi.mocked(extractDomainData);
+
+// Mock functions for domain extraction — registered as strategy hooks
+const mockGetDomainExtractor = vi.fn();
+const mockExtractDomainData = vi.fn();
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -70,6 +76,15 @@ function makeFetchResult(url: string): any {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Register mocked premium hooks so pipeline routes through them
+  registerStrategyHooks({
+    extractDomainData: mockExtractDomainData,
+    getDomainExtractor: mockGetDomainExtractor,
+  });
+});
+
+afterEach(() => {
+  clearStrategyHooks();
 });
 
 // ---------------------------------------------------------------------------

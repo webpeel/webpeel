@@ -11,6 +11,7 @@
  */
 
 import type { FetchResult } from './fetcher.js';
+import type { DomainExtractResult } from './domain-extractors.js';
 
 /* ---------- public types ------------------------------------------------- */
 
@@ -88,6 +89,50 @@ export interface StrategyHooks {
    * Only called when `shouldRace()` returns true.  Default: 2000.
    */
   getRaceTimeoutMs?(): number;
+
+  /* ---- domain extraction ------------------------------------------------- */
+
+  /**
+   * Premium domain extraction hook — 55+ domain extractors.
+   * Return null to fall back to basic/no extraction.
+   */
+  extractDomainData?(html: string, url: string): Promise<DomainExtractResult | null>;
+
+  /**
+   * Returns a function that checks if a URL has a known domain extractor.
+   * Premium knows which domains have extractors; basic returns null for all.
+   */
+  getDomainExtractor?(url: string): ((html: string, url: string) => Promise<DomainExtractResult | null>) | null;
+
+  /* ---- SPA detection ----------------------------------------------------- */
+
+  /**
+   * Premium SPA domain list — knows which sites require browser rendering.
+   * Basic: returns empty set (no SPA auto-detection).
+   */
+  getSPADomains?(): Set<string>;
+
+  /**
+   * Premium SPA URL patterns — matches specific paths needing render.
+   * Basic: returns empty array.
+   */
+  getSPAPatterns?(): RegExp[];
+
+  /* ---- challenge solving ------------------------------------------------- */
+
+  /**
+   * Premium CAPTCHA/challenge solving hook.
+   * Return null to fall back to default challenge handling.
+   */
+  solveChallenge?(page: any, url: string): Promise<{ solved: boolean; html?: string } | null>;
+
+  /* ---- content stability ------------------------------------------------- */
+
+  /**
+   * Premium wait-for-stable content logic — smarter than waitForLoadState.
+   * Return null/undefined to fall back to default wait logic.
+   */
+  waitForContentStable?(page: any, options?: any): Promise<void>;
 }
 
 /* ---------- singleton registry ------------------------------------------- */
@@ -114,4 +159,52 @@ export function clearStrategyHooks(): void {
  */
 export function getStrategyHooks(): Readonly<StrategyHooks> {
   return registeredHooks;
+}
+
+/**
+ * Get the premium domain extraction hook, if registered.
+ * Returns undefined when no premium hooks are active (basic/npm mode).
+ */
+export function getDomainExtractHook(): StrategyHooks['extractDomainData'] {
+  return registeredHooks.extractDomainData;
+}
+
+/**
+ * Get the premium domain extractor lookup hook, if registered.
+ * Returns undefined when no premium hooks are active (basic/npm mode).
+ */
+export function getDomainExtractorHook(): StrategyHooks['getDomainExtractor'] {
+  return registeredHooks.getDomainExtractor;
+}
+
+/**
+ * Get the premium SPA domains hook, if registered.
+ * Returns undefined when no premium hooks are active (basic/npm mode).
+ */
+export function getSPADomainsHook(): StrategyHooks['getSPADomains'] {
+  return registeredHooks.getSPADomains;
+}
+
+/**
+ * Get the premium SPA patterns hook, if registered.
+ * Returns undefined when no premium hooks are active (basic/npm mode).
+ */
+export function getSPAPatternsHook(): StrategyHooks['getSPAPatterns'] {
+  return registeredHooks.getSPAPatterns;
+}
+
+/**
+ * Get the premium challenge solver hook, if registered.
+ * Returns undefined when no premium hooks are active (basic/npm mode).
+ */
+export function getChallengeHook(): StrategyHooks['solveChallenge'] {
+  return registeredHooks.solveChallenge;
+}
+
+/**
+ * Get the premium content stability hook, if registered.
+ * Returns undefined when no premium hooks are active (basic/npm mode).
+ */
+export function getStabilityHook(): StrategyHooks['waitForContentStable'] {
+  return registeredHooks.waitForContentStable;
 }

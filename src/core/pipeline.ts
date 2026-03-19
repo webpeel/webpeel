@@ -26,7 +26,30 @@ import { autoScroll as runAutoScroll, type AutoScrollOptions } from './actions.j
 import { extractStructured } from './extract.js';
 import { isPdfContentType, isDocxContentType, extractDocumentToFormat } from './documents.js';
 import { parseYouTubeUrl, getYouTubeTranscript } from './youtube.js';
-import { extractDomainData, getDomainExtractor, type DomainExtractResult } from './domain-extractors.js';
+import { type DomainExtractResult } from './domain-extractors.js';
+import { extractDomainDataBasic, getDomainExtractorBasic } from './domain-extractors-basic.js';
+import { getDomainExtractHook, getDomainExtractorHook, getSPADomainsHook, getSPAPatternsHook } from './strategy-hooks.js';
+
+// Lazy-loaded full extractors — available in repo/server, absent in npm package.
+// The dynamic import avoids hard failures when domain-extractors.js is excluded from npm.
+let _fullExtractorsLoaded = false;
+let _fullExtractDomainData: ((html: string, url: string) => Promise<DomainExtractResult | null>) | null = null;
+let _fullGetDomainExtractor: ((url: string) => any) | null = null;
+
+async function loadFullExtractors(): Promise<void> {
+  if (_fullExtractorsLoaded) return;
+  _fullExtractorsLoaded = true;
+  try {
+    const mod = await import('./domain-extractors.js');
+    _fullExtractDomainData = mod.extractDomainData;
+    _fullGetDomainExtractor = mod.getDomainExtractor;
+  } catch {
+    // Not available (npm package) — basic stubs will be used
+  }
+}
+
+// Eagerly start loading (non-blocking)
+loadFullExtractors();
 import { extractReadableContent, type ReadabilityResult } from './readability.js';
 import { quickAnswer as runQuickAnswer, type QuickAnswerResult } from './quick-answer.js';
 import { Timer } from './timing.js';
@@ -43,6 +66,37 @@ import { createLogger } from './logger.js';
 import type { SafeBrowsingResult } from './safe-browsing.js';
 
 const log = createLogger('pipeline');
+
+// ---------------------------------------------------------------------------
+// Hook-aware wrappers — route through premium hooks, fall back to basic stubs
+// ---------------------------------------------------------------------------
+
+/**
+ * Check if a URL has a domain extractor.
+ * Priority: premium hook → full extractors (repo/server) → basic stub.
+ */
+function hasDomainExtractor(url: string): boolean {
+  const hookFn = getDomainExtractorHook();
+  if (hookFn) return hookFn(url) !== null;
+  // Full extractors available (repo/server build)?
+  if (_fullGetDomainExtractor) return _fullGetDomainExtractor(url) !== null;
+  // npm package fallback — basic stubs
+  return getDomainExtractorBasic(url) !== null;
+}
+
+/**
+ * Run domain extraction on HTML/URL.
+ * Priority: premium hook → full extractors (repo/server) → basic stub.
+ */
+async function runDomainExtract(html: string, url: string): Promise<DomainExtractResult | null> {
+  const hookFn = getDomainExtractHook();
+  if (hookFn) return hookFn(html, url);
+  // Full extractors available (repo/server build)?
+  await loadFullExtractors(); // Ensure loaded
+  if (_fullExtractDomainData) return _fullExtractDomainData(html, url);
+  // npm package fallback — basic stubs
+  return extractDomainDataBasic(html, url);
+}
 
 /** Mutable context threaded through pipeline stages */
 export interface PipelineContext {
@@ -301,28 +355,18 @@ export function normalizeOptions(ctx: PipelineContext): void {
   }
 
   // Auto-detect SPAs that require browser rendering (no --render flag needed)
+  // Premium hook provides full SPA domain list; basic has a small default set.
   if (!ctx.render) {
-    const SPA_DOMAINS = new Set([
-      'www.google.com',       // Google Flights, Maps, Shopping etc.
-      'flights.google.com',
-      'www.airbnb.com',
-      'www.booking.com',
-      'www.expedia.com',
-      'www.kayak.com',
-      'www.skyscanner.com',
-      'www.tripadvisor.com',
-      'www.indeed.com',
-      'www.glassdoor.com',
-      'www.zillow.com',       // already handled but backup
-      'app.webpeel.dev',      // our own dashboard is a SPA
-    ]);
+    const spaDomainsHook = getSPADomainsHook();
+    const spaPatternsHook = getSPAPatternsHook();
 
-    // More specific: some google.com paths need render, not all
-    const SPA_URL_PATTERNS = [
-      /google\.com\/travel/,
-      /google\.com\/maps/,
-      /google\.com\/shopping/,
-    ];
+    // Basic SPA defaults — minimal set for free tier
+    const DEFAULT_SPA_DOMAINS = new Set<string>([]);
+    const DEFAULT_SPA_PATTERNS: RegExp[] = [];
+
+    // Premium hook merges its full list; basic uses defaults
+    const SPA_DOMAINS = spaDomainsHook ? spaDomainsHook() : DEFAULT_SPA_DOMAINS;
+    const SPA_URL_PATTERNS = spaPatternsHook ? spaPatternsHook() : DEFAULT_SPA_PATTERNS;
 
     try {
       const hostname = new URL(ctx.url).hostname;
@@ -463,10 +507,10 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
 
   // Try API-based domain extraction first (Reddit, GitHub, HN use APIs, not HTML)
   // This avoids expensive browser fetches that often get blocked
-  if (getDomainExtractor(ctx.url)) {
+  if (hasDomainExtractor(ctx.url)) {
     try {
       ctx.timer.mark('domainApiFirst');
-      const ddResult = await extractDomainData('', ctx.url);
+      const ddResult = await runDomainExtract('', ctx.url);
       ctx.timer.end('domainApiFirst');
       if (ddResult && ddResult.cleanContent.length > 50) {
         ctx.domainData = ddResult;
@@ -542,9 +586,9 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
     });
   } catch (fetchError) {
     // If fetch failed but we have a domain extractor, try it as fallback
-    if (getDomainExtractor(ctx.url)) {
+    if (hasDomainExtractor(ctx.url)) {
       try {
-        const ddResult = await extractDomainData('', ctx.url);
+        const ddResult = await runDomainExtract('', ctx.url);
         if (ddResult && ddResult.cleanContent.length > 50) {
           ctx.timer.end('fetch');
           ctx.domainData = ddResult;
@@ -1219,14 +1263,14 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
 
   // Domain-aware structured extraction (Twitter, Reddit, GitHub, HN)
   // Fires when URL matches a known domain. Replaces content with clean markdown.
-  if (getDomainExtractor(fetchResult.url) && !ctx.domainApiHandled) {
+  if (hasDomainExtractor(fetchResult.url) && !ctx.domainApiHandled) {
     try {
       ctx.timer.mark('domainExtract');
       // Try raw HTML first, then fall back to readability-processed content
       // (some SPAs like Google Flights have data only after readability processing)
-      let ddResult = await extractDomainData(fetchResult.html, fetchResult.url);
+      let ddResult = await runDomainExtract(fetchResult.html, fetchResult.url);
       if (!ddResult && ctx.content) {
-        ddResult = await extractDomainData(ctx.content, fetchResult.url);
+        ddResult = await runDomainExtract(ctx.content, fetchResult.url);
       }
       ctx.timer.end('domainExtract');
       if (ddResult) {

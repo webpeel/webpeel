@@ -3,6 +3,9 @@
 dist/server/
 dist/tests/
 
+# Premium proprietary code — server-only, not for npm
+dist/server/premium/
+
 # Internal docs
 .internal/
 

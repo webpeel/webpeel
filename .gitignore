@@ -71,3 +71,12 @@ yarn-error.log*
 
 # Render env var backups (contain secrets)
 render-backups/
+
+# ── Premium/proprietary code — NOT tracked in git ──────────────────────
+# These files exist locally for development but are never pushed to GitHub.
+# The compiled JS goes to npm via the build process.
+# Server deployments get these files via Docker build context (not git).
+src/core/domain-extractors.ts
+src/core/challenge-solver.ts
+src/core/stealth-patches.ts
+src/server/premium/
