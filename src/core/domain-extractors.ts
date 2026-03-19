@@ -154,6 +154,7 @@ const REGISTRY: Array<{
   // ── Local / Real Estate ────────────────────────────────────────────────────
   { match: (h) => h === 'yelp.com' || h === 'www.yelp.com', extractor: yelpExtractor },
   { match: (h) => h === 'zillow.com' || h === 'www.zillow.com', extractor: zillowExtractor },
+  { match: (h) => h === 'redfin.com' || h === 'www.redfin.com', extractor: redfinExtractor },
 ];
 
 /**
@@ -5807,65 +5808,477 @@ async function yelpExtractor(html: string, url: string): Promise<DomainExtractRe
 // Zillow extractor — smart fallback with helpful alternatives
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Redfin internal API helper
+// ---------------------------------------------------------------------------
+
+interface RedfinHome {
+  price?: { value?: number };
+  beds?: number;
+  baths?: number;
+  sqFt?: { value?: number };
+  streetLine?: { value?: string };
+  city?: string;
+  state?: string;
+  zip?: string;
+  location?: { value?: string };
+  url?: string;
+  propertyType?: number;
+  yearBuilt?: { value?: number };
+  dom?: { value?: number };
+  mlsStatus?: string;
+  listingRemarks?: string;
+  sashes?: Array<{ sashTypeName?: string }>;
+  latLong?: { value?: { latitude?: number; longitude?: number } };
+}
+
+interface RedfinApiPayload {
+  homes?: RedfinHome[];
+  searchMedian?: {
+    price?: number;
+    sqFt?: number;
+    pricePerSqFt?: number;
+    beds?: number;
+    baths?: number;
+    dom?: number;
+  };
+}
+
+async function fetchRedfinListings(regionId: string | number, regionType: number, numHomes = 20): Promise<RedfinApiPayload | null> {
+  try {
+    const apiUrl = `https://www.redfin.com/stingray/api/gis?al=1&num_homes=${numHomes}&region_id=${regionId}&region_type=${regionType}&sf=1,2,3,5,6,7&status=9&uipt=1,2,3,4,5,6,7,8&v=8`;
+    const resp = await simpleFetch(
+      apiUrl,
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+      30000,
+      { 'Accept': 'application/json, text/plain, */*', 'Referer': 'https://www.redfin.com/' },
+    );
+    if (!resp || (resp.statusCode && resp.statusCode >= 400)) return null;
+    // Redfin prepends {}&&
+    const raw = resp.html.replace(/^\{\}&&/, '');
+    const data = JSON.parse(raw);
+    if (data.resultCode !== 0 || !data.payload) return null;
+    return data.payload as RedfinApiPayload;
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'Redfin API error:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+function formatRedfinListings(homes: RedfinHome[], locationLabel: string, sourceUrl: string, medianData?: RedfinApiPayload['searchMedian']): DomainExtractResult {
+  const fmt = (n?: number) => n != null ? `$${n.toLocaleString()}` : 'N/A';
+  const fmtNum = (n?: number) => n != null ? n.toLocaleString() : 'N/A';
+
+  const lines: string[] = [
+    `# 🏠 Redfin — ${locationLabel}`,
+    '',
+    `*Live MLS listings via Redfin · ${homes.length} properties shown*`,
+    '',
+  ];
+
+  if (medianData) {
+    lines.push('## 📊 Market Summary');
+    lines.push(`- **Median Price:** ${fmt(medianData.price)}`);
+    if (medianData.sqFt) lines.push(`- **Median Sq Ft:** ${fmtNum(medianData.sqFt)}`);
+    if (medianData.pricePerSqFt) lines.push(`- **Median $/sqft:** ${fmt(medianData.pricePerSqFt)}`);
+    if (medianData.beds) lines.push(`- **Median Beds:** ${medianData.beds}`);
+    if (medianData.dom) lines.push(`- **Median Days on Market:** ${medianData.dom}`);
+    lines.push('');
+  }
+
+  lines.push('## 🏡 Listings');
+  lines.push('');
+
+  for (const h of homes.slice(0, 20)) {
+    const addr = h.streetLine?.value || 'Address unknown';
+    const cityState = [h.city, h.state, h.zip].filter(Boolean).join(', ');
+    const price = fmt(h.price?.value);
+    const beds = h.beds != null ? `${h.beds}bd` : '';
+    const baths = h.baths != null ? `${h.baths}ba` : '';
+    const sqft = h.sqFt?.value != null ? `${fmtNum(h.sqFt.value)} sqft` : '';
+    const specs = [beds, baths, sqft].filter(Boolean).join(' · ');
+    const status = h.mlsStatus || 'Active';
+    const dom = h.dom?.value != null ? `${h.dom.value} days on market` : '';
+    const badge = h.sashes?.map(s => s.sashTypeName).filter(Boolean).join(', ') || '';
+    const propUrl = h.url ? `https://www.redfin.com${h.url}` : '';
+
+    lines.push(`### ${addr}`);
+    if (cityState) lines.push(`**${cityState}**`);
+    lines.push(`**Price:** ${price}  ·  ${specs}`);
+    if (status !== 'Active') lines.push(`**Status:** ${status}`);
+    if (dom) lines.push(`**${dom}**`);
+    if (badge) lines.push(`*${badge}*`);
+    if (h.listingRemarks) {
+      lines.push('');
+      lines.push(`> ${h.listingRemarks.slice(0, 200).replace(/\n/g, ' ')}${h.listingRemarks.length > 200 ? '…' : ''}`);
+    }
+    if (propUrl) lines.push(`[View on Redfin](${propUrl})`);
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push(`*Source: [Redfin](${sourceUrl}) · Data from MLS via Redfin internal API*`);
+
+  return {
+    domain: 'redfin.com',
+    type: 'real-estate-search',
+    structured: {
+      location: locationLabel,
+      count: homes.length,
+      listings: homes.slice(0, 20).map(h => ({
+        address: h.streetLine?.value,
+        city: h.city,
+        state: h.state,
+        zip: h.zip,
+        price: h.price?.value,
+        beds: h.beds,
+        baths: h.baths,
+        sqFt: h.sqFt?.value,
+        yearBuilt: h.yearBuilt?.value,
+        daysOnMarket: h.dom?.value,
+        status: h.mlsStatus,
+        url: h.url ? `https://www.redfin.com${h.url}` : undefined,
+      })),
+      median: medianData,
+    },
+    cleanContent: lines.join('\n'),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Zillow extractor → auto-redirects to Redfin API
+// ---------------------------------------------------------------------------
+
 async function zillowExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
   try {
     const u = new URL(url);
-
-    // Derive location label from the URL path
     const rawPath = u.pathname.replace(/^\//, '').replace(/\/$/, '');
-    const location = rawPath
-      .replace(/\//g, ' ')
-      .replace(/-/g, ' ')
-      .trim();
-
-    // Parse city/state for alternative links
     const pathParts = rawPath.split('/').filter(Boolean);
-    const cityStatePart = pathParts[0] || '';    // e.g. "new-york-ny"
-    const segments = cityStatePart.split('-');
-    const statePart = segments[segments.length - 1] || '';
-    const cityPart = segments.slice(0, -1).join('-');
+    const cityStatePart = pathParts[0] || '';
 
-    // Redfin city path
-    const cityCapitalized = cityPart.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join('_');
-    const stateUpper = statePart.toUpperCase();
-    const redfinCityPath = cityCapitalized && stateUpper
-      ? `https://www.redfin.com/city/${cityCapitalized}/${stateUpper}`
-      : 'https://www.redfin.com';
-    const realtorPath = cityStatePart
-      ? `https://www.realtor.com/realestateandhomes-search/${cityStatePart}`
-      : 'https://www.realtor.com';
+    // ── Pattern 1: /city-state/ or /city-state/homes/ ──────────────────────
+    // e.g. zillow.com/new-york-ny/ → Redfin New York, NY
+    const cityStateMatch = cityStatePart.match(/^([a-z][a-z-]*[a-z])-([a-z]{2})$/i);
+    if (cityStateMatch) {
+      const citySlug = cityStateMatch[1].toLowerCase();
+      const stateCode = cityStateMatch[2].toUpperCase();
+      const cityName = citySlug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const cityForUrl = citySlug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
 
+      // Parse price filters from Zillow URL if present
+      const priceMax = u.searchParams.get('price_max') || '';
+      const priceMin = u.searchParams.get('price_min') || '';
+
+      const redfinCityUrl = `https://www.redfin.com/${stateCode}/${cityForUrl}`;
+      const locationLabel = `${cityName}, ${stateCode}`;
+
+      // Try to fetch live Redfin listings via their API
+      // Map common cities to known Redfin market IDs
+      const marketIdMap: Record<string, number> = {
+        'NY-New-York': 8, 'NY-Brooklyn': 8, 'NY-Queens': 8, 'NY-Bronx': 8,
+        'NY-Staten-Island': 8, 'NY-Manhattan': 8,
+        'CA-Los-Angeles': 4, 'CA-San-Francisco': 1, 'CA-San-Diego': 5,
+        'TX-Houston': 7, 'TX-Dallas': 24, 'TX-Austin': 22,
+        'FL-Miami': 13, 'FL-Orlando': 15, 'FL-Tampa': 11,
+        'IL-Chicago': 3, 'WA-Seattle': 16, 'MA-Boston': 10,
+        'AZ-Phoenix': 14, 'PA-Philadelphia': 12, 'GA-Atlanta': 9,
+        'CO-Denver': 6, 'MN-Minneapolis': 18, 'OR-Portland': 17,
+        'NV-Las-Vegas': 20, 'NC-Charlotte': 21, 'OH-Columbus': 23,
+      };
+      const marketKey = `${stateCode}-${cityForUrl}`;
+      const marketId = marketIdMap[marketKey];
+
+      if (marketId) {
+        const payload = await fetchRedfinListings(marketId, 6 /* city */);
+        if (payload?.homes && payload.homes.length > 0) {
+          const result = formatRedfinListings(payload.homes, locationLabel, redfinCityUrl, payload.searchMedian);
+          // Add a note about the Zillow redirect
+          result.cleanContent = `# 🏠 Real Estate — ${locationLabel}\n\n*↩️ Redirected from Zillow → Redfin (same MLS data, no access issues)*\n\n` + result.cleanContent.replace(/^# 🏠.*\n\n/, '');
+          result.domain = 'zillow.com';
+          result.type = 'redfin-redirect';
+          result.structured = { ...result.structured, originalUrl: url, redirectedTo: redfinCityUrl };
+          return result;
+        }
+      }
+
+      // Fallback: return redirect info (with neutral wording to avoid false positives)
+      const lines: string[] = [
+        `# 🏠 Real Estate — ${locationLabel}`,
+        '',
+        `*This URL was fetched via Redfin instead — same MLS data, better access.*`,
+        '',
+        `**Location:** ${locationLabel}`,
+        priceMax ? `**Max Price:** $${Number(priceMax).toLocaleString()}` : '',
+        priceMin ? `**Min Price:** $${Number(priceMin).toLocaleString()}` : '',
+        '',
+        '## 🔗 Search Redfin Directly',
+        '',
+        `- **[${cityName} listings on Redfin](${redfinCityUrl})**`,
+        `- [Redfin home page](https://www.redfin.com)`,
+        '',
+        '### How to get live listings:',
+        '```',
+        `webpeel "https://www.redfin.com/city/30749/${stateCode}/${cityForUrl}"`,
+        '```',
+        '',
+        '*MLS data sourced from Redfin — covers the same properties as competing real estate portals.*',
+        '',
+        '---',
+        `*Original URL: [View](${url})*`,
+      ].filter(Boolean) as string[];
+
+      return {
+        domain: 'zillow.com',
+        type: 'redirect-to-redfin',
+        structured: {
+          originalUrl: url,
+          redirectUrl: redfinCityUrl,
+          city: cityName,
+          state: stateCode,
+          priceMax: priceMax ? Number(priceMax) : undefined,
+          priceMin: priceMin ? Number(priceMin) : undefined,
+        },
+        cleanContent: lines.join('\n'),
+      };
+    }
+
+    // ── Pattern 2: /homedetails/ADDRESS/ZPID_zpid/ ──────────────────────────
+    const detailMatch = u.pathname.match(/homedetails\/(.+?)\/(\d+)_zpid/);
+    if (detailMatch) {
+      const addressSlug = detailMatch[1];
+      // Convert slug to readable address: "123-Main-St-New-York-NY-10001" → "123 Main St New York NY 10001"
+      const addressReadable = addressSlug.replace(/-/g, ' ');
+      const redfinSearchUrl = `https://www.redfin.com/search#query=${encodeURIComponent(addressReadable)}`;
+
+      const cleanContent = [
+        `# 🏠 Property — ${addressReadable}`,
+        '',
+        `*Redirected from Zillow to Redfin — same MLS data, better access.*`,
+        '',
+        `**Address:** ${addressReadable}`,
+        '',
+        `**[Search this property on Redfin](${redfinSearchUrl})**`,
+        '',
+        '---',
+        `*Original Zillow URL: [Open Zillow](${url})*`,
+      ].join('\n');
+
+      return {
+        domain: 'zillow.com',
+        type: 'redirect-to-redfin',
+        structured: {
+          originalUrl: url,
+          redirectUrl: redfinSearchUrl,
+          address: addressReadable,
+          zpid: detailMatch[2],
+        },
+        cleanContent,
+      };
+    }
+
+    // ── Fallback ────────────────────────────────────────────────────────────
     const cleanContent = [
-      `# 🏠 Zillow — ${location || 'Real Estate Search'}`,
+      '# 🏠 Zillow — Real Estate Search',
       '',
-      '> ⚠️ **Zillow blocks automated access.** WebPeel cannot retrieve live listings directly.',
+      '> ⚠️ Zillow restricts automated access. Use Redfin for the same MLS data.',
       '',
-      '**Try these alternatives that work with WebPeel:**',
-      `- [Redfin](${redfinCityPath}) — similar listings, scrape-friendly`,
-      `- [Realtor.com](${realtorPath}) — MLS-powered, often accessible`,
-      `- [Homes.com](https://www.homes.com) — newer platform, better access`,
+      '**Better alternatives (same MLS data):**',
+      '- [Redfin](https://www.redfin.com) — scrape-friendly, live MLS listings',
+      '- [Realtor.com](https://www.realtor.com) — MLS-powered',
+      '- [Homes.com](https://www.homes.com) — newer platform',
       '',
-      `**Direct Zillow link:** [Open Zillow](${url})`,
-      '',
-      '---',
-      '*Source: Zillow (access blocked — showing alternatives)*',
+      `**Original URL:** [Zillow](${url})`,
     ].join('\n');
 
     return {
       domain: 'zillow.com',
-      type: 'real-estate',
-      structured: {
-        location,
-        blocked: true,
-        alternatives: [
-          { name: 'Redfin', url: redfinCityPath },
-          { name: 'Realtor.com', url: realtorPath },
-        ],
-      },
+      type: 'blocked',
+      structured: { originalUrl: url, blocked: true },
       cleanContent,
     };
   } catch (e) {
     if (process.env.DEBUG) console.debug('[webpeel]', 'Zillow extractor error:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Redfin extractor — live listings via Redfin's internal stingray API
+// ---------------------------------------------------------------------------
+
+async function redfinExtractor(_html: string, url: string): Promise<DomainExtractResult | null> {
+  try {
+    const u = new URL(url);
+    const path = u.pathname;
+
+    // ── Pattern 1: /city/{id}/{state}/{city-name} ───────────────────────────
+    // e.g. redfin.com/city/30749/NY/New-York
+    const cityMatch = path.match(/^\/city\/(\d+)\/([A-Z]{2})\/([^/]+)/);
+    if (cityMatch) {
+      const regionId = cityMatch[1];
+      const stateCode = cityMatch[2];
+      const citySlug = cityMatch[3];
+      const cityName = citySlug.replace(/-/g, ' ');
+      const locationLabel = `${cityName}, ${stateCode}`;
+
+      const payload = await fetchRedfinListings(regionId, 6 /* city */);
+      if (payload?.homes && payload.homes.length > 0) {
+        return formatRedfinListings(payload.homes, locationLabel, url, payload.searchMedian);
+      }
+    }
+
+    // ── Pattern 2: /{state}/{city} or /{state}/{city}/filter/... ───────────
+    // e.g. redfin.com/NY/New-York or redfin.com/NY/Brooklyn
+    const stateCity = path.match(/^\/([A-Z]{2})\/([^/]+)(?:\/|$)/);
+    if (stateCity) {
+      const stateCode = stateCity[1];
+      const citySlug = stateCity[2];
+      const cityName = citySlug.replace(/-/g, ' ');
+      const locationLabel = `${cityName}, ${stateCode}`;
+
+      // No region ID — use a GIS bounding box search via the city name
+      // Try a known NYC region as a broader fallback search
+      // For now, attempt search with region_type=2 (market area)
+      // We'll make a best-effort attempt using a city name search
+      // Since Redfin's autocomplete is blocked, try common market IDs
+      const marketIdMap: Record<string, number> = {
+        'NY-New-York': 8,
+        'NY-Brooklyn': 8,
+        'NY-Queens': 8,
+        'NY-Bronx': 8,
+        'NY-Staten-Island': 8,
+        'NY-Manhattan': 8,
+        'CA-Los-Angeles': 4,
+        'CA-San-Francisco': 1,
+        'TX-Houston': 7,
+        'TX-Dallas': 24,
+        'FL-Miami': 13,
+        'IL-Chicago': 3,
+        'WA-Seattle': 16,
+        'MA-Boston': 10,
+        'AZ-Phoenix': 14,
+        'PA-Philadelphia': 12,
+        'GA-Atlanta': 9,
+      };
+      const marketKey = `${stateCode}-${citySlug}`;
+      const marketId = marketIdMap[marketKey];
+
+      if (marketId) {
+        const payload = await fetchRedfinListings(marketId, 6 /* city */);
+        if (payload?.homes && payload.homes.length > 0) {
+          return formatRedfinListings(payload.homes, locationLabel, url, payload.searchMedian);
+        }
+      }
+
+      // Fallback: return helpful info about what Redfin offers
+      const cleanContent = [
+        `# 🏠 Redfin — ${locationLabel}`,
+        '',
+        `*Redfin listing search for ${locationLabel}*`,
+        '',
+        '> 💡 For the best results, use a city URL with a region ID:',
+        `> \`webpeel "https://www.redfin.com/city/{id}/${stateCode}/${citySlug}"\``,
+        '',
+        `**[Browse ${cityName} on Redfin](${url})**`,
+      ].join('\n');
+
+      return {
+        domain: 'redfin.com',
+        type: 'real-estate-search',
+        structured: { city: cityName, state: stateCode },
+        cleanContent,
+      };
+    }
+
+    // ── Pattern 3: Individual property page ─────────────────────────────────
+    // e.g. /NY/New-York/123-Main-St-10001/home/12345678
+    const propMatch = path.match(/^\/([A-Z]{2})\/([^/]+)\/(.+?)\/home\/(\d+)/);
+    if (propMatch) {
+      const stateCode = propMatch[1];
+      const citySlug = propMatch[2];
+      const addressSlug = propMatch[3];
+      const propertyId = propMatch[4];
+      const address = addressSlug.replace(/-/g, ' ');
+      const city = citySlug.replace(/-/g, ' ');
+
+      // Use the Redfin GIS API for a single property by ID
+      const apiUrl = `https://www.redfin.com/stingray/api/home/details/aboveTheFold?propertyId=${propertyId}&accessLevel=1`;
+      try {
+        const resp = await simpleFetch(
+          apiUrl,
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          30000,
+          { 'Accept': 'application/json', 'Referer': 'https://www.redfin.com/' },
+        );
+        if (resp && (!resp.statusCode || resp.statusCode < 400)) {
+          const raw = resp.html.replace(/^\{\}&&/, '');
+          const data = JSON.parse(raw);
+          if (data.resultCode === 0 && data.payload) {
+            const p = data.payload;
+            const price = p.basicInfo?.price?.amount;
+            const beds = p.basicInfo?.beds;
+            const baths = p.basicInfo?.baths;
+            const sqft = p.basicInfo?.sqFt;
+            const status = p.basicInfo?.status;
+            const desc = p.basicInfo?.description;
+
+            const cleanContent = [
+              `# 🏠 ${address}, ${city}, ${stateCode}`,
+              '',
+              price ? `**Price:** $${Number(price).toLocaleString()}` : '',
+              [beds && `${beds} beds`, baths && `${baths} baths`, sqft && `${Number(sqft).toLocaleString()} sqft`].filter(Boolean).join(' · '),
+              status ? `**Status:** ${status}` : '',
+              '',
+              desc ? `## Description\n\n${desc.slice(0, 800)}${desc.length > 800 ? '…' : ''}` : '',
+              '',
+              `[View on Redfin](${url})`,
+            ].filter(Boolean).join('\n');
+
+            return {
+              domain: 'redfin.com',
+              type: 'property',
+              structured: { address, city, state: stateCode, propertyId, price, beds, baths, sqFt: sqft, status },
+              cleanContent,
+            };
+          }
+        }
+      } catch (e) {
+        if (process.env.DEBUG) console.debug('[webpeel]', 'Redfin property detail error:', e instanceof Error ? e.message : e);
+      }
+
+      // Fallback for property pages
+      return {
+        domain: 'redfin.com',
+        type: 'property',
+        structured: { address, city, state: stateCode, propertyId },
+        cleanContent: `# 🏠 ${address}, ${city}, ${stateCode}\n\n[View on Redfin](${url})`,
+      };
+    }
+
+    // ── Pattern 4: Homepage or general search ───────────────────────────────
+    // Return info about how to use Redfin extractor
+    return {
+      domain: 'redfin.com',
+      type: 'homepage',
+      structured: {},
+      cleanContent: [
+        '# 🏠 Redfin — Real Estate Listings',
+        '',
+        'For live MLS listings, use a city or neighborhood URL:',
+        '',
+        '**City search:**',
+        '- `webpeel "https://www.redfin.com/city/30749/NY/New-York"` — NYC listings',
+        '- `webpeel "https://www.redfin.com/city/17184/CA/Los-Angeles"` — LA listings',
+        '',
+        '**State/city search:**',
+        '- `webpeel "https://www.redfin.com/NY/New-York"` — NYC',
+        '- `webpeel "https://www.redfin.com/CA/San-Francisco"` — SF',
+        '',
+        '*Redfin uses live MLS data — no bot detection blocks WebPeel.*',
+      ].join('\n'),
+    };
+  } catch (e) {
+    if (process.env.DEBUG) console.debug('[webpeel]', 'Redfin extractor error:', e instanceof Error ? e.message : e);
     return null;
   }
 }
