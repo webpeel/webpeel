@@ -165,35 +165,45 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
   const t0 = Date.now();
   const gfUrl = `https://www.google.com/travel/flights?q=Flights+${encodeURIComponent(intent.query)}+one+way`;
 
+  // Try Google Flights first (likely skeleton but worth trying)
   try {
-    const result = await peel(gfUrl, { timeout: 20000 });
-    // If we got essentially nothing useful (SPA skeleton), fall back
+    const result = await peel(gfUrl, { timeout: 12000 });
     const contentLen = result.content?.trim().length ?? 0;
-    if (contentLen < 100) {
-      throw new Error('Google Flights returned empty/skeleton content');
+    const hasFlightData = contentLen > 500 && (result.domainData?.structured?.listings?.length > 0);
+    if (hasFlightData) {
+      return {
+        type: 'flights',
+        source: 'Google Flights',
+        sourceUrl: gfUrl,
+        content: result.content,
+        title: result.title,
+        domainData: result.domainData,
+        structured: result.domainData?.structured,
+        tokens: result.tokens,
+        fetchTimeMs: Date.now() - t0,
+      };
     }
-    return {
-      type: 'flights',
-      source: 'Google Flights',
-      sourceUrl: gfUrl,
-      content: result.content,
-      title: result.title,
-      domainData: result.domainData,
-      structured: result.domainData?.structured,
-      tokens: result.tokens,
-      fetchTimeMs: Date.now() - t0,
-      loadingMessage: 'Searching for flights...',
-    };
-  } catch (_err) {
-    // Graceful fallback to general search
-    console.warn(`Google Flights failed, falling back to general search: ${(_err as Error).message}`);
-    const fallback = await handleGeneralSearch(intent.query);
-    return {
-      ...fallback,
-      type: 'flights',
-      loadingMessage: 'Showing search results for flights',
-    };
-  }
+  } catch (_err) { /* fall through */ }
+
+  // Fast fallback: search flight booking sites via SearXNG
+  const { provider: searchProvider } = getBestSearchProvider();
+  const searchResults = await searchProvider.searchWeb(`${intent.query} site:google.com/flights OR site:kayak.com OR site:expedia.com OR site:skyscanner.com`, { count: 8 });
+  const links = searchResults.slice(0, 6);
+  const content = `# ✈️ Flights — ${intent.query}\n\n*Search across booking sites:*\n\n${links.map((r, i) =>
+    `${i + 1}. **[${r.title}](${r.url})**\n   ${r.snippet || ''}`
+  ).join('\n\n')}\n\n---\n[Search on Google Flights](${gfUrl}) · [Kayak](https://www.kayak.com/flights) · [Expedia](https://www.expedia.com/Flights)`;
+
+  return {
+    type: 'flights',
+    source: 'Flight Search',
+    sourceUrl: gfUrl,
+    content,
+    title: `Flights — ${intent.query}`,
+    structured: { listings: [] },
+    results: links as any,
+    tokens: content.split(' ').length,
+    fetchTimeMs: Date.now() - t0,
+  };
 }
 
 async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResult> {
@@ -203,28 +213,39 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
   try {
     const result = await peel(ghUrl, { timeout: 20000 });
     const contentLen = result.content?.trim().length ?? 0;
-    if (contentLen < 100) {
-      throw new Error('Google Hotels returned empty/skeleton content');
+    const hasHotelData = contentLen > 500 && (result.domainData?.structured?.listings?.length > 0);
+    if (hasHotelData) {
+      return {
+        type: 'hotels',
+        source: 'Google Hotels',
+        sourceUrl: ghUrl,
+        content: result.content,
+        title: result.title,
+        domainData: result.domainData,
+        structured: result.domainData?.structured,
+        tokens: result.tokens,
+        fetchTimeMs: Date.now() - t0,
+      };
     }
-    return {
-      type: 'hotels',
-      source: 'Google Hotels',
-      sourceUrl: ghUrl,
-      content: result.content,
-      title: result.title,
-      domainData: result.domainData,
-      structured: result.domainData?.structured,
-      tokens: result.tokens,
-      fetchTimeMs: Date.now() - t0,
-      loadingMessage: 'Searching for hotels...',
-    };
+    throw new Error('Google Hotels returned skeleton content');
   } catch (_err) {
-    console.warn(`Google Hotels failed, falling back to general search: ${(_err as Error).message}`);
-    const fallback = await handleGeneralSearch(intent.query);
+    // Fast fallback via SearXNG
+    const { provider: searchProvider } = getBestSearchProvider();
+    const searchResults = await searchProvider.searchWeb(`${intent.query} site:booking.com OR site:hotels.com OR site:expedia.com OR site:airbnb.com`, { count: 8 });
+    const links = searchResults.slice(0, 6);
+    const content = `# 🏨 Hotels — ${intent.query}\n\n*Search across booking sites:*\n\n${links.map((r, i) =>
+      `${i + 1}. **[${r.title}](${r.url})**\n   ${r.snippet || ''}`
+    ).join('\n\n')}\n\n---\n[Booking.com](https://www.booking.com) · [Hotels.com](https://www.hotels.com) · [Expedia](https://www.expedia.com/Hotels)`;
     return {
-      ...fallback,
       type: 'hotels',
-      loadingMessage: 'Showing search results for hotels',
+      source: 'Hotel Search',
+      sourceUrl: ghUrl,
+      content,
+      title: `Hotels — ${intent.query}`,
+      structured: { listings: [] },
+      results: links as any,
+      tokens: content.split(' ').length,
+      fetchTimeMs: Date.now() - t0,
     };
   }
 }
@@ -300,31 +321,70 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
 
 async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchResult> {
   const t0 = Date.now();
-  // Build clean product keyword (strip noise)
+  // Build clean product keyword (strip noise words)
   const keyword = intent.query
     .replace(/\b(buy|shop|shopping|purchase|order|deal|discount|sale|price|cheap|cheapest|best price|under)\b/gi, '')
     .replace(/\$\d[\d,]*/g, '')
     .replace(/\s+/g, ' ')
     .trim() || intent.query;
 
-  const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(keyword)}`;
+  // Use SearXNG to search for products — it aggregates Google Shopping, Amazon, etc.
+  const { provider: searchProvider } = getBestSearchProvider();
+  const searchQuery = `${keyword} buy site:amazon.com OR site:bestbuy.com OR site:walmart.com OR site:target.com`;
+  const rawResults = await searchProvider.searchWeb(searchQuery, { count: 12 });
 
-  try {
-    const result = await peel(amazonUrl, { timeout: 20000 });
-    return {
-      type: 'products',
-      source: 'Amazon',
-      sourceUrl: amazonUrl,
-      content: result.content,
-      title: result.title,
-      domainData: result.domainData,
-      structured: result.domainData?.structured,
-      tokens: result.tokens,
-      fetchTimeMs: Date.now() - t0,
-    };
-  } catch (err) {
-    throw new Error(`Amazon search failed: ${(err as Error).message}`);
-  }
+  // Parse structured product listings from search results
+  const listings = rawResults
+    .filter(r => r.url && (
+      r.url.includes('amazon.com') ||
+      r.url.includes('bestbuy.com') ||
+      r.url.includes('walmart.com') ||
+      r.url.includes('target.com') ||
+      r.url.includes('zappos.com') ||
+      r.url.includes('rei.com')
+    ))
+    .map(r => {
+      // Extract price from snippet/title using regex
+      const priceMatch = (r.snippet || r.title || '').match(/\$[\d,]+(?:\.\d{2})?/);
+      const price = priceMatch ? priceMatch[0] : undefined;
+      // Extract rating from snippet
+      const ratingMatch = (r.snippet || '').match(/(\d+(?:\.\d)?)\s*(?:out of 5|stars?|★)/i);
+      const rating = ratingMatch ? parseFloat(ratingMatch[1]) : undefined;
+      // Extract review count
+      const reviewMatch = (r.snippet || '').match(/([\d,]+)\s*(?:ratings?|reviews?)/i);
+      const reviewCount = reviewMatch ? reviewMatch[1].replace(/,/g, '') : undefined;
+      // Determine store
+      const domain = new URL(r.url).hostname.replace('www.', '');
+      const store = domain.split('.')[0];
+      return {
+        title: r.title,
+        price,
+        rating,
+        reviewCount,
+        url: r.url,
+        snippet: r.snippet,
+        store,
+      };
+    })
+    .slice(0, 10);
+
+  const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(keyword)}`;
+  const content = listings.length > 0
+    ? `# 🛍️ Products — ${keyword}\n\n${listings.map((l, i) =>
+        `${i + 1}. **${l.title}** — ${l.price || 'see price'} [${l.store}](${l.url})\n   ${l.snippet || ''}`
+      ).join('\n\n')}`
+    : `# 🛍️ Products — ${keyword}\n\nNo structured listings found. Try a more specific query.`;
+
+  return {
+    type: 'products',
+    source: listings.length > 0 ? 'Shopping' : 'Web',
+    sourceUrl: amazonUrl,
+    content,
+    title: `${keyword} — Shopping`,
+    structured: { listings },
+    tokens: content.split(' ').length,
+    fetchTimeMs: Date.now() - t0,
+  };
 }
 
 async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
