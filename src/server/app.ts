@@ -21,6 +21,7 @@ import { createRateLimitMiddleware, RateLimiter } from './middleware/rate-limit.
 import { createHealthRouter } from './routes/health.js';
 import { createFetchRouter } from './routes/fetch.js';
 import { createSearchRouter } from './routes/search.js';
+import { createSmartSearchRouter } from './routes/smart-search.js';
 import { createUserRouter } from './routes/users.js';
 import { createStripeRouter, createBillingPortalRouter } from './routes/stripe.js';
 import { createOAuthRouter } from './routes/oauth.js';
@@ -345,6 +346,8 @@ export function createApp(config: ServerConfig = {}): Express {
   app.use('/v1/screenshot', requireScope('full', 'read'));
   app.use(createScreenshotRouter(authStore));
   app.use(createSearchRouter(authStore));
+  // /v1/search/smart — intent detection + travel/commerce routing (POST)
+  app.use(createSmartSearchRouter(authStore));
   // /v1/research — lightweight research (search → fetch → compile), BYOK LLM optional
   app.use('/v1/research', requireScope('full', 'read'));
   app.use(createResearchRouter());

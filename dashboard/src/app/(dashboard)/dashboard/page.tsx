@@ -24,12 +24,27 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.webpeel.dev';
 
 type DetectedMode = 'read' | 'search' | 'ask';
 type AppState = 'idle' | 'loading' | 'success' | 'error';
+type SmartResultType = 'cars' | 'flights' | 'hotels' | 'rental' | 'restaurants' | 'general';
 
 interface Source {
   url: string;
   title?: string;
   domain?: string;
   authority?: 'Official' | 'Verified' | 'General';
+}
+
+interface SmartResult {
+  type: SmartResultType;
+  source: string;
+  sourceUrl: string;
+  content: string;
+  title?: string;
+  domainData?: any;
+  structured?: any;
+  results?: any[];
+  tokens: number;
+  fetchTimeMs: number;
+  loadingMessage?: string;
 }
 
 interface ResultData {
@@ -48,6 +63,8 @@ interface ResultData {
   viewCount?: string;
   publishDate?: string;
   sources?: Source[];
+  // Smart search result
+  smartResult?: SmartResult;
 }
 
 interface SearchResult {
@@ -182,7 +199,8 @@ const EXAMPLE_PROMPTS = [
   { label: 'github.com/facebook/react', url: 'https://github.com/facebook/react', type: 'url' },
   { label: 'en.wikipedia.org/wiki/Mars', url: 'https://en.wikipedia.org/wiki/Mars', type: 'url' },
   { label: 'best AI coding assistants 2025', url: 'best AI coding assistants 2025', type: 'search' },
-  { label: 'youtube.com/watch?v=dQw4w9WgXcQ', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', type: 'url' },
+  { label: '🚗 used Tesla under $30000', url: 'used Tesla under $30000', type: 'search' },
+  { label: '🍕 best pizza in Manhattan', url: 'best pizza in Manhattan', type: 'search' },
 ];
 
 const EXAMPLE_URLS = EXAMPLE_PROMPTS;
@@ -197,7 +215,7 @@ const LOADING_STAGES = [
   { ms: 9000, text: 'Almost there…' },
 ];
 
-function LoadingSkeleton({ query }: { query: string }) {
+function LoadingSkeleton({ query, intentMessage }: { query: string; intentMessage?: string }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -209,6 +227,7 @@ function LoadingSkeleton({ query }: { query: string }) {
   const stage = [...LOADING_STAGES].reverse().find((s) => elapsed >= s.ms) ?? LOADING_STAGES[0];
   const isUrl = /^https?:\/\//i.test(query);
   const shortQuery = query.length > 50 ? query.slice(0, 50) + '…' : query;
+  const displayText = intentMessage || stage.text;
 
   return (
     <div className="w-full max-w-2xl mx-auto mt-6 animate-float-up">
@@ -219,7 +238,7 @@ function LoadingSkeleton({ query }: { query: string }) {
             <div className="w-2 h-2 rounded-full bg-[#5865F2] animate-pulse" />
           </div>
           <span className="text-sm text-zinc-400 truncate flex-1 min-w-0">
-            <span className="text-zinc-500 text-xs">{stage.text}</span>
+            <span className="text-zinc-500 text-xs">{displayText}</span>
             {' '}
             <span className="text-zinc-500 font-mono text-xs">{isUrl ? shortQuery : ''}</span>
           </span>
@@ -411,6 +430,198 @@ function SearchResults({ results, onReadUrl }: { results: SearchResult[]; onRead
   );
 }
 
+// ─── Smart Result Cards ────────────────────────────────────────────────────────
+
+const SMART_SOURCE_ICONS: Record<string, string> = {
+  cars: '🚗',
+  flights: '✈️',
+  hotels: '🏨',
+  rental: '🔑',
+  restaurants: '🍽️',
+  general: '🔍',
+};
+
+function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
+  const icon = SMART_SOURCE_ICONS[smartResult.type] || '🔍';
+
+  // Try to use structured data first, fall back to parsed domainData listings, then raw content
+  const listings: any[] = smartResult.structured?.listings
+    || smartResult.domainData?.structured?.listings
+    || smartResult.domainData?.listings
+    || smartResult.results
+    || [];
+
+  return (
+    <div className="space-y-3">
+      {/* Source attribution */}
+      <div className="flex items-center gap-2 text-xs text-zinc-500 pb-1">
+        <span>{icon}</span>
+        <span>Results from <a href={smartResult.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{smartResult.source}</a></span>
+        <span className="ml-auto text-zinc-600">{smartResult.fetchTimeMs}ms</span>
+      </div>
+
+      {/* If we have structured listings, render them as rich cards */}
+      {listings.length > 0 ? (
+        <div className="space-y-3">
+          {listings.slice(0, 10).map((item: any, i: number) => (
+            <SmartListingCard key={i} item={item} type={smartResult.type} />
+          ))}
+        </div>
+      ) : (
+        /* Fall back to markdown content */
+        <div className="prose prose-invert prose-sm max-w-none">
+          <ReactMarkdown components={markdownComponents}>
+            {smartResult.content || '*No results found. Try a different query.*'}
+          </ReactMarkdown>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) {
+  const url = item.url || item.link || item.detailUrl || '#';
+
+  if (type === 'cars') {
+    return (
+      <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1">
+              {item.title || item.name || item.year && `${item.year} ${item.make} ${item.model}` || 'Vehicle listing'}
+            </a>
+            <div className="flex flex-wrap gap-2 mt-1 text-xs text-zinc-400">
+              {item.price && <span className="text-emerald-400 font-medium">{typeof item.price === 'number' ? `$${item.price.toLocaleString()}` : item.price}</span>}
+              {item.mileage && <span>{typeof item.mileage === 'number' ? `${item.mileage.toLocaleString()} mi` : item.mileage}</span>}
+              {item.year && <span>{item.year}</span>}
+              {(item.make || item.model) && <span>{[item.make, item.model].filter(Boolean).join(' ')}</span>}
+            </div>
+            {item.dealer && <div className="text-xs text-zinc-500 mt-1">📍 {item.dealer}</div>}
+          </div>
+          {item.image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image} alt={item.title || 'Car'} className="w-20 h-14 object-cover rounded-lg shrink-0 bg-zinc-800" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'flights') {
+    return (
+      <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="text-center">
+              <div className="text-sm font-mono font-bold text-zinc-100">{item.departure || item.departureTime || '—'}</div>
+              <div className="text-xs text-zinc-500">{item.origin || item.from || ''}</div>
+            </div>
+            <div className="text-zinc-600 text-xs text-center">
+              <div>✈️</div>
+              <div>{item.duration || item.flightDuration || ''}</div>
+              {item.stops != null && <div>{item.stops === 0 ? 'Nonstop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}</div>}
+            </div>
+            <div className="text-center">
+              <div className="text-sm font-mono font-bold text-zinc-100">{item.arrival || item.arrivalTime || '—'}</div>
+              <div className="text-xs text-zinc-500">{item.destination || item.to || ''}</div>
+            </div>
+          </div>
+          <div className="text-right">
+            {item.price && <div className="text-emerald-400 font-bold text-sm">{typeof item.price === 'number' ? `$${item.price}` : item.price}</div>}
+            {item.airline && <div className="text-xs text-zinc-500">{item.airline}</div>}
+            {url !== '#' && (
+              <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#818CF8] hover:underline mt-1 block">Book →</a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'hotels') {
+    return (
+      <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1">
+              {item.name || item.title || 'Hotel'}
+            </a>
+            <div className="flex flex-wrap gap-2 mt-1 text-xs text-zinc-400">
+              {item.price && <span className="text-emerald-400 font-medium">{typeof item.price === 'number' ? `$${item.price}/night` : item.price}</span>}
+              {item.rating && <span>⭐ {item.rating}</span>}
+              {item.stars && <span>{'★'.repeat(Math.min(5, Math.round(item.stars)))}</span>}
+            </div>
+            {(item.address || item.location) && <div className="text-xs text-zinc-500 mt-1">📍 {item.address || item.location}</div>}
+          </div>
+          {item.image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image} alt={item.name || 'Hotel'} className="w-20 h-14 object-cover rounded-lg shrink-0 bg-zinc-800" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'rental') {
+    return (
+      <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-medium text-zinc-200">{item.carType || item.vehicleType || item.name || 'Rental car'}</div>
+            <div className="flex flex-wrap gap-2 mt-1 text-xs text-zinc-400">
+              {item.price && <span className="text-emerald-400 font-medium">{typeof item.price === 'number' ? `$${item.price}/day` : item.price}</span>}
+              {item.company && <span>{item.company}</span>}
+              {item.passengers && <span>{item.passengers} passengers</span>}
+            </div>
+          </div>
+          {url !== '#' && (
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#818CF8] hover:underline shrink-0">Book →</a>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'restaurants') {
+    return (
+      <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1">
+              {item.name || item.title || 'Restaurant'}
+            </a>
+            <div className="flex flex-wrap gap-2 mt-1 text-xs text-zinc-400">
+              {item.rating && <span>⭐ {item.rating}</span>}
+              {item.reviewCount && <span>({item.reviewCount} reviews)</span>}
+              {item.price && <span>{item.price}</span>}
+              {item.cuisine && <span>{item.cuisine}</span>}
+            </div>
+            {(item.address || item.location) && <div className="text-xs text-zinc-500 mt-1">📍 {item.address || item.location}</div>}
+          </div>
+          {item.image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image} alt={item.name || 'Restaurant'} className="w-16 h-16 object-cover rounded-lg shrink-0 bg-zinc-800" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // General / fallback
+  return (
+    <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1">
+        {item.title || item.name || url}
+      </a>
+      {item.snippet && <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{item.snippet}</p>}
+    </div>
+  );
+}
+
 // ─── Shared markdown components ───────────────────────────────────────────────
 
 const markdownComponents = {
@@ -551,12 +762,20 @@ function ResultCard({
 
   // Build title bar label
   const titleLabel = (() => {
+    if (detectedMode === 'search' && result.smartResult) {
+      return `${result.smartResult.source} — ${query}`;
+    }
     if (detectedMode === 'search') return query;
     if (detectedMode === 'ask' && result.title) return `${result.title} — Q&A`;
     return result.title || query;
   })();
 
-  const resultCount = result.results?.length;
+  const resultCount = result.smartResult
+    ? (result.smartResult.structured?.listings?.length
+      || result.smartResult.domainData?.structured?.listings?.length
+      || result.smartResult.domainData?.listings?.length
+      || result.smartResult.results?.length)
+    : result.results?.length;
 
   return (
     <div
@@ -626,8 +845,13 @@ function ResultCard({
 
         {/* Content */}
         <div className="p-3 sm:p-5 max-h-[60vh] overflow-y-auto">
-          {/* Search results */}
-          {detectedMode === 'search' && result.results && (
+          {/* Smart search results (cars, flights, hotels, rental, restaurants) */}
+          {detectedMode === 'search' && result.smartResult && (
+            <SmartResultCard smartResult={result.smartResult} />
+          )}
+
+          {/* General search results (classic format) */}
+          {detectedMode === 'search' && !result.smartResult && result.results && (
             result.results.length > 0 ? (
               <SearchResults results={result.results} onReadUrl={onReadUrl} />
             ) : (
@@ -788,6 +1012,7 @@ export default function ReadPage() {
   const [result, setResult] = useState<ResultData | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
+  const [loadingMessage, setLoadingMessage] = useState<string | undefined>(undefined);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const greeting = getGreeting();
@@ -813,48 +1038,75 @@ export default function ReadPage() {
     setSubmittedQuery(raw.trim());
     setResult(null);
     setErrorMsg('');
+    setLoadingMessage(undefined);
 
     try {
       let data: ResultData = { detectedMode: intent.mode };
       const headers: Record<string, string> = token
         ? { Authorization: `Bearer ${token}` }
         : {};
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      let searchRawResults: any[] = [];
 
       if (intent.mode === 'search') {
-        // ── Search mode — server-side enrichment for top 3 results ──────────
-        const res = await fetch(
-          `${API_URL}/v1/search?q=${encodeURIComponent(intent.question || raw)}&enrich=2`,
-          { headers }
-        );
+        // ── Smart Search — intent detection + travel/commerce routing ──────
+        // Set intent-aware loading message immediately
+        const intentHints: Record<string, string> = {
+          car: 'Searching cars on Cars.com…',
+          flight: 'Finding flights on Google Flights…',
+          hotel: 'Looking up hotels on Google Hotels…',
+          rent: 'Searching rental cars on Kayak…',
+          restaurant: 'Finding restaurants on Yelp…',
+          pizza: 'Finding restaurants on Yelp…',
+          food: 'Finding restaurants on Yelp…',
+        };
+        const q = (intent.question || raw).toLowerCase();
+        const hintKey = Object.keys(intentHints).find(k => q.includes(k));
+        if (hintKey) setLoadingMessage(intentHints[hintKey]);
+
+        const smartHeaders = { ...headers, 'Content-Type': 'application/json' };
+        const res = await fetch(`${API_URL}/v1/search/smart`, {
+          method: 'POST',
+          headers: smartHeaders,
+          body: JSON.stringify({ q: intent.question || raw }),
+        });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error?.message || json.message || json.error || 'Search failed');
-        const rawResults = json.results || json.data?.web || json.data?.results || (Array.isArray(json.data) ? json.data : []);
-        searchRawResults = rawResults;
 
-        const getDomain = (url: string) => {
-          try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
-        };
+        const smart: SmartResult = json.data;
+        const isGeneralSearch = smart.type === 'general';
 
-        data = {
-          detectedMode: 'search',
-          results: rawResults.map((r: any) => ({
-            title: r.title || r.name || 'Untitled',
-            url: r.url || r.link || '#',
-            snippet: r.snippet || r.description || r.body || '',
-            domain: getDomain(r.url || r.link || ''),
-            // Server-side enrichment: content already populated for top 3
-            content: r.content?.substring(0, 1500) || undefined,
-            wordCount: r.wordCount || (r.content ? r.content.trim().split(/\s+/).length : undefined),
-            method: r.method || undefined,
-            fetchTimeMs: r.fetchTimeMs || undefined,
-            loading: false,
-            rank: r.rank || undefined,
-            credibility: r.credibility || undefined,
-          })),
-          fetchTimeMs: json.fetchTimeMs,
-        };
+        if (isGeneralSearch && smart.results) {
+          // General fallback: render as classic search results
+          const getDomain = (url: string) => {
+            try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+          };
+          data = {
+            detectedMode: 'search',
+            results: smart.results.map((r: any) => ({
+              title: r.title || r.name || 'Untitled',
+              url: r.url || r.link || '#',
+              snippet: r.snippet || r.description || r.body || '',
+              domain: getDomain(r.url || r.link || ''),
+              content: r.content?.substring(0, 1500) || undefined,
+              wordCount: r.wordCount || (r.content ? r.content.trim().split(/\s+/).length : undefined),
+              method: r.method || undefined,
+              fetchTimeMs: r.fetchTimeMs || undefined,
+              loading: false,
+              rank: r.rank || undefined,
+              credibility: r.credibility || undefined,
+            })),
+            fetchTimeMs: smart.fetchTimeMs,
+          };
+        } else {
+          // Specialized result (cars, flights, hotels, rental, restaurants)
+          data = {
+            detectedMode: 'search',
+            smartResult: smart,
+            content: smart.content,
+            title: smart.title || `${smart.source} results`,
+            tokens: smart.tokens,
+            fetchTimeMs: smart.fetchTimeMs,
+          };
+        }
 
       } else if (intent.mode === 'ask') {
         // ── Ask mode — AI-powered Q&A via our server route ────────────────────
@@ -977,6 +1229,7 @@ export default function ReadPage() {
     setResult(null);
     setInput('');
     setErrorMsg('');
+    setLoadingMessage(undefined);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
@@ -1065,7 +1318,7 @@ export default function ReadPage() {
         </div>
 
         {/* Loading skeleton with elapsed timer */}
-        {isLoading && <LoadingSkeleton query={submittedQuery} />}
+        {isLoading && <LoadingSkeleton query={submittedQuery} intentMessage={loadingMessage} />}
 
         {/* Error state */}
         {isError && (
