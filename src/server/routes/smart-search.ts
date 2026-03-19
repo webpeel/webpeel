@@ -586,6 +586,7 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
       const llmTimer = setTimeout(() => llmAbort.abort(), 20000);
 
       try {
+        console.log(`[smart-search] LLM call starting: model=${process.env.OLLAMA_MODEL}, endpoint=${process.env.OLLAMA_URL}, prompt_len=${userMessage.length}`);
         const llmResult = await callLLM(
           {
             provider: 'ollama',
@@ -598,11 +599,12 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userMessage },
             ],
-            maxTokens: 800,
+            maxTokens: 300,
             temperature: 0.3,
             signal: llmAbort.signal,
           }
         );
+        console.log(`[smart-search] LLM call completed: text_len=${llmResult.text?.length}`);
         if (llmResult.text) {
           answer = llmResult.text;
         }
