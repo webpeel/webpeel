@@ -9,6 +9,34 @@ import { peel, peelBatch, cleanup } from '../../index.js';
 import { checkUsage, showUsageFooter, loadConfig } from '../../cli-auth.js';
 import { writeStdout, formatListingsCsv } from '../utils.js';
 
+/**
+ * Parse a date range string like "Mar29-Apr4" into an array of date strings.
+ * Returns ["Mar 29", "Mar 30", ..., "Apr 4"]
+ */
+function parseDateRange(range: string): string[] {
+  const match = range.match(/(\w{3})\s*(\d{1,2})\s*[-–to]+\s*(\w{3})\s*(\d{1,2})/i);
+  if (!match) return [];
+
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const startMonthIdx = months.findIndex(m => m.toLowerCase() === match[1].toLowerCase().slice(0, 3));
+  const endMonthIdx = months.findIndex(m => m.toLowerCase() === match[3].toLowerCase().slice(0, 3));
+  if (startMonthIdx === -1 || endMonthIdx === -1) return [];
+
+  const startDay = parseInt(match[2]);
+  const endDay = parseInt(match[4]);
+  const year = new Date().getFullYear();
+
+  const dates: string[] = [];
+  const start = new Date(year, startMonthIdx, startDay);
+  const end = new Date(year, endMonthIdx, endDay);
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const mon = months[d.getMonth()];
+    dates.push(`${mon} ${d.getDate()}`);
+  }
+  return dates;
+}
+
 export function registerSearchCommands(program: Command): void {
 
   // ── search command ────────────────────────────────────────────────────────
@@ -619,9 +647,98 @@ export function registerSearchCommands(program: Command): void {
     .option('--one-way', 'One-way flight (default)')
     .option('--round-trip', 'Round-trip flight')
     .option('-n, --count <n>', 'Max flights to show', '10')
+    .option('--dates <range>', 'Compare prices across date range (e.g., "Mar29-Apr4")')
     .option('--json', 'Output as JSON')
     .option('-s, --silent', 'Silent mode')
     .action(async (query: string, options) => {
+      // ── --dates: compare cheapest flight across a date range ──────────────
+      if (options.dates) {
+        const dates = parseDateRange(options.dates);
+        if (dates.length === 0) {
+          console.error('Could not parse date range. Format: "Mar29-Apr4"');
+          process.exit(1);
+        }
+
+        const spinner = options.silent ? null : ora(`Comparing flights across ${dates.length} dates...`).start();
+        const tripType = options.roundTrip ? '' : ' one way';
+
+        interface FlightEntry {
+          date: string;
+          price: string | null;
+          airline: string | null;
+          time: string | null;
+          priceNum: number;
+        }
+        const rows: FlightEntry[] = [];
+
+        for (const date of dates) {
+          if (spinner) spinner.text = `Fetching flights for ${date}...`;
+          try {
+            const dateQuery = `Flights from ${query} ${date}${tripType}`;
+            const encoded = encodeURIComponent(dateQuery);
+            const url = `https://www.google.com/travel/flights?q=${encoded}`;
+            const result = await peel(url, { render: true, timeout: 30000 });
+
+            // Try to extract cheapest flight from structured data or content
+            let price: string | null = null;
+            let airline: string | null = null;
+            let time: string | null = null;
+
+            const flights = (result as any).domainData?.structured?.flights || [];
+            if (flights.length > 0) {
+              const cheapest = flights.reduce((a: any, b: any) => {
+                const ap = parseFloat(String(a.price || '').replace(/[^0-9.]/g, '')) || Infinity;
+                const bp = parseFloat(String(b.price || '').replace(/[^0-9.]/g, '')) || Infinity;
+                return ap <= bp ? a : b;
+              });
+              price = cheapest.price || null;
+              airline = cheapest.airline || cheapest.carrier || null;
+              time = cheapest.time || cheapest.departure || null;
+            } else {
+              // Extract from markdown content — look for price patterns
+              const priceMatch = result.content.match(/\$(\d+)/);
+              if (priceMatch) price = `$${priceMatch[1]}`;
+              const airlineMatch = result.content.match(/\b(American|Delta|United|Southwest|Spirit|JetBlue|Alaska|Frontier|Allegiant|Sun Country)\b/i);
+              if (airlineMatch) airline = airlineMatch[1];
+              const timeMatch = result.content.match(/(\d{1,2}:\d{2}\s*(?:AM|PM))\s*[–—→]\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+              if (timeMatch) time = `${timeMatch[1]} → ${timeMatch[2]}`;
+            }
+
+            const priceNum = price ? parseFloat(price.replace(/[^0-9.]/g, '')) || Infinity : Infinity;
+            rows.push({ date, price, airline, time, priceNum });
+          } catch {
+            rows.push({ date, price: null, airline: null, time: null, priceNum: Infinity });
+          }
+        }
+
+        if (spinner) spinner.succeed(`Compared ${rows.length} dates`);
+
+        if (options.json) {
+          console.log(JSON.stringify({ query, dateRange: options.dates, rows }, null, 2));
+        } else {
+          // Find best price
+          const best = rows.reduce((a, b) => a.priceNum <= b.priceNum ? a : b);
+
+          console.log(`\n# ✈️ Flight Price Comparison — ${query}\n`);
+          console.log('| Date | Airline | Time | Price |');
+          console.log('|------|---------|------|-------|');
+          for (const row of rows) {
+            const star = row.priceNum === best.priceNum ? ' ⭐' : '';
+            const priceStr = row.price ? `${row.price}${star}` : 'N/A';
+            const airlineStr = row.airline || 'Unknown';
+            const timeStr = row.time || '—';
+            console.log(`| ${row.date} | ${airlineStr} | ${timeStr} | ${priceStr} |`);
+          }
+          if (best.price) {
+            console.log(`\n⭐ Best price: ${best.date} — ${best.airline || 'Unknown'} ${best.price}`);
+          }
+        }
+
+        await cleanup();
+        process.exit(0);
+      }
+
+      // ── Single date (default) ─────────────────────────────────────────────
       const tripType = options.roundTrip ? '' : ' one way';
       const encoded = encodeURIComponent(`Flights from ${query}${tripType}`);
       const url = `https://www.google.com/travel/flights?q=${encoded}`;
@@ -656,6 +773,8 @@ export function registerSearchCommands(program: Command): void {
         process.exit(1);
       }
     });
+
+
 
   // ── rental command ────────────────────────────────────────────────────────
   program
