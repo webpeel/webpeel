@@ -190,10 +190,12 @@ export function createAbortError(): Error {
  * proxy when proxy credentials are configured (WEBSHARE_PROXY_* env vars).
  */
 export const PROXY_PREFERRED_DOMAINS: readonly string[] = [
+  // Social / content
   'reddit.com',
   'old.reddit.com',
   'forbes.com',
   'fortune.com',
+  // Auto / cars
   'cargurus.com',
   'edmunds.com',
   'cars.com',
@@ -201,14 +203,29 @@ export const PROXY_PREFERRED_DOMAINS: readonly string[] = [
   'autotrader.com',
   'carfax.com',
   'tesla.com',
+  'motortrend.com',
+  'jdpower.com',
+  // Finance / home
   'nerdwallet.com',
   'bankrate.com',
   'homeadvisor.com',
   'angi.com',
+  // EV / auto news
   'insideevs.com',
   'electrek.co',
-  'motortrend.com',
-  'jdpower.com',
+  // Restaurants / food
+  'yelp.com',
+  // Travel
+  'kayak.com',
+  'booking.com',
+  'expedia.com',
+  'tripadvisor.com',
+  'hotels.com',
+  // Shopping / products
+  'amazon.com',
+  'bestbuy.com',
+  'walmart.com',
+  'target.com',
 ];
 
 /**

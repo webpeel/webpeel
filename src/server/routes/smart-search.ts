@@ -96,12 +96,15 @@ export function detectSearchIntent(query: string): SearchIntent {
     return { type: 'rental', query: q, params: {} };
   }
 
-  // Restaurants: food/dining + location/quality signal
+  // Restaurants: food/dining/cuisine + location/quality signal
   if (
-    /\b(restaurant|restaurants|food|eat|dinner|lunch|pizza|sushi|burger|cafe|bar|bistro|brunch|breakfast)\b/.test(q) &&
-    /\b(in|near|best|top|good|cheap)\b/.test(q)
+    /\b(restaurant|restaurants|food|eat|eating|dinner|lunch|pizza|sushi|burger|burgers|cafe|bar|bars|bistro|brunch|breakfast|ramen|tacos|taco|thai|chinese|italian|mexican|indian|korean|japanese|vietnamese|pho|bbq|barbecue|wings|noodles|steak|steakhouse|seafood|diner|bakery|dessert|ice cream|coffeeshop|coffee shop|pub|gastropub|buffet|deli|dim sum|curry|shawarma|falafel|gyro|bagel|donut|doughnut|waffle|pancake|oyster|lobster|crab|clam|fish)\b/.test(q) &&
+    /\b(in|near|best|top|good|cheap|affordable|around|nearby)\b/.test(q)
   ) {
-    return { type: 'restaurants', query: q, params: {} };
+    // Try to extract location from query: "best X in [location]"
+    const locMatch = q.match(/\b(?:in|near|around)\s+(.+?)(?:\s+(?:under|below|for|with|that|which).*)?$/i);
+    const location = locMatch ? locMatch[1].trim() : '';
+    return { type: 'restaurants', query: q, params: { location } };
   }
 
   return { type: 'general', query: q, params: {} };
@@ -154,7 +157,7 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
   const gfUrl = `https://www.google.com/travel/flights?q=Flights+${encodeURIComponent(intent.query)}+one+way`;
 
   try {
-    const result = await peel(gfUrl, { render: true, timeout: 30000 });
+    const result = await peel(gfUrl, { timeout: 20000 });
     return {
       type: 'flights',
       source: 'Google Flights',
@@ -176,7 +179,7 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
   const ghUrl = `https://www.google.com/travel/hotels?q=${encodeURIComponent(intent.query)}`;
 
   try {
-    const result = await peel(ghUrl, { render: true, timeout: 30000 });
+    const result = await peel(ghUrl, { timeout: 20000 });
     return {
       type: 'hotels',
       source: 'Google Hotels',
@@ -201,7 +204,7 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
   const kayakUrl = `https://www.kayak.com/cars/${encodedQuery}/2025-04-10/2025-04-13/`;
 
   try {
-    const result = await peel(kayakUrl, { render: true, timeout: 30000 });
+    const result = await peel(kayakUrl, { timeout: 20000 });
     return {
       type: 'rental',
       source: 'Kayak',
@@ -220,12 +223,22 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
 
 async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearchResult> {
   const t0 = Date.now();
-  const yelpUrl = `https://www.yelp.com/search?find_desc=${encodeURIComponent(
-    intent.query.replace(/\b(best|top|good|cheap|near me)\b/gi, '').trim()
-  )}&find_loc=${encodeURIComponent('New York, NY')}`;
+
+  // Extract clean search term (strip noise words)
+  const desc = intent.query
+    .replace(/\b(best|top|good|cheap|affordable|near me|near|around|in|find|search|looking for)\b/gi, '')
+    .replace(/\b(new york|manhattan|brooklyn|queens|bronx|chicago|los angeles|san francisco|miami|boston|seattle|denver|austin|portland|philadelphia|houston|dallas|atlanta)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Use parsed location or default
+  const location = intent.params.location || 'New York, NY';
+
+  const yelpUrl = `https://www.yelp.com/search?find_desc=${encodeURIComponent(desc)}&find_loc=${encodeURIComponent(location)}`;
 
   try {
-    const result = await peel(yelpUrl, { render: true, timeout: 25000 });
+    // Yelp works via proxy without browser render (same as Cars.com)
+    const result = await peel(yelpUrl, { timeout: 20000 });
     return {
       type: 'restaurants',
       source: 'Yelp',
@@ -277,7 +290,7 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
   const enriched = await Promise.allSettled(
     top5.map(async (r) => {
       try {
-        const peeled = await peel(r.url, { render: true, timeout: 12000, maxTokens: 3000 });
+        const peeled = await peel(r.url, { timeout: 10000, maxTokens: 3000 });
         return { url: r.url, content: peeled.content?.substring(0, 3000), title: r.title, fetchTimeMs: peeled.elapsed };
       } catch {
         return { url: r.url, content: null, title: r.title, fetchTimeMs: 0 };
