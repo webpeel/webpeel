@@ -598,7 +598,7 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
               {item.rating && <span>⭐ {item.rating}</span>}
               {item.stars && <span>{'★'.repeat(Math.min(5, Math.round(item.stars)))}</span>}
             </div>
-            {(item.address || item.location) && <div className="text-xs text-zinc-500 mt-1">📍 {item.address || item.location}</div>}
+            {(item.address || item.location) && <div className="text-xs text-zinc-500 mt-1">📍 {typeof (item.address || item.location) === 'string' ? (item.address || item.location) : (item.address || item.location)?.display_address?.join(', ') || ''}</div>}
           </div>
           {item.image && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -636,8 +636,17 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
       if (price === '$$$' || price === '$$$$') return 'bg-orange-500/15 text-orange-400 border-orange-500/30';
       return 'bg-zinc-700/40 text-zinc-400 border-zinc-600/30';
     };
-    const phone = item.phone || item.phoneNumber || '';
-    const address = item.address || item.location || '';
+    const phone = typeof item.phone === 'string' ? item.phone : (typeof item.display_phone === 'string' ? item.display_phone : '');
+    // Yelp returns location as an object {address1, city, state, zip_code, display_address}
+    const rawAddr = item.address || item.location;
+    const address = typeof rawAddr === 'string' ? rawAddr
+      : rawAddr?.display_address ? (Array.isArray(rawAddr.display_address) ? rawAddr.display_address.join(', ') : String(rawAddr.display_address))
+      : rawAddr?.address1 ? `${rawAddr.address1}, ${rawAddr.city || ''}, ${rawAddr.state || ''} ${rawAddr.zip_code || ''}`.trim()
+      : '';
+    // Yelp returns categories as [{alias, title}]
+    const cuisine = item.cuisine || (Array.isArray(item.categories) ? item.categories.map((c: any) => typeof c === 'string' ? c : c.title).join(', ') : '');
+    const reviewCount = item.reviewCount || item.review_count;
+    const imageUrl = item.image || item.image_url;
 
     return (
       <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
@@ -661,12 +670,12 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
               {item.rating && (
                 <span className="flex items-center gap-1 text-amber-400 font-semibold text-sm">
                   ⭐ {item.rating}
-                  {item.reviewCount && (
-                    <span className="text-xs text-zinc-500 font-normal ml-0.5">({item.reviewCount} reviews)</span>
+                  {reviewCount && (
+                    <span className="text-xs text-zinc-500 font-normal ml-0.5">({reviewCount} reviews)</span>
                   )}
                 </span>
               )}
-              {item.cuisine && <span className="text-xs text-zinc-500">{item.cuisine}</span>}
+              {cuisine && <span className="text-xs text-zinc-500">{cuisine}</span>}
             </div>
 
             {/* Address on its own line */}
@@ -683,9 +692,9 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
               </div>
             )}
           </div>
-          {item.image && (
+          {imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.image} alt={item.name || 'Restaurant'} className="w-16 h-16 object-cover rounded-lg shrink-0 bg-zinc-800" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <img src={imageUrl} alt={item.name || 'Restaurant'} className="w-16 h-16 object-cover rounded-lg shrink-0 bg-zinc-800" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           )}
         </div>
       </div>
