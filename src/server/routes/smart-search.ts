@@ -111,9 +111,11 @@ export function detectSearchIntent(query: string): SearchIntent {
 
 async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult> {
   const t0 = Date.now();
-  // Build a clean keyword: strip the common car/buy/deal words to surface the actual vehicle name
+  // Build a clean keyword: strip buying signals, price amounts, and common noise words
   const keyword = intent.query
-    .replace(/\b(buy|cheap|under|budget|price|used|new|for sale|listing|deal|car|cars)\b/gi, '')
+    .replace(/\b(buy|cheap|under|budget|price|used|new|for sale|listing|deal|car|cars|best|good|find|search|looking for|want|need)\b/gi, '')
+    .replace(/[$]\d[\d,]*/g, '')             // strip $30000, $30,000 etc.
+    .replace(/\b\d{4,}\b/g, '')              // strip standalone 4+ digit numbers (prices, not model years)
     .replace(/\s+/g, ' ')
     .trim();
 
