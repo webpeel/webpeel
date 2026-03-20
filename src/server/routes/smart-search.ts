@@ -372,7 +372,7 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
     ).join(', ');
     const redditSnippets = redditResults.slice(0, 2).map(r => r.snippet || '').join(' ');
     const aiPrompt = `You are a car buying advisor. The user searched: "${intent.query}". Here are the top listings: ${listingSummary || 'no listings found'}. Reddit says: ${redditSnippets || 'no community input'}. Give a 2-3 sentence recommendation about the best value. Mention specific prices and models. Max 80 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 120, timeoutMs: 15000, temperature: 0.4 });
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 120, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -447,8 +447,8 @@ ${searchSection}## 📌 Book Directly
   if (process.env.OLLAMA_URL) {
     const flightInfo = flightResults.slice(0, 5).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
-    const aiPrompt = `You are a flight booking advisor. The user searched: "${intent.query}". Here are web results about flights: ${flightInfo || 'no results found'}. Reddit tips: ${redditSnippets || 'none'}. Give a 2-3 sentence tip about finding the cheapest flights for this route. Mention booking sites and timing advice. Max 80 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 130, timeoutMs: 15000, temperature: 0.4 });
+    const aiPrompt = `You are a flight booking advisor. ONLY use information from the sources below. Do NOT make up prices, airlines, or routes not mentioned. User searched: "${intent.query}". Web results: ${flightInfo || 'no results found'}. Reddit tips: ${redditSnippets || 'none'}. Give a 2-3 sentence tip about cheapest flights for this route based ONLY on the sources. Mention actual prices found and booking sites. Max 80 words.`;
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 130, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -530,8 +530,8 @@ ${searchSection}## 📌 Book Directly
   if (process.env.OLLAMA_URL) {
     const hotelInfo = parsedHotels.slice(0, 5).map(r => `${r.title}${r.price ? `: ${r.price}/night` : ''} — ${r.snippet || ''}`).join('\n');
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
-    const aiPrompt = `You are a hotel booking advisor. The user searched: "${intent.query}". Here are hotels found: ${hotelInfo || 'no results found'}. Reddit tips: ${redditSnippets || 'none'}. Give a 2-3 sentence recommendation. Mention the best value option and price if available. Max 80 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 130, timeoutMs: 15000, temperature: 0.4 });
+    const aiPrompt = `You are a hotel booking advisor. ONLY use information from the sources below. Do NOT make up hotel names or prices not mentioned. User searched: "${intent.query}". Hotels found: ${hotelInfo || 'no results found'}. Reddit tips: ${redditSnippets || 'none'}. Give a 2-3 sentence recommendation based ONLY on the sources. Mention the cheapest option and actual price if available. Max 80 words.`;
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 130, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -682,8 +682,8 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
   if (process.env.OLLAMA_URL) {
     const priceInfo = allListings.filter(l => l.price).map(l => `${l.company}: ${l.price}/day`).join(', ');
     const redditContent = redditResults.slice(0, 3).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
-    const aiPrompt = `You are a car rental advisor. The user wants to rent a car${location ? ' in ' + location : ''}.${dates ? ` Dates: ${dates.from} to ${dates.to}.` : ''}${budget ? ` Budget: $${budget}/day.` : ''} Here are the best prices found: ${priceInfo || 'prices not yet available'}. Based on these prices and Reddit tips, give a 2-3 sentence recommendation. Mention the cheapest option. Max 60 words.\n\nReddit:\n${redditContent}`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 100, timeoutMs: 15000, temperature: 0.4 });
+    const aiPrompt = `You are a car rental advisor. ONLY use information from the sources below. User wants to rent a car${location ? ' in ' + location : ''}.${dates ? ` Dates: ${dates.from} to ${dates.to}.` : ''}${budget ? ` Budget: $${budget}/day.` : ''} Prices found: ${priceInfo || 'no prices extracted yet — refer to sites below'}. Reddit tips: ${redditContent || 'none'}. Give a 2-3 sentence recommendation based ONLY on sources. Mention the cheapest option and actual price. Max 60 words.`;
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 100, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -1120,7 +1120,7 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
       : 'no specific listings found';
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a shopping advisor. The user wants: "${intent.query}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention price and store.' : 'Give general buying advice based on Reddit and your knowledge.'} Max 80 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 120, timeoutMs: 15000, temperature: 0.4 });
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 120, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
