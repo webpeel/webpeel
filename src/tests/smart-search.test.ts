@@ -64,4 +64,19 @@ describe('detectSearchIntent', () => {
     expect(detectSearchIntent('how to cook pasta').type).toBe('general');
     expect(detectSearchIntent('machine learning tutorial').type).toBe('general');
   });
+
+  // Existing rental test should still pass after the regex reorder
+  it('detects rental even with price keywords', () => {
+    expect(detectSearchIntent('rent a car $150 max price').type).toBe('rental');
+    expect(detectSearchIntent('I want to rent a car in Miami for $100/day').type).toBe('rental');
+    expect(detectSearchIntent('renting a vehicle for the weekend cheap').type).toBe('rental');
+  });
+
+  // These should return 'general' from regex (LLM would reclassify in prod)
+  it('regex returns general for typos and creative phrasing', () => {
+    // These are "general" at the regex level — LLM handles them in production
+    // (typos, creative/colloquial phrasing that doesn't match the keyword lists)
+    expect(detectSearchIntent('I need wheels for the weekend').type).toBe('general');
+    expect(detectSearchIntent('craving some brgr near me').type).toBe('general'); // typo: brgr
+  });
 });

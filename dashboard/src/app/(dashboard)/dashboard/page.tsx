@@ -499,7 +499,7 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
   const youtubeVideos = youtubeSource?.videos || [];
 
   // Detect if sources are multi-source (have type field with yelp/reddit/youtube/cars/shopping) vs citation sources ({title, url, domain})
-  const isMultiSource = multiSources && multiSources.length > 0 && multiSources.some((s) => ['yelp', 'reddit', 'youtube', 'cars', 'shopping'].includes(s.type));
+  const isMultiSource = multiSources && multiSources.length > 0 && multiSources.some((s) => ['yelp', 'reddit', 'youtube', 'cars', 'shopping', 'rental'].includes(s.type));
 
   return (
     <div className="space-y-3">
@@ -515,7 +515,7 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
         <div className="flex gap-1.5 flex-wrap">
           {multiSources!.map((s) => (
             <span key={s.type} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-              {s.type === 'yelp' ? '📍 Yelp' : s.type === 'reddit' ? '💬 Reddit' : s.type === 'youtube' ? '🎬 YouTube' : s.type === 'cars' ? '🚗 Cars.com' : s.type === 'shopping' ? '🛍️ Shopping' : s.type}
+              {s.type === 'yelp' ? '📍 Yelp' : s.type === 'reddit' ? '💬 Reddit' : s.type === 'youtube' ? '🎬 YouTube' : s.type === 'cars' ? '🚗 Cars.com' : s.type === 'shopping' ? '🛍️ Shopping' : s.type === 'rental' ? `🔑 Rentals${(s as any).count != null ? ` (${(s as any).count})` : ''}` : s.type}
             </span>
           ))}
         </div>
@@ -704,19 +704,30 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
   }
 
   if (type === 'rental') {
+    const rentalName = item.name || item.carType || item.vehicleType || 'Car Rental';
+    const rentalCompany = item.company || '';
+    const rentalPrice = item.price ? (typeof item.price === 'number' ? `$${item.price}/day` : item.price) : null;
+    const rentalSnippet = item.snippet || '';
     return (
       <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-sm font-medium text-zinc-200">{item.carType || item.vehicleType || item.name || 'Rental car'}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-zinc-200 truncate">{rentalName}</span>
+              {rentalCompany && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 shrink-0">{rentalCompany}</span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2 mt-1 text-xs text-zinc-400">
-              {item.price && <span className="text-emerald-400 font-medium">{typeof item.price === 'number' ? `$${item.price}/day` : item.price}</span>}
-              {item.company && <span>{item.company}</span>}
+              {rentalPrice && <span className="text-emerald-400 font-medium">{rentalPrice}</span>}
               {item.passengers && <span>{item.passengers} passengers</span>}
             </div>
+            {rentalSnippet && (
+              <div className="mt-1.5 text-xs text-zinc-500 line-clamp-2">{rentalSnippet}</div>
+            )}
           </div>
           {url !== '#' && (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#818CF8] hover:underline shrink-0">Book →</a>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#818CF8] hover:underline shrink-0 mt-0.5">Book →</a>
           )}
         </div>
       </div>

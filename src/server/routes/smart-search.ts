@@ -98,9 +98,10 @@ export function detectSearchIntent(query: string): SearchIntent {
   const q = query.toLowerCase();
 
   // Car rental: "rent a car", "car rental", "rental car" — MUST be before cars/buy check
+  // Also matches brand names with rent: "rent a Tesla", "rent a BMW"
+  const VEHICLE_WORDS = /\b(car|cars|vehicle|suv|sedan|truck|honda|toyota|tesla|bmw|ford|chevy|chevrolet|nissan|hyundai|kia|mazda|subaru|lexus|audi|mercedes|volkswagen|jeep|dodge|ram|buick|cadillac|gmc|chrysler|acura|infiniti|volvo|porsche|mini|fiat|mitsubishi)\b/;
   if (
-    /\b(rent|rental|renting)\b.*\b(car|cars|vehicle|suv)\b/.test(q) ||
-    /\b(car|cars|vehicle|suv)\s+(rent|rental|renting)\b/.test(q) ||
+    (/\b(rent|rental|renting)\b/.test(q) && VEHICLE_WORDS.test(q)) ||
     /\bcar\s+rental\b/.test(q)
   ) {
     return { type: 'rental', query: q, params: {} };
@@ -162,6 +163,102 @@ export function detectSearchIntent(query: string): SearchIntent {
   }
 
   return { type: 'general', query: q, params: {} };
+}
+
+// ─── Shared Ollama Helper ──────────────────────────────────────────────────
+
+/**
+ * Quick Ollama call for internal use (intent classification, short synthesis).
+ * Uses Node.js http module (not fetch) because fetch has socket hang issues with Ollama on K8s.
+ * Returns empty string on failure (graceful degradation).
+ */
+async function callOllamaQuick(prompt: string, opts?: { maxTokens?: number; timeoutMs?: number; temperature?: number }): Promise<string> {
+  const ollamaEndpoint = (process.env.OLLAMA_URL || '').replace(/\/$/, '');
+  if (!ollamaEndpoint) return '';
+
+  const ollamaModel = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
+  const ollamaSecret = process.env.OLLAMA_SECRET;
+  const timeoutMs = opts?.timeoutMs ?? 5000;
+  const maxTokens = opts?.maxTokens ?? 100;
+  const temperature = opts?.temperature ?? 0.3;
+
+  const body = JSON.stringify({
+    model: ollamaModel,
+    prompt,
+    stream: false,
+    think: false,
+    options: { num_predict: maxTokens, temperature },
+  });
+
+  try {
+    const rawText = await new Promise<string>((resolve, reject) => {
+      const urlObj = new URL(`${ollamaEndpoint}/api/generate`);
+      const reqOpts = {
+        hostname: urlObj.hostname,
+        port: parseInt(urlObj.port || '80'),
+        path: urlObj.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          ...(ollamaSecret ? { Authorization: `Bearer ${ollamaSecret}` } : {}),
+        },
+        timeout: timeoutMs,
+      };
+
+      const timer = setTimeout(() => req.destroy(new Error('callOllamaQuick timeout')), timeoutMs);
+      const req = http.request(reqOpts, (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => {
+          clearTimeout(timer);
+          try {
+            const json = JSON.parse(Buffer.concat(chunks).toString());
+            resolve(String(json?.response || '').trim());
+          } catch (e) { reject(e); }
+        });
+      });
+      req.on('error', (e) => { clearTimeout(timer); reject(e); });
+      req.on('timeout', () => { req.destroy(); reject(new Error('callOllamaQuick timeout')); });
+      req.write(body);
+      req.end();
+    });
+
+    return rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  } catch (err) {
+    console.warn('[smart-search] callOllamaQuick failed:', (err as Error).message);
+    return '';
+  }
+}
+
+/**
+ * LLM-based intent classification via Qwen.
+ * Called when regex returns 'general' to catch typos, other languages, creative phrasing.
+ * Fast: 3s timeout, ~50 tokens output.
+ */
+async function classifyIntentWithLLM(query: string): Promise<SearchIntent['type']> {
+  const prompt = `Classify this search query into exactly one category. Reply with ONLY the category name, nothing else.
+
+Categories:
+- cars: buying/shopping for vehicles (NOT renting)
+- flights: air travel, booking flights
+- hotels: accommodation, lodging, stays
+- rental: renting vehicles (car rental, rent a car)
+- restaurants: food, dining, eating out
+- products: shopping for non-vehicle products
+- general: anything else (news, how-to, information)
+
+Query: "${query}"
+
+Category:`;
+
+  const result = await callOllamaQuick(prompt, { maxTokens: 10, timeoutMs: 3000, temperature: 0.1 });
+  const cleaned = result.toLowerCase().trim().replace(/[^a-z]/g, '');
+
+  const validTypes = ['cars', 'flights', 'hotels', 'rental', 'restaurants', 'products', 'general'];
+  // Fuzzy match: "restaurant" → "restaurants", "car" → "cars"
+  const match = validTypes.find(t => cleaned.startsWith(t.replace(/s$/, '')));
+  return (match || 'general') as SearchIntent['type'];
 }
 
 // ─── Intent Handlers ───────────────────────────────────────────────────────
@@ -300,13 +397,99 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
 }
 
 async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResult> {
-  // Kayak is an SPA — always returns skeleton HTML. Skip peel entirely.
-  // Go straight to general search fallback.
-  const fallback = await handleGeneralSearch(intent.query);
+  const t0 = Date.now();
+
+  // Extract location from query
+  const locMatch = intent.query.match(/\b(?:in|at|near|from|around)\s+(.+?)(?:\s+(?:for|under|from|to|between|\$|cheap|best).*)?$/i);
+  const location = locMatch ? locMatch[1].trim() : '';
+
+  // Extract dates if present
+  const dateMatch = intent.query.match(/(?:from|between)\s+(\w+\s+\d+)\s+(?:to|and|through|-)\s+(\w+\s+\d+)/i);
+  const dates = dateMatch ? { from: dateMatch[1], to: dateMatch[2] } : null;
+
+  // Extract budget if present (reserved for future filtering)
+  // const budgetMatch = intent.query.match(/(?:under|\$|budget|max|cheaper than)\s*\$?(\d+)/i);
+  // const budget = budgetMatch ? budgetMatch[1] : null;
+
+  const { provider: searchProvider } = getBestSearchProvider();
+
+  // Search for rental results from major providers + Reddit reviews in parallel
+  const rentalQuery = `car rental ${location || 'near me'} ${dates ? `${dates.from} to ${dates.to}` : ''} site:kayak.com OR site:enterprise.com OR site:hertz.com OR site:avis.com OR site:budget.com OR site:turo.com OR site:costcotravel.com`;
+
+  const [rentalSettled, redditSettled] = await Promise.allSettled([
+    searchProvider.searchWeb(rentalQuery, { count: 10 }),
+    searchProvider.searchWeb(`car rental ${location || ''} reddit tips best deal`, { count: 4 }),
+  ]);
+
+  const rentalResults = rentalSettled.status === 'fulfilled' ? rentalSettled.value : [];
+  const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
+
+  // Build structured rental listings from search results
+  const knownProviders: Record<string, string> = {
+    'kayak.com': 'Kayak',
+    'enterprise.com': 'Enterprise',
+    'hertz.com': 'Hertz',
+    'avis.com': 'Avis',
+    'budget.com': 'Budget',
+    'turo.com': 'Turo',
+    'costcotravel.com': 'Costco Travel',
+    'priceline.com': 'Priceline',
+    'expedia.com': 'Expedia',
+    'rentalcars.com': 'RentalCars.com',
+    'sixt.com': 'Sixt',
+    'nationalcar.com': 'National',
+    'alamo.com': 'Alamo',
+  };
+
+  const getProvider = (url: string): string | null => {
+    try {
+      const hostname = new URL(url).hostname.replace('www.', '');
+      for (const [domain, name] of Object.entries(knownProviders)) {
+        if (hostname === domain || hostname.endsWith('.' + domain)) return name;
+      }
+      return null;
+    } catch { return null; }
+  };
+
+  const listings = rentalResults
+    .filter(r => getProvider(r.url) !== null)
+    .map(r => ({
+      name: r.title?.replace(/\s*[-|].*$/, '').trim() || 'Car Rental',
+      company: getProvider(r.url)!,
+      url: r.url,
+      snippet: r.snippet || '',
+      price: parsePrice(r.snippet || r.title || ''),
+    }))
+    .slice(0, 8);
+
+  // Also add direct booking links for major providers if they didn't appear in search
+  const searchLocation = encodeURIComponent(location || 'New York');
+  const directLinks = [
+    { company: 'Kayak', url: `https://www.kayak.com/cars/${searchLocation}`, name: 'Compare all rental companies' },
+    { company: 'Turo', url: `https://turo.com/search?location=${searchLocation}`, name: 'Rent from local owners' },
+    { company: 'Costco Travel', url: `https://www.costcotravel.com/Rental-Cars`, name: 'Member discounts on rentals' },
+  ].filter(d => !listings.some(l => l.company === d.company));
+
+  const allListings = [...listings, ...directLinks.map(d => ({ ...d, snippet: '', price: undefined }))];
+
+  // Build markdown content
+  const content = `# 🔑 Car Rentals${location ? ` — ${location}` : ''}${dates ? ` (${dates.from} to ${dates.to})` : ''}\n\n` +
+    allListings.map((l, i) => `${i + 1}. **${l.name}** — ${l.company}${l.price ? ` · ${l.price}` : ''}\n   ${l.snippet}`).join('\n\n');
+
   return {
-    ...fallback,
     type: 'rental',
-    loadingMessage: 'Showing search results for car rentals',
+    source: 'Car Rentals + Reddit',
+    sourceUrl: `https://www.kayak.com/cars/${searchLocation}`,
+    content,
+    title: `Car Rentals${location ? ` in ${location}` : ''}`,
+    structured: { listings: allListings },
+    tokens: content.split(/\s+/).length,
+    fetchTimeMs: Date.now() - t0,
+    loadingMessage: 'Searching for rental cars...',
+    sources: [
+      { type: 'rental', count: listings.length } as any,
+      { type: 'reddit', threads: redditResults.slice(0, 3).map(r => ({ title: r.title, url: r.url, snippet: r.snippet })) } as any,
+    ],
   };
 }
 
@@ -451,57 +634,8 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
     try {
       const systemPrompt = `Synthesize restaurant recommendations from multiple sources. Mention ratings, community opinions, and video reviews. Be specific with names and addresses. Max 150 words.`;
       const userMessage = `Query: ${intent.query}\n\nSources:\n${combinedContent.substring(0, 1200)}`;
-
-      const ollamaEndpoint = ollamaUrl.replace(/\/$/, '');
-      const ollamaModel    = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
-      const ollamaSecret   = process.env.OLLAMA_SECRET;
-      const body = JSON.stringify({
-        model: ollamaModel,
-        prompt: `${systemPrompt}\n\n${userMessage}`,
-        stream: false,
-        think: false,
-        options: { num_predict: 180, temperature: 0.3 },
-      });
-
-      const llmAbort = new AbortController();
-      const llmTimer = setTimeout(() => llmAbort.abort(), 20000);
-
-      try {
-        const ollamaText = await new Promise<string>((resolve, reject) => {
-          const urlObj = new URL(`${ollamaEndpoint}/api/generate`);
-          const opts = {
-            hostname: urlObj.hostname,
-            port: parseInt(urlObj.port || '80'),
-            path: urlObj.pathname,
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(body),
-              ...(ollamaSecret ? { Authorization: `Bearer ${ollamaSecret}` } : {}),
-            },
-            timeout: 18000,
-          };
-          llmAbort.signal.addEventListener('abort', () => req.destroy(new Error('aborted')));
-          const req = http.request(opts, (res) => {
-            const chunks: Buffer[] = [];
-            res.on('data', (c: Buffer) => chunks.push(c));
-            res.on('end', () => {
-              try {
-                const json = JSON.parse(Buffer.concat(chunks).toString());
-                resolve(String(json?.response || '').trim());
-              } catch (e) { reject(e); }
-            });
-          });
-          req.on('error', reject);
-          req.on('timeout', () => { req.destroy(); reject(new Error('Ollama request timeout')); });
-          req.write(body);
-          req.end();
-        });
-        const text = ollamaText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-        if (text) answer = text;
-      } finally {
-        clearTimeout(llmTimer);
-      }
+      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 180, timeoutMs: 20000, temperature: 0.3 });
+      if (text) answer = text;
     } catch (err) {
       console.warn('[restaurant-search] LLM synthesis failed (graceful fallback):', (err as Error).message);
     }
@@ -795,67 +929,10 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
 
       const tLlm = Date.now();
 
-      // Use AbortController for 20s max LLM timeout (Qwen needs ~5-8s for synthesis)
-      const llmAbort = new AbortController();
-      const llmTimer = setTimeout(() => llmAbort.abort(), 20000);
-
-      try {
-        const ollamaEndpoint = (process.env.OLLAMA_URL || '').replace(/\/$/, '');
-        const ollamaModel = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
-        const ollamaSecret = process.env.OLLAMA_SECRET;
-
-        // Use Node.js http module directly — fetch() has socket hang issues with Ollama on K8s
-        const ollamaText = await new Promise<string>((resolve, reject) => {
-          const body = JSON.stringify({
-            model: ollamaModel,
-            prompt: `${systemPrompt}\n\n${userMessage}`,
-            stream: false,
-            think: false,
-            options: { num_predict: 150, temperature: 0.3 },
-          });
-
-          const urlObj = new URL(`${ollamaEndpoint}/api/generate`);
-          const opts = {
-            hostname: urlObj.hostname,
-            port: parseInt(urlObj.port || '80'),
-            path: urlObj.pathname,
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(body),
-              ...(ollamaSecret ? { 'Authorization': `Bearer ${ollamaSecret}` } : {}),
-            },
-            timeout: 18000,
-          };
-
-          // Kill if abort fires
-          llmAbort.signal.addEventListener('abort', () => req.destroy(new Error('aborted')));
-
-          const req = http.request(opts, (res) => {
-            const chunks: Buffer[] = [];
-            res.on('data', (c: Buffer) => chunks.push(c));
-            res.on('end', () => {
-              try {
-                const json = JSON.parse(Buffer.concat(chunks).toString());
-                resolve(String(json?.response || '').trim());
-              } catch (e) {
-                reject(e);
-              }
-            });
-          });
-          req.on('error', reject);
-          req.on('timeout', () => { req.destroy(); reject(new Error('Ollama request timeout')); });
-          req.write(body);
-          req.end();
-        });
-
-        let text = ollamaText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-        console.log(`[smart-search] Ollama answered: ${text.length} chars`);
-        if (text) {
-          answer = text;
-        }
-      } finally {
-        clearTimeout(llmTimer);
+      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 150, timeoutMs: 20000, temperature: 0.3 });
+      console.log(`[smart-search] Ollama answered: ${text.length} chars`);
+      if (text) {
+        answer = text;
       }
 
       llmMs = Date.now() - tLlm;
@@ -934,6 +1011,21 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
 
       const query = q.trim();
       const intent = detectSearchIntent(query);
+
+      // If regex couldn't classify (general), try LLM classification
+      // This catches typos, other languages, creative phrasing
+      if (intent.type === 'general' && process.env.OLLAMA_URL) {
+        try {
+          const llmType = await classifyIntentWithLLM(query);
+          if (llmType !== 'general') {
+            console.log(`[smart-search] LLM reclassified "${query}" from general → ${llmType}`);
+            intent.type = llmType;
+          }
+        } catch (err) {
+          // Graceful degradation — regex result stands
+          console.warn('[smart-search] LLM intent classification failed:', (err as Error).message);
+        }
+      }
 
       // Override zip from request body if provided
       if (zip && intent.params) {
