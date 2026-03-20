@@ -1261,11 +1261,17 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
       // Clean up title
       const title = cleanProductTitle(r.title || '');
 
+      // Extract brand from title — common patterns: "Brand Name Product..." or known brands
+      const KNOWN_BRANDS = /\b(Sony|Bose|Apple|Samsung|LG|JBL|Sennheiser|Audio-Technica|Beats|Jabra|Anker|Soundcore|AKG|Shure|Skullcandy|Plantronics|HyperX|SteelSeries|Razer|Corsair|Logitech|Dell|HP|Lenovo|Asus|Acer|MSI|Microsoft|Google|Amazon|Kindle|Echo|Ring|Roku|Dyson|iRobot|Roomba|Ninja|KitchenAid|Instant Pot|Keurig|Breville|Philips|Panasonic|Canon|Nikon|GoPro|DJI|Fitbit|Garmin|Xiaomi|OnePlus|Nothing|Motorola|Nokia|TCL|Hisense|Vizio|Sonos|Marshall|Bang & Olufsen|B&O|Nike|Adidas|New Balance|Puma|Under Armour|North Face|Patagonia|Columbia|Levi's|Oakley|Ray-Ban|Gucci|Coach|Kate Spade|Michael Kors|Samsonite|Osprey|Yeti|Hydro Flask|Stanley|Weber|Traeger|DeWalt|Makita|Milwaukee|Bosch|Black\+Decker|Craftsman|Ryobi)\b/i;
+      const brandMatch = (r.title || '').match(KNOWN_BRANDS);
+      const brand = brandMatch ? brandMatch[1] : undefined;
+
       // Image from SearXNG (imageUrl field if available)
       const image = (r as any).imageUrl ?? undefined;
 
       return {
         title,
+        brand,
         price,
         rating,
         reviewCount,
@@ -1288,10 +1294,10 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
   let answer: string | undefined;
   if (process.env.OLLAMA_URL) {
     const productInfo = listings.length > 0
-      ? listings.slice(0, 5).map(l => `${l.title}: ${l.price || 'N/A'} at ${l.store}${l.rating ? `, ${l.rating}★` : ''}`).join(', ')
+      ? listings.slice(0, 5).map(l => `${l.brand ? l.brand + ' ' : ''}${l.title}: ${l.price || 'N/A'} at ${l.store}${l.rating ? `, ${l.rating}★` : ''}${l.reviewCount ? ` (${l.reviewCount} reviews)` : ''}`).join(', ')
       : 'no specific listings found';
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
-    const aiPrompt = `You are a shopping advisor. The user wants: "${intent.query}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention price and store.' : 'Give general buying advice based on Reddit and your knowledge.'} Max 80 words.`;
+    const aiPrompt = `You are a shopping advisor. The user wants: "${intent.query}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention the brand name, specific model, price, and store. Be specific.' : 'Give general buying advice with specific brand and model recommendations based on Reddit.'} Max 100 words.`;
     const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 120, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }

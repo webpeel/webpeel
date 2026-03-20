@@ -915,6 +915,9 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
             <img src={item.image} alt={item.title || 'Product'} className="w-16 h-16 object-contain rounded-lg shrink-0 bg-zinc-800/60 p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           )}
           <div className="flex-1 min-w-0">
+            {item.brand && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700/60 text-zinc-300 border border-zinc-600/40 font-medium inline-block mb-1">{item.brand}</span>
+            )}
             <div className="text-sm font-medium text-zinc-100 line-clamp-2 leading-snug">
               {item.title || item.name || 'Product'}
             </div>
