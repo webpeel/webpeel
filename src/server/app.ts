@@ -39,6 +39,7 @@ import { createDoRouter } from './routes/do.js';
 import { createYouTubeRouter } from './routes/youtube.js';
 import { createTranscriptExportRouter } from './routes/transcript-export.js';
 import { createDeepFetchRouter } from './routes/deep-fetch.js';
+import { createFeedRouter } from './routes/feed.js';
 import { createWatchRouter } from './routes/watch.js';
 import pg from 'pg';
 import { createScreenshotRouter } from './routes/screenshot.js';
@@ -345,6 +346,8 @@ export function createApp(config: ServerConfig = {}): Express {
   // /v1/screenshot — full or read only (router uses absolute paths, guard before router)
   app.use('/v1/screenshot', requireScope('full', 'read'));
   app.use(createScreenshotRouter(authStore));
+  // /v1/feed — feed discovery and parsing (all scopes allowed, no scope guard needed)
+  app.use(createFeedRouter(authStore));
   app.use(createSearchRouter(authStore));
   // /v1/search/smart — intent detection + travel/commerce routing (POST)
   app.use(createSmartSearchRouter(authStore));

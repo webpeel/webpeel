@@ -18,6 +18,15 @@ import { sendUsageAlertEmail } from '../email-service.js';
 import { extractLinks } from '../../core/links.js';
 import type { FetchErrorType } from '../../types.js';
 
+// ── Method cost table — exposed in response headers + body ────────────────────
+const methodCosts: Record<string, string> = {
+  'simple':     '0.0002', // $0.0002 per page (basic HTTP)
+  'domain-api': '0.0002', // same as simple (we use the site's API)
+  'stealth':    '0.005',  // $0.005 per page (headless browser)
+  'browser':    '0.005',  // same as stealth
+  'captcha':    '0.02',   // $0.02 per page (anti-bot bypass)
+};
+
 // ── Helper: classify an error thrown by peel() into a FetchErrorType ─────────
 function classifyFetchError(err: any): FetchErrorType {
   const code = err.code || err.name || '';
@@ -502,6 +511,52 @@ export function createFetchRouter(authStore: AuthStore): Router {
             },
           );
           (result as any).extracted = extracted;
+        } else {
+          // --- Custom JSON Schema → BM25 extraction (no LLM needed) ---
+          // Supports: {"price": "number", "title": "string"} or {"price": "What is the price?"}
+          let customFields: Record<string, string> | null = null;
+          try {
+            const parsed = JSON.parse(schema);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              customFields = {};
+              for (const [key, typeOrQuestion] of Object.entries(parsed)) {
+                const val = String(typeOrQuestion);
+                // If the value looks like a question (has "?" or is >20 chars), use it directly
+                if (val.includes('?') || val.length > 20) {
+                  customFields[key] = val;
+                } else {
+                  // Convert type name to a natural question
+                  const typeStr = val.toLowerCase();
+                  const humanKey = key.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/_/g, ' ');
+                  if (typeStr === 'number' || typeStr === 'float' || typeStr === 'integer') {
+                    customFields[key] = `What is the ${humanKey}? (as a number)`;
+                  } else if (typeStr === 'boolean') {
+                    customFields[key] = `Is the ${humanKey} true or false?`;
+                  } else if (typeStr.includes('[]') || typeStr === 'array') {
+                    customFields[key] = `What are the ${humanKey}? List all of them.`;
+                  } else {
+                    customFields[key] = `What is the ${humanKey}?`;
+                  }
+                }
+              }
+            }
+          } catch { /* not valid JSON, ignore */ }
+
+          if (customFields && Object.keys(customFields).length > 0) {
+            const { quickAnswer } = await import('../../core/quick-answer.js');
+            const { smartExtractSchemaFields } = await import('../../core/schema-postprocess.js');
+            const extracted = smartExtractSchemaFields(
+              result.content,
+              customFields,
+              quickAnswer,
+              {
+                pageTitle: result.title,
+                pageUrl: result.url,
+                metadata: result.metadata as Record<string, any>,
+              },
+            );
+            (result as any).extracted = extracted;
+          }
         }
       }
 
@@ -640,6 +695,11 @@ export function createFetchRouter(authStore: AuthStore): Router {
       res.setHeader('X-Processing-Time', elapsed.toString());
       res.setHeader('X-Fetch-Type', fetchType);
 
+      // Method + cost headers — customers can see what tier they're using
+      res.setHeader('X-Method', result.method || 'simple');
+      res.setHeader('X-Method-Cost', methodCosts[result.method || 'simple'] ?? '0.005');
+      res.setHeader('X-Tokens', String(result.tokens || 0));
+
       // Cache-Control: allow Cloudflare edge to cache successful GET responses for 60s
       res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
@@ -653,6 +713,9 @@ export function createFetchRouter(authStore: AuthStore): Router {
 
       // Build response — extend result with optional answer/summary fields
       const getResponseBody: any = { ...result };
+      // Ensure method + cost are always present in body
+      if (!getResponseBody.method) getResponseBody.method = result.method || 'simple';
+      getResponseBody.cost = methodCosts[result.method || 'simple'] ?? '0.005';
       if (getAnswerResult !== undefined) getResponseBody.answer = getAnswerResult.answer;
       if (getSummaryText !== undefined) getResponseBody.summary = getSummaryText;
 
@@ -1154,6 +1217,52 @@ export function createFetchRouter(authStore: AuthStore): Router {
             },
           );
           (result as any).extracted = extracted;
+        } else {
+          // --- Custom JSON Schema → BM25 extraction (no LLM needed) ---
+          // Supports: {"price": "number", "title": "string"} or {"price": "What is the price?"}
+          let customFields: Record<string, string> | null = null;
+          try {
+            const parsed = JSON.parse(bodySchema);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              customFields = {};
+              for (const [key, typeOrQuestion] of Object.entries(parsed)) {
+                const val = String(typeOrQuestion);
+                // If the value looks like a question (has "?" or is >20 chars), use it directly
+                if (val.includes('?') || val.length > 20) {
+                  customFields[key] = val;
+                } else {
+                  // Convert type name to a natural question
+                  const typeStr = val.toLowerCase();
+                  const humanKey = key.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/_/g, ' ');
+                  if (typeStr === 'number' || typeStr === 'float' || typeStr === 'integer') {
+                    customFields[key] = `What is the ${humanKey}? (as a number)`;
+                  } else if (typeStr === 'boolean') {
+                    customFields[key] = `Is the ${humanKey} true or false?`;
+                  } else if (typeStr.includes('[]') || typeStr === 'array') {
+                    customFields[key] = `What are the ${humanKey}? List all of them.`;
+                  } else {
+                    customFields[key] = `What is the ${humanKey}?`;
+                  }
+                }
+              }
+            }
+          } catch { /* not valid JSON, ignore */ }
+
+          if (customFields && Object.keys(customFields).length > 0) {
+            const { quickAnswer } = await import('../../core/quick-answer.js');
+            const { smartExtractSchemaFields } = await import('../../core/schema-postprocess.js');
+            const extracted = smartExtractSchemaFields(
+              result.content,
+              customFields,
+              quickAnswer,
+              {
+                pageTitle: result.title,
+                pageUrl: result.url,
+                metadata: result.metadata as Record<string, any>,
+              },
+            );
+            (result as any).extracted = extracted;
+          }
         }
       }
 
@@ -1248,6 +1357,11 @@ export function createFetchRouter(authStore: AuthStore): Router {
       res.setHeader('X-Processing-Time', elapsed.toString());
       res.setHeader('X-Fetch-Type', fetchType);
 
+      // Method + cost headers — customers can see what tier they're using
+      res.setHeader('X-Method', result.method || 'simple');
+      res.setHeader('X-Method-Cost', methodCosts[result.method || 'simple'] ?? '0.005');
+      res.setHeader('X-Tokens', String(result.tokens || 0));
+
       // Response timing headers — let customers see exactly where time is spent
       const postTimingFetch = result.timing?.fetch ?? 0;
       const postTimingParse = (result.timing?.convert ?? 0) + (result.timing?.metadata ?? 0) + (result.timing?.prune ?? 0);
@@ -1257,6 +1371,9 @@ export function createFetchRouter(authStore: AuthStore): Router {
       res.setHeader('Server-Timing', `fetch;dur=${postTimingFetch}, parse;dur=${postTimingParse}, total;dur=${elapsed}`);
 
       const responseBody: any = { ...result };
+      // Ensure method + cost are always present in body
+      if (!responseBody.method) responseBody.method = result.method || 'simple';
+      responseBody.cost = methodCosts[result.method || 'simple'] ?? '0.005';
       if (jsonData !== undefined) {
         responseBody.json = jsonData;
       }
