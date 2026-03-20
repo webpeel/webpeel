@@ -33,6 +33,15 @@ interface Source {
   authority?: 'Official' | 'Verified' | 'General';
 }
 
+interface SmartResultMultiSource {
+  type: string;
+  count?: number;
+  data?: any[];
+  threads?: any[];
+  topThread?: { title: string; url: string; content?: string; upvotes?: number };
+  videos?: Array<{ title: string; url: string; snippet?: string }>;
+}
+
 interface SmartResult {
   type: SmartResultType;
   source: string;
@@ -46,7 +55,8 @@ interface SmartResult {
   fetchTimeMs: number;
   loadingMessage?: string;
   answer?: string;
-  sources?: Array<{ title: string; url: string; domain: string }>;
+  // sources can be either QA citation sources ({title, url, domain}) or multi-source results
+  sources?: any[];
   timing?: { searchMs: number; peelMs: number; llmMs: number };
 }
 
@@ -481,6 +491,16 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
     || smartResult.results
     || [];
 
+  // Extract multi-source data (optional — old responses won't have this)
+  const multiSources = smartResult.sources as SmartResultMultiSource[] | undefined;
+  const redditSource = multiSources?.find((s) => s.type === 'reddit');
+  const youtubeSource = multiSources?.find((s) => s.type === 'youtube');
+  const redditThreads = redditSource?.threads || (redditSource?.topThread ? [redditSource.topThread] : []);
+  const youtubeVideos = youtubeSource?.videos || [];
+
+  // Detect if sources are multi-source (have type field with yelp/reddit/youtube) vs citation sources ({title, url, domain})
+  const isMultiSource = multiSources && multiSources.length > 0 && multiSources.some((s) => ['yelp', 'reddit', 'youtube'].includes(s.type));
+
   return (
     <div className="space-y-3">
       {/* Source attribution */}
@@ -489,6 +509,31 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
         <span>Results from <a href={smartResult.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[#818CF8] hover:underline">{smartResult.source}</a></span>
         <span className="ml-auto text-zinc-600">{smartResult.fetchTimeMs}ms</span>
       </div>
+
+      {/* Source count badges (multi-source only) */}
+      {isMultiSource && (
+        <div className="flex gap-1.5 flex-wrap">
+          {multiSources!.map((s) => (
+            <span key={s.type} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+              {s.type === 'yelp' ? '📍 Yelp' : s.type === 'reddit' ? '💬 Reddit' : s.type === 'youtube' ? '🎬 YouTube' : s.type}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* AI Answer section — shown ABOVE listings when present */}
+      {smartResult.answer && (
+        <div className="mb-4 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-medium text-indigo-400">✨ AI Summary</span>
+          </div>
+          <div className="prose prose-invert prose-sm max-w-none">
+            <ReactMarkdown components={markdownComponents}>
+              {smartResult.answer}
+            </ReactMarkdown>
+          </div>
+        </div>
+      )}
 
       {/* If we have structured listings, render them as rich cards */}
       {listings.length > 0 ? (
@@ -512,6 +557,55 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
               </a>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Reddit section */}
+      {redditSource && redditThreads.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-zinc-800">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-orange-400 text-sm font-medium">💬 Reddit</span>
+          </div>
+          {redditThreads.map((thread: any, i: number) => (
+            <a
+              key={i}
+              href={thread.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block p-3 rounded-lg bg-zinc-800/40 border border-zinc-800 hover:border-orange-500/30 mb-2 transition-colors no-underline"
+            >
+              <div className="text-sm text-zinc-200 font-medium">{thread.title}</div>
+              {(thread.snippet || thread.content) && (
+                <div className="text-xs text-zinc-400 mt-1 line-clamp-2">{thread.snippet || thread.content}</div>
+              )}
+              {thread.upvotes && (
+                <span className="text-xs text-orange-400 mt-1 block">⬆️ {thread.upvotes}</span>
+              )}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* YouTube section */}
+      {youtubeSource && youtubeVideos.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-zinc-800">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-red-400 text-sm font-medium">🎬 YouTube</span>
+          </div>
+          {youtubeVideos.map((video: any, i: number) => (
+            <a
+              key={i}
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block p-3 rounded-lg bg-zinc-800/40 border border-zinc-800 hover:border-red-500/30 mb-2 transition-colors no-underline"
+            >
+              <div className="text-sm text-zinc-200 font-medium">{video.title}</div>
+              {video.snippet && (
+                <div className="text-xs text-zinc-400 mt-1 line-clamp-2">{video.snippet}</div>
+              )}
+            </a>
+          ))}
         </div>
       )}
     </div>

@@ -297,37 +297,223 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
   };
 }
 
+// ─── Restaurant source fetchers ───────────────────────────────────────────
+
+async function fetchYelpResults(keyword: string, location: string) {
+  const url = `https://www.yelp.com/search?find_desc=${encodeURIComponent(keyword)}&find_loc=${encodeURIComponent(location)}`;
+  const result = await peel(url, { timeout: 8000 });
+  return {
+    source: 'yelp' as const,
+    url,
+    businesses: (result.domainData?.structured?.businesses || []) as any[],
+    content: result.content,
+    domainData: result.domainData,
+  };
+}
+
+async function fetchRedditResults(keyword: string, location: string) {
+  const { provider } = getBestSearchProvider();
+  const results = await provider.searchWeb(
+    `${keyword} ${location} site:reddit.com`,
+    { count: 5 }
+  );
+  if (results.length === 0) {
+    return { source: 'reddit' as const, thread: null, otherThreads: [] };
+  }
+  const topThread = results[0];
+  try {
+    const peeled = await peel(topThread.url, { timeout: 5000 });
+    return {
+      source: 'reddit' as const,
+      thread: {
+        title: topThread.title,
+        url: topThread.url,
+        content: peeled.content?.substring(0, 1000),
+        structured: peeled.domainData?.structured,
+      },
+      otherThreads: results.slice(1).map(r => ({ title: r.title, url: r.url, snippet: r.snippet })),
+    };
+  } catch {
+    return {
+      source: 'reddit' as const,
+      thread: null,
+      otherThreads: results.map(r => ({ title: r.title, url: r.url, snippet: r.snippet })),
+    };
+  }
+}
+
+async function fetchYouTubeResults(keyword: string, location: string) {
+  const { provider } = getBestSearchProvider();
+  const results = await provider.searchWeb(
+    `${keyword} ${location} food review site:youtube.com`,
+    { count: 3 }
+  );
+  return {
+    source: 'youtube' as const,
+    videos: results.map(r => ({ title: r.title, url: r.url, snippet: r.snippet })),
+  };
+}
+
 async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearchResult> {
   const t0 = Date.now();
 
-  // Extract clean search term for find_desc (strip noise words but keep meaningful terms)
-  const desc = intent.query
+  const location = intent.params.location || 'New York, NY';
+  const keyword = intent.query
     .replace(/\b(best|top|good|cheap|affordable|near me|near|around|in|find|search|looking for)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Use parsed location from intent params, or default to New York, NY
-  const location = intent.params.location || 'New York, NY';
+  // Launch 3 sources in parallel; each is wrapped to never throw
+  const [yelpSettled, redditSettled, youtubeSettled] = await Promise.allSettled([
+    fetchYelpResults(keyword, location),
+    fetchRedditResults(keyword, location),
+    fetchYouTubeResults(keyword, location),
+  ]);
 
-  const yelpUrl = `https://www.yelp.com/search?find_desc=${encodeURIComponent(desc)}&find_loc=${encodeURIComponent(location)}`;
+  const yelpData   = yelpSettled.status   === 'fulfilled' ? yelpSettled.value   : null;
+  const redditData = redditSettled.status === 'fulfilled' ? redditSettled.value : null;
+  const youtubeData = youtubeSettled.status === 'fulfilled' ? youtubeSettled.value : null;
 
-  try {
-    // Yelp works via proxy without browser render (same as Cars.com)
-    const result = await peel(yelpUrl, { timeout: 20000 });
-    return {
-      type: 'restaurants',
-      source: 'Yelp',
-      sourceUrl: yelpUrl,
-      content: result.content,
-      title: result.title,
-      domainData: result.domainData,
-      structured: result.domainData?.structured,
-      tokens: result.tokens,
-      fetchTimeMs: Date.now() - t0,
-    };
-  } catch (err) {
-    throw new Error(`Yelp search failed: ${(err as Error).message}`);
+  // ── Build markdown content from all sources ──────────────────────────
+  const contentParts: string[] = [];
+
+  // Yelp section
+  if (yelpData) {
+    const businesses = yelpData.businesses;
+    if (businesses.length > 0) {
+      contentParts.push(`## Yelp (${businesses.length} restaurants)`);
+      businesses.slice(0, 10).forEach((b: any, i: number) => {
+        const name    = b.name || b.title || 'Unknown';
+        const rating  = b.rating  ? `⭐${b.rating}` : '';
+        const reviews = b.reviewCount ? `(${b.reviewCount} reviews)` : '';
+        const address = b.address || b.location || '';
+        const price   = b.price   ? ` · ${b.price}` : '';
+        contentParts.push(`${i + 1}. **${name}** ${rating} ${reviews}${price}${address ? ` — ${address}` : ''}`);
+      });
+    } else if (yelpData.content) {
+      contentParts.push(`## Yelp\n${yelpData.content.substring(0, 800)}`);
+    }
   }
+
+  // Reddit section
+  if (redditData) {
+    contentParts.push('');
+    contentParts.push('## Reddit Recommendations');
+    if (redditData.thread) {
+      contentParts.push(`**${redditData.thread.title}**`);
+      if (redditData.thread.content) {
+        contentParts.push(redditData.thread.content.substring(0, 600));
+      }
+    }
+    if (redditData.otherThreads.length > 0) {
+      contentParts.push('');
+      redditData.otherThreads.slice(0, 3).forEach(t => {
+        contentParts.push(`- [${t.title}](${t.url}) — ${t.snippet || ''}`);
+      });
+    }
+  }
+
+  // YouTube section
+  if (youtubeData && youtubeData.videos.length > 0) {
+    contentParts.push('');
+    contentParts.push('## YouTube Reviews');
+    youtubeData.videos.forEach(v => {
+      contentParts.push(`🎬 [${v.title}](${v.url}) — ${v.snippet || ''}`);
+    });
+  }
+
+  const combinedContent = contentParts.join('\n');
+
+  // ── Build sources array for dashboard tabs ────────────────────────────
+  const sources: Array<{ title: string; url: string; domain: string }> = [];
+  if (yelpData)    sources.push({ title: 'Yelp',    url: yelpData.url,                     domain: 'yelp.com' });
+  if (redditData?.thread) sources.push({ title: redditData.thread.title, url: redditData.thread.url, domain: 'reddit.com' });
+  if (youtubeData?.videos[0]) sources.push({ title: youtubeData.videos[0].title, url: youtubeData.videos[0].url, domain: 'youtube.com' });
+
+  // ── AI Synthesis via Qwen/Ollama (optional) ───────────────────────────
+  let answer: string | undefined;
+  const ollamaUrl = process.env.OLLAMA_URL;
+
+  if (ollamaUrl && combinedContent.length > 0) {
+    try {
+      const systemPrompt = `Synthesize restaurant recommendations from multiple sources. Mention ratings, community opinions, and video reviews. Be specific with names and addresses. Max 150 words.`;
+      const userMessage = `Query: ${intent.query}\n\nSources:\n${combinedContent.substring(0, 1200)}`;
+
+      const ollamaEndpoint = ollamaUrl.replace(/\/$/, '');
+      const ollamaModel    = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
+      const ollamaSecret   = process.env.OLLAMA_SECRET;
+      const body = JSON.stringify({
+        model: ollamaModel,
+        prompt: `${systemPrompt}\n\n${userMessage}`,
+        stream: false,
+        think: false,
+        options: { num_predict: 180, temperature: 0.3 },
+      });
+
+      const llmAbort = new AbortController();
+      const llmTimer = setTimeout(() => llmAbort.abort(), 20000);
+
+      try {
+        const ollamaText = await new Promise<string>((resolve, reject) => {
+          const urlObj = new URL(`${ollamaEndpoint}/api/generate`);
+          const opts = {
+            hostname: urlObj.hostname,
+            port: parseInt(urlObj.port || '80'),
+            path: urlObj.pathname,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(body),
+              ...(ollamaSecret ? { Authorization: `Bearer ${ollamaSecret}` } : {}),
+            },
+            timeout: 18000,
+          };
+          llmAbort.signal.addEventListener('abort', () => req.destroy(new Error('aborted')));
+          const req = http.request(opts, (res) => {
+            const chunks: Buffer[] = [];
+            res.on('data', (c: Buffer) => chunks.push(c));
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(Buffer.concat(chunks).toString());
+                resolve(String(json?.response || '').trim());
+              } catch (e) { reject(e); }
+            });
+          });
+          req.on('error', reject);
+          req.on('timeout', () => { req.destroy(); reject(new Error('Ollama request timeout')); });
+          req.write(body);
+          req.end();
+        });
+        const text = ollamaText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        if (text) answer = text;
+      } finally {
+        clearTimeout(llmTimer);
+      }
+    } catch (err) {
+      console.warn('[restaurant-search] LLM synthesis failed (graceful fallback):', (err as Error).message);
+    }
+  }
+
+  // If Yelp completely failed and others also failed, surface an error
+  if (!yelpData && !redditData && !youtubeData) {
+    throw new Error('All restaurant sources failed');
+  }
+
+  const yelpUrl = yelpData?.url || `https://www.yelp.com/search?find_desc=${encodeURIComponent(keyword)}&find_loc=${encodeURIComponent(location)}`;
+
+  return {
+    type: 'restaurants',
+    source: 'Yelp + Reddit + YouTube',
+    sourceUrl: yelpUrl,
+    content: combinedContent,
+    title: `${keyword} in ${location}`,
+    domainData: yelpData?.domainData,
+    structured: yelpData?.domainData?.structured,
+    tokens: combinedContent.split(/\s+/).length,
+    fetchTimeMs: Date.now() - t0,
+    ...(answer !== undefined ? { answer } : {}),
+    ...(sources.length > 0 ? { sources } : {}),
+  };
 }
 
 // Known shopping domains and their display names / badge colors
