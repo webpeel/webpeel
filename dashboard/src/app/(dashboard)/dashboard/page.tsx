@@ -1493,7 +1493,31 @@ export default function ReadPage() {
             body: JSON.stringify({ q: intent.question || raw, stream: true }),
           });
 
-          if (sseRes.ok && sseRes.body) {
+          const sseContentType = sseRes.headers.get('content-type') || '';
+          const isSSE = sseContentType.includes('text/event-stream');
+
+          // Cache hit: server returns application/json instead of SSE — handle inline
+          if (sseRes.ok && !isSSE) {
+            const cachedJson = await sseRes.json();
+            const cachedSmart: SmartResult = cachedJson.data;
+            if (cachedSmart) {
+              const isCachedGeneral = cachedSmart.type === 'general';
+              if (isCachedGeneral && cachedSmart.answer) {
+                const totalSecs = cachedSmart.fetchTimeMs ? (cachedSmart.fetchTimeMs / 1000).toFixed(1) : undefined;
+                const sourceCount = cachedSmart.sources?.length || 0;
+                const timingNote = totalSecs ? `${sourceCount} source${sourceCount !== 1 ? 's' : ''} · ${totalSecs}s` : undefined;
+                data = { detectedMode: 'ask', answer: cachedSmart.answer, sources: cachedSmart.sources?.map((s: any) => ({ title: s.title || s.url, url: s.url, domain: s.domain, credibility: { tier: 'general' as const, score: 0.5, signals: [] } })) || [], fetchTimeMs: cachedSmart.fetchTimeMs, content: timingNote ? `<!-- timing: ${timingNote} -->` : '' };
+              } else {
+                data = { detectedMode: 'search', smartResult: cachedSmart, content: cachedSmart.content, title: cachedSmart.title || `${cachedSmart.source} results`, tokens: cachedSmart.tokens, fetchTimeMs: cachedSmart.fetchTimeMs };
+              }
+              setResult(data);
+              setAppState('success');
+              window.dispatchEvent(new Event('webpeel:fetch-completed'));
+              return;
+            }
+          }
+
+          if (sseRes.ok && sseRes.body && isSSE) {
             usedSSE = true;
             // Show streaming results immediately (set to success so ResultCard renders)
             setAppState('success');
