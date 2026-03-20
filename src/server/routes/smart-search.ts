@@ -378,7 +378,7 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
 
   const content = carListings.length > 0
     ? `# 🚗 Cars — ${intent.query}\n\n${carListings.map((l: any, i: number) =>
-        `${i + 1}. **${l.title || l.name}** — ${l.price || 'see price'}${l.mileage ? ` · ${l.mileage} mi` : ''}\n   ${l.snippet || ''}`
+        `${i + 1}. **${l.title || l.name}** — ${l.price || 'see price'}${l.mileage ? ` · ${String(l.mileage).replace(/\s*mi$/i, '')} mi` : ''}\n   ${l.snippet || ''}`
       ).join('\n\n')}`
     : result.content;
 
