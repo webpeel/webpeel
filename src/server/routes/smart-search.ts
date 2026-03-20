@@ -810,14 +810,27 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Launch 3 sources in parallel; each is wrapped to never throw
-  const [yelpSettled, redditSettled, youtubeSettled] = await Promise.allSettled([
-    fetchYelpResults(keyword, location),
-    fetchRedditResults(keyword, location),
-    fetchYouTubeResults(keyword, location),
+  // Launch Yelp first (fast API, ~500ms) — it has the main data for AI synthesis.
+  // Reddit/YouTube run in parallel alongside Ollama so slow Reddit peel (can hit 403→browser→15s)
+  // doesn't delay the AI summary past the 30s server timeout.
+  const yelpSettled = await Promise.race([
+    fetchYelpResults(keyword, location).then(v => ({ status: 'fulfilled' as const, value: v })),
+    new Promise<{ status: 'rejected'; reason: string }>(res => setTimeout(() => res({ status: 'rejected', reason: 'timeout' }), 10000)),
+  ]);
+  const yelpData = yelpSettled.status === 'fulfilled' ? yelpSettled.value : null;
+
+  // Reddit + YouTube run concurrently (best-effort, capped at 8s)
+  const [redditSettled, youtubeSettled] = await Promise.allSettled([
+    Promise.race([
+      fetchRedditResults(keyword, location),
+      new Promise<null>((_, rej) => setTimeout(() => rej(new Error('reddit timeout')), 8000)),
+    ]),
+    Promise.race([
+      fetchYouTubeResults(keyword, location),
+      new Promise<null>((_, rej) => setTimeout(() => rej(new Error('youtube timeout')), 5000)),
+    ]),
   ]);
 
-  const yelpData   = yelpSettled.status   === 'fulfilled' ? yelpSettled.value   : null;
   const redditData = redditSettled.status === 'fulfilled' ? redditSettled.value : null;
   const youtubeData = youtubeSettled.status === 'fulfilled' ? youtubeSettled.value : null;
 
