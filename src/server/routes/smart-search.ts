@@ -407,74 +407,133 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
   const dateMatch = intent.query.match(/(?:from|between)\s+(\w+\s+\d+)\s+(?:to|and|through|-)\s+(\w+\s+\d+)/i);
   const dates = dateMatch ? { from: dateMatch[1], to: dateMatch[2] } : null;
 
-  // Extract budget if present (reserved for future filtering)
-  // const budgetMatch = intent.query.match(/(?:under|\$|budget|max|cheaper than)\s*\$?(\d+)/i);
-  // const budget = budgetMatch ? budgetMatch[1] : null;
+  // Extract budget if present
+  const budgetMatch = intent.query.match(/(?:under|\$|budget|max|cheaper than)\s*\$?(\d+)/i);
+  const budget = budgetMatch ? budgetMatch[1] : null;
 
   const { provider: searchProvider } = getBestSearchProvider();
 
-  // Search for rental results from major providers + Reddit reviews in parallel
-  const rentalQuery = `car rental ${location || 'near me'} ${dates ? `${dates.from} to ${dates.to}` : ''} site:kayak.com OR site:enterprise.com OR site:hertz.com OR site:avis.com OR site:budget.com OR site:turo.com OR site:costcotravel.com`;
-
-  const [rentalSettled, redditSettled] = await Promise.allSettled([
-    searchProvider.searchWeb(rentalQuery, { count: 10 }),
-    searchProvider.searchWeb(`car rental ${location || ''} reddit tips best deal`, { count: 4 }),
+  // Search for aggregator results that include prices + Reddit tips
+  const [aggregatorSettled, redditSettled] = await Promise.allSettled([
+    searchProvider.searchWeb(
+      `car rental ${location || 'near me'} ${dates ? `${dates.from} to ${dates.to}` : ''} price per day cheapest`,
+      { count: 12 }
+    ),
+    searchProvider.searchWeb(`car rental ${location || ''} reddit tips best deal cheapest`, { count: 4 }),
   ]);
 
-  const rentalResults = rentalSettled.status === 'fulfilled' ? rentalSettled.value : [];
+  const rentalResults = aggregatorSettled.status === 'fulfilled' ? aggregatorSettled.value : [];
   const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
 
-  // Build structured rental listings from search results
-  const knownProviders: Record<string, string> = {
-    'kayak.com': 'Kayak',
-    'enterprise.com': 'Enterprise',
-    'hertz.com': 'Hertz',
-    'avis.com': 'Avis',
-    'budget.com': 'Budget',
-    'turo.com': 'Turo',
-    'costcotravel.com': 'Costco Travel',
-    'priceline.com': 'Priceline',
-    'expedia.com': 'Expedia',
-    'rentalcars.com': 'RentalCars.com',
-    'sixt.com': 'Sixt',
-    'nationalcar.com': 'National',
-    'alamo.com': 'Alamo',
+  // Known aggregators and direct providers
+  const RENTAL_SITES: Record<string, { name: string; type: 'aggregator' | 'direct' }> = {
+    'kayak.com': { name: 'Kayak', type: 'aggregator' },
+    'priceline.com': { name: 'Priceline', type: 'aggregator' },
+    'cheapflights.com': { name: 'Cheapflights', type: 'aggregator' },
+    'momondo.com': { name: 'Momondo', type: 'aggregator' },
+    'skyscanner.com': { name: 'Skyscanner', type: 'aggregator' },
+    'trip.com': { name: 'Trip.com', type: 'aggregator' },
+    'carrentals.com': { name: 'CarRentals.com', type: 'aggregator' },
+    'rentalcars.com': { name: 'RentalCars.com', type: 'aggregator' },
+    'stressfreecarrental.com': { name: 'StressFree', type: 'aggregator' },
+    'happycar.com': { name: 'HappyCar', type: 'aggregator' },
+    'enterprise.com': { name: 'Enterprise', type: 'direct' },
+    'hertz.com': { name: 'Hertz', type: 'direct' },
+    'avis.com': { name: 'Avis', type: 'direct' },
+    'budget.com': { name: 'Budget', type: 'direct' },
+    'turo.com': { name: 'Turo', type: 'direct' },
+    'sixt.com': { name: 'Sixt', type: 'direct' },
+    'nationalcar.com': { name: 'National', type: 'direct' },
+    'alamo.com': { name: 'Alamo', type: 'direct' },
+    'costcotravel.com': { name: 'Costco Travel', type: 'direct' },
+    'expedia.com': { name: 'Expedia', type: 'aggregator' },
   };
 
-  const getProvider = (url: string): string | null => {
+  const getSiteInfo = (url: string): { company: string; siteType: 'aggregator' | 'direct' } | null => {
     try {
       const hostname = new URL(url).hostname.replace('www.', '');
-      for (const [domain, name] of Object.entries(knownProviders)) {
-        if (hostname === domain || hostname.endsWith('.' + domain)) return name;
+      for (const [domain, info] of Object.entries(RENTAL_SITES)) {
+        if (hostname === domain || hostname.endsWith('.' + domain)) {
+          return { company: info.name, siteType: info.type };
+        }
       }
       return null;
     } catch { return null; }
   };
 
-  const listings = rentalResults
-    .filter(r => getProvider(r.url) !== null)
-    .map(r => ({
-      name: r.title?.replace(/\s*[-|].*$/, '').trim() || 'Car Rental',
-      company: getProvider(r.url)!,
-      url: r.url,
-      snippet: r.snippet || '',
-      price: parsePrice(r.snippet || r.title || ''),
-    }))
-    .slice(0, 8);
+  // Deduplicate by company — keep the most location-specific URL per company
+  const seen = new Map<string, typeof rentalResults[0]>();
+  for (const r of rentalResults) {
+    const siteInfo = getSiteInfo(r.url);
+    if (!siteInfo) continue;
+    const existing = seen.get(siteInfo.company);
+    // Prefer URLs that mention the location (more specific = better)
+    const locLower = (location || '').toLowerCase().replace(/\s+/g, '');
+    const urlLower = r.url.toLowerCase().replace(/[\s-]/g, '');
+    const isLocationSpecific = locLower && urlLower.includes(locLower.substring(0, 5));
+    if (!existing || isLocationSpecific) {
+      seen.set(siteInfo.company, r);
+    }
+  }
+
+  const listings = [...seen.entries()]
+    .map(([company, r]) => {
+      const siteInfo = getSiteInfo(r.url)!;
+      // Extract price from BOTH title and snippet; prefer title (more prominent = more accurate)
+      const titlePrice = parsePrice(r.title || '');
+      const snippetPrice = parsePrice(r.snippet || '');
+      const price = titlePrice || snippetPrice;
+      const priceValue = extractPriceValue(price);
+      return {
+        name: r.title?.replace(/\s*[-|–—].*$/, '').trim() || `${company} Car Rental`,
+        company,
+        siteType: siteInfo.siteType,
+        url: r.url,
+        snippet: r.snippet || '',
+        price,
+        priceValue,
+      };
+    });
+
+  // Sort: aggregators with prices first (lowest price first), then aggregators without prices, then direct providers
+  listings.sort((a, b) => {
+    const aVal = a.priceValue ?? Infinity;
+    const bVal = b.priceValue ?? Infinity;
+    if (aVal !== bVal) return aVal - bVal;
+    if (a.siteType !== b.siteType) return a.siteType === 'aggregator' ? -1 : 1;
+    return 0;
+  });
+
+  const topListings = listings.slice(0, 6);
 
   // Also add direct booking links for major providers if they didn't appear in search
   const searchLocation = encodeURIComponent(location || 'New York');
   const directLinks = [
-    { company: 'Kayak', url: `https://www.kayak.com/cars/${searchLocation}`, name: 'Compare all rental companies' },
-    { company: 'Turo', url: `https://turo.com/search?location=${searchLocation}`, name: 'Rent from local owners' },
-    { company: 'Costco Travel', url: `https://www.costcotravel.com/Rental-Cars`, name: 'Member discounts on rentals' },
-  ].filter(d => !listings.some(l => l.company === d.company));
+    { company: 'Kayak', siteType: 'aggregator' as const, url: `https://www.kayak.com/cars/${searchLocation}`, name: 'Compare all rental companies' },
+    { company: 'Enterprise', siteType: 'direct' as const, url: `https://www.enterprise.com/en/car-rental/locations/us.html`, name: 'Enterprise Rent-A-Car' },
+    { company: 'Hertz', siteType: 'direct' as const, url: `https://www.hertz.com/rentacar/reservation/`, name: 'Hertz Car Rental' },
+    { company: 'Avis', siteType: 'direct' as const, url: `https://www.avis.com/en/home`, name: 'Avis Car Rental' },
+    { company: 'Budget', siteType: 'direct' as const, url: `https://www.budget.com/en/home`, name: 'Budget Car Rental' },
+  ].filter(d => !topListings.some(l => l.company === d.company));
 
-  const allListings = [...listings, ...directLinks.map(d => ({ ...d, snippet: '', price: undefined }))];
+  const allListings = [
+    ...topListings,
+    ...directLinks.map(d => ({ ...d, snippet: '', price: undefined, priceValue: undefined })),
+  ];
 
   // Build markdown content
   const content = `# 🔑 Car Rentals${location ? ` — ${location}` : ''}${dates ? ` (${dates.from} to ${dates.to})` : ''}\n\n` +
-    allListings.map((l, i) => `${i + 1}. **${l.name}** — ${l.company}${l.price ? ` · ${l.price}` : ''}\n   ${l.snippet}`).join('\n\n');
+    allListings.map((l, i) => `${i + 1}. **${l.name}** — ${l.company}${l.price ? ` · ${l.price}/day` : ''}${l.siteType === 'aggregator' ? ' *(compares prices)*' : ''}\n   ${l.snippet}`).join('\n\n');
+
+  // AI synthesis: use extracted prices + Reddit tips
+  let answer: string | undefined;
+  if (process.env.OLLAMA_URL) {
+    const priceInfo = allListings.filter(l => l.price).map(l => `${l.company}: ${l.price}/day`).join(', ');
+    const redditContent = redditResults.slice(0, 3).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
+    const aiPrompt = `You are a car rental advisor. The user wants to rent a car${location ? ' in ' + location : ''}.${dates ? ` Dates: ${dates.from} to ${dates.to}.` : ''}${budget ? ` Budget: $${budget}/day.` : ''} Here are the best prices found: ${priceInfo || 'prices not yet available'}. Based on these prices and Reddit tips, give a 2-3 sentence recommendation. Mention the cheapest option. Max 60 words.\n\nReddit:\n${redditContent}`;
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 100, timeoutMs: 8000, temperature: 0.4 });
+    if (aiText && aiText.length > 20) answer = aiText;
+  }
 
   return {
     type: 'rental',
@@ -486,8 +545,9 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
     tokens: content.split(/\s+/).length,
     fetchTimeMs: Date.now() - t0,
     loadingMessage: 'Searching for rental cars...',
+    ...(answer !== undefined ? { answer } : {}),
     sources: [
-      { type: 'rental', count: listings.length } as any,
+      { type: 'rental', count: topListings.length } as any,
       { type: 'reddit', threads: redditResults.slice(0, 3).map(r => ({ title: r.title, url: r.url, snippet: r.snippet })) } as any,
     ],
   };
@@ -732,6 +792,16 @@ function parsePrice(text: string): string | undefined {
   }
 
   return undefined;
+}
+
+/**
+ * Extract numeric price value from a formatted price string (for sorting).
+ * Returns the lowest price value found (e.g. "from $23" → 23).
+ */
+function extractPriceValue(priceStr: string | undefined): number | undefined {
+  if (!priceStr) return undefined;
+  const match = priceStr.match(/\$\s*([\d,]+(?:\.\d+)?)/);
+  return match ? parseFloat(match[1].replace(/,/g, '')) : undefined;
 }
 
 /**

@@ -706,8 +706,9 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
   if (type === 'rental') {
     const rentalName = item.name || item.carType || item.vehicleType || 'Car Rental';
     const rentalCompany = item.company || '';
-    const rentalPrice = item.price ? (typeof item.price === 'number' ? `$${item.price}/day` : item.price) : null;
+    const rentalPrice = item.price ? (typeof item.price === 'number' ? `$${item.price}` : item.price) : null;
     const rentalSnippet = item.snippet || '';
+    const isAggregator = item.siteType === 'aggregator';
     return (
       <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
         <div className="flex items-start justify-between gap-3">
@@ -717,9 +718,12 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
               {rentalCompany && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 shrink-0">{rentalCompany}</span>
               )}
+              {isAggregator && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/20 shrink-0">Compares prices</span>
+              )}
             </div>
             <div className="flex flex-wrap gap-2 mt-1 text-xs text-zinc-400">
-              {rentalPrice && <span className="text-emerald-400 font-medium">{rentalPrice}</span>}
+              {rentalPrice && <span className="text-emerald-400 font-medium">{rentalPrice}/day</span>}
               {item.passengers && <span>{item.passengers} passengers</span>}
             </div>
             {rentalSnippet && (
