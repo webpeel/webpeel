@@ -392,7 +392,7 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
     ).join(', ');
     const redditSnippets = redditResults.slice(0, 2).map(r => r.snippet || '').join(' ');
     const aiPrompt = `You are a car buying advisor. The user searched: "${intent.query}". Here are the top listings: ${listingSummary || 'no listings found'}. Reddit says: ${redditSnippets || 'no community input'}. Give a 2-3 sentence recommendation about the best value. Mention specific prices and models. Max 80 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 120, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 80, timeoutMs: 15000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -468,7 +468,7 @@ ${searchSection}## 📌 Book Directly
     const flightInfo = flightResults.slice(0, 5).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a flight booking advisor. ONLY use information from the sources below. Do NOT make up prices, airlines, or routes not mentioned. User searched: "${intent.query}". Web results: ${flightInfo || 'no results found'}. Reddit tips: ${redditSnippets || 'none'}. Give a 2-3 sentence tip about cheapest flights for this route based ONLY on the sources. Mention actual prices found and booking sites. Max 80 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 130, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 80, timeoutMs: 15000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -551,7 +551,7 @@ ${searchSection}## 📌 Book Directly
     const hotelInfo = parsedHotels.slice(0, 5).map(r => `${r.title}${r.price ? `: ${r.price}/night` : ''} — ${r.snippet || ''}`).join('\n');
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a hotel booking advisor. ONLY use information from the sources below. Do NOT make up hotel names or prices not mentioned. User searched: "${intent.query}". Hotels found: ${hotelInfo || 'no results found'}. Reddit tips: ${redditSnippets || 'none'}. Give a 2-3 sentence recommendation based ONLY on the sources. Mention the cheapest option and actual price if available. Max 80 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 130, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 80, timeoutMs: 15000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -703,7 +703,7 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
     const priceInfo = allListings.filter(l => l.price).map(l => `${l.company}: ${l.price}/day`).join(', ');
     const redditContent = redditResults.slice(0, 3).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a car rental advisor. ONLY use information from the sources below. User wants to rent a car${location ? ' in ' + location : ''}.${dates ? ` Dates: ${dates.from} to ${dates.to}.` : ''}${budget ? ` Budget: $${budget}/day.` : ''} Prices found: ${priceInfo || 'no prices extracted yet — refer to sites below'}. Reddit tips: ${redditContent || 'none'}. Give a 2-3 sentence recommendation based ONLY on sources. Mention the cheapest option and actual price. Max 60 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 100, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 80, timeoutMs: 15000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -1105,7 +1105,7 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
 
   if (ollamaUrl && yelpData && yelpData.businesses.length > 0) {
     try {
-      const yelpLines = yelpData.businesses.slice(0, 5).map((b: any, i: number) => {
+      const yelpLines = yelpData.businesses.slice(0, 3).map((b: any, i: number) => {
         const openStatus = b.isClosed ? 'PERMANENTLY CLOSED' : (b.isOpenNow ? 'OPEN NOW' : 'Closed right now');
         const txns = b.transactions?.length > 0 ? `Available: ${b.transactions.join(', ')}` : '';
         const googleInfo = b.googleRating ? ` | Google: ⭐${b.googleRating} (${b.googleReviewCount} reviews)` : '';
@@ -1113,13 +1113,11 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
    ${openStatus} | Today: ${b.todayHours || 'hours not available'} | ${txns} | Categories: ${b.categories || ''}${googleInfo}`;
       }).join('\n');
       const redditHint = redditData?.otherThreads?.slice(0,2).map((t: any) => t.title).join('; ') || '';
-      const systemPrompt = `You are a local food expert giving personalized recommendations. For each top restaurant, explain:
-- Why it's popular (what makes it special, signature dishes)
-- Current status (open now or not, today's hours)
-- Practical tips (delivery/pickup, price range, best time to visit)
-Be specific with names, ratings, and review counts. Write like a knowledgeable friend, not a database. Max 200 words.`;
+      const systemPrompt = `Recommend top 3. For each: name, why good, open/closed status, hours.
+Be specific. Max 80 words.
+`;
       const userMessage = `Query: ${intent.query}\n\nTop restaurants:\n${yelpLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}`;
-      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 150, timeoutMs: 30000, temperature: 0.3 });
+      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 80, timeoutMs: 20000, temperature: 0.3 });
       if (text) answer = text;
     } catch (err) {
       console.warn('[restaurant-search] LLM synthesis failed (graceful fallback):', (err as Error).message);
@@ -1330,7 +1328,7 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
       : 'no specific listings found';
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a shopping advisor. The user wants: "${intent.query}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention the brand name, specific model, price, and store. Be specific.' : 'Give general buying advice with specific brand and model recommendations based on Reddit.'} Max 100 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 120, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 80, timeoutMs: 15000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -1572,13 +1570,13 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
 
       const systemPrompt = `Answer the query using these sources. Be specific with names, numbers, dates, and prices. Bold key facts. Cite sources as [1], [2], etc. If sources disagree, note the difference.${isEquipmentRental ? ' IMPORTANT: Include specific rental prices/rates per day or week if available in the sources. Mention the cheapest option.' : ''}${isServiceBusiness ? ' IMPORTANT: Include business hours, phone numbers, and whether they are open now.' : ''} Max 150 words.`;
 
-      // Truncate source content to 2000 chars total
-      const truncatedSources = sourceContent.substring(0, 2000);
+      // Truncate source content to 1200 chars total (shorter = faster Ollama response)
+      const truncatedSources = sourceContent.substring(0, 1200);
       const userMessage = `Query: ${query}\n\nSources:\n${truncatedSources}`;
 
       const tLlm = Date.now();
 
-      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 200, timeoutMs: 20000, temperature: 0.3 });
+      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 80, timeoutMs: 15000, temperature: 0.3 });
       console.log(`[smart-search] Ollama answered: ${text.length} chars`);
       if (text) {
         answer = text;
@@ -1811,7 +1809,7 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
             if (ollamaUrl && yelpData?.businesses?.length > 0) {
               sendEvent('progress', { step: 'generating_ai', message: 'Generating AI recommendation...' });
               try {
-                const yelpLines = yelpData.businesses.slice(0, 5).map((b: any, i: number) => {
+                const yelpLines = yelpData.businesses.slice(0, 3).map((b: any, i: number) => {
                   const openStatus = b.isClosed ? 'PERMANENTLY CLOSED' : (b.isOpenNow ? 'OPEN NOW' : 'Closed right now');
                   const txns = b.transactions?.length > 0 ? `Available: ${b.transactions.join(', ')}` : '';
                   const googleInfo = b.googleRating ? ` | Google: ⭐${b.googleRating} (${b.googleReviewCount} reviews)` : '';
@@ -1819,13 +1817,11 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
    ${openStatus} | Today: ${b.todayHours || 'hours not available'} | ${txns} | Categories: ${b.categories || ''}${googleInfo}`;
                 }).join('\n');
                 const redditHint = redditData && (redditData as any).otherThreads?.slice(0, 2).map((t: any) => t.title).join('; ') || '';
-                const systemPrompt = `You are a local food expert giving personalized recommendations. For each top restaurant, explain:
-- Why it's popular (what makes it special, signature dishes)
-- Current status (open now or not, today's hours)
-- Practical tips (delivery/pickup, price range, best time to visit)
-Be specific with names, ratings, and review counts. Write like a knowledgeable friend, not a database. Max 200 words.`;
+                const systemPrompt = `Recommend top 3. For each: name, why good, open/closed status, hours.
+Be specific. Max 80 words.
+`;
                 const userMessage = `Query: ${intent.query}\n\nTop restaurants:\n${yelpLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}`;
-                const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 150, timeoutMs: 30000, temperature: 0.3 });
+                const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 80, timeoutMs: 20000, temperature: 0.3 });
                 if (text) answer = text;
               } catch { /* LLM failure — no answer */ }
             }
