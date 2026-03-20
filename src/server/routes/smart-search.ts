@@ -910,14 +910,20 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
   if (youtubeData?.videos[0]) sources.push({ title: youtubeData.videos[0].title, url: youtubeData.videos[0].url, domain: 'youtube.com' });
 
   // ── AI Synthesis via Qwen/Ollama (optional) ───────────────────────────
+  // Build a Yelp-only summary first (fast, doesn't wait for Reddit)
+  // then enrich with Reddit/YouTube if they arrived
   let answer: string | undefined;
   const ollamaUrl = process.env.OLLAMA_URL;
 
-  if (ollamaUrl && combinedContent.length > 0) {
+  if (ollamaUrl && yelpData && yelpData.businesses.length > 0) {
     try {
-      const systemPrompt = `Synthesize restaurant recommendations. The results are ranked by a combination of rating and review volume — restaurants with both high ratings AND many reviews rank highest. Mention specific ratings, review counts, and what makes the top picks stand out. Be specific with names. Max 150 words.`;
-      const userMessage = `Query: ${intent.query}\n\nSources:\n${combinedContent.substring(0, 1200)}`;
-      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 180, timeoutMs: 20000, temperature: 0.3 });
+      const yelpLines = yelpData.businesses.slice(0, 8).map((b: any, i: number) =>
+        `${i+1}. ${b.name} ⭐${b.rating} (${b.reviewCount?.toLocaleString()} reviews)${b.price ? ' ' + b.price : ''}${b.address ? ' — ' + b.address : ''}`
+      ).join('\n');
+      const redditHint = redditData?.otherThreads?.slice(0,2).map((t: any) => t.title).join('; ') || '';
+      const systemPrompt = `Synthesize restaurant recommendations. Results are ranked by rating × review volume. Mention specific names, ratings, and review counts. Be specific. Max 150 words.`;
+      const userMessage = `Query: ${intent.query}\n\nTop restaurants:\n${yelpLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}`;
+      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 180, timeoutMs: 25000, temperature: 0.3 });
       if (text) answer = text;
     } catch (err) {
       console.warn('[restaurant-search] LLM synthesis failed (graceful fallback):', (err as Error).message);
