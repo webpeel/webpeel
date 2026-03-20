@@ -498,8 +498,8 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
   const redditThreads = redditSource?.threads || (redditSource?.topThread ? [redditSource.topThread] : []);
   const youtubeVideos = youtubeSource?.videos || [];
 
-  // Detect if sources are multi-source (have type field with yelp/reddit/youtube) vs citation sources ({title, url, domain})
-  const isMultiSource = multiSources && multiSources.length > 0 && multiSources.some((s) => ['yelp', 'reddit', 'youtube'].includes(s.type));
+  // Detect if sources are multi-source (have type field with yelp/reddit/youtube/cars/shopping) vs citation sources ({title, url, domain})
+  const isMultiSource = multiSources && multiSources.length > 0 && multiSources.some((s) => ['yelp', 'reddit', 'youtube', 'cars', 'shopping'].includes(s.type));
 
   return (
     <div className="space-y-3">
@@ -515,7 +515,7 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
         <div className="flex gap-1.5 flex-wrap">
           {multiSources!.map((s) => (
             <span key={s.type} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-              {s.type === 'yelp' ? '📍 Yelp' : s.type === 'reddit' ? '💬 Reddit' : s.type === 'youtube' ? '🎬 YouTube' : s.type}
+              {s.type === 'yelp' ? '📍 Yelp' : s.type === 'reddit' ? '💬 Reddit' : s.type === 'youtube' ? '🎬 YouTube' : s.type === 'cars' ? '🚗 Cars.com' : s.type === 'shopping' ? '🛍️ Shopping' : s.type}
             </span>
           ))}
         </div>

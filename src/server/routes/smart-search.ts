@@ -184,25 +184,37 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
   });
   if (intent.params.maxPrice) params.set('list_price_max', intent.params.maxPrice);
 
-  const url = `https://www.cars.com/shopping/results/?${params.toString()}`;
+  const carSearchUrl = `https://www.cars.com/shopping/results/?${params.toString()}`;
 
-  try {
-    // Proxy provides full HTML; skip browser render for speed (10s vs 25s)
-    const result = await peel(url, { timeout: 25000 });
-    return {
-      type: 'cars',
-      source: 'Cars.com',
-      sourceUrl: url,
-      content: result.content,
-      title: result.title,
-      domainData: result.domainData,
-      structured: result.domainData?.structured,
-      tokens: result.tokens,
-      fetchTimeMs: Date.now() - t0,
-    };
-  } catch (err) {
-    throw new Error(`Cars.com search failed: ${(err as Error).message}`);
+  // Run Cars.com peel and Reddit search in parallel
+  const [carsSettled, redditSettled] = await Promise.allSettled([
+    peel(carSearchUrl, { timeout: 25000 }),
+    getBestSearchProvider().provider.searchWeb(`${keyword} reddit review reliable problems`, { count: 5 }),
+  ]);
+
+  if (carsSettled.status === 'rejected') {
+    throw new Error(`Cars.com search failed: ${(carsSettled.reason as Error)?.message}`);
   }
+
+  const result = carsSettled.value;
+  const carListings: any[] = result.domainData?.structured?.listings || [];
+  const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
+
+  return {
+    type: 'cars',
+    source: 'Cars.com + Reddit',
+    sourceUrl: carSearchUrl,
+    content: result.content,
+    title: result.title,
+    domainData: result.domainData,
+    structured: result.domainData?.structured,
+    tokens: result.tokens,
+    fetchTimeMs: Date.now() - t0,
+    sources: [
+      { type: 'cars', url: carSearchUrl, count: carListings.length } as any,
+      { type: 'reddit', threads: redditResults.map(r => ({ title: r.title, url: r.url, snippet: r.snippet })) } as any,
+    ],
+  };
 }
 
 async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResult> {
@@ -610,10 +622,17 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
     .replace(/\s+/g, ' ')
     .trim() || intent.query;
 
-  // Use SearXNG to search for products — it aggregates Google Shopping, Amazon, etc.
+  // Use SearXNG to search for products and Reddit reviews in parallel
   const { provider: searchProvider } = getBestSearchProvider();
   const searchQuery = `${keyword} buy site:amazon.com OR site:bestbuy.com OR site:walmart.com OR site:target.com OR site:rei.com OR site:nordstrom.com OR site:sephora.com OR site:homedepot.com`;
-  const rawResults = await searchProvider.searchWeb(searchQuery, { count: 15 });
+
+  const [rawSettled, redditSettled] = await Promise.allSettled([
+    searchProvider.searchWeb(searchQuery, { count: 15 }),
+    getBestSearchProvider().provider.searchWeb(`${keyword} reddit review best worth it`, { count: 4 }),
+  ]);
+
+  const rawResults = rawSettled.status === 'fulfilled' ? rawSettled.value : [];
+  const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
 
   // Parse structured product listings from search results
   const listings = rawResults
@@ -661,13 +680,17 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
 
   return {
     type: 'products',
-    source: listings.length > 0 ? 'Shopping' : 'Web',
+    source: listings.length > 0 ? 'Shopping + Reddit' : 'Web',
     sourceUrl: amazonUrl,
     content,
     title: `${keyword} — Shopping`,
     structured: { listings },
     tokens: content.split(' ').length,
     fetchTimeMs: Date.now() - t0,
+    sources: [
+      { type: 'shopping', count: listings.length } as any,
+      { type: 'reddit', threads: redditResults.slice(0, 3).map(r => ({ title: r.title, url: r.url, snippet: r.snippet })) } as any,
+    ],
   };
 }
 
