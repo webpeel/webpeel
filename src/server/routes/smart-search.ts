@@ -13,6 +13,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import http from 'http';
 import '../types.js'; // Augments Express.Request with requestId, auth
 import { AuthStore } from '../auth-store.js';
 import { peel } from '../../index.js';
@@ -617,7 +618,6 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
           // Kill if abort fires
           llmAbort.signal.addEventListener('abort', () => req.destroy(new Error('aborted')));
 
-          const http = require('http') as typeof import('http');
           const req = http.request(opts, (res) => {
             const chunks: Buffer[] = [];
             res.on('data', (c: Buffer) => chunks.push(c));
