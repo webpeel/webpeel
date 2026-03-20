@@ -1389,9 +1389,10 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
   const GOOGLE_PLACES_KEY = process.env.GOOGLE_PLACES_API_KEY;
   const isEquipmentRental = /\b(rent|rental|renting|hire|lease)\b/.test(query) && /\b(forklift|dumpster|pressure washer|generator|excavator|bobcat|crane|scaffolding|tent|truck|van|trailer|equipment|tool|power tool)\b/.test(query);
   const isServiceBusiness = /\b(plumber|electrician|mechanic|dentist|doctor|lawyer|locksmith|handyman|contractor|vet|salon|barber|spa|gym|daycare|moving|storage|cleaning|pest control|roofing|hvac|landscaping)\b/.test(query) && /\b(near|in|around|open|best|cheap|emergency|24.hour)\b/.test(query);
+  const isGasStation = /\b(gas|gasoline|fuel|gas station|petrol|diesel)\b/.test(query) && /\b(cheap|cheapest|price|near|closest|best)\b/.test(query);
 
   let localBusinesses: any[] = [];
-  if ((isEquipmentRental || isServiceBusiness) && GOOGLE_PLACES_KEY) {
+  if ((isEquipmentRental || isServiceBusiness || isGasStation) && GOOGLE_PLACES_KEY) {
     try {
       // Use Google Places Text Search
       const findRes = await fetch(
@@ -1515,9 +1516,38 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
     .map((r: any, i: number) => `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.snippet}`)
     .join('\n\n');
 
-  // For equipment rentals, also search for pricing data
+  // For equipment rentals and gas stations, also search for pricing data
   let pricingInfo = '';
-  if (isEquipmentRental) {
+  if (isGasStation) {
+    try {
+      const locMatch = query.match(/\b(?:in|near|around)\s+([a-z\s]+?)(?:\s+(?:under|below|cheap|\$).*)?$/i);
+      const gasLocation = locMatch ? locMatch[1].trim() : 'New York';
+      const gasPriceResults = await searchProvider.searchWeb(`gas prices ${gasLocation} per gallon today cheapest gasbuddy`, { count: 5 });
+      const gasPrices: string[] = [];
+      for (const r of gasPriceResults) {
+        const text = `${r.title || ''} ${r.snippet || ''}`;
+        const priceMatches = text.match(/\$\d+\.\d{2}/g);
+        if (priceMatches) gasPrices.push(...priceMatches);
+      }
+      if (gasPrices.length > 0) {
+        const uniquePrices = [...new Set(gasPrices)].sort((a, b) => parseFloat(a.slice(1)) - parseFloat(b.slice(1)));
+        pricingInfo = `\n\n## ⛽ Gas Prices (${gasLocation})\n${uniquePrices.slice(0, 8).map(p => `- ${p}/gal`).join('\n')}`;
+        // Add pricing snippets for AI
+        for (const r of gasPriceResults.slice(0, 2)) {
+          if (r.snippet?.match(/\$/)) {
+            (results as any[]).push({
+              title: r.title,
+              url: r.url,
+              snippet: r.snippet,
+              domain: getDomain(r.url),
+              content: r.snippet,
+              isPricing: true,
+            });
+          }
+        }
+      }
+    } catch { /* gas price search failed — non-fatal */ }
+  } else if (isEquipmentRental) {
     try {
       const pricingResults = await searchProvider.searchWeb(`${query} cost price per day rate 2025`, { count: 5 });
       const prices: string[] = [];
@@ -1601,7 +1631,7 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
         .filter(Boolean)
         .join('\n\n---\n\n');
 
-      const systemPrompt = `Answer the query using these sources. Be specific with names, numbers, dates, and prices. Bold key facts. Cite sources as [1], [2], etc. If sources disagree, note the difference.${isEquipmentRental ? ' IMPORTANT: Include specific rental prices/rates per day or week if available in the sources. Mention the cheapest option.' : ''}${isServiceBusiness ? ' IMPORTANT: Include business hours, phone numbers, and whether they are open now.' : ''} Max 150 words.`;
+      const systemPrompt = `Answer the query using these sources. Be specific with names, numbers, dates, and prices. Bold key facts. Cite sources as [1], [2], etc. If sources disagree, note the difference.${isEquipmentRental ? ' IMPORTANT: Include specific rental prices/rates per day or week if available in the sources. Mention the cheapest option.' : ''}${isServiceBusiness ? ' IMPORTANT: Include business hours, phone numbers, and whether they are open now.' : ''}${isGasStation ? ' IMPORTANT: Include gas prices per gallon if available. Mention the cheapest station, its address, and current price. Sort by price.' : ''} Max 150 words.`;
 
       // Truncate source content to 1200 chars total (shorter = faster Ollama response)
       const truncatedSources = sourceContent.substring(0, 1200);
