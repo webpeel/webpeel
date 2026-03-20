@@ -826,7 +826,7 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
       <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
-            {/* Name + price badge row */}
+            {/* Name + price badge + open/closed badge row */}
             <div className="flex items-start gap-2 flex-wrap">
               <a href={url} target="_blank" rel="noopener noreferrer"
                 className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-1 flex-1 min-w-0">
@@ -835,6 +835,15 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
               {item.price && (
                 <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full border font-semibold ${priceColor(item.price)}`}>
                   {item.price}
+                </span>
+              )}
+              {item.isOpenNow !== undefined && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${
+                  item.isClosed ? 'bg-red-500/15 text-red-400 border-red-500/20' :
+                  item.isOpenNow ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' :
+                  'bg-zinc-700/60 text-zinc-400 border-zinc-600/40'
+                }`}>
+                  {item.isClosed ? '⛔ Permanently Closed' : item.isOpenNow ? '🟢 Open Now' : '🔴 Closed'}
                 </span>
               )}
             </div>
@@ -850,7 +859,22 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
                 </span>
               )}
               {cuisine && <span className="text-xs text-zinc-500">{cuisine}</span>}
+              {item.todayHours && (
+                <span className="text-xs text-zinc-500">🕐 {item.todayHours}</span>
+              )}
             </div>
+
+            {/* Delivery/Pickup badges */}
+            {item.transactions?.length > 0 && (
+              <div className="flex gap-1.5 mt-1">
+                {item.transactions.includes('delivery') && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">🚗 Delivery</span>
+                )}
+                {item.transactions.includes('pickup') && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">📦 Pickup</span>
+                )}
+              </div>
+            )}
 
             {/* Address on its own line */}
             {address && (

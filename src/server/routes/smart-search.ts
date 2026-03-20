@@ -732,18 +732,55 @@ async function fetchYelpResults(keyword: string, location: string) {
 
   if (!res.ok) throw new Error(`Yelp API ${res.status}`);
   const data = await res.json();
-  const businesses = (data.businesses || []).map((b: any) => ({
-    name: b.name,
-    rating: b.rating,
-    reviewCount: b.review_count,
-    address: b.location ? [b.location.address1, b.location.city, b.location.state].filter(Boolean).join(', ') : '',
-    price: b.price || '',
-    categories: (b.categories || []).map((c: any) => c.title).join(', '),
-    url: b.url || '',
-    phone: b.display_phone || '',
-    image_url: b.image_url || '',
-    distance: b.distance,
-  }));
+  const businesses = (data.businesses || []).map((b: any) => {
+    // Parse business hours
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const hours: Record<string, string> = {};
+    const businessHours = b.business_hours?.[0]?.open || [];
+    for (const slot of businessHours) {
+      const day = dayNames[slot.day] || '';
+      const start = `${slot.start.slice(0, 2)}:${slot.start.slice(2)}`;
+      const end = `${slot.end.slice(0, 2)}:${slot.end.slice(2)}`;
+      if (hours[day]) {
+        hours[day] += `, ${start}-${end}`;  // Multiple time slots (lunch + dinner)
+      } else {
+        hours[day] = `${start}-${end}`;
+      }
+    }
+
+    // Check if open right now
+    const now = new Date();
+    const currentDay = dayNames[now.getDay() === 0 ? 6 : now.getDay() - 1]; // JS: 0=Sun, Yelp: 0=Mon
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+    let isOpenNow = false;
+    for (const slot of businessHours) {
+      if (dayNames[slot.day] === currentDay) {
+        if (currentTime >= slot.start && currentTime <= slot.end) {
+          isOpenNow = true;
+          break;
+        }
+      }
+    }
+
+    return {
+      name: b.name,
+      rating: b.rating,
+      reviewCount: b.review_count,
+      address: b.location ? [b.location.address1, b.location.city, b.location.state].filter(Boolean).join(', ') : '',
+      price: b.price || '',
+      categories: (b.categories || []).map((c: any) => c.title).join(', '),
+      url: b.url || '',
+      phone: b.display_phone || '',
+      image_url: b.image_url || '',
+      distance: b.distance,
+      // NEW FIELDS:
+      hours,
+      isOpenNow,
+      isClosed: b.is_closed === true,  // permanently closed
+      transactions: b.transactions || [],  // ['delivery', 'pickup']
+      todayHours: hours[currentDay] || 'Closed today',
+    };
+  });
 
   const url = `https://www.yelp.com/search?find_desc=${encodeURIComponent(keyword)}&find_loc=${encodeURIComponent(location)}`;
   return {
@@ -868,6 +905,9 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
         yelpData.businesses = filtered;
       }
     }
+
+    // Remove permanently closed businesses
+    yelpData.businesses = yelpData.businesses.filter((b: any) => !b.isClosed);
   }
 
   // ── Build markdown content from all sources ──────────────────────────
@@ -884,7 +924,10 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
         const reviews = b.reviewCount ? `(${b.reviewCount.toLocaleString()} reviews)` : '';
         const address = b.address || b.location || '';
         const price   = b.price   ? ` · ${b.price}` : '';
-        contentParts.push(`${i + 1}. **${name}** ${rating} ${reviews}${price}${address ? ` — ${address}` : ''}`);
+        const openStatus = b.isClosed ? ' · ⛔ Permanently Closed' : (b.isOpenNow ? ' · 🟢 Open Now' : ' · 🔴 Closed');
+        const todayHours = b.todayHours && b.todayHours !== 'Closed today' ? ` · 🕐 ${b.todayHours}` : (b.todayHours === 'Closed today' ? ' · 🕐 Closed today' : '');
+        const txns = b.transactions?.length > 0 ? ` · ${b.transactions.map((t: string) => t === 'delivery' ? '🚗 Delivery' : t === 'pickup' ? '📦 Pickup' : t).join(' ')}` : '';
+        contentParts.push(`${i + 1}. **${name}** ${rating} ${reviews}${price}${openStatus}${todayHours}${txns}${address ? ` — ${address}` : ''}`);
       });
     } else if (yelpData.content) {
       contentParts.push(`## Yelp\n${yelpData.content.substring(0, 800)}`);
@@ -934,13 +977,20 @@ async function handleRestaurantSearch(intent: SearchIntent): Promise<SmartSearch
 
   if (ollamaUrl && yelpData && yelpData.businesses.length > 0) {
     try {
-      const yelpLines = yelpData.businesses.slice(0, 8).map((b: any, i: number) =>
-        `${i+1}. ${b.name} ⭐${b.rating} (${b.reviewCount?.toLocaleString()} reviews)${b.price ? ' ' + b.price : ''}${b.address ? ' — ' + b.address : ''}`
-      ).join('\n');
+      const yelpLines = yelpData.businesses.slice(0, 5).map((b: any, i: number) => {
+        const openStatus = b.isClosed ? 'PERMANENTLY CLOSED' : (b.isOpenNow ? 'OPEN NOW' : 'Closed right now');
+        const txns = b.transactions?.length > 0 ? `Available: ${b.transactions.join(', ')}` : '';
+        return `${i+1}. ${b.name} ⭐${b.rating} (${b.reviewCount?.toLocaleString()} reviews) ${b.price || ''} — ${b.address}
+   ${openStatus} | Today: ${b.todayHours || 'hours not available'} | ${txns} | Categories: ${b.categories || ''}`;
+      }).join('\n');
       const redditHint = redditData?.otherThreads?.slice(0,2).map((t: any) => t.title).join('; ') || '';
-      const systemPrompt = `Synthesize restaurant recommendations. Results are ranked by rating × review volume. Mention specific names, ratings, and review counts. Be specific. Max 150 words.`;
+      const systemPrompt = `You are a local food expert giving personalized recommendations. For each top restaurant, explain:
+- Why it's popular (what makes it special, signature dishes)
+- Current status (open now or not, today's hours)
+- Practical tips (delivery/pickup, price range, best time to visit)
+Be specific with names, ratings, and review counts. Write like a knowledgeable friend, not a database. Max 200 words.`;
       const userMessage = `Query: ${intent.query}\n\nTop restaurants:\n${yelpLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}`;
-      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 180, timeoutMs: 25000, temperature: 0.3 });
+      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 25000, temperature: 0.3 });
       if (text) answer = text;
     } catch (err) {
       console.warn('[restaurant-search] LLM synthesis failed (graceful fallback):', (err as Error).message);
@@ -1445,6 +1495,8 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
                   const scoreB = (b.rating || 0) * Math.log2((b.reviewCount || 0) + 1);
                   return scoreB - scoreA;
                 });
+                // Remove permanently closed businesses
+                yelpData.businesses = yelpData.businesses.filter((b: any) => !b.isClosed);
                 sendEvent('source', { source: 'yelp', businesses: yelpData.businesses.slice(0, 10) });
               }
             } catch { /* Yelp failed — continue */ }
@@ -1475,13 +1527,20 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
             const ollamaUrl = process.env.OLLAMA_URL;
             if (ollamaUrl && yelpData?.businesses?.length > 0) {
               try {
-                const yelpLines = yelpData.businesses.slice(0, 8).map((b: any, i: number) =>
-                  `${i+1}. ${b.name} ⭐${b.rating} (${b.reviewCount?.toLocaleString()} reviews)${b.price ? ' ' + b.price : ''}${b.address ? ' — ' + b.address : ''}`
-                ).join('\n');
+                const yelpLines = yelpData.businesses.slice(0, 5).map((b: any, i: number) => {
+                  const openStatus = b.isClosed ? 'PERMANENTLY CLOSED' : (b.isOpenNow ? 'OPEN NOW' : 'Closed right now');
+                  const txns = b.transactions?.length > 0 ? `Available: ${b.transactions.join(', ')}` : '';
+                  return `${i+1}. ${b.name} ⭐${b.rating} (${b.reviewCount?.toLocaleString()} reviews) ${b.price || ''} — ${b.address}
+   ${openStatus} | Today: ${b.todayHours || 'hours not available'} | ${txns} | Categories: ${b.categories || ''}`;
+                }).join('\n');
                 const redditHint = redditData && (redditData as any).otherThreads?.slice(0, 2).map((t: any) => t.title).join('; ') || '';
-                const systemPrompt = `Synthesize restaurant recommendations. Results are ranked by rating × review volume. Mention specific names, ratings, and review counts. Be specific. Max 150 words.`;
+                const systemPrompt = `You are a local food expert giving personalized recommendations. For each top restaurant, explain:
+- Why it's popular (what makes it special, signature dishes)
+- Current status (open now or not, today's hours)
+- Practical tips (delivery/pickup, price range, best time to visit)
+Be specific with names, ratings, and review counts. Write like a knowledgeable friend, not a database. Max 200 words.`;
                 const userMessage = `Query: ${intent.query}\n\nTop restaurants:\n${yelpLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}`;
-                const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 180, timeoutMs: 25000, temperature: 0.3 });
+                const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 25000, temperature: 0.3 });
                 if (text) answer = text;
               } catch { /* LLM failure — no answer */ }
             }
