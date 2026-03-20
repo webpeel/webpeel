@@ -648,27 +648,56 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
   }
 
   if (type === 'flights') {
-    return (
-      <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="text-center">
-              <div className="text-sm font-mono font-bold text-zinc-100">{item.departure || item.departureTime || '—'}</div>
-              <div className="text-xs text-zinc-500">{item.origin || item.from || ''}</div>
+    // If we have structured flight data (departure/arrival), show the detailed card
+    const hasFlightDetails = item.departure || item.departureTime || item.origin;
+    if (hasFlightDetails) {
+      return (
+        <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="text-center">
+                <div className="text-sm font-mono font-bold text-zinc-100">{item.departure || item.departureTime || '—'}</div>
+                <div className="text-xs text-zinc-500">{item.origin || item.from || ''}</div>
+              </div>
+              <div className="text-zinc-600 text-xs text-center">
+                <div>✈️</div>
+                <div>{item.duration || item.flightDuration || ''}</div>
+                {item.stops != null && <div>{item.stops === 0 ? 'Nonstop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}</div>}
+              </div>
+              <div className="text-center">
+                <div className="text-sm font-mono font-bold text-zinc-100">{item.arrival || item.arrivalTime || '—'}</div>
+                <div className="text-xs text-zinc-500">{item.destination || item.to || ''}</div>
+              </div>
             </div>
-            <div className="text-zinc-600 text-xs text-center">
-              <div>✈️</div>
-              <div>{item.duration || item.flightDuration || ''}</div>
-              {item.stops != null && <div>{item.stops === 0 ? 'Nonstop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}</div>}
-            </div>
-            <div className="text-center">
-              <div className="text-sm font-mono font-bold text-zinc-100">{item.arrival || item.arrivalTime || '—'}</div>
-              <div className="text-xs text-zinc-500">{item.destination || item.to || ''}</div>
+            <div className="text-right">
+              {item.price && <div className="text-emerald-400 font-bold text-sm">{typeof item.price === 'number' ? `$${item.price}` : item.price}</div>}
+              {item.airline && <div className="text-xs text-zinc-500">{item.airline}</div>}
+              {url !== '#' && (
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#818CF8] hover:underline mt-1 block">Book →</a>
+              )}
             </div>
           </div>
-          <div className="text-right">
-            {item.price && <div className="text-emerald-400 font-bold text-sm">{typeof item.price === 'number' ? `$${item.price}` : item.price}</div>}
-            {item.airline && <div className="text-xs text-zinc-500">{item.airline}</div>}
+        </div>
+      );
+    }
+    // Fallback: search-result-style flight cards (title + snippet + price from search engines)
+    const flightTitle = item.title || item.name || 'Flight Deal';
+    const flightSnippet = item.snippet || '';
+    const flightPrice = flightTitle.match(/\$[\d,]+/) || flightSnippet.match(/\$[\d,]+/);
+    return (
+      <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="text-sm font-medium text-[#818CF8] hover:underline line-clamp-2">
+              {flightTitle}
+            </a>
+            {flightSnippet && (
+              <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{flightSnippet}</p>
+            )}
+          </div>
+          <div className="text-right shrink-0">
+            {flightPrice && <div className="text-emerald-400 font-bold text-sm">{flightPrice[0]}</div>}
             {url !== '#' && (
               <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#818CF8] hover:underline mt-1 block">Book →</a>
             )}
