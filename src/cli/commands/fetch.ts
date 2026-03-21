@@ -786,6 +786,16 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
           ? ` [${(result as any).domainData.domain}:${(result as any).domainData.type}]`
           : '';
         spinner.succeed(`Fetched in ${result.elapsed}ms using ${result.method} method${domainTag}`);
+
+        // Smart hints — suggest features the user might not know about
+        if (!options.silent && !options.json && !options.skipDomainApi) {
+          if (result.method === 'domain-api') {
+            console.error(`\x1b[33m💡 Tip: Using our ${(result as any).domainData?.domain || ''} extractor. Want the raw page instead? Add --skip-domain-api\x1b[0m`);
+          }
+        }
+        if (!options.silent && !options.json && result.tokens && result.tokens < 50 && !options.render) {
+          console.error(`\x1b[33m💡 Tip: Page returned very little content. Try --render for JavaScript-heavy sites or --stealth if blocked.\x1b[0m`);
+        }
       }
 
       // Show metadata header

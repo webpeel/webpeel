@@ -1,0 +1,107 @@
+# WebPeel — The Web Data API for AI
+
+> Fetch, search, extract, and understand any webpage with one API call.
+
+## What is WebPeel?
+
+WebPeel turns any webpage into clean, structured data optimized for LLMs. It handles JavaScript rendering, anti-bot bypasses, and 55+ domain-specific extractors automatically.
+
+## Quick Start
+
+```bash
+# Install
+npm install webpeel
+
+# Fetch any URL
+npx webpeel "https://example.com"
+
+# Search the web
+npx webpeel search "best restaurants in NYC"
+
+# API
+curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
+  -H "Authorization: Bearer YOUR_KEY"
+```
+
+## Core Features
+
+### Fetch (`/v1/fetch` or CLI `webpeel fetch`)
+- Any URL → clean markdown, HTML, text, or JSON
+- 55+ domain extractors (Amazon, Reddit, YouTube, Yelp, GitHub, etc.)
+- JavaScript rendering with `--render` or `render=true`
+- Anti-bot bypass with `--stealth` or `stealth=true`
+- Screenshot capture with `--screenshot`
+- Structured data extraction with `--schema product` (9 built-in schemas)
+- Custom JSON schema: `--schema '{"price":"number","title":"string"}'`
+- Bypass domain extractors: `--skip-domain-api` or `noDomainApi=true`
+
+### Search (`/v1/search` or CLI `webpeel search`)
+- Web search with structured results
+- Fetch + summarize top results
+
+### Smart Search (`/v1/search/smart`)
+- AI-powered intent detection (restaurants, products, flights, hotels, cars, rentals)
+- Real-time data: Yelp ratings, Google Places hours, fuel prices, flight costs
+- AI synthesis via Qwen on Ollama
+- SSE streaming for progressive results
+
+### Feed (`/v1/feed`)
+- RSS/Atom feed discovery and parsing
+- Auto-discovers feeds from any URL
+
+### Extract (`/v1/extract`)
+- Structured data extraction with JSON schema
+- No LLM needed for built-in schemas (BM25 extraction)
+- Schemas: product, article, listing, contact, event, recipe, job, business, review
+
+### Watch (CLI `webpeel watch`)
+- Scheduled page monitoring with change detection
+- Cron-style intervals
+
+### MCP Server
+- 18 tools for Claude, Cursor, VS Code
+- `npx webpeel mcp` to start
+- Tools: fetch, search, screenshot, extract, map, crawl, and more
+
+## Common Use Cases
+
+### "I want to scrape a page but it's blocked"
+```bash
+webpeel fetch "https://example.com" --stealth
+```
+
+### "I want the REAL page, not WebPeel's API shortcut"
+```bash
+webpeel fetch "https://accuweather.com/..." --skip-domain-api
+```
+
+### "I want structured JSON, not markdown"
+```bash
+webpeel fetch "https://amazon.com/dp/..." --schema product --json
+```
+
+### "I want to search and get AI-summarized results"
+```bash
+curl -X POST "https://api.webpeel.dev/v1/search/smart" \
+  -H "Authorization: Bearer KEY" \
+  -d '{"q":"best restaurants in manhattan"}'
+```
+
+### "I want to monitor a page for changes"
+```bash
+webpeel watch "https://example.com/pricing" --interval 3600
+```
+
+## Pricing
+- Free: 500 requests/week
+- Starter: $9/month — 10,000 requests
+- Pro: $49/month — 100,000 requests
+- Enterprise: Custom
+
+## Links
+- Docs: https://webpeel.dev/docs
+- Dashboard: https://app.webpeel.dev
+- API Reference: https://webpeel.dev/docs/api
+- GitHub: https://github.com/webpeel/webpeel
+- npm: https://www.npmjs.com/package/webpeel
+- PyPI: https://pypi.org/project/webpeel/

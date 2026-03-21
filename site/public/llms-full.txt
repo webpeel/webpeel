@@ -1,0 +1,148 @@
+# WebPeel — Complete API Reference for AI Agents
+
+> This file contains the full API documentation for WebPeel.
+> For a shorter overview, see /llms.txt
+
+## Authentication
+All API requests require an API key via header:
+```
+Authorization: Bearer wp_YOUR_KEY
+```
+Get a key at https://app.webpeel.dev/keys
+
+## GET /v1/fetch
+Fetch any URL as clean content.
+
+Parameters:
+- url (required) — URL to fetch
+- format — markdown (default), html, text, clean
+- render — true to use headless browser (for JavaScript-heavy sites)
+- stealth — true to bypass anti-bot protection (auto-enables render)
+- wait — milliseconds to wait after page load (render mode)
+- screenshot — true to capture screenshot
+- fullPage — true for full-page screenshot
+- selector — CSS selector to extract specific element
+- exclude — CSS selectors to exclude
+- includeTags — only include these HTML elements
+- excludeTags — remove these HTML elements
+- raw — true to skip smart extraction, return full page
+- noDomainApi — true to bypass domain-specific API extractors
+- schema — built-in schema name OR custom JSON schema
+- maxTokens — maximum output tokens (truncates intelligently)
+- timeout — request timeout in ms (default 30000)
+
+Built-in schemas: product, article, listing, contact, event, recipe, job, business, review
+
+Example:
+```
+GET /v1/fetch?url=https://amazon.com/dp/B0D1XD1ZV3&schema=product
+```
+
+## POST /v1/fetch
+Same as GET but with JSON body. Additional options:
+- actions — array of page actions [{type:"click",selector:".btn"},{type:"scroll",direction:"down"}]
+- extract — {schema: {...}, prompt: "..."} for LLM extraction
+- llmProvider — openai, anthropic, google (for LLM extraction)
+- llmApiKey — your LLM API key (for LLM extraction)
+
+## GET /v1/search
+Web search with structured results.
+
+Parameters:
+- q (required) — search query
+- limit — number of results (default 10, max 20)
+- fetchContent — true to fetch full content for each result
+- lang — language code (default en)
+- region — region code (default us)
+
+## POST /v1/search/smart
+AI-powered smart search with intent detection.
+
+Body: { q: "search query", stream: true/false }
+
+Intent types detected automatically:
+- restaurants — Yelp + Google Places + Reddit + YouTube + AI
+- products — Amazon/Walmart/Best Buy + Reddit + AI
+- cars — Cars.com + web search + AI
+- flights — flight aggregators + AI
+- hotels — hotel sites + AI
+- rental — car rental aggregators + AI
+- general — web search + peel top 5 + AI
+
+SSE streaming (stream: true):
+Events: intent, progress, source, result, answer, done, error
+
+## GET /v1/feed
+Discover and parse RSS/Atom feeds.
+
+Parameters:
+- url (required) — website URL or direct feed URL
+- limit — max items (default 20, max 100)
+- format — json (default) or markdown
+
+## GET /v1/screenshot
+Capture webpage screenshots.
+
+Parameters:
+- url (required)
+- fullPage — true for full page
+- width — viewport width (default 1280)
+- height — viewport height (default 720)
+
+## POST /v1/crawl
+Crawl entire sites.
+
+Body: { url, limit, maxDepth, include, exclude }
+
+## GET /v1/map
+Discover all URLs on a site.
+
+Parameters: url, limit
+
+## CLI Reference
+
+```bash
+# Fetch
+webpeel fetch <url> [options]
+  --render          Use headless browser
+  --stealth         Anti-bot bypass
+  --screenshot      Capture screenshot
+  --schema <name>   Extract structured data
+  --skip-domain-api Bypass domain extractors
+  --raw             Full page, no extraction
+  --json            JSON output
+  --silent          No progress output
+
+# Search
+webpeel search <query> [options]
+  --limit <n>       Number of results
+  --fetch           Fetch content for each result
+
+# Watch
+webpeel watch <url> [options]
+  --interval <sec>  Check interval
+  --assert <expr>   Alert condition
+
+# MCP Server
+webpeel mcp
+  Starts MCP server for Claude/Cursor/VS Code
+```
+
+## 55+ Domain Extractors
+Automatic structured extraction for:
+Amazon, Reddit, YouTube, GitHub, Hacker News, Wikipedia, NPM, PyPI,
+Stack Overflow, Medium, Substack, Dev.to, Twitter/X, Instagram, TikTok,
+LinkedIn, Pinterest, Spotify, SoundCloud, Twitch, IMDb, BBC, CNN, NYT,
+Yelp, Zillow, Redfin, Cars.com, eBay, Etsy, Walmart, Best Buy,
+Polymarket, Kalshi, TradingView, CoinGecko, CoinMarketCap, ESPN,
+DraftKings, FanDuel, Semantic Scholar, PubMed, ArXiv, AllRecipes,
+Craigslist, Facebook Marketplace, ProductHunt, AccuWeather, Weather.com,
+Booking.com, and more.
+
+## Tiered Pricing per Request
+- simple (HTTP fetch): $0.0002/request
+- domain-api (API extractor): $0.0002/request
+- stealth (headless browser): $0.005/request
+- captcha (anti-bot bypass): $0.02/request
+
+Method is returned in X-Method header and response body.
