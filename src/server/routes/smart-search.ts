@@ -251,6 +251,15 @@ export function detectSearchIntent(query: string): SearchIntent {
     return { type: 'general', query: q, params: {} };
   }
 
+  // Grocery/convenience store queries → products with grocery-specific search
+  // Must be BEFORE local query check — "cheapest milk near me" is grocery, not local
+  if (
+    /\b(grocery|groceries|milk|eggs|bread|butter|cheese|chicken|beef|pork|fruit|vegetables|cereal|rice|pasta|snack|drink|soda|juice|water|organic|produce)\b/.test(q) &&
+    /\b(price|cheap|cheapest|buy|cost|near|where|compare)\b/.test(q)
+  ) {
+    return { type: 'products', query: q, params: { isGrocery: 'true' } };
+  }
+
   // Local/physical queries: "where to buy X near Y", "is X open", "X near me" → general (not products)
   // These need local search, not online shopping results
   if (
@@ -419,48 +428,47 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
 
   const carSearchUrl = `https://www.cars.com/shopping/results/?${params.toString()}`;
 
-  // Run Cars.com peel (15s cap) and Reddit search in parallel.
-  // Cars.com returns 20+ real listings with prices when peel succeeds.
-  const [carsSettled, redditSettled] = await Promise.allSettled([
+  // Search MULTIPLE car sites in parallel — first one with real listings wins
+  const { provider } = getBestSearchProvider();
+  const [carsComSettled, carGurusSettled, autotraderSettled, redditSettled] = await Promise.allSettled([
     peel(carSearchUrl, { timeout: 15000 }),
-    getBestSearchProvider().provider.searchWeb(`${keyword} reddit review reliable problems`, { count: 5 }),
+    provider.searchWeb(`${keyword} ${intent.params.maxPrice ? 'under $' + intent.params.maxPrice : ''} site:cargurus.com price listing`, { count: 5 }),
+    provider.searchWeb(`${keyword} ${intent.params.maxPrice ? 'under $' + intent.params.maxPrice : ''} site:autotrader.com price listing`, { count: 5 }),
+    provider.searchWeb(`${keyword} reddit review reliable problems`, { count: 5 }),
   ]);
 
-  const result = carsSettled.status === 'fulfilled' ? carsSettled.value : null;
-  let carListings: any[] = result?.domainData?.structured?.listings || [];
-  const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
+  // Cars.com peel gives structured listings (best quality)
+  const carsComResult = carsComSettled.status === 'fulfilled' ? carsComSettled.value : null;
+  let carListings: any[] = carsComResult?.domainData?.structured?.listings || [];
 
-  // Fallback: if Cars.com extraction failed, search for car listings via web search
+  // If Cars.com peel failed, combine results from CarGurus + Autotrader
   if (carListings.length === 0) {
-    const { provider } = getBestSearchProvider();
-    // Search for actual car listings with specific prices (not generic "Cars for Sale Near X" pages)
-    const fallbackQuery = `${keyword || 'car'} ${intent.params.maxPrice ? `under $${intent.params.maxPrice} price` : 'price'} ${intent.params.zip ? `near ${intent.params.zip}` : ''} used for sale listing`;
-    const searchResults = await provider.searchWeb(fallbackQuery, { count: 15 });
+    const carGurusResults = carGurusSettled.status === 'fulfilled' ? carGurusSettled.value : [];
+    const autotraderResults = autotraderSettled.status === 'fulfilled' ? autotraderSettled.value : [];
+    const allSearchResults = [...carGurusResults, ...autotraderResults];
 
-    // Build listings from search results — filter out generic search pages
-    carListings = searchResults
+    carListings = allSearchResults
       .filter(r => r.url && r.title)
       .map(r => {
         const textToSearch = `${r.title || ''} ${r.snippet || ''}`;
         const price = parsePrice(textToSearch);
-        // Skip generic "Cars for Sale" pages — we want actual listings with real prices
         const isGenericPage = /\b(for sale near|cars for sale|search|browse|find)\b/i.test(r.title || '') && !price;
         if (isGenericPage) return null;
-        // Extract year/model from title
         const yearMatch = (r.title || '').match(/\b(20\d{2}|19\d{2})\b/);
-        const year = yearMatch ? yearMatch[1] : '';
         return {
           title: r.title?.replace(/\s*[-|–—].*$/, '').trim() || 'Car Listing',
           price,
-          year,
+          year: yearMatch ? yearMatch[1] : '',
           url: addAffiliateTag(r.url),
           snippet: r.snippet || '',
           source: (() => { try { return new URL(r.url).hostname.replace('www.', ''); } catch { return ''; } })(),
         };
       })
       .filter(Boolean)
-      .slice(0, 8) as any[];
+      .slice(0, 10) as any[];
   }
+
+  const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
 
   // AI synthesis: summarize top listings + Reddit input
   let answer: string | undefined;
@@ -478,17 +486,17 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
     ? `# 🚗 Cars — ${intent.query}\n\n${carListings.map((l: any, i: number) =>
         `${i + 1}. **${l.title || l.name}** — ${l.price || 'see price'}${l.mileage ? ` · ${String(l.mileage).replace(/\s*mi$/i, '')} mi` : ''}\n   ${l.snippet || ''}`
       ).join('\n\n')}`
-    : (result?.content || `# 🚗 Cars — ${intent.query}\n\nNo listings found. Try a different search.`);
+    : (carsComResult?.content || `# 🚗 Cars — ${intent.query}\n\nNo listings found. Try a different search.`);
 
   return {
     type: 'cars',
-    source: 'Cars.com + Reddit',
+    source: 'Cars.com + CarGurus + Autotrader + Reddit',
     sourceUrl: carSearchUrl,
     content,
-    title: result?.title || `Cars — ${intent.query}`,
-    domainData: result?.domainData,
-    structured: result?.domainData?.structured || (carListings.length > 0 ? { listings: carListings } : undefined),
-    tokens: result?.tokens || content.split(/\s+/).length,
+    title: carsComResult?.title || `Cars — ${intent.query}`,
+    domainData: carsComResult?.domainData,
+    structured: carsComResult?.domainData?.structured || (carListings.length > 0 ? { listings: carListings } : undefined),
+    tokens: carsComResult?.tokens || content.split(/\s+/).length,
     fetchTimeMs: Date.now() - t0,
     ...(answer !== undefined ? { answer } : {}),
     sources: [
@@ -504,11 +512,19 @@ async function handleFlightSearch(intent: SearchIntent): Promise<SmartSearchResu
 
   // Search for actual flight prices + Reddit tips in parallel
   const { provider: searchProvider } = getBestSearchProvider();
-  const [flightSettled, redditSettled] = await Promise.allSettled([
-    searchProvider.searchWeb(`flights ${intent.query} cheapest price`, { count: 8 }),
+  const [kayakSettled, skyscannerSettled, momondoSettled, googleSettled, redditSettled] = await Promise.allSettled([
+    searchProvider.searchWeb(`${intent.query} cheapest price site:kayak.com`, { count: 4 }),
+    searchProvider.searchWeb(`${intent.query} cheapest flights site:skyscanner.com`, { count: 3 }),
+    searchProvider.searchWeb(`${intent.query} cheap flights site:momondo.com OR site:cheapflights.com`, { count: 3 }),
+    searchProvider.searchWeb(`${intent.query} flights site:google.com/travel`, { count: 2 }),
     searchProvider.searchWeb(`${intent.query} flights reddit tips cheap`, { count: 3 }),
   ]);
-  const flightResults = flightSettled.status === 'fulfilled' ? flightSettled.value : [];
+  const flightResults = [
+    ...(kayakSettled.status === 'fulfilled' ? kayakSettled.value : []),
+    ...(skyscannerSettled.status === 'fulfilled' ? skyscannerSettled.value : []),
+    ...(momondoSettled.status === 'fulfilled' ? momondoSettled.value : []),
+    ...(googleSettled.status === 'fulfilled' ? googleSettled.value : []),
+  ];
   const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
 
   // Build content from search results + static booking links as fallback
@@ -573,11 +589,19 @@ async function handleHotelSearch(intent: SearchIntent): Promise<SmartSearchResul
 
   // Search for actual hotel prices + Reddit tips in parallel
   const { provider: searchProvider } = getBestSearchProvider();
-  const [hotelSettled, redditSettled] = await Promise.allSettled([
-    searchProvider.searchWeb(`hotel ${hotelLocation} price per night cheapest 2025 site:kayak.com OR site:booking.com OR site:expedia.com OR site:hotels.com OR site:tripadvisor.com OR site:hoteltonight.com`, { count: 10 }),
+  const [bookingSettled, kayakSettled, expediaSettled, tripadvisorSettled, redditSettled] = await Promise.allSettled([
+    searchProvider.searchWeb(`hotel ${hotelLocation} price per night site:booking.com`, { count: 3 }),
+    searchProvider.searchWeb(`hotel ${hotelLocation} cheapest site:kayak.com`, { count: 3 }),
+    searchProvider.searchWeb(`hotel ${hotelLocation} deals site:expedia.com OR site:hotels.com`, { count: 3 }),
+    searchProvider.searchWeb(`hotel ${hotelLocation} best rated site:tripadvisor.com`, { count: 2 }),
     searchProvider.searchWeb(`best hotel ${hotelLocation} reddit tips deal`, { count: 3 }),
   ]);
-  const hotelResults = hotelSettled.status === 'fulfilled' ? hotelSettled.value : [];
+  const hotelResults = [
+    ...(bookingSettled.status === 'fulfilled' ? bookingSettled.value : []),
+    ...(kayakSettled.status === 'fulfilled' ? kayakSettled.value : []),
+    ...(expediaSettled.status === 'fulfilled' ? expediaSettled.value : []),
+    ...(tripadvisorSettled.status === 'fulfilled' ? tripadvisorSettled.value : []),
+  ];
   const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
 
   // Parse prices and sort by price
@@ -664,15 +688,22 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
   const { provider: searchProvider } = getBestSearchProvider();
 
   // Search for aggregator results that include prices + Reddit tips
-  const [aggregatorSettled, redditSettled] = await Promise.allSettled([
+  const [aggregatorSettled, turoSettled, redditSettled] = await Promise.allSettled([
     searchProvider.searchWeb(
-      `car rental ${location || 'near me'} ${dates ? `${dates.from} to ${dates.to}` : ''} price per day cheapest`,
-      { count: 12 }
+      `car rental ${location || 'near me'} ${dates ? `${dates.from} to ${dates.to}` : ''} price cheapest site:kayak.com OR site:priceline.com OR site:expedia.com`,
+      { count: 8 }
+    ),
+    searchProvider.searchWeb(
+      `car rental ${location || ''} site:turo.com OR site:enterprise.com OR site:hertz.com`,
+      { count: 5 }
     ),
     searchProvider.searchWeb(`car rental ${location || ''} reddit tips best deal cheapest`, { count: 4 }),
   ]);
 
-  const rentalResults = aggregatorSettled.status === 'fulfilled' ? aggregatorSettled.value : [];
+  const rentalResults = [
+    ...(aggregatorSettled.status === 'fulfilled' ? aggregatorSettled.value : []),
+    ...(turoSettled.status === 'fulfilled' ? turoSettled.value : []),
+  ];
   const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
 
   // Known aggregators and direct providers
@@ -1245,6 +1276,9 @@ const SHOPPING_DOMAINS: Array<{ pattern: string; name: string }> = [
   { pattern: 'webstaurantstore.com',   name: 'WebstaurantStore' },
   { pattern: 'globalindustrial.com',   name: 'Global Industrial' },
   { pattern: 'staples.com',            name: 'Staples' },
+  { pattern: 'instacart.com',          name: 'Instacart' },
+  { pattern: 'freshdirect.com',        name: 'FreshDirect' },
+  { pattern: 'wholefoodsmarket.com',   name: 'Whole Foods' },
 ];
 
 function getStoreInfo(url: string): { store: string; domain: string } | null {
@@ -1333,20 +1367,46 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
     .replace(/\s+/g, ' ')
     .trim() || intent.query;
 
-  // Use SearXNG to search for products and Reddit reviews in parallel
+  // Parallel site-specific searches
   const { provider: searchProvider } = getBestSearchProvider();
   const isBulk = /\b(bulk|wholesale|1000|500|case|pallet|box of|pack of|carton)\b/i.test(intent.query);
-  const searchQuery = isBulk
-    ? `${keyword} wholesale bulk site:uline.com OR site:alibaba.com OR site:staples.com OR site:amazon.com OR site:webstaurantstore.com OR site:globalindustrial.com`
-    : `${keyword} buy site:amazon.com OR site:bestbuy.com OR site:walmart.com OR site:target.com OR site:rei.com OR site:nordstrom.com OR site:sephora.com OR site:homedepot.com`;
+  const isGrocery = intent.params.isGrocery === 'true' || /\b(grocery|milk|eggs|bread|butter|cheese|chicken|produce)\b/i.test(intent.query);
 
-  const [rawSettled, redditSettled] = await Promise.allSettled([
-    searchProvider.searchWeb(searchQuery, { count: 15 }),
-    getBestSearchProvider().provider.searchWeb(`${keyword} reddit review best worth it`, { count: 4 }),
-  ]);
+  let rawResults: WebSearchResult[];
+  let redditResults: WebSearchResult[];
 
-  const rawResults = rawSettled.status === 'fulfilled' ? rawSettled.value : [];
-  const redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
+  if (isGrocery) {
+    // Search grocery-specific sites
+    const [instacartSettled, walmartGrocerySettled, freshSettled, redditGrocerySettled] = await Promise.allSettled([
+      searchProvider.searchWeb(`${keyword} price site:instacart.com`, { count: 4 }),
+      searchProvider.searchWeb(`${keyword} price site:walmart.com/grocery OR site:walmart.com`, { count: 4 }),
+      searchProvider.searchWeb(`${keyword} price site:freshdirect.com OR site:wholefoodsmarket.com`, { count: 3 }),
+      searchProvider.searchWeb(`${keyword} cheapest grocery store reddit`, { count: 3 }),
+    ]);
+    rawResults = [
+      ...(instacartSettled.status === 'fulfilled' ? instacartSettled.value : []),
+      ...(walmartGrocerySettled.status === 'fulfilled' ? walmartGrocerySettled.value : []),
+      ...(freshSettled.status === 'fulfilled' ? freshSettled.value : []),
+    ];
+    redditResults = redditGrocerySettled.status === 'fulfilled' ? redditGrocerySettled.value : [];
+  } else {
+    const [amazonSettled, walmartSettled, bestbuySettled, targetSettled, redditSettled] = await Promise.allSettled([
+      searchProvider.searchWeb(`${keyword} site:amazon.com ${isBulk ? '' : 'price'}`, { count: 5 }),
+      searchProvider.searchWeb(`${keyword} site:walmart.com price`, { count: 4 }),
+      searchProvider.searchWeb(`${keyword} site:bestbuy.com OR site:target.com price`, { count: 4 }),
+      isBulk
+        ? searchProvider.searchWeb(`${keyword} wholesale bulk site:uline.com OR site:alibaba.com OR site:staples.com OR site:webstaurantstore.com`, { count: 5 })
+        : searchProvider.searchWeb(`${keyword} site:ebay.com OR site:etsy.com price`, { count: 3 }),
+      searchProvider.searchWeb(`${keyword} reddit review best worth it`, { count: 4 }),
+    ]);
+    rawResults = [
+      ...(amazonSettled.status === 'fulfilled' ? amazonSettled.value : []),
+      ...(walmartSettled.status === 'fulfilled' ? walmartSettled.value : []),
+      ...(bestbuySettled.status === 'fulfilled' ? bestbuySettled.value : []),
+      ...(targetSettled.status === 'fulfilled' ? targetSettled.value : []),
+    ];
+    redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
+  }
 
   // Parse structured product listings from search results
   const listings = rawResults
