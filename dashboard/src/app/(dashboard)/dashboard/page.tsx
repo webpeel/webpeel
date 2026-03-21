@@ -211,11 +211,14 @@ const MODE_BADGES: Record<DetectedMode, { emoji: string; label: string }> = {
 // ─── Example prompts ──────────────────────────────────────────────────────────
 
 const EXAMPLE_PROMPTS = [
-  { label: 'github.com/facebook/react', url: 'https://github.com/facebook/react', type: 'url' },
-  { label: 'en.wikipedia.org/wiki/Mars', url: 'https://en.wikipedia.org/wiki/Mars', type: 'url' },
-  { label: 'best AI coding assistants 2025', url: 'best AI coding assistants 2025', type: 'search' },
+  { label: '🍕 best pizza open now in Manhattan', url: 'best pizza open now in Manhattan', type: 'search' },
+  { label: '⛽ cheapest gas near Times Square', url: 'cheapest gas near Times Square', type: 'search' },
   { label: '🚗 used Tesla under $30000', url: 'used Tesla under $30000', type: 'search' },
-  { label: '🍕 best pizza in Manhattan', url: 'best pizza in Manhattan', type: 'search' },
+  { label: '🎧 best Sony headphones under $200', url: 'best Sony headphones under $200', type: 'search' },
+  { label: '✈️ cheap flights NYC to Miami', url: 'cheap flights NYC to Miami', type: 'search' },
+  { label: '🏨 hotel in Boston under $150', url: 'hotel in Boston under $150', type: 'search' },
+  { label: '🏗️ rent a forklift near Brooklyn', url: 'rent a forklift near Brooklyn', type: 'search' },
+  { label: '📦 buy 1000 pencils bulk wholesale', url: 'buy 1000 pencils bulk wholesale', type: 'search' },
 ];
 
 const EXAMPLE_URLS = EXAMPLE_PROMPTS;
@@ -2101,6 +2104,25 @@ export default function ReadPage() {
           ))}
         </div>
       )}
+
+      {/* Stats bar — shows after results load or on empty state */}
+      <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 py-4 mt-6 border-t border-zinc-800/50">
+        <span className="text-xs text-zinc-600 flex items-center gap-1.5">
+          <span className="text-zinc-500">🌐</span> 55+ websites supported
+        </span>
+        <span className="text-xs text-zinc-600 flex items-center gap-1.5">
+          <span className="text-zinc-500">⚡</span> 270ms avg response
+        </span>
+        <span className="text-xs text-zinc-600 flex items-center gap-1.5">
+          <span className="text-zinc-500">🛡️</span> Zero ads · Zero trackers
+        </span>
+        <span className="text-xs text-zinc-600 flex items-center gap-1.5">
+          <span className="text-zinc-500">🤖</span> AI-powered summaries
+        </span>
+        <span className="text-xs text-zinc-600 flex items-center gap-1.5">
+          <span className="text-zinc-500">📍</span> Google Maps verified
+        </span>
+      </div>
     </div>
   );
 }

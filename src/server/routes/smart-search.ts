@@ -1850,7 +1850,8 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
       const isExplicitGeneral = (
         /\b(compare|vs\.?|versus|which is better|difference between)\b/.test(queryLower) ||
         (/\b(near me|near\s+\w+|open now|open today|open on|what time|is .* open|hours|closest|nearest)\b/.test(queryLower) && /\b(buy|where|store|shop|near|close to|around)\b/.test(queryLower)) ||
-        (/\b(plumber|electrician|mechanic|dentist|doctor|lawyer|therapist|vet|salon|barber|gym|daycare)\b/.test(queryLower) && /\b(near|in|around|open|best|cheap|emergency)\b/.test(queryLower))
+        (/\b(plumber|electrician|mechanic|dentist|doctor|lawyer|therapist|vet|salon|barber|gym|daycare)\b/.test(queryLower) && /\b(near|in|around|open|best|cheap|emergency)\b/.test(queryLower)) ||
+        (/\b(cruise|vacation|resort|trip|travel|getaway|tour|safari|honeymoon|disneyland|disney|universal|six flags|theme park)\b/.test(queryLower) && /\b(cheap|cheapest|price|ticket|book|deal|package)\b/.test(queryLower))
       );
 
       if (intent.type === 'general' && !isExplicitGeneral && process.env.OLLAMA_URL) {
