@@ -106,6 +106,7 @@ async function processJob(job: Bull.Job<FetchJobPayload>): Promise<void> {
       timeout: rest.timeout,
       lite: rest.lite,
       raw: rest.raw,
+      noDomainApi: rest.noDomainApi,
       readable: rest.readable,
       question: rest.question,
       noEscalate: !render, // prevent surprise escalation on HTTP-only jobs

@@ -321,6 +321,7 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
         format: options.html ? 'html' : options.text ? 'text' : options.clean ? 'clean' : 'markdown',
         budget: null,  // Budget excluded from cache key — cache stores full content
         readable: options.readable || false,
+        noDomainApi: options.skipDomainApi || false,  // Different cache for domain-api bypass
       };
 
       const cachedResult = getCache(url, cacheOptions);

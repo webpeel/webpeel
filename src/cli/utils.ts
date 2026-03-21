@@ -207,6 +207,7 @@ export async function fetchViaApi(url: string, options: PeelOptions, apiKey: str
   if (options.summary) params.set('summary', 'true');
   if (options.budget) params.set('budget', String(options.budget));
   if ((options as any).question) params.set('question', (options as any).question);
+  if (options.noDomainApi) params.set('noDomainApi', 'true');
 
   const res = await fetch(`${apiUrl}/v1/fetch?${params}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
