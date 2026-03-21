@@ -1425,6 +1425,7 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
   const isEquipmentRental = /\b(rent|rental|renting|hire|lease)\b/.test(query) && /\b(forklift|dumpster|pressure washer|generator|excavator|bobcat|crane|scaffolding|tent|truck|van|trailer|equipment|tool|power tool)\b/.test(query);
   const isServiceBusiness = /\b(plumber|electrician|mechanic|dentist|doctor|lawyer|locksmith|handyman|contractor|vet|salon|barber|spa|gym|daycare|moving|storage|cleaning|pest control|roofing|hvac|landscaping)\b/.test(query) && /\b(near|in|around|open|best|cheap|emergency|24.hour)\b/.test(query);
   const isGasStation = /\b(gas|gasoline|fuel|gas station|petrol|diesel)\b/.test(query) && /\b(cheap|cheapest|price|near|closest|best)\b/.test(query);
+  const isTravelBooking = /\b(cruise|vacation|resort|all.inclusive|trip|package|tour|excursion|safari|honeymoon|disneyland|disney world|disney cruise|universal|theme park|spring break)\b/.test(query) && /\b(cheap|cheapest|price|ticket|book|deal|cost|per person)\b/.test(query);
 
   let localBusinesses: any[] = [];
 
@@ -1660,6 +1661,50 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
         }
       }
     } catch { /* gas price search failed — non-fatal */ }
+  } else if (isTravelBooking) {
+    try {
+      // Search specifically for prices + comparison across providers
+      const travelPriceResults = await searchProvider.searchWeb(`${query} price per person comparison cheapest 2026 site:cruisefever.net OR site:cruisecritic.com OR site:vacationstogo.com OR site:costcotravel.com OR site:kayak.com`, { count: 5 });
+      const travelPrices: string[] = [];
+      for (const r of travelPriceResults) {
+        const text = `${r.title || ''} ${r.snippet || ''}`;
+        const priceMatches = text.match(/\$[\d,]+(?:\s*(?:per person|pp|\/person))?/gi);
+        if (priceMatches) travelPrices.push(...priceMatches.slice(0, 4));
+      }
+      if (travelPrices.length > 0) {
+        pricingInfo = `\n\n## 💰 Pricing Found\n${[...new Set(travelPrices)].slice(0, 8).map(p => `- ${p}`).join('\n')}`;
+      }
+      // Peel the top comparison page for detailed data
+      const comparisonPage = travelPriceResults[0];
+      if (comparisonPage?.url) {
+        try {
+          const peeled = await peel(comparisonPage.url, { timeout: 6000, maxTokens: 3000 });
+          if (peeled.content && peeled.content.length > 200) {
+            (results as any[]).push({
+              title: comparisonPage.title,
+              url: comparisonPage.url,
+              snippet: comparisonPage.snippet,
+              domain: getDomain(comparisonPage.url),
+              content: peeled.content.substring(0, 3000),
+              isPricing: true,
+            });
+          }
+        } catch { /* peel failed — use snippet */ }
+      }
+      // Add remaining results for sources
+      for (const r of travelPriceResults.slice(1, 3)) {
+        if (r.snippet) {
+          (results as any[]).push({
+            title: r.title,
+            url: r.url,
+            snippet: r.snippet,
+            domain: getDomain(r.url),
+            content: r.snippet,
+            isPricing: true,
+          });
+        }
+      }
+    } catch { /* travel price search failed */ }
   } else if (isEquipmentRental) {
     try {
       const pricingResults = await searchProvider.searchWeb(`${query} cost price per day rate 2025`, { count: 5 });
@@ -1746,7 +1791,7 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
         .filter(Boolean)
         .join('\n\n---\n\n');
 
-      const systemPrompt = `Answer the query using these sources. Be specific with names, numbers, dates, and prices. Bold key facts. Cite sources as [1], [2], etc. If sources disagree, note the difference.${isEquipmentRental ? ' IMPORTANT: Include specific rental prices/rates per day or week if available in the sources. Mention the cheapest option.' : ''}${isServiceBusiness ? ' IMPORTANT: Include business hours, phone numbers, and whether they are open now.' : ''}${isGasStation ? ' IMPORTANT: Include gas prices per gallon if available. Mention the cheapest station, its address, and current price. Sort by price.' : ''} Max 150 words.`;
+      const systemPrompt = `Answer the query using these sources. Be specific with names, numbers, dates, and prices. Bold key facts. Cite sources as [1], [2], etc. If sources disagree, note the difference.${isEquipmentRental ? ' IMPORTANT: Include specific rental prices/rates per day or week if available in the sources. Mention the cheapest option.' : ''}${isServiceBusiness ? ' IMPORTANT: Include business hours, phone numbers, and whether they are open now.' : ''}${isGasStation ? ' IMPORTANT: Include gas prices per gallon if available. Mention the cheapest station, its address, and current price. Sort by price.' : ''}${isTravelBooking ? ' IMPORTANT: List specific prices per person for different cruise lines/options. Format as a comparison: cruise line, ship name, duration, departure port, price. Sort cheapest first. Include dates if available.' : ''} Max 150 words.`;
 
       // Truncate source content to 1200 chars total (shorter = faster Ollama response)
       const truncatedSources = sourceContent.substring(0, 1200);
