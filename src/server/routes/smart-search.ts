@@ -419,10 +419,10 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
 
   const carSearchUrl = `https://www.cars.com/shopping/results/?${params.toString()}`;
 
-  // Run Cars.com peel (10s cap) and Reddit search in parallel.
-  // Cars.com peel can take 25s+ with Playwright — abort at 10s and use web search fallback.
+  // Run Cars.com peel (15s cap) and Reddit search in parallel.
+  // Cars.com returns 20+ real listings with prices when peel succeeds.
   const [carsSettled, redditSettled] = await Promise.allSettled([
-    peel(carSearchUrl, { timeout: 10000 }),
+    peel(carSearchUrl, { timeout: 15000 }),
     getBestSearchProvider().provider.searchWeb(`${keyword} reddit review reliable problems`, { count: 5 }),
   ]);
 
@@ -433,23 +433,33 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
   // Fallback: if Cars.com extraction failed, search for car listings via web search
   if (carListings.length === 0) {
     const { provider } = getBestSearchProvider();
-    const fallbackQuery = `${keyword || 'car'} for sale ${intent.params.zip ? `near ${intent.params.zip}` : ''} ${intent.params.maxPrice ? `under $${intent.params.maxPrice}` : ''} site:cars.com OR site:autotrader.com OR site:cargurus.com OR site:carfax.com`;
-    const searchResults = await provider.searchWeb(fallbackQuery, { count: 10 });
+    // Search for actual car listings with specific prices (not generic "Cars for Sale Near X" pages)
+    const fallbackQuery = `${keyword || 'car'} ${intent.params.maxPrice ? `under $${intent.params.maxPrice} price` : 'price'} ${intent.params.zip ? `near ${intent.params.zip}` : ''} used for sale listing`;
+    const searchResults = await provider.searchWeb(fallbackQuery, { count: 15 });
 
-    // Build listings from search results
+    // Build listings from search results — filter out generic search pages
     carListings = searchResults
       .filter(r => r.url && r.title)
       .map(r => {
-        const price = parsePrice(r.title + ' ' + (r.snippet || ''));
+        const textToSearch = `${r.title || ''} ${r.snippet || ''}`;
+        const price = parsePrice(textToSearch);
+        // Skip generic "Cars for Sale" pages — we want actual listings with real prices
+        const isGenericPage = /\b(for sale near|cars for sale|search|browse|find)\b/i.test(r.title || '') && !price;
+        if (isGenericPage) return null;
+        // Extract year/model from title
+        const yearMatch = (r.title || '').match(/\b(20\d{2}|19\d{2})\b/);
+        const year = yearMatch ? yearMatch[1] : '';
         return {
-          title: r.title?.replace(/\s*[-|].*$/, '').trim() || 'Car Listing',
+          title: r.title?.replace(/\s*[-|–—].*$/, '').trim() || 'Car Listing',
           price,
+          year,
           url: addAffiliateTag(r.url),
           snippet: r.snippet || '',
-          source: new URL(r.url).hostname.replace('www.', ''),
+          source: (() => { try { return new URL(r.url).hostname.replace('www.', ''); } catch { return ''; } })(),
         };
       })
-      .slice(0, 8);
+      .filter(Boolean)
+      .slice(0, 8) as any[];
   }
 
   // AI synthesis: summarize top listings + Reddit input
@@ -477,7 +487,7 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
     content,
     title: result?.title || `Cars — ${intent.query}`,
     domainData: result?.domainData,
-    structured: result?.domainData?.structured,
+    structured: result?.domainData?.structured || (carListings.length > 0 ? { listings: carListings } : undefined),
     tokens: result?.tokens || content.split(/\s+/).length,
     fetchTimeMs: Date.now() - t0,
     ...(answer !== undefined ? { answer } : {}),
