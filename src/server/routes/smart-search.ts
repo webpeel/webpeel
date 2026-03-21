@@ -123,6 +123,7 @@ export interface SmartSearchResult {
   answer?: string;  // AI-synthesized answer (markdown)
   sources?: Array<{ title: string; url: string; domain: string }>; // peeled sources
   timing?: { searchMs: number; peelMs: number; llmMs: number }; // per-phase timing
+  mapUrl?: string; // Google Maps embed URL for local search results
 }
 
 // ─── Intent Detection ──────────────────────────────────────────────────────
@@ -1392,7 +1393,82 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
   const isGasStation = /\b(gas|gasoline|fuel|gas station|petrol|diesel)\b/.test(query) && /\b(cheap|cheapest|price|near|closest|best)\b/.test(query);
 
   let localBusinesses: any[] = [];
-  if ((isEquipmentRental || isServiceBusiness || isGasStation) && GOOGLE_PLACES_KEY) {
+
+  // ── Try Places API (New) for gas stations (has fuel prices) ──────────────
+  if (isGasStation && GOOGLE_PLACES_KEY) {
+    try {
+      const newApiRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_PLACES_KEY,
+          'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.fuelOptions,places.rating,places.userRatingCount,places.currentOpeningHours,places.googleMapsUri,places.location',
+        },
+        body: JSON.stringify({ textQuery: query, maxResultCount: 10 }),
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (newApiRes.ok) {
+        const data = await newApiRes.json();
+        if (data.places?.length > 0) {
+          const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const dayMap: Record<string, string> = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
+          const today = shortDays[new Date().getDay()];
+
+          localBusinesses = data.places.map((p: any) => {
+            // Parse fuel prices
+            const fuelPrices: Record<string, string> = {};
+            if (p.fuelOptions?.fuelPrices) {
+              for (const fp of p.fuelOptions.fuelPrices) {
+                const price = fp.price ? `$${fp.price.units || 0}.${String(fp.price.nanos || 0).padStart(9, '0').substring(0, 2)}` : null;
+                if (price) {
+                  const typeMap: Record<string, string> = {
+                    'REGULAR_UNLEADED': 'Regular',
+                    'MIDGRADE': 'Midgrade',
+                    'PREMIUM': 'Premium',
+                    'DIESEL': 'Diesel',
+                    'E85': 'E85',
+                  };
+                  fuelPrices[typeMap[fp.type] || fp.type] = price;
+                }
+              }
+            }
+
+            // Parse hours
+            const hours: Record<string, string> = {};
+            if (p.currentOpeningHours?.weekdayDescriptions) {
+              for (const desc of p.currentOpeningHours.weekdayDescriptions) {
+                const colonIdx = desc.indexOf(':');
+                if (colonIdx > 0) {
+                  const dayFull = desc.substring(0, colonIdx).trim();
+                  const timeStr = desc.substring(colonIdx + 1).trim();
+                  if (dayMap[dayFull]) hours[dayMap[dayFull]] = timeStr;
+                }
+              }
+            }
+
+            return {
+              name: p.displayName?.text || 'Gas Station',
+              address: p.formattedAddress || '',
+              rating: p.rating,
+              reviewCount: p.userRatingCount || 0,
+              isOpenNow: p.currentOpeningHours?.openNow,
+              todayHours: hours[today] || '',
+              googleMapsUrl: p.googleMapsUri || '',
+              fuelPrices,
+              latitude: p.location?.latitude,
+              longitude: p.location?.longitude,
+              businessStatus: 'OPERATIONAL',
+            };
+          });
+          console.log(`[smart-search] Places API (New) returned ${localBusinesses.length} gas stations`);
+        }
+      }
+    } catch { /* New API failed — fall through to legacy */ }
+  }
+
+  // ── Legacy Google Places search (used when Places API New is unavailable or non-gas queries) ──
+  if (localBusinesses.length === 0 && (isEquipmentRental || isServiceBusiness || isGasStation) && GOOGLE_PLACES_KEY) {
     try {
       // Use Google Places Text Search
       const findRes = await fetch(
@@ -1436,6 +1512,9 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
               todayHours,
               website: detail?.website || '',
               googleMapsUrl: detail?.url || '',
+              mapEmbedUrl: `https://www.google.com/maps/embed/v1/place?q=place_id:${place.place_id}&key=${GOOGLE_PLACES_KEY}`,
+              latitude: place.geometry?.location?.lat,
+              longitude: place.geometry?.location?.lng,
               businessStatus: detail?.business_status || place.business_status || 'OPERATIONAL',
             };
           }).filter((b: any) => b.businessStatus === 'OPERATIONAL');
@@ -1596,6 +1675,8 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
       domain: 'google.com/maps',
       rank: i + 1,
       isLocalBusiness: true,
+      isOpenNow: b.isOpenNow,
+      ...(b.fuelPrices && Object.keys(b.fuelPrices).length > 0 ? { fuelPrices: b.fuelPrices } : {}),
     })));
   }
 
@@ -1652,6 +1733,10 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
     }
   }
 
+  const mapUrl = localBusinesses.length > 0 && GOOGLE_PLACES_KEY
+    ? `https://www.google.com/maps/embed/v1/search?q=${encodeURIComponent(query)}&key=${GOOGLE_PLACES_KEY}`
+    : undefined;
+
   return {
     type: 'general',
     source: 'Web Search',
@@ -1663,6 +1748,7 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
     ...(answer !== undefined ? { answer } : {}),
     ...(sources.length > 0 ? { sources } : {}),
     timing: { searchMs, peelMs, llmMs },
+    ...(mapUrl ? { mapUrl } : {}),
   };
 }
 

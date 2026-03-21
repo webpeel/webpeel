@@ -59,6 +59,7 @@ interface SmartResult {
   // sources can be either QA citation sources ({title, url, domain}) or multi-source results
   sources?: any[];
   timing?: { searchMs: number; peelMs: number; llmMs: number };
+  mapUrl?: string; // Google Maps embed URL for local search results
 }
 
 interface ResultData {
@@ -550,6 +551,21 @@ function SmartResultCard({ smartResult }: { smartResult: SmartResult }) {
         </div>
       )}
 
+      {/* Embedded Google Map for local search results */}
+      {smartResult.mapUrl && (
+        <div className="mb-4 rounded-xl overflow-hidden border border-zinc-800">
+          <iframe
+            src={smartResult.mapUrl}
+            width="100%"
+            height="250"
+            style={{ border: 0 }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="rounded-xl"
+          />
+        </div>
+      )}
+
       {/* AI Answer section — shown ABOVE listings when present */}
       {smartResult.answer && (
         <div className="mb-4 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
@@ -958,7 +974,44 @@ function SmartListingCard({ item, type }: { item: any; type: SmartResultType }) 
     );
   }
 
-  // General / fallback
+  // General / fallback (also handles local business cards from gas station / service searches)
+  if (item.isLocalBusiness) {
+    return (
+      <a href={item.url || '#'} target="_blank" rel="noopener noreferrer"
+        className="block p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 hover:border-zinc-700 transition-all no-underline">
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <span className="text-sm font-medium text-zinc-100 line-clamp-1 flex-1 min-w-0">
+            {item.title || item.name}
+          </span>
+          {item.isOpenNow !== undefined && (
+            <span className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${
+              item.isOpenNow ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' :
+              'bg-zinc-700/60 text-zinc-400 border-zinc-600/40'
+            }`}>
+              {item.isOpenNow ? '🟢 Open Now' : '🔴 Closed'}
+            </span>
+          )}
+        </div>
+        {item.snippet && <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{item.snippet}</p>}
+        {/* Fuel prices */}
+        {item.fuelPrices && Object.keys(item.fuelPrices).length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-1.5">
+            {Object.entries(item.fuelPrices as Record<string, string>).map(([fuelType, price]) => (
+              <span key={fuelType} className={`text-xs px-2 py-0.5 rounded-full border ${
+                fuelType === 'Regular' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                fuelType === 'Premium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                fuelType === 'Diesel' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                'bg-zinc-700/40 text-zinc-400 border-zinc-600/40'
+              }`}>
+                {fuelType}: {price}/gal
+              </span>
+            ))}
+          </div>
+        )}
+      </a>
+    );
+  }
+
   return (
     <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800/60 transition-all">
       <a href={url} target="_blank" rel="noopener noreferrer"
