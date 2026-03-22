@@ -3,8 +3,9 @@
 
   const API_URL = 'https://api.webpeel.dev';
   const SIGNUP_URL = 'https://app.webpeel.dev/signup';
-  const MAX_FREE_SEARCHES = 5;
+  const MAX_FREE_SEARCHES = 20;
   const SEARCH_COUNT_KEY = 'wp_search_count';
+  const HISTORY_KEY = 'wp_search_history';
 
   // Track searches in localStorage
   function getSearchCount() {
@@ -14,6 +15,19 @@
     const count = getSearchCount() + 1;
     localStorage.setItem(SEARCH_COUNT_KEY, String(count));
     return count;
+  }
+
+  // Search history helpers
+  function getSearchHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+  }
+  function addToHistory(query) {
+    var hist = getSearchHistory().filter(function(h) { return h.query !== query; });
+    hist.unshift({ query: query, timestamp: Date.now() });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, 5)));
+  }
+  function clearHistory() {
+    localStorage.removeItem(HISTORY_KEY);
   }
 
   // ─── Utility: HTML escape ───────────────────────────────────────────────────
@@ -222,11 +236,12 @@
         <div id="wp-examples" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; justify-content: center;">\
           ' + exampleButtons + '\
         </div>\
+        <div id="wp-history" style="margin-top: 10px; display: none;"></div>\
         <div id="wp-results" style="margin-top: 20px; display: none;"></div>\
         <div id="wp-signup-wall" style="display: none; text-align: center; padding: 40px 20px;\
              background: rgba(129,140,248,0.05); border: 1px solid rgba(129,140,248,0.2);\
              border-radius: 16px; margin-top: 20px;">\
-          <h3 style="color: #e4e4e7; font-size: 20px; margin: 0 0 8px; font-family: inherit;">You\'ve used your 5 free searches</h3>\
+          <h3 style="color: #e4e4e7; font-size: 20px; margin: 0 0 8px; font-family: inherit;">You\'ve used your 20 free searches</h3>\
           <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 20px; font-family: inherit;">Sign up for free to get 500 searches/week + AI summaries</p>\
           <a href="' + SIGNUP_URL + '"\
             style="display: inline-block; padding: 12px 32px; background: #818CF8; color: white;\
@@ -237,6 +252,54 @@
           >Sign Up Free →</a>\
         </div>\
       </div>';
+
+    // ─── Render search history pills ─────────────────────────────────────────
+    function renderHistory() {
+      var histDiv = document.getElementById('wp-history');
+      if (!histDiv) return;
+      var hist = getSearchHistory();
+      if (!hist.length) {
+        histDiv.style.display = 'none';
+        histDiv.innerHTML = '';
+        return;
+      }
+      var pills = hist.map(function(h) {
+        return '<button type="button" class="wp-hist-btn" data-query="' + esc(h.query) + '"'
+          + ' style="padding:4px 12px;font-size:11px;border-radius:20px;border:1px solid rgba(255,255,255,0.07);'
+          + 'background:rgba(255,255,255,0.02);color:#a1a1aa;cursor:pointer;white-space:nowrap;'
+          + 'transition:all 0.2s;font-family:inherit;"'
+          + ' onmouseover="this.style.borderColor=\'rgba(129,140,248,0.25)\';this.style.color=\'#e4e4e7\'"'
+          + ' onmouseout="this.style.borderColor=\'rgba(255,255,255,0.07)\';this.style.color=\'#a1a1aa\'"'
+          + '>' + esc(h.query) + '</button>';
+      }).join('');
+      histDiv.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;justify-content:center;">'
+        + '<span style="font-size:11px;color:#52525b;white-space:nowrap;">Recent:</span>'
+        + pills
+        + '<button type="button" id="wp-hist-clear"'
+        + ' style="font-size:11px;color:#52525b;background:none;border:none;cursor:pointer;padding:2px 4px;'
+        + 'font-family:inherit;transition:color 0.2s;"'
+        + ' onmouseover="this.style.color=\'#f87171\'"'
+        + ' onmouseout="this.style.color=\'#52525b\'"'
+        + '>×</button>'
+        + '</div>';
+      histDiv.style.display = 'block';
+
+      // Attach click handlers
+      histDiv.querySelectorAll('.wp-hist-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var query = btn.getAttribute('data-query');
+          document.getElementById('wp-search-input').value = query;
+          document.getElementById('wp-search-form').dispatchEvent(new Event('submit'));
+        });
+      });
+      var clearBtn = document.getElementById('wp-hist-clear');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+          clearHistory();
+          renderHistory();
+        });
+      }
+    }
 
     // Mobile responsiveness: swap placeholder, adjust padding & gap on small screens
     function applyMobileStyles() {
@@ -260,6 +323,9 @@
 
     applyMobileStyles();
     window.addEventListener('resize', applyMobileStyles);
+
+    // Render history on page load
+    renderHistory();
 
     // Example button click handlers (safe, no inline onclick with data)
     container.querySelectorAll('.wp-example-btn').forEach(function(btn) {
@@ -285,6 +351,8 @@
       }
 
       incrementSearchCount();
+      addToHistory(query);
+      renderHistory();
       var resultsDiv = document.getElementById('wp-results');
       resultsDiv.style.display = 'block';
       resultsDiv.innerHTML = '\
