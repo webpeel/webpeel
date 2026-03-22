@@ -11,6 +11,7 @@ dns.setDefaultResultOrder('ipv4first');
 import express, { Express, Request, Response, NextFunction } from 'express';
 import './types.js'; // Augments Express.Request with requestId
 import cors from 'cors';
+import helmet from 'helmet';
 import { createLogger } from './logger.js';
 
 const log = createLogger('server');
@@ -165,6 +166,17 @@ export function createApp(config: ServerConfig = {}): Express {
   // Middleware
   // SECURITY: Limit request body size to prevent DoS
   app.use(express.json({ limit: '1mb' }));
+
+  // Security headers via Helmet
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disabled — API serves JSON, not HTML pages
+    crossOriginEmbedderPolicy: false, // Allow embedding for widget/docs
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    frameguard: { action: 'deny' }, // Prevent clickjacking
+    noSniff: true, // X-Content-Type-Options: nosniff
+    xssFilter: true, // X-XSS-Protection
+  }));
   
   // CORS configuration
   // Always allow our own domains + any env-configured origins
