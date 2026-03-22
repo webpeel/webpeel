@@ -85,6 +85,29 @@
       </div>
     `;
 
+    // Mobile responsiveness: swap placeholder, adjust padding & gap on small screens
+    function applyMobileStyles() {
+      var isMobile = window.innerWidth <= 480;
+      var input = document.getElementById('wp-search-input');
+      var examples = document.getElementById('wp-examples');
+
+      if (input) {
+        input.placeholder = isMobile
+          ? 'Search anything...'
+          : 'Search anything — restaurants, products, flights, gas prices...';
+        input.style.padding = isMobile
+          ? '14px 48px 14px 16px'
+          : '16px 52px 16px 20px';
+      }
+
+      if (examples) {
+        examples.style.gap = isMobile ? '6px' : '8px';
+      }
+    }
+
+    applyMobileStyles();
+    window.addEventListener('resize', applyMobileStyles);
+
     // Example button click handlers (safe, no inline onclick with data)
     container.querySelectorAll('.wp-example-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
