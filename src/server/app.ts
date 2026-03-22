@@ -59,6 +59,7 @@ import { createAgentRouter } from './routes/agent.js';
 import { createSessionRouter } from './routes/session.js';
 import { createSentryHooks } from './sentry.js';
 import { requireScope } from './middleware/scope-guard.js';
+import { auditMiddleware } from './middleware/audit-log.js';
 import { createCacheWarmRouter, startCacheWarmer } from './routes/cache-warm.js';
 import { warmup, cleanup as cleanupFetcher } from '../core/fetcher.js';
 // Proprietary modules — loaded dynamically so the build works without TypeScript source.
@@ -177,7 +178,17 @@ export function createApp(config: ServerConfig = {}): Express {
     noSniff: true, // X-Content-Type-Options: nosniff
     xssFilter: true, // X-XSS-Protection
   }));
-  
+
+  // Audit logging — records who accessed which /v1/ endpoints and the outcome.
+  // Privacy-safe: logs userId, method, path, status, duration, IP — no bodies or secrets.
+  app.use(auditMiddleware);
+
+  // GDPR / Privacy: Data retention policy header — indicates we only store metadata, not fetched content
+  app.use((_req, res, next) => {
+    res.setHeader('X-Data-Retention', 'metadata-only');
+    next();
+  });
+
   // CORS configuration
   // Always allow our own domains + any env-configured origins
   const envOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : [];
@@ -209,6 +220,12 @@ export function createApp(config: ServerConfig = {}): Express {
     if (origin && corsOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
+    next();
+  });
+
+  // GDPR / Privacy: Data retention policy header — indicates we only store metadata, not fetched content
+  app.use((_req, res, next) => {
+    res.setHeader('X-Data-Retention', 'metadata-only');
     next();
   });
 

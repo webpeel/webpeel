@@ -1922,5 +1922,141 @@ export function createUserRouter(): Router {
     }
   });
 
+  /**
+   * DELETE /v1/account
+   * GDPR data deletion endpoint — deletes the authenticated user's account and ALL associated data.
+   *
+   * Accepts both API key auth (req.auth.keyInfo.accountId) and JWT session auth (req.user.userId).
+   * This is the GDPR-friendly endpoint that skips the password/email confirmation flow,
+   * intended for programmatic use (e.g. an in-app "Delete my data" button that pre-verifies
+   * identity via the existing session).
+   */
+  router.delete('/v1/account', async (req: Request, res: Response) => {
+    try {
+      // Support both API key auth and JWT session auth
+      const userId = (req as any).user?.userId || req.auth?.keyInfo?.accountId;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            type: 'unauthorized',
+            message: 'Authentication required. Provide a JWT token or API key.',
+            hint: 'Include your API key via Authorization: Bearer <key> or X-API-Key header.',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: crypto.randomUUID(),
+        });
+        return;
+      }
+
+      // Verify user exists before attempting deletion
+      const userCheck = await pool.query(
+        'SELECT id FROM users WHERE id = $1',
+        [userId]
+      );
+
+      if (userCheck.rows.length === 0) {
+        res.status(404).json({
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
+        });
+        return;
+      }
+
+      // Delegate to PostgresAuthStore which wraps everything in a transaction
+      const authStore = new PostgresAuthStore();
+      await authStore.deleteAccount(userId);
+
+      res.json({
+        success: true,
+        message: 'Account and all associated data deleted. Your data has been permanently removed in accordance with GDPR Article 17.',
+      });
+    } catch (error) {
+      console.error('GDPR account deletion error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'deletion_failed',
+          message: 'Failed to delete account',
+          docs: 'https://webpeel.dev/docs/errors#deletion_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
+    }
+  });
+
+  /**
+   * DELETE /v1/account
+   * GDPR data deletion endpoint — deletes the authenticated user's account and ALL associated data.
+   *
+   * Accepts both API key auth (req.auth.keyInfo.accountId) and JWT session auth (req.user.userId).
+   * This is the GDPR-compliant endpoint for programmatic "Delete my data" requests.
+   */
+  router.delete('/v1/account', async (req: Request, res: Response) => {
+    try {
+      // Support both API key auth and JWT session auth
+      const userId = (req as any).user?.userId || req.auth?.keyInfo?.accountId;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            type: 'unauthorized',
+            message: 'Authentication required. Provide a JWT token or API key.',
+            hint: 'Include your API key via Authorization: Bearer <key> or X-API-Key header.',
+            docs: 'https://webpeel.dev/docs/errors#unauthorized',
+          },
+          requestId: crypto.randomUUID(),
+        });
+        return;
+      }
+
+      // Verify user exists before attempting deletion
+      const userCheck = await pool.query(
+        'SELECT id FROM users WHERE id = $1',
+        [userId]
+      );
+
+      if (userCheck.rows.length === 0) {
+        res.status(404).json({
+          success: false,
+          error: {
+            type: 'user_not_found',
+            message: 'User not found',
+            docs: 'https://webpeel.dev/docs/errors#user_not_found',
+          },
+          requestId: crypto.randomUUID(),
+        });
+        return;
+      }
+
+      // Delegate to PostgresAuthStore which wraps everything in a transaction
+      const authStore = new PostgresAuthStore();
+      await authStore.deleteAccount(userId);
+
+      res.json({
+        success: true,
+        message: 'Account and all associated data deleted. Your data has been permanently removed in accordance with GDPR Article 17.',
+      });
+    } catch (error) {
+      console.error('GDPR account deletion error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          type: 'deletion_failed',
+          message: 'Failed to delete account',
+          docs: 'https://webpeel.dev/docs/errors#deletion_failed',
+        },
+        requestId: crypto.randomUUID(),
+      });
+    }
+  });
+
   return router;
 }

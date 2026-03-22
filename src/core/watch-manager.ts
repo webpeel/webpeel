@@ -10,7 +10,7 @@
  *  - `watch-manager.ts` → persistent, server-side, PostgreSQL-backed
  */
 
-import { createHash } from 'crypto';
+import { createHash, createHmac } from 'crypto';
 import { fetch as undiciFetch } from 'undici';
 import pg from 'pg';
 
@@ -21,6 +21,8 @@ export interface WatchEntry {
   accountId: string;
   url: string;
   webhookUrl?: string;
+  /** HMAC-SHA256 signing secret for webhook deliveries. Stored hashed; never returned in API responses. */
+  webhookSecret?: string;
   checkIntervalMinutes: number;
   selector?: string;
   lastFingerprint?: string;
@@ -35,6 +37,8 @@ export interface WatchEntry {
 
 export interface CreateWatchOptions {
   webhookUrl?: string;
+  /** Optional HMAC-SHA256 secret used to sign webhook deliveries (header: X-WebPeel-Signature). */
+  webhookSecret?: string;
   checkIntervalMinutes?: number;
   selector?: string;
 }
@@ -163,16 +167,45 @@ export function computeParagraphDiff(
   return { addedText, removedText };
 }
 
+/**
+ * Sign a webhook payload body with HMAC-SHA256.
+ *
+ * @param body    - The raw JSON string that will be sent as the request body.
+ * @param secret  - The signing secret shared between WebPeel and the recipient.
+ * @returns       - Hex digest of the HMAC-SHA256 signature.
+ *
+ * Recipients verify delivery authenticity like this:
+ *   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+ *   if (receivedSignature !== `sha256=${expected}`) reject(); // tampered or wrong secret
+ */
+function signWebhookBody(body: string, secret: string): string {
+  return createHmac('sha256', secret).update(body).digest('hex');
+}
+
 /** Post a JSON payload to a webhook URL, silently swallowing delivery errors. */
-async function sendWatchWebhook(webhookUrl: string, payload: unknown): Promise<void> {
+async function sendWatchWebhook(
+  webhookUrl: string,
+  payload: unknown,
+  webhookSecret?: string,
+): Promise<void> {
   try {
+    const bodyStr = JSON.stringify(payload);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'WebPeel-Watch/1.0 (+https://webpeel.dev)',
+    };
+
+    // Sign the payload when a secret is available (per-watch secret or global fallback).
+    const secret = webhookSecret || process.env.WEBHOOK_SIGNING_SECRET;
+    if (secret) {
+      headers['X-WebPeel-Signature'] = `sha256=${signWebhookBody(bodyStr, secret)}`;
+      headers['X-WebPeel-Timestamp'] = String(Date.now());
+    }
+
     await undiciFetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'WebPeel-Watch/1.0 (+https://webpeel.dev)',
-      },
-      body: JSON.stringify(payload),
+      headers,
+      body: bodyStr,
       signal: AbortSignal.timeout(10_000),
     });
   } catch (err) {
@@ -189,6 +222,7 @@ function rowToEntry(row: Record<string, unknown>): WatchEntry {
     accountId: row.account_id as string,
     url: row.url as string,
     webhookUrl: (row.webhook_url as string | null) ?? undefined,
+    webhookSecret: (row.webhook_secret as string | null) ?? undefined,
     checkIntervalMinutes: (row.check_interval_minutes as number) ?? 60,
     selector: (row.selector as string | null) ?? undefined,
     lastFingerprint: (row.last_fingerprint as string | null) ?? undefined,
@@ -236,13 +270,13 @@ export class WatchManager {
     url: string,
     options: CreateWatchOptions = {},
   ): Promise<WatchEntry> {
-    const { webhookUrl, checkIntervalMinutes = 60, selector } = options;
+    const { webhookUrl, webhookSecret, checkIntervalMinutes = 60, selector } = options;
 
     const result = await this.db.query<Record<string, unknown>>(
-      `INSERT INTO watches (account_id, url, webhook_url, check_interval_minutes, selector)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO watches (account_id, url, webhook_url, webhook_secret, check_interval_minutes, selector)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [accountId, url, webhookUrl ?? null, checkIntervalMinutes, selector ?? null],
+      [accountId, url, webhookUrl ?? null, webhookSecret ?? null, checkIntervalMinutes, selector ?? null],
     );
 
     return rowToEntry(result.rows[0]);
@@ -296,7 +330,7 @@ export class WatchManager {
    */
   async update(
     watchId: string,
-    updates: Partial<Pick<WatchEntry, 'webhookUrl' | 'checkIntervalMinutes' | 'selector' | 'status'>>,
+    updates: Partial<Pick<WatchEntry, 'webhookUrl' | 'webhookSecret' | 'checkIntervalMinutes' | 'selector' | 'status'>>,
   ): Promise<WatchEntry | null> {
     const setClauses: string[] = ['updated_at = NOW()'];
     const values: unknown[] = [];
@@ -305,6 +339,10 @@ export class WatchManager {
     if ('webhookUrl' in updates) {
       setClauses.push(`webhook_url = $${idx++}`);
       values.push(updates.webhookUrl ?? null);
+    }
+    if ('webhookSecret' in updates) {
+      setClauses.push(`webhook_secret = $${idx++}`);
+      values.push(updates.webhookSecret ?? null);
     }
     if ('checkIntervalMinutes' in updates) {
       setClauses.push(`check_interval_minutes = $${idx++}`);
@@ -425,7 +463,7 @@ export class WatchManager {
             changeCount: updated.changeCount,
             diff: { addedText, removedText, summary },
           };
-          await sendWatchWebhook(watch.webhookUrl, payload);
+          await sendWatchWebhook(watch.webhookUrl, payload, watch.webhookSecret);
         }
       } else {
         await this.db.query(

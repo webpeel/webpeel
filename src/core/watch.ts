@@ -5,7 +5,7 @@
  * response, detects content changes, and optionally fires a webhook on failure.
  */
 
-import { createHash } from 'crypto';
+import { createHash, createHmac } from 'crypto';
 import { fetch as undiciFetch } from 'undici';
 
 // ─── Public types ──────────────────────────────────────────────────────────────
@@ -18,6 +18,8 @@ export interface WatchOptions {
   assertions?: Assertion[];
   /** POST this URL when an assertion fails or content changes */
   webhookUrl?: string;
+  /** HMAC-SHA256 secret for signing webhook deliveries (header: X-WebPeel-Signature). */
+  webhookSecret?: string;
   /** Per-request timeout in milliseconds (default: 10 000) */
   timeout?: number;
   /** Stop after this many checks (default: unlimited) */
@@ -315,15 +317,44 @@ async function performCheck(
 
 // ─── Webhook ───────────────────────────────────────────────────────────────────
 
-async function sendWebhook(webhookUrl: string, payload: unknown): Promise<void> {
+/**
+ * Sign a webhook payload body with HMAC-SHA256.
+ *
+ * @param body    - The raw JSON string that will be sent as the request body.
+ * @param secret  - The signing secret shared between WebPeel and the recipient.
+ * @returns       - Hex digest of the HMAC-SHA256 signature.
+ *
+ * Recipients verify delivery authenticity like this:
+ *   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+ *   if (receivedSignature !== `sha256=${expected}`) reject(); // tampered or wrong secret
+ */
+function signWebhookBody(body: string, secret: string): string {
+  return createHmac('sha256', secret).update(body).digest('hex');
+}
+
+async function sendWebhook(
+  webhookUrl: string,
+  payload: unknown,
+  webhookSecret?: string,
+): Promise<void> {
   try {
+    const bodyStr = JSON.stringify(payload);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'WebPeel-Watch/1.0',
+    };
+
+    // Sign the payload when a secret is available (per-watch secret or global fallback).
+    const secret = webhookSecret || process.env.WEBHOOK_SIGNING_SECRET;
+    if (secret) {
+      headers['X-WebPeel-Signature'] = `sha256=${signWebhookBody(bodyStr, secret)}`;
+      headers['X-WebPeel-Timestamp'] = String(Date.now());
+    }
+
     await undiciFetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'WebPeel-Watch/1.0',
-      },
-      body: JSON.stringify(payload),
+      headers,
+      body: bodyStr,
       signal: AbortSignal.timeout(5_000),
     });
   } catch (err) {
@@ -389,6 +420,7 @@ export async function watch(options: WatchOptions): Promise<void> {
     intervalMs,
     assertions = [],
     webhookUrl,
+    webhookSecret,
     timeout = 10_000,
     maxChecks,
     render = false,
@@ -453,7 +485,7 @@ export async function watch(options: WatchOptions): Promise<void> {
           }),
           check: result,
         };
-        await sendWebhook(webhookUrl, payload);
+        await sendWebhook(webhookUrl, payload, webhookSecret);
       }
 
       // Check stop condition again after callback/webhook (they may take time).

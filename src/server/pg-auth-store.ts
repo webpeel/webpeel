@@ -656,6 +656,79 @@ export class PostgresAuthStore implements AuthStore {
   }
 
   /**
+   * GDPR: Delete all data associated with a user account (atomic transaction).
+   * Removes: api_keys, usage, weekly_usage, burst_usage, extra_usage_logs,
+   *          usage_logs, watches, oauth_accounts, refresh_tokens, shared_reads,
+   *          and finally the user row itself.
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Delete per-key usage data first (FK → api_keys)
+      await client.query(
+        `DELETE FROM weekly_usage WHERE api_key_id IN (SELECT id FROM api_keys WHERE user_id = $1)`,
+        [userId]
+      );
+      await client.query(
+        `DELETE FROM burst_usage WHERE api_key_id IN (SELECT id FROM api_keys WHERE user_id = $1)`,
+        [userId]
+      );
+      await client.query(
+        `DELETE FROM extra_usage_logs WHERE user_id = $1`,
+        [userId]
+      );
+      await client.query(
+        `DELETE FROM usage_logs WHERE user_id = $1`,
+        [userId]
+      );
+      // usage table (legacy monthly usage)
+      await client.query(
+        `DELETE FROM usage WHERE user_id = $1`,
+        [userId]
+      );
+      // watches (account_id column, no FK constraint to users in migration 007)
+      await client.query(
+        `DELETE FROM watches WHERE account_id = $1`,
+        [userId]
+      );
+      // shared_reads created by this user (created_by is TEXT, not FK)
+      await client.query(
+        `DELETE FROM shared_reads WHERE created_by = $1`,
+        [userId]
+      );
+      // oauth_accounts and refresh_tokens have ON DELETE CASCADE via users FK
+      // but we delete them explicitly to be safe and for auditability
+      await client.query(
+        `DELETE FROM oauth_accounts WHERE user_id = $1`,
+        [userId]
+      );
+      await client.query(
+        `DELETE FROM refresh_tokens WHERE user_id = $1`,
+        [userId]
+      );
+      // api_keys — has ON DELETE CASCADE but deleted explicitly here
+      await client.query(
+        `DELETE FROM api_keys WHERE user_id = $1`,
+        [userId]
+      );
+      // Finally delete the user row
+      await client.query(
+        `DELETE FROM users WHERE id = $1`,
+        [userId]
+      );
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Close the database pool
    */
   async close(): Promise<void> {
