@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security at WebPeel</title>
+  <meta name="description" content="How WebPeel protects your data. HTTPS everywhere, SSRF protection, no content storage, GDPR compliance, audit logging, and signed webhooks.">
+  <link rel="canonical" href="https://webpeel.dev/security">
+  <meta property="og:title" content="Security at WebPeel">
+  <meta property="og:description" content="How WebPeel protects your data. HTTPS everywhere, SSRF protection, no content storage, GDPR compliance, audit logging, and signed webhooks.">
+  <meta property="og:url" content="https://webpeel.dev/security">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://webpeel.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://webpeel.dev/og-image.png">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#F5F2EC">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root { --bg:#F5F2EC; --text:#1A1A18; --text-2:#5A5A55; --text-3:#8A8A82; --border:#E0DDD8; --accent: #5865F2; --border-light:#F5F3EF; }
+    body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; -webkit-font-smoothing:antialiased; }
+    a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+    .container { max-width:720px; margin:0 auto; padding:0 24px; }
+    nav { position:sticky; top:0; z-index:100; background:rgba(250,250,248,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border-light); }
+    .nav-inner { display:flex; align-items:center; justify-content:space-between; height:56px; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .nav-logo { display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; color:var(--text); text-decoration:none; }
+    .nav-logo svg { width:24px; height:24px; }
+    .nav-links { display:flex; align-items:center; gap:24px; }
+    .nav-links a { font-size:14px; color:var(--text-3); text-decoration:none; } .nav-links a:hover { color:var(--text); }
+    .nav-btn { display: inline-flex; align-items: center; padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; transition: all 0.15s; letter-spacing: 0.01em; }
+    .nav-btn-ghost { color: var(--text-2); }
+    .nav-btn-ghost:hover { color: var(--text); background: var(--border-light); }
+    .nav-links a.nav-btn-primary { background: #18181B; color: #FFFFFF; font-weight: 600; }
+    .nav-links a.nav-btn-primary:hover { background: #27272A; color: #FFFFFF; box-shadow: 0 0 0 3px rgba(24,24,27,0.25); }
+    main { padding:80px 0; }
+    .hero { margin-bottom:56px; }
+    h1 { font-family:'Instrument Serif',serif; font-size:42px; font-weight:400; margin-bottom:12px; }
+    .hero-subtitle { font-size:18px; color:var(--text-2); font-style:italic; margin-bottom:0; }
+    .updated { font-size:14px; color:var(--text-3); margin-top:16px; }
+    h2 { font-size:20px; font-weight:600; margin:40px 0 14px; display:flex; align-items:center; gap:10px; }
+    h2 .icon { font-size:20px; }
+    p, li { font-size:15px; color:var(--text-2); margin-bottom:12px; }
+    ul { padding-left:20px; margin-bottom:16px; }
+    li { margin-bottom:8px; }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; font-size:13px; background:#EDEBE6; padding:2px 6px; border-radius:4px; color:#1A1A18; }
+    pre { background:#1A1A18; color:#F5F2EC; padding:20px 24px; border-radius:10px; font-family:'SF Mono','Fira Code',monospace; font-size:13px; line-height:1.6; overflow-x:auto; margin:16px 0 20px; }
+    pre code { background:transparent; padding:0; color:inherit; font-size:inherit; }
+    .section-divider { border:none; border-top:1px solid var(--border); margin:48px 0 0; }
+    .badge-row { display:flex; flex-wrap:wrap; gap:10px; margin:20px 0; }
+    .badge { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:500; background:#EDEBE6; border:1px solid var(--border); padding:5px 12px; border-radius:20px; color:var(--text-2); }
+    .badge.green { background:#ECFDF5; border-color:#A7F3D0; color:#065F46; }
+    .badge.blue { background:#EFF6FF; border-color:#BFDBFE; color:#1E40AF; }
+    .badge.purple { background:#F5F3FF; border-color:#DDD6FE; color:#4C1D95; }
+    .cta-box { background:#18181B; color:#F5F2EC; padding:32px 36px; border-radius:12px; margin-top:56px; }
+    .cta-box h3 { font-size:20px; font-weight:600; margin-bottom:8px; color:#FFFFFF; }
+    .cta-box p { color:#A1A1AA; margin-bottom:0; }
+    .cta-box a { color:#93C5FD; }
+    .cta-box a:hover { color:#BFDBFE; }
+    footer { border-top:1px solid var(--border); padding:40px 0; }
+    .footer-inner { display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .footer-left { font-size:13px; color:#A1A1AA; }
+    .footer-links { display:flex; gap:20px; }
+    .footer-links a { font-size:13px; color:var(--text-3); text-decoration:none; } .footer-links a:hover { color:var(--text); }
+    @media(max-width:768px) { h1 { font-size:32px; } main { padding:48px 0; } .footer-inner { flex-direction:column; gap:16px; text-align:center; } .cta-box { padding:24px; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#18181B" rx="7"/><path d="M6 3h14l7 7v18a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z" fill="#FFF" fill-opacity=".95"/><path d="M20 3v5a2 2 0 002 2h5" fill="#E0DDD8"/><path d="M8 16h10" stroke="#18181B" stroke-width="2.5" stroke-linecap="round"/><path d="M8 21h14" stroke="#5A5A55" stroke-width="2.5" stroke-linecap="round"/></svg>
+        WebPeel
+      </a>
+      <div class="nav-links">
+        <a href="/#how">How It Works</a>
+        <a href="/playground">Playground</a>
+        <a href="/#compare">Compare</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://app.webpeel.dev" class="nav-btn nav-btn-ghost">Dashboard</a>
+        <a href="https://app.webpeel.dev/signup" class="nav-btn nav-btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <div class="hero">
+        <h1>Security at WebPeel</h1>
+        <p class="hero-subtitle">Security is not a feature — it's the foundation.</p>
+        <p class="updated">Last updated: March 22, 2026</p>
+      </div>
+
+      <div class="badge-row">
+        <span class="badge green">✓ TLS 1.3 Everywhere</span>
+        <span class="badge green">✓ Zero Content Storage</span>
+        <span class="badge green">✓ SSRF Protected</span>
+        <span class="badge blue">✓ EU-Hosted (GDPR)</span>
+        <span class="badge purple">✓ HMAC Webhooks</span>
+        <span class="badge green">✓ 0 npm Vulnerabilities</span>
+      </div>
+
+      <hr class="section-divider">
+
+      <h2><span class="icon">🗄️</span> Data Handling</h2>
+      <p>We built WebPeel with a minimal-data philosophy from day one.</p>
+      <ul>
+        <li><strong>No content storage:</strong> We never store fetched page content — only metadata (URL, timestamp, response time). What you fetch stays yours.</li>
+        <li><strong>Streamed responses:</strong> API responses are streamed directly to you, not cached on our servers. Your data doesn't touch our disk.</li>
+        <li><strong>Zero Data Retention mode:</strong> Available for enterprise customers — no metadata logs, no usage records. Contact us to enable.</li>
+        <li><strong>Transparent headers:</strong> Every API response includes <code>X-Data-Retention: metadata-only</code> so you always know exactly what we retain.</li>
+      </ul>
+
+      <hr class="section-divider">
+
+      <h2><span class="icon">🏗️</span> Infrastructure Security</h2>
+      <ul>
+        <li><strong>TLS 1.3:</strong> All traffic is encrypted in transit. HTTP is not served — every request is redirected to HTTPS.</li>
+        <li><strong>EU hosting:</strong> Our API runs on Hetzner Cloud (Germany/EU) with full-disk encrypted volumes and physical datacenter security.</li>
+        <li><strong>Kubernetes (K3s):</strong> Containerized workloads with network policies that restrict pod-to-pod communication to only what's needed.</li>
+        <li><strong>Traefik + Let's Encrypt:</strong> Automated TLS certificate provisioning and renewal via ACME. Zero manual cert management.</li>
+        <li><strong>HSTS with preload:</strong> <code>Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</code> enforced on all responses.</li>
+      </ul>
+
+      <hr class="section-divider">
+
+      <h2><span class="icon">🛡️</span> Application Security</h2>
+      <ul>
+        <li><strong>SSRF protection:</strong> All fetch targets are validated before requests are made. We block <code>localhost</code>, <code>127.x.x.x</code>, <code>10.x.x.x</code>, <code>172.16–31.x.x</code>, <code>192.168.x.x</code>, cloud metadata endpoints (169.254.169.254), and the <code>file://</code> protocol.</li>
+        <li><strong>Rate limiting:</strong> Sliding window rate limits are enforced per API key, per tier — preventing both abuse and runaway client code.</li>
+        <li><strong>Input validation:</strong> URL length caps, protocol allow-listing, and content-type enforcement on every request.</li>
+        <li><strong>SQL injection prevention:</strong> Parameterized queries exclusively. Raw SQL string interpolation is not used anywhere in our codebase.</li>
+        <li><strong>Security headers:</strong> We use Helmet.js to set <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, <code>X-XSS-Protection</code>, and a strict <code>Content-Security-Policy</code> on all responses.</li>
+        <li><strong>Dependency auditing:</strong> We run <code>npm audit</code> in CI on every deploy. Current status: 0 known vulnerabilities.</li>
+      </ul>
+
+      <hr class="section-divider">
+
+      <h2><span class="icon">🔑</span> Authentication</h2>
+      <ul>
+        <li><strong>OAuth 2.0 only:</strong> We authenticate via Google OAuth. No passwords are stored — ever. There's nothing to breach.</li>
+        <li><strong>Hashed API keys:</strong> API keys are hashed with SHA-256 before storage. Even if our database were compromised, raw keys would not be exposed.</li>
+        <li><strong>Key scopes:</strong> API keys support granular permission scopes, so you can issue keys with only the access they need.</li>
+        <li><strong>Audit logging:</strong> Every API request is logged with key ID, endpoint, timestamp, and result code — available in your dashboard.</li>
+      </ul>
+
+      <hr class="section-divider">
+
+      <h2><span class="icon">🪝</span> Webhook Security</h2>
+      <p>All webhook deliveries from WebPeel are signed so you can verify they're legitimate.</p>
+      <ul>
+        <li><strong>HMAC-SHA256 signatures:</strong> Each webhook payload is signed using your webhook secret.</li>
+        <li><strong>Timestamp replay protection:</strong> A <code>X-WebPeel-Timestamp</code> header is included in every delivery. Reject webhooks older than 5 minutes.</li>
+      </ul>
+      <p>Verify a webhook delivery in Node.js:</p>
+      <pre><code>const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret, timestamp) {
+  // Reject if timestamp is older than 5 minutes
+  const age = Math.abs(Date.now() / 1000 - parseInt(timestamp));
+  if (age > 300) throw new Error('Webhook timestamp too old');
+
+  const signed = crypto
+    .createHmac('sha256', secret)
+    .update(`${timestamp}.${payload}`)
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(`sha256=${signed}`)
+  );
+}</code></pre>
+
+      <hr class="section-divider">
+
+      <h2><span class="icon">🇪🇺</span> GDPR Compliance</h2>
+      <ul>
+        <li><strong>Data deletion:</strong> Delete your account and all associated data via <code>DELETE /v1/account</code> or through your dashboard Settings.</li>
+        <li><strong>EU infrastructure:</strong> All data is processed and stored on EU-hosted servers (Hetzner, Germany). No transatlantic transfers for primary data.</li>
+        <li><strong>No tracking cookies:</strong> We use only essential session cookies for authentication. No analytics cookies, no ad trackers.</li>
+        <li><strong>Privacy policy:</strong> Full details at <a href="/privacy">webpeel.dev/privacy</a>. See our privacy policy for complete data handling information.</li>
+      </ul>
+
+      <hr class="section-divider">
+
+      <h2><span class="icon">🔍</span> Responsible Disclosure</h2>
+      <p>Found a security vulnerability? We want to know.</p>
+      <ul>
+        <li><strong>Contact:</strong> Email <a href="mailto:security@webpeel.dev">security@webpeel.dev</a> with a description of the issue and reproduction steps.</li>
+        <li><strong>Response time:</strong> We commit to acknowledging all reports within <strong>48 hours</strong> and providing a fix timeline within 7 days for confirmed issues.</li>
+        <li><strong>Good faith:</strong> We will not take legal action against researchers who report issues responsibly and do not exploit or disclose them before a fix is released.</li>
+        <li><strong>Credit:</strong> With your permission, we'll thank you in our changelog when the fix ships.</li>
+      </ul>
+
+      <div class="cta-box">
+        <h3>Questions about security?</h3>
+        <p>Email us at <a href="mailto:security@webpeel.dev">security@webpeel.dev</a> — we respond to every message.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">© 2026 WebPeel. Open source under AGPL-3.0.</div>
+      <div class="footer-links">
+        <a href="https://github.com/webpeel/webpeel">GitHub</a>
+        <a href="https://app.webpeel.dev">Dashboard</a>
+        <a href="/status">Status</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/security">Security</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+        <a href="https://github.com/webpeel/webpeel/issues">Support</a>
+      </div>
+    </div>
+  </footer>
+
+<script defer src="/_vercel/insights/script.js"></script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+</body>
+</html>
