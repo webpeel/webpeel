@@ -516,7 +516,7 @@ export function registerSearchCommands(program: Command): void {
     .option('--allowed-domains <domains...>', 'Only crawl these domains (default: same as starting URL)')
     .option('--exclude <patterns...>', 'Exclude URLs matching these regex patterns')
     .option('--ignore-robots', 'Ignore robots.txt (default: respect robots.txt)')
-    .option('--rate-limit <ms>', 'Rate limit between requests in ms (default: 1000)', (v: string) => parseInt(v, 10), 1000)
+    .option('--rate-limit <ms>', 'Rate limit between requests in ms (default: 500)', (v: string) => parseInt(v, 10), 500)
     .option('-r, --render', 'Use headless browser for all pages')
     .option('--stealth', 'Use stealth mode for all pages')
     .option('-s, --silent', 'Silent mode (no spinner)')

@@ -217,7 +217,7 @@ export async function crawl(
     allowedDomains,
     excludePatterns = [],
     respectRobotsTxt = true,
-    rateLimitMs = 1000,
+    rateLimitMs = 500,
     sitemapFirst = false,
     strategy = 'bfs',
     deduplication = true,
