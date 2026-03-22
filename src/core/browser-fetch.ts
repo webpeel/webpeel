@@ -92,6 +92,8 @@ export async function browserFetch(
     viewportWidth?: number;
     /** Browser viewport height in pixels */
     viewportHeight?: number;
+    /** Device scale factor (pixel density) for screenshots. Defaults to device profile value. */
+    deviceScaleFactor?: number;
     /** Wait condition: 'domcontentloaded' (default), 'networkidle', 'load', 'commit' */
     waitUntil?: string;
     /** CSS selector to wait for before extracting content */
@@ -128,29 +130,33 @@ export async function browserFetch(
     device = 'desktop',
     viewportWidth: optViewportWidth,
     viewportHeight: optViewportHeight,
+    deviceScaleFactor: optDeviceScaleFactor,
     waitUntil: optWaitUntil,
     waitSelector,
     blockResources,
     isSPA = false,
   } = options;
 
-  // Device emulation profiles
+  // Device emulation profiles (with deviceScaleFactor for crisp screenshots)
   const deviceProfiles = {
-    desktop: { width: 1920, height: 1080, userAgent: undefined as string | undefined },
+    desktop: { width: 1920, height: 1080, deviceScaleFactor: 1, userAgent: undefined as string | undefined },
     mobile: {
       width: 390,
       height: 844,
+      deviceScaleFactor: 3,
       userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
     },
     tablet: {
       width: 820,
       height: 1180,
+      deviceScaleFactor: 2,
       userAgent: 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
     },
   };
   const deviceProfile = deviceProfiles[device] ?? deviceProfiles.desktop;
   const effectiveViewportWidth = optViewportWidth ?? deviceProfile.width;
   const effectiveViewportHeight = optViewportHeight ?? deviceProfile.height;
+  const effectiveScaleFactor = optDeviceScaleFactor ?? deviceProfile.deviceScaleFactor;
   const effectiveWaitUntil = (optWaitUntil as 'domcontentloaded' | 'networkidle' | 'load' | 'commit') || 'domcontentloaded';
 
   // Validate user agent if provided
@@ -267,6 +273,7 @@ export async function browserFetch(
           timezoneId: 'America/New_York',
           javaScriptEnabled: true,
           viewport: { width: effectiveViewportWidth || vp.width, height: effectiveViewportHeight || vp.height },
+          deviceScaleFactor: effectiveScaleFactor,
           ...(storageState ? { storageState } : {}),
         });
         page = await ownedContext.newPage();
@@ -276,13 +283,25 @@ export async function browserFetch(
           ...pageOptions,
           storageState,
           viewport: { width: effectiveViewportWidth, height: effectiveViewportHeight },
+          deviceScaleFactor: effectiveScaleFactor,
         });
         page = await ownedContext.newPage();
       } else {
-        page = await browser.newPage(pageOptions);
-        // Apply viewport for device emulation or explicit viewport overrides
-        if (device !== 'desktop' || optViewportWidth !== undefined || optViewportHeight !== undefined) {
-          await page.setViewportSize({ width: effectiveViewportWidth, height: effectiveViewportHeight }).catch(() => {});
+        // When deviceScaleFactor differs from default (1), create an isolated context
+        // so the scale factor is applied (Playwright requires it at context level)
+        if (effectiveScaleFactor !== 1) {
+          ownedContext = await browser.newContext({
+            ...pageOptions,
+            viewport: { width: effectiveViewportWidth, height: effectiveViewportHeight },
+            deviceScaleFactor: effectiveScaleFactor,
+          });
+          page = await ownedContext.newPage();
+        } else {
+          page = await browser.newPage(pageOptions);
+          // Apply viewport for device emulation or explicit viewport overrides
+          if (device !== 'desktop' || optViewportWidth !== undefined || optViewportHeight !== undefined) {
+            await page.setViewportSize({ width: effectiveViewportWidth, height: effectiveViewportHeight }).catch(() => {});
+          }
         }
       }
       await applyStealthScripts(page);

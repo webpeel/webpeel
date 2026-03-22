@@ -226,6 +226,8 @@ export interface PeelOptions {
   viewportWidth?: number;
   /** Browser viewport height in pixels */
   viewportHeight?: number;
+  /** Device scale factor (pixel density) for screenshots. Defaults to device profile value (desktop: 1, mobile: 3, tablet: 2). */
+  deviceScaleFactor?: number;
   /** Wait condition: 'domcontentloaded' (default), 'networkidle', 'load', 'commit' */
   waitUntil?: 'domcontentloaded' | 'networkidle' | 'load' | 'commit';
   /** CSS selector to wait for before extracting content */

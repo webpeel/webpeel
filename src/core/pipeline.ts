@@ -573,6 +573,7 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
       device: ctx.options.device,
       viewportWidth: ctx.options.viewportWidth,
       viewportHeight: ctx.options.viewportHeight,
+      deviceScaleFactor: ctx.options.deviceScaleFactor,
       waitUntil: ctx.options.waitUntil,
       waitSelector: ctx.options.waitSelector,
       blockResources: ctx.options.blockResources,

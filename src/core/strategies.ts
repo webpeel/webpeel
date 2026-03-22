@@ -321,6 +321,8 @@ export interface StrategyOptions {
   viewportWidth?: number;
   /** Browser viewport height in pixels */
   viewportHeight?: number;
+  /** Device scale factor (pixel density) for screenshots */
+  deviceScaleFactor?: number;
   /** Wait condition: 'domcontentloaded' (default), 'networkidle', 'load', 'commit' */
   waitUntil?: string;
   /** CSS selector to wait for before extracting content */
@@ -362,6 +364,7 @@ interface BrowserStrategyOptions {
   device?: 'desktop' | 'mobile' | 'tablet';
   viewportWidth?: number;
   viewportHeight?: number;
+  deviceScaleFactor?: number;
   waitUntil?: string;
   waitSelector?: string;
   blockResources?: string[];
@@ -392,6 +395,7 @@ async function fetchWithBrowserStrategy(
     device,
     viewportWidth,
     viewportHeight,
+    deviceScaleFactor,
     waitUntil,
     waitSelector,
     blockResources,
@@ -418,6 +422,7 @@ async function fetchWithBrowserStrategy(
       device,
       viewportWidth,
       viewportHeight,
+      deviceScaleFactor,
       waitUntil,
       waitSelector,
       blockResources,
@@ -449,6 +454,10 @@ async function fetchWithBrowserStrategy(
         headed,
         storageState,
         proxy,
+        device,
+        viewportWidth,
+        viewportHeight,
+        deviceScaleFactor,
       });
       return { ...result, method: 'stealth' };
     }
@@ -473,6 +482,10 @@ async function fetchWithBrowserStrategy(
         profileDir,
         headed,
         proxy,
+        device,
+        viewportWidth,
+        viewportHeight,
+        deviceScaleFactor,
       });
       return { ...result, method: effectiveStealth ? 'stealth' : 'browser' };
     }
@@ -496,6 +509,10 @@ async function fetchWithBrowserStrategy(
           headed,
           storageState,
           proxy,
+          device,
+          viewportWidth,
+          viewportHeight,
+          deviceScaleFactor,
         });
         return { ...result, method: 'stealth' };
       } catch (stealthError) {
@@ -542,6 +559,7 @@ export async function smartFetch(
     device,
     viewportWidth,
     viewportHeight,
+    deviceScaleFactor,
     waitUntil,
     waitSelector,
     blockResources,
@@ -755,6 +773,7 @@ export async function smartFetch(
     device,
     viewportWidth,
     viewportHeight,
+    deviceScaleFactor,
     waitUntil,
     waitSelector,
     blockResources,

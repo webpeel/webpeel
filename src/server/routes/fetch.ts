@@ -870,6 +870,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         device,
         viewportWidth,
         viewportHeight,
+        deviceScaleFactor,
         waitUntil,
         waitSelector,
         blockResources,
@@ -915,6 +916,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         device?: 'desktop' | 'mobile' | 'tablet';
         viewportWidth?: number;
         viewportHeight?: number;
+        deviceScaleFactor?: number;
         waitUntil?: 'domcontentloaded' | 'networkidle' | 'load' | 'commit';
         waitSelector?: string;
         blockResources?: string[];
@@ -1167,6 +1169,7 @@ export function createFetchRouter(authStore: AuthStore): Router {
         device: device,
         viewportWidth: typeof viewportWidth === 'number' ? viewportWidth : undefined,
         viewportHeight: typeof viewportHeight === 'number' ? viewportHeight : undefined,
+        deviceScaleFactor: typeof deviceScaleFactor === 'number' ? deviceScaleFactor : undefined,
         waitUntil: waitUntil,
         waitSelector: waitSelector,
         blockResources: Array.isArray(blockResources) ? blockResources : undefined,

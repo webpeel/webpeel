@@ -687,6 +687,7 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
         device: options.device as 'desktop' | 'mobile' | 'tablet' | undefined,
         viewportWidth: options.viewport ? (options.viewport as { width: number; height: number }).width : undefined,
         viewportHeight: options.viewport ? (options.viewport as { width: number; height: number }).height : undefined,
+        deviceScaleFactor: options.scale as number | undefined,
         waitUntil: options.waitUntil as 'domcontentloaded' | 'networkidle' | 'load' | 'commit' | undefined,
         waitSelector: options.waitSelector as string | undefined,
         blockResources: options.blockResources ? (options.blockResources as string).split(',').map((s: string) => s.trim()) : undefined,
@@ -740,8 +741,18 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
       const fetchApiKey = fetchCfg.apiKey || process.env.WEBPEEL_API_KEY;
       const fetchApiUrl = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
 
+      // Features that require a local browser and cannot be delegated to the remote API
+      const needsLocalBrowser = !!(
+        peelOptions.screenshot ||
+        peelOptions.actions?.length ||
+        peelOptions.profileDir ||
+        peelOptions.headed ||
+        peelOptions.storageState ||
+        peelOptions.cloaked
+      );
+
       let result: any;
-      if (fetchApiKey) {
+      if (fetchApiKey && !needsLocalBrowser) {
         // Use the WebPeel API — no local Playwright needed
         result = await fetchViaApi(url, peelOptions, fetchApiKey, fetchApiUrl);
       } else {
@@ -1311,6 +1322,7 @@ export function registerFetchCommands(program: Command): void {
       const [w, h] = val.split('x').map(Number);
       return { width: w, height: h };
     })
+    .option('--scale <factor>', 'Device scale factor (pixel density) for screenshots (default: auto from device profile)', parseFloat)
     .option('--wait-until <event>', 'Page load event: domcontentloaded, networkidle, load, commit (auto-enables --render)')
     .option('--wait-selector <css>', 'Wait for CSS selector before extracting (auto-enables --render)')
     .option('--block-resources <types>', 'Block resource types, comma-separated: image,stylesheet,font,media,script (auto-enables --render)')
