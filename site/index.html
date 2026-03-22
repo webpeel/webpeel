@@ -6861,7 +6861,7 @@ page = peel(<span style="color:#86EFAC;">'stripe.com'</span>)
 
       <div class="feat-cards-grid">
 
-        <!-- Card 1: Extract Any Website -->
+        <!-- Card 1: Zero-Config Extraction -->
         <div class="feat-card reveal" data-delay="1">
           <div class="feat-card-mock">
             <div class="fc1-urlbar">
@@ -6877,33 +6877,34 @@ page = peel(<span style="color:#86EFAC;">'stripe.com'</span>)
           <div class="feat-card-desc">JS rendering, Cloudflare bypass, paywall handling — all automatic. Just pass the URL.</div>
         </div>
 
-        <!-- Card 2: Deep Research Agent -->
+        <!-- Card 2: Research Agent -->
         <div class="feat-card reveal" data-delay="2">
           <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
-            <div style="color:#818CF8;margin-bottom:8px;">$ research "AI trends 2025"</div>
-            <div style="color:rgba(255,255,255,0.50);">Searching 47 sources...</div>
+            <div style="color:#818CF8;margin-bottom:8px;">POST /v1/agent</div>
+            <div style="color:rgba(255,255,255,0.50);">Searching 47 sources…</div>
             <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
               <div style="color:#A5B4FC;margin-bottom:4px;">→ 3 synthesis reports</div>
               <div style="color:#A5B4FC;">→ Key facts extracted</div>
             </div>
           </div>
-          <div class="feat-card-title">Research Agent</div>
-          <div class="feat-card-desc">Built-in deep research agent synthesizes info from 47+ sources into structured insights your AI can use directly.</div>
+          <div class="feat-card-title">🧠 Research Agent</div>
+          <div class="feat-card-desc">Built-in deep research agent synthesizes info from 47+ sources into structured insights.</div>
         </div>
 
-        <!-- Card 3: AI-Ready Markdown -->
+        <!-- Card 3: Structured JSON -->
         <div class="feat-card reveal" data-delay="3">
           <div class="feat-card-mock">
-            <div class="fc3-lines">
-              <div class="fc3-line"># Stripe | Financial Infrastructure</div>
-              <div class="fc3-line">Accept payments anywhere worldwide</div>
-              <div class="fc3-line">with a single integration…</div>
-              <div class="fc3-line">## Products</div>
-              <div class="fc3-line">Payments · Billing · Connect<span class="fc3-cursor"></span></div>
+            <div class="fc5-json">
+              <div class="fc5-line"><span class="fc5-brace">{</span></div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"schema"</span>: <span class="fc5-str">"{ price, rating }"</span>,</div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"price"</span>: <span class="fc5-str">"$29.99"</span>,</div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"rating"</span>: <span class="fc5-num">4.8</span>,</div>
+              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"in_stock"</span>: <span class="fc5-bool">true</span></div>
+              <div class="fc5-line"><span class="fc5-brace">}</span></div>
             </div>
           </div>
-          <div class="feat-card-title">LLM-Optimized Output</div>
-          <div class="feat-card-desc">Clean markdown optimized for token efficiency. Zero boilerplate, maximum context density.</div>
+          <div class="feat-card-title">📊 Structured JSON</div>
+          <div class="feat-card-desc">Extract structured data with JSON schemas. Define what you want, get clean JSON back.</div>
         </div>
 
         <!-- Card 4: Screenshot API -->
@@ -6927,164 +6928,85 @@ page = peel(<span style="color:#86EFAC;">'stripe.com'</span>)
                 </div>
                 <div class="fc4-content">
                   <div class="fc4-content-h">Develop. Preview. Ship.</div>
-                  <div class="fc4-content-p">Vercel provides the developer tools and cloud infrastructure to build, scale, and secure a faster, more personalized web.</div>
+                  <div class="fc4-content-p">Full-page · custom viewport · device emulation</div>
                   <span class="fc4-content-tag">▶ screenshot captured</span>
                 </div>
               </div>
             </div>
           </div>
-          <div class="feat-card-title">Screenshot API</div>
-          <div class="feat-card-desc">Full-page screenshots with device emulation. Capture what users actually see, pixel perfect.</div>
+          <div class="feat-card-title">📸 Screenshot API</div>
+          <div class="feat-card-desc">Full-page screenshots with device emulation. Capture what users see, pixel perfect.</div>
         </div>
 
-        <!-- Card 5: Structured JSON -->
-        <div class="feat-card reveal" data-delay="2">
-          <div class="feat-card-mock">
-            <div class="fc5-json">
-              <div class="fc5-line"><span class="fc5-brace">{</span></div>
-              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"title"</span>: <span class="fc5-str">"Stripe | Financial…"</span>,</div>
-              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"tokens"</span>: <span class="fc5-num">2847</span>,</div>
-              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"method"</span>: <span class="fc5-str">"cloudflare-bypass"</span>,</div>
-              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"elapsed"</span>: <span class="fc5-num">412</span>,</div>
-              <div class="fc5-line">&nbsp;&nbsp;<span class="fc5-key">"cached"</span>: <span class="fc5-bool">false</span></div>
-              <div class="fc5-line"><span class="fc5-brace">}</span></div>
-            </div>
-          </div>
-          <div class="feat-card-title">Structured JSON</div>
-          <div class="feat-card-desc">Every response includes metadata, timing, method used, and token counts alongside content.</div>
-        </div>
-
-        <!-- Card 6: Works with Any AI -->
-        <div class="feat-card reveal" data-delay="3">
-          <div class="feat-card-mock">
-            <div class="fc6-grid">
-              <div class="fc6-pill">Claude</div>
-              <div class="fc6-pill">GPT-4o</div>
-              <div class="fc6-pill">LangChain</div>
-              <div class="fc6-pill">LlamaIndex</div>
-              <div class="fc6-pill">CrewAI</div>
-              <div class="fc6-pill">AutoGen</div>
-            </div>
-          </div>
-          <div class="feat-card-title">Every AI Framework</div>
-          <div class="feat-card-desc">Drop-in REST API + MCP server. Works with Claude, GPT, LangChain, LlamaIndex — all of them.</div>
-        </div>
-
-        <!-- Card 7: Batch Agent -->
-        <div class="feat-card reveal" data-delay="1">
-          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
-            <div style="color:#818CF8;margin-bottom:8px;">POST /v1/agent/batch</div>
-            <div style="color:rgba(255,255,255,0.50);">Running 50 queries in parallel…</div>
-            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
-              <div style="color:#A5B4FC;margin-bottom:4px;">✓ 50 / 50 complete</div>
-              <div style="color:#A5B4FC;">→ 412ms avg · 0 failures</div>
-            </div>
-          </div>
-          <div class="feat-card-title">🤖 Batch Agent</div>
-          <div class="feat-card-desc">Run 50 AI agent queries in parallel. Search, fetch, extract at scale.</div>
-        </div>
-
-        <!-- Card 8: Webhook Delivery -->
-        <div class="feat-card reveal" data-delay="2">
-          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
-            <div style="color:#818CF8;margin-bottom:8px;">POST your-app.com/webhook</div>
-            <div style="color:rgba(255,255,255,0.50);">X-Signature: sha256=a3f9…</div>
-            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
-              <div style="color:#A5B4FC;">{"status":"done","result":…}</div>
-            </div>
-          </div>
-          <div class="feat-card-title">🔗 Webhook Delivery</div>
-          <div class="feat-card-desc">Get notified when jobs complete. HMAC-SHA256 signed for security.</div>
-        </div>
-
-        <!-- Card 9: Persistent Sessions -->
-        <div class="feat-card reveal" data-delay="3">
-          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
-            <div style="color:#818CF8;margin-bottom:8px;">GET /v1/session/:id/cookies</div>
-            <div style="color:rgba(255,255,255,0.50);">Session active · 42min remaining</div>
-            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
-              <div style="color:#A5B4FC;">Logged in · cookies saved ✓</div>
-            </div>
-          </div>
-          <div class="feat-card-title">🔒 Persistent Sessions</div>
-          <div class="feat-card-desc">Login flows, cookie persistence, up to 60-minute sessions.</div>
-        </div>
-
-        <!-- Card 10: PDF Extraction -->
-        <div class="feat-card reveal" data-delay="1">
-          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
-            <div style="color:#818CF8;margin-bottom:8px;">webpeel "report.pdf"</div>
-            <div style="color:rgba(255,255,255,0.50);">Extracting real text…</div>
-            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
-              <div style="color:#A5B4FC;margin-bottom:4px;">14,320 tokens · 138ms</div>
-              <div style="color:#A5B4FC;">Actual content, not metadata</div>
-            </div>
-          </div>
-          <div class="feat-card-title">📄 PDF Extraction</div>
-          <div class="feat-card-desc">Extract real text from PDFs. Not metadata — actual content.</div>
-        </div>
-
-        <!-- Card 11: Token Savings -->
-        <div class="feat-card reveal" data-delay="2">
-          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
-            <div style="color:rgba(255,255,255,0.50);margin-bottom:6px;">Raw HTML → WebPeel</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-              <div style="height:8px;width:100%;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
-                <div style="height:100%;width:100%;background:rgba(255,255,255,0.25);border-radius:4px;"></div>
-              </div>
-              <span style="color:rgba(255,255,255,0.4);white-space:nowrap;">36,000 tok</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="height:8px;width:100%;background:rgba(88,101,242,0.15);border-radius:4px;overflow:hidden;">
-                <div style="height:100%;width:8%;background:#818CF8;border-radius:4px;"></div>
-              </div>
-              <span style="color:#A5B4FC;white-space:nowrap;font-weight:600;">2,847 tok</span>
-            </div>
-          </div>
-          <div class="feat-card-title">🧮 Token Savings</div>
-          <div class="feat-card-desc">92% smaller than raw HTML. Save thousands on LLM costs.</div>
-        </div>
-
-        <!-- Card 12: Proxy & Geo-Unblock -->
-        <div class="feat-card reveal" data-delay="3">
-          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
-            <div style="color:#818CF8;margin-bottom:8px;">webpeel "https://site.com" --proxy socks5://...</div>
-            <div style="color:rgba(255,255,255,0.50);">Routing via proxy · JP exit node</div>
-            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
-              <div style="color:#A5B4FC;margin-bottom:4px;">✓ Geo-restricted content unlocked</div>
-              <div style="color:#A5B4FC;">→ HTTP / HTTPS / SOCKS5 supported</div>
-            </div>
-          </div>
-          <div class="feat-card-title">🌍 Proxy &amp; Geo-Unblock</div>
-          <div class="feat-card-desc">HTTP, HTTPS, SOCKS5 proxies with automatic rotation. Access geo-restricted content worldwide.</div>
-        </div>
-
-        <!-- Card 13: YouTube Transcripts -->
-        <div class="feat-card reveal" data-delay="1">
-          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
-            <div style="color:#818CF8;margin-bottom:8px;">webpeel "youtube.com/watch?v=dQw4…"</div>
-            <div style="color:rgba(255,255,255,0.50);">Extracting transcript…</div>
-            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
-              <div style="color:#A5B4FC;margin-bottom:4px;">4,210 tokens · timestamped</div>
-              <div style="color:#A5B4FC;">Auto-detect language · 50+ langs</div>
-            </div>
-          </div>
-          <div class="feat-card-title">🎬 YouTube Transcripts</div>
-          <div class="feat-card-desc">Full video transcripts with timestamps. Auto-detects language, supports 50+ languages natively.</div>
-        </div>
-
-        <!-- Card 14: Web Search + Credibility -->
+        <!-- Card 5: Web Search -->
         <div class="feat-card reveal" data-delay="2">
           <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
             <div style="color:#818CF8;margin-bottom:8px;">GET /v1/search?q=AI+trends</div>
             <div style="color:rgba(255,255,255,0.50);">27+ sources · ranked by trust</div>
             <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
-              <div style="color:#A5B4FC;margin-bottom:4px;">★★★ Official · ★★ Verified · ★ General</div>
+              <div style="color:#A5B4FC;margin-bottom:4px;">★★★ Official · ★★ Verified</div>
               <div style="color:#A5B4FC;">→ Credibility-ranked results</div>
             </div>
           </div>
           <div class="feat-card-title">🔍 Web Search</div>
           <div class="feat-card-desc">Built-in search across 27+ sources with credibility ranking. Official &amp; verified sources float to top.</div>
+        </div>
+
+        <!-- Card 6: Browser Actions -->
+        <div class="feat-card reveal" data-delay="3">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">POST /v1/fetch</div>
+            <div style="color:rgba(255,255,255,0.50);">actions: [</div>
+            <div style="color:rgba(255,255,255,0.50);">&nbsp;&nbsp;{ click: "#login" },</div>
+            <div style="color:rgba(255,255,255,0.50);">&nbsp;&nbsp;{ type: "user@co.com" },</div>
+            <div style="color:rgba(255,255,255,0.50);">&nbsp;&nbsp;{ wait: 1000 }</div>
+            <div style="color:rgba(255,255,255,0.50);">]</div>
+            <div style="margin-top:8px;color:#A5B4FC;">✓ Extracted after login</div>
+          </div>
+          <div class="feat-card-title">🤖 Browser Actions</div>
+          <div class="feat-card-desc">Click, type, scroll, wait — automate any page interaction before extraction.</div>
+        </div>
+
+        <!-- Card 7: Content Monitoring -->
+        <div class="feat-card reveal" data-delay="1">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">webpeel monitor "site.com/price"</div>
+            <div style="color:rgba(255,255,255,0.50);">Watching for changes…</div>
+            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
+              <div style="color:#34D399;margin-bottom:4px;">+ $29.99 → $24.99</div>
+              <div style="color:#A5B4FC;">Diff delivered · 2 changes</div>
+            </div>
+          </div>
+          <div class="feat-card-title">📡 Content Monitoring</div>
+          <div class="feat-card-desc">Track any page for changes. Get diffs when content updates. Watch mode built in.</div>
+        </div>
+
+        <!-- Card 8: YouTube Transcripts -->
+        <div class="feat-card reveal" data-delay="2">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">webpeel "youtube.com/watch?v=…"</div>
+            <div style="color:rgba(255,255,255,0.50);">Extracting transcript…</div>
+            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
+              <div style="color:#A5B4FC;margin-bottom:4px;">4,210 tokens · timestamped</div>
+              <div style="color:#A5B4FC;">Auto-detect · 50+ languages</div>
+            </div>
+          </div>
+          <div class="feat-card-title">🎬 YouTube Transcripts</div>
+          <div class="feat-card-desc">Full video transcripts with timestamps. Auto-detects language, 50+ languages.</div>
+        </div>
+
+        <!-- Card 9: Crawl Entire Sites -->
+        <div class="feat-card reveal" data-delay="3">
+          <div class="feat-card-mock" style="padding:20px;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.70);line-height:1.6;">
+            <div style="color:#818CF8;margin-bottom:8px;">webpeel crawl "docs.stripe.com"</div>
+            <div style="color:rgba(255,255,255,0.50);">depth: 3 · dedup · rate-limited</div>
+            <div style="margin-top:12px;padding:8px;background:rgba(255,255,255,0.04);border-left:2px solid #818CF8;">
+              <div style="color:#A5B4FC;margin-bottom:4px;">✓ 87 / 100 pages crawled</div>
+              <div style="color:#A5B4FC;">→ 412k tokens extracted</div>
+            </div>
+          </div>
+          <div class="feat-card-title">🌍 Crawl Entire Sites</div>
+          <div class="feat-card-desc">Crawl full websites with depth control, dedup, and rate limiting. Up to 100 pages.</div>
         </div>
 
       </div><!-- /feat-cards-grid -->

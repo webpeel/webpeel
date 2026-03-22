@@ -593,7 +593,16 @@ export function htmlToMarkdown(html: string, options?: { raw?: boolean; prune?: 
     cleanedHTML = pruned.html;
   }
 
-  let markdown = turndownSingleton.turndown(cleanedHTML);
+  let markdown: string;
+  try {
+    markdown = turndownSingleton.turndown(cleanedHTML);
+  } catch {
+    // Turndown GFM plugin crashes on malformed tables (e.g. <tr> without <table> parent)
+    // Fall back to basic text extraction
+    const $ = cheerio.load(cleanedHTML);
+    $('script, style, noscript, svg, iframe').remove();
+    markdown = $.text().replace(/\s+/g, ' ').trim();
+  }
 
   // SECURITY: Protect against ReDoS - limit input size before regex
   if (markdown.length > 1024 * 1024) { // 1MB limit for markdown
@@ -688,7 +697,13 @@ export function rawHtmlToMarkdown(html: string): string {
   $('script, style, noscript').remove();
 
   // Run Turndown on the cleaned HTML
-  let markdown = turndownSingleton.turndown($.html());
+  let markdown: string;
+  try {
+    markdown = turndownSingleton.turndown($.html());
+  } catch {
+    // Turndown GFM plugin crashes on malformed tables — fall back to text
+    markdown = $.text().replace(/\s+/g, ' ').trim();
+  }
 
   // Clean up excessive newlines
   markdown = markdown.split('\n').reduce((acc, line, i, arr) => {
