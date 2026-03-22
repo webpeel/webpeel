@@ -42,8 +42,9 @@
     return listings.slice(0, 4).map(function(item) {
       var title = esc(item.title || item.name || 'Result');
       var url = esc(item.url || '#');
-      var price = item.price
-        ? '<span style="color:#34d399;font-weight:600;font-size:13px;white-space:nowrap;">' + esc(item.price) + '</span>'
+      var rawPrice = (item.price || '').replace(/^from\s+/i, '').trim();
+      var price = rawPrice
+        ? '<span style="color:#34d399;font-weight:600;font-size:13px;white-space:nowrap;">' + esc(rawPrice) + '</span>'
         : '';
       var source = item.source
         ? '<span style="background:rgba(255,255,255,0.06);color:#71717a;font-size:10px;padding:2px 8px;border-radius:20px;white-space:nowrap;">' + esc(item.source) + '</span>'
@@ -55,10 +56,10 @@
       var snippetHtml = snippet
         ? '<div class="wp-snippet" style="font-size:13px;color:#a1a1aa;line-height:1.5;margin-top:6px;">' + esc(snippet) + '</div>'
         : '';
-      return '<div style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;transition:background 0.2s;" '
+      return '<div style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;transition:background 0.2s;text-align:center;" '
         + 'onmouseover="this.style.background=\'rgba(255,255,255,0.06)\'" '
         + 'onmouseout="this.style.background=\'rgba(255,255,255,0.03)\'">'
-        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">'
+        + '<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">'
         + '<a href="' + url + '" target="_blank" rel="noopener noreferrer" '
         + 'class="wp-title-link" style="font-size:14px;font-weight:500;color:#818CF8;text-decoration:none;line-height:1.4;">' + title + '</a>'
         + meta
@@ -88,12 +89,12 @@
         ? '<div style="font-size:12px;color:#71717a;margin-top:4px;">' + esc(item.address) + '</div>'
         : '';
       var metaRow = (ratingStars || reviews)
-        ? '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">' + ratingStars + reviews + '</div>'
+        ? '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;flex-wrap:wrap;">' + ratingStars + reviews + '</div>'
         : '';
-      return '<div style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;transition:background 0.2s;" '
+      return '<div style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;transition:background 0.2s;text-align:center;" '
         + 'onmouseover="this.style.background=\'rgba(255,255,255,0.06)\'" '
         + 'onmouseout="this.style.background=\'rgba(255,255,255,0.03)\'">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'
+        + '<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">'
         + '<a href="' + url + '" target="_blank" rel="noopener noreferrer" '
         + 'class="wp-title-link" style="font-size:14px;font-weight:500;color:#818CF8;text-decoration:none;">' + name + '</a>'
         + openStatus
