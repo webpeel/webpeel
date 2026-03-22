@@ -1931,7 +1931,7 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
       const isAnonymous = !authId;
 
       if (isAnonymous) {
-        // Rate limit anonymous users: 3 searches per day per IP
+        // Rate limit anonymous users: 10 searches per day per IP
         const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
           || req.headers['cf-connecting-ip'] as string
           || req.socket.remoteAddress
@@ -1944,7 +1944,7 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
             // Set 24-hour expiry on first request
             await redis.expire(anonKey, 86400);
           }
-          if (count > 3) {
+          if (count > 10) {
             res.status(429).json({
               success: false,
               error: {

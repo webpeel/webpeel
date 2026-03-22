@@ -3,7 +3,7 @@
 
   const API_URL = 'https://api.webpeel.dev';
   const SIGNUP_URL = 'https://app.webpeel.dev/signup';
-  const MAX_FREE_SEARCHES = 3;
+  const MAX_FREE_SEARCHES = 5;
   const SEARCH_COUNT_KEY = 'wp_search_count';
 
   // Track searches in localStorage
@@ -226,7 +226,7 @@
         <div id="wp-signup-wall" style="display: none; text-align: center; padding: 40px 20px;\
              background: rgba(129,140,248,0.05); border: 1px solid rgba(129,140,248,0.2);\
              border-radius: 16px; margin-top: 20px;">\
-          <h3 style="color: #e4e4e7; font-size: 20px; margin: 0 0 8px; font-family: inherit;">You\'ve used your 3 free searches</h3>\
+          <h3 style="color: #e4e4e7; font-size: 20px; margin: 0 0 8px; font-family: inherit;">You\'ve used your 5 free searches</h3>\
           <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 20px; font-family: inherit;">Sign up for free to get 500 searches/week + AI summaries</p>\
           <a href="' + SIGNUP_URL + '"\
             style="display: inline-block; padding: 12px 32px; background: #818CF8; color: white;\
