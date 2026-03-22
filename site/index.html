@@ -6239,6 +6239,292 @@
     }
   }
 
+  /* ══════════════════════════════════════════════════════════════
+     BREATHE — spacing, hierarchy & visual rhythm polish
+     (Single authoritative block — added last, wins all cascade)
+     ══════════════════════════════════════════════════════════════ */
+
+  /* 1. SECTION VERTICAL RHYTHM — 128px breathing room between sections */
+  .demo-section,
+  .how-section,
+  .feat-cards-section,
+  .why-section,
+  .pricing-section,
+  .faq-section {
+    padding: 128px 0 !important;
+  }
+  .final-cta {
+    padding: 128px 0 !important;
+  }
+  @media (max-width: 768px) {
+    .demo-section,
+    .how-section,
+    .feat-cards-section,
+    .why-section,
+    .pricing-section,
+    .faq-section,
+    .final-cta {
+      padding: 72px 0 !important;
+    }
+  }
+  @media (max-width: 480px) {
+    .demo-section,
+    .how-section,
+    .feat-cards-section,
+    .why-section,
+    .pricing-section,
+    .faq-section,
+    .final-cta {
+      padding: 60px 0 !important;
+    }
+  }
+
+  /* 2. NAV — 32px gap, generous vertical touch targets */
+  .nav-links {
+    gap: 32px !important;
+  }
+  .nav-links a {
+    padding-top: 18px !important;
+    padding-bottom: 18px !important;
+  }
+
+  /* 3. SECTION HEADER RHYTHM — eyebrow → h2 → subtitle spacing */
+  .section-eyebrow {
+    margin-bottom: 20px !important;
+    padding: 7px 16px !important;
+  }
+  .section-h2 {
+    margin-bottom: 16px !important;
+    line-height: 1.1 !important;
+  }
+  .demo-subtitle,
+  .pricing-sub,
+  .section-sub {
+    margin-bottom: 48px !important;
+    line-height: 1.7 !important;
+  }
+
+  /* 4. HOW IT WORKS — grid rhythm + card interior */
+  .how-grid {
+    gap: 24px !important;
+    margin-top: 64px !important;
+  }
+  .how-step {
+    padding: 40px 36px !important;
+    border-radius: 16px !important;
+  }
+  .how-step h3 {
+    margin-bottom: 14px !important;
+  }
+  .how-step p {
+    margin-bottom: 28px !important;
+    line-height: 1.7 !important;
+  }
+  @media (max-width: 768px) {
+    .how-grid {
+      gap: 16px !important;
+      margin-top: 40px !important;
+    }
+    .how-step {
+      padding: 32px 28px !important;
+    }
+  }
+
+  /* 5. FEATURE CARDS — interior padding & grid rhythm */
+  .feat-cards-grid {
+    margin-top: 64px !important;
+    gap: 20px !important;
+  }
+  .feat-card-mock {
+    margin: 24px 24px 0 !important;
+    min-height: 140px !important;
+  }
+  .feat-card-title {
+    padding: 20px 24px 8px !important;
+    line-height: 1.35 !important;
+  }
+  .feat-card-desc {
+    padding: 0 24px 28px !important;
+    line-height: 1.7 !important;
+  }
+  @media (max-width: 768px) {
+    .feat-cards-grid {
+      gap: 14px !important;
+      margin-top: 40px !important;
+    }
+  }
+
+  /* 6. PRICING — header breathing room + card padding */
+  .pricing-header {
+    margin-bottom: 72px !important;
+  }
+  .price-card {
+    padding: 36px 32px !important;
+    border-radius: 16px !important;
+  }
+  .price-card.featured {
+    padding: 44px 36px !important;
+    border-radius: 16px !important;
+  }
+  .price-desc {
+    line-height: 1.7 !important;
+    margin: 20px 0 28px !important;
+  }
+  .price-features li {
+    line-height: 1.7 !important;
+    padding: 10px 0 !important;
+  }
+  .price-features {
+    margin-bottom: 36px !important;
+  }
+  @media (max-width: 768px) {
+    .pricing-header {
+      margin-bottom: 40px !important;
+    }
+    .price-card {
+      padding: 28px 24px !important;
+    }
+    .price-card.featured {
+      padding: 32px 24px !important;
+    }
+  }
+
+  /* 7. FAQ — list margin, item padding, answer spacing */
+  .faq-list {
+    margin-top: 64px !important;
+  }
+  .faq-item {
+    margin-bottom: 12px !important;
+    border-radius: 14px !important;
+  }
+  .faq-q {
+    padding: 22px 28px !important;
+  }
+  .faq-answer-inner {
+    padding: 0 28px 28px !important;
+    line-height: 1.75 !important;
+  }
+  @media (max-width: 768px) {
+    .faq-list {
+      margin-top: 40px !important;
+    }
+    .faq-q {
+      padding: 18px 20px !important;
+    }
+    .faq-answer-inner {
+      padding: 0 20px 22px !important;
+    }
+    .faq-item {
+      margin-bottom: 8px !important;
+    }
+  }
+
+  /* 8. WHY WEBPEEL — internal spacing */
+  .why-inner {
+    margin-top: 56px !important;
+  }
+  .why-body {
+    line-height: 1.75 !important;
+    margin-top: 24px !important;
+  }
+  .why-checks {
+    margin-top: 28px !important;
+    gap: 18px !important;
+  }
+  .why-checks li {
+    line-height: 1.7 !important;
+    padding: 6px 0 !important;
+  }
+  @media (max-width: 768px) {
+    .why-inner {
+      margin-top: 40px !important;
+    }
+  }
+
+  /* 9. CODE BLOCKS — generous padding, comfortable line-height */
+  .mini-code {
+    padding: 20px 24px !important;
+    line-height: 1.75 !important;
+    border-radius: 12px !important;
+  }
+  .demo-content-box {
+    padding: 20px 22px !important;
+    line-height: 1.75 !important;
+  }
+
+  /* 10. HOVER TRANSITIONS — uniform 0.2s ease-out */
+  .how-step,
+  .feat-card,
+  .price-card,
+  .stat-card,
+  .faq-item,
+  .int-chip,
+  .demo-card-wrap {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out !important;
+  }
+
+  /* 11. BADGE/PILL ELEMENTS — 6-8px vertical, 14-18px horizontal */
+  .hero-eyebrow {
+    padding: 6px 14px !important;
+  }
+  .price-badge {
+    padding: 6px 20px !important;
+  }
+  .int-chip {
+    padding: 6px 14px !important;
+  }
+
+  /* 12. DEMO SECTION — card interior padding */
+  .demo-card-wrap {
+    padding: 40px !important;
+    border-radius: 20px !important;
+  }
+  @media (max-width: 768px) {
+    .demo-card-wrap {
+      padding: 24px !important;
+    }
+  }
+
+  /* 13. FINAL CTA — inner spacing */
+  .final-cta h2 {
+    margin-bottom: 20px !important;
+    line-height: 1.08 !important;
+  }
+  .final-cta .sub {
+    margin-bottom: 48px !important;
+    line-height: 1.7 !important;
+  }
+
+  /* 14. FOOTER — breathing room */
+  .footer {
+    padding: 72px 0 !important;
+  }
+  .footer-bottom {
+    margin-top: 48px !important;
+    padding-top: 32px !important;
+  }
+  .footer-col h3 {
+    margin-bottom: 20px !important;
+    letter-spacing: 0.08em !important;
+  }
+  @media (max-width: 768px) {
+    .footer {
+      padding: 56px 0 !important;
+    }
+  }
+
+  /* 15. GLOBAL BODY TEXT — consistent 1.65-1.7 line-height */
+  .hero-sub,
+  .feat-card-desc,
+  .how-step p,
+  .why-body,
+  .faq-answer-inner,
+  .price-desc,
+  .price-features li,
+  .footer-tagline {
+    line-height: 1.7 !important;
+  }
+
   </style>
 </head>
 <body>
