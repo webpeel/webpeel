@@ -76,3 +76,4 @@ render-backups/
 # Proprietary code is now in src/ee/ and visible in the repo.
 # It is protected by the Enterprise License (src/ee/LICENSE), not by hiding.
 test-final-results.png
+eng.traineddata
