@@ -13,7 +13,6 @@
  */
 
 import { Router, Request, Response } from 'express';
-import http from 'http';
 import '../types.js'; // Augments Express.Request with requestId, auth
 import { AuthStore } from '../auth-store.js';
 import { peel } from '../../index.js';
@@ -307,67 +306,81 @@ export function detectSearchIntent(query: string): SearchIntent {
   return { type: 'general', query: q, params: {} };
 }
 
-// ─── Shared Ollama Helper ──────────────────────────────────────────────────
+// ─── Universal LLM Helper ──────────────────────────────────────────────────
 
 /**
- * Quick Ollama call for internal use (intent classification, short synthesis).
- * Uses Node.js http module (not fetch) because fetch has socket hang issues with Ollama on K8s.
+ * Universal LLM call for internal use (intent classification, short synthesis).
+ * Supports any OpenAI-compatible API: OpenAI, Glama, OpenRouter, or Ollama (compat mode).
+ * Provider priority: OPENAI_API_KEY → GLAMA_API_KEY → OPENROUTER_API_KEY → OLLAMA_URL → ''
  * Returns empty string on failure (graceful degradation).
  */
-async function callOllamaQuick(prompt: string, opts?: { maxTokens?: number; timeoutMs?: number; temperature?: number }): Promise<string> {
-  const ollamaEndpoint = (process.env.OLLAMA_URL || '').replace(/\/$/, '');
-  if (!ollamaEndpoint) return '';
-
-  const ollamaModel = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
-  const ollamaSecret = process.env.OLLAMA_SECRET;
-  const timeoutMs = opts?.timeoutMs ?? 5000;
+async function callLLMQuick(prompt: string, opts?: { maxTokens?: number; timeoutMs?: number; temperature?: number }): Promise<string> {
   const maxTokens = opts?.maxTokens ?? 250;
   const temperature = opts?.temperature ?? 0.3;
+  const timeoutMs = opts?.timeoutMs ?? 20000;
 
-  const body = JSON.stringify({
-    model: ollamaModel,
-    prompt,
-    stream: false,
-    think: false,
-    options: { num_predict: maxTokens, temperature },
-  });
+  // Determine provider + config
+  let baseURL: string;
+  let apiKey: string;
+  let model: string;
+  let provider: string;
+
+  if (process.env.OPENAI_API_KEY) {
+    baseURL = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
+    apiKey = process.env.OPENAI_API_KEY;
+    model = process.env.LLM_MODEL || 'gpt-4o-mini';
+    provider = 'openai';
+  } else if (process.env.GLAMA_API_KEY) {
+    baseURL = 'https://glama.ai/api/gateway/openai/v1';
+    apiKey = process.env.GLAMA_API_KEY;
+    model = process.env.LLM_MODEL || 'google-vertex/gemini-2.5-flash';
+    provider = 'glama';
+  } else if (process.env.OPENROUTER_API_KEY) {
+    baseURL = 'https://openrouter.ai/api/v1';
+    apiKey = process.env.OPENROUTER_API_KEY;
+    model = process.env.LLM_MODEL || 'google/gemini-2.0-flash-exp:free';
+    provider = 'openrouter';
+  } else if (process.env.OLLAMA_URL) {
+    // Fall back to Ollama's OpenAI compat mode
+    baseURL = process.env.OLLAMA_URL.replace(/\/$/, '') + '/v1';
+    apiKey = process.env.OLLAMA_SECRET || 'ollama';
+    model = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
+    provider = 'ollama';
+  } else {
+    return ''; // No LLM configured
+  }
 
   try {
-    const rawText = await new Promise<string>((resolve, reject) => {
-      const urlObj = new URL(`${ollamaEndpoint}/api/generate`);
-      const reqOpts = {
-        hostname: urlObj.hostname,
-        port: parseInt(urlObj.port || '80'),
-        path: urlObj.pathname,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body),
-          ...(ollamaSecret ? { Authorization: `Bearer ${ollamaSecret}` } : {}),
-        },
-        // timeout removed — using explicit setTimeout timer instead (total timeout, not idle)
-      };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-      const timer = setTimeout(() => req.destroy(new Error('callOllamaQuick timeout')), timeoutMs);
-      const req = http.request(reqOpts, (res) => {
-        const chunks: Buffer[] = [];
-        res.on('data', (c: Buffer) => chunks.push(c));
-        res.on('end', () => {
-          clearTimeout(timer);
-          try {
-            const json = JSON.parse(Buffer.concat(chunks).toString());
-            resolve(String(json?.response || '').trim());
-          } catch (e) { reject(e); }
-        });
-      });
-      req.on('error', (e) => { clearTimeout(timer); reject(e); });
-      req.write(body);
-      req.end();
+    const response = await fetch(`${baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: maxTokens,
+        temperature,
+      }),
+      signal: controller.signal,
     });
 
-    return rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      console.warn(`[smart-search] LLM API returned ${response.status} (provider: ${provider})`);
+      return '';
+    }
+
+    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const text = data.choices?.[0]?.message?.content || '';
+    return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
   } catch (err) {
-    console.warn('[smart-search] callOllamaQuick failed:', (err as Error).message);
+    console.warn('[smart-search] callLLMQuick failed:', (err as Error).message);
     return '';
   }
 }
@@ -393,7 +406,7 @@ Query: "${query}"
 
 Category:`;
 
-  const result = await callOllamaQuick(prompt, { maxTokens: 10, timeoutMs: 3000, temperature: 0.1 });
+  const result = await callLLMQuick(prompt, { maxTokens: 10, timeoutMs: 3000, temperature: 0.1 });
   const cleaned = result.toLowerCase().trim().replace(/[^a-z]/g, '');
 
   const validTypes = ['cars', 'flights', 'hotels', 'rental', 'restaurants', 'products', 'general'];
@@ -478,7 +491,7 @@ async function handleCarSearch(intent: SearchIntent): Promise<SmartSearchResult>
     ).join(', ');
     const redditSnippets = redditResults.slice(0, 2).map(r => r.snippet || '').join(' ');
     const aiPrompt = `You are a car buying advisor. The user searched: "${intent.query}". Here are the top listings: ${listingSummary || 'no listings found'}. Reddit says: ${redditSnippets || 'no community input'}. Give a 2-3 sentence recommendation about the best value. Mention specific prices and models. Cite sources inline as [1], [2], etc. if available. Max 200 words.`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 250, timeoutMs: 15000, temperature: 0.4 });
+    const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 15000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -562,7 +575,7 @@ ${searchSection}## 📌 Book Directly
     const flightInfo = flightResults.slice(0, 5).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a flight booking advisor. ONLY use information from the sources below. Do NOT make up prices, airlines, or routes not mentioned. User searched: "${intent.query}". Web results: ${flightInfo || 'no results found'}. Reddit tips: ${redditSnippets || 'none'}. Give a 2-3 sentence tip about cheapest flights for this route based ONLY on the sources. Mention actual prices found and booking sites. Max 200 words. Cite sources inline as [1], [2], [3].`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -653,7 +666,7 @@ ${searchSection}## 📌 Book Directly
     const hotelInfo = parsedHotels.slice(0, 5).map(r => `${r.title}${r.price ? `: ${r.price}/night` : ''} — ${r.snippet || ''}`).join('\n');
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a hotel booking advisor. ONLY use information from the sources below. Do NOT make up hotel names or prices not mentioned. User searched: "${intent.query}". Hotels found: ${hotelInfo || 'no results found'}. Reddit tips: ${redditSnippets || 'none'}. Give a 2-3 sentence recommendation based ONLY on the sources. Mention the cheapest option and actual price if available. Max 200 words. Cite sources inline as [1], [2], [3].`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -812,7 +825,7 @@ async function handleRentalSearch(intent: SearchIntent): Promise<SmartSearchResu
     const priceInfo = allListings.filter(l => l.price).map(l => `${l.company}: ${l.price}/day`).join(', ');
     const redditContent = redditResults.slice(0, 3).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a car rental advisor. ONLY use information from the sources below. User wants to rent a car${location ? ' in ' + location : ''}.${dates ? ` Dates: ${dates.from} to ${dates.to}.` : ''}${budget ? ` Budget: $${budget}/day.` : ''} Prices found: ${priceInfo || 'no prices extracted yet — refer to sites below'}. Reddit tips: ${redditContent || 'none'}. Give a 2-3 sentence recommendation based ONLY on sources. Mention the cheapest option and actual price. Max 200 words. Cite sources inline as [1], [2], [3].`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -1229,7 +1242,7 @@ Cite sources inline using [1], [2], [3] notation matching the numbered sources. 
 Be specific. Max 200 words.
 `;
       const userMessage = `Query: ${intent.query}\n\nTop restaurants:\n${yelpLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}\n\nSources:\n${yelpCitations}`;
-      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 20000, temperature: 0.3 });
+      const text = await callLLMQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 20000, temperature: 0.3 });
       if (text) answer = text;
     } catch (err) {
       console.warn('[restaurant-search] LLM synthesis failed (graceful fallback):', (err as Error).message);
@@ -1469,7 +1482,7 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
       : 'no specific listings found';
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
     const aiPrompt = `You are a shopping advisor. The user wants: "${intent.query}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention the brand name, specific model, price, and store. Be specific.' : 'Give general buying advice with specific brand and model recommendations based on Reddit.'} Max 200 words. Cite sources inline as [1], [2], [3].`;
-    const aiText = await callOllamaQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
+    const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
 
@@ -1872,7 +1885,7 @@ async function handleGeneralSearch(query: string): Promise<SmartSearchResult> {
 
       const tLlm = Date.now();
 
-      const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 15000, temperature: 0.3 });
+      const text = await callLLMQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 15000, temperature: 0.3 });
       console.log(`[smart-search] Ollama answered: ${text.length} chars`);
       if (text) {
         answer = text;
@@ -1920,6 +1933,29 @@ function getLoadingMessage(type: SearchIntent['type']): string {
 }
 
 // ─── Router ────────────────────────────────────────────────────────────────
+
+// Log LLM provider at startup
+{
+  let _llmProvider: string;
+  let _llmModel: string;
+  if (process.env.OPENAI_API_KEY) {
+    _llmProvider = 'openai';
+    _llmModel = process.env.LLM_MODEL || 'gpt-4o-mini';
+  } else if (process.env.GLAMA_API_KEY) {
+    _llmProvider = 'glama';
+    _llmModel = process.env.LLM_MODEL || 'google-vertex/gemini-2.5-flash';
+  } else if (process.env.OPENROUTER_API_KEY) {
+    _llmProvider = 'openrouter';
+    _llmModel = process.env.LLM_MODEL || 'google/gemini-2.0-flash-exp:free';
+  } else if (process.env.OLLAMA_URL) {
+    _llmProvider = 'ollama';
+    _llmModel = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
+  } else {
+    _llmProvider = 'none';
+    _llmModel = 'n/a';
+  }
+  console.log(`[smart-search] LLM provider: ${_llmProvider} (${_llmModel})`);
+}
 
 export function createSmartSearchRouter(authStore: AuthStore): Router {
   const router = Router();
@@ -2146,7 +2182,7 @@ Cite sources inline using [1], [2], [3] notation matching the numbered sources. 
 Be specific. Max 200 words.
 `;
                 const userMessage = `Query: ${intent.query}\n\nTop restaurants:\n${yelpLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}\n\nSources:\n${yelpCitations}`;
-                const text = await callOllamaQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 20000, temperature: 0.3 });
+                const text = await callLLMQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 20000, temperature: 0.3 });
                 if (text) answer = text;
               } catch { /* LLM failure — no answer */ }
             }

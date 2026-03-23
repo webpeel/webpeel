@@ -21,6 +21,12 @@ export const handleMeta: McpHandler = async (args, ctx?) => {
   if (parsed.url) routedArgs['url'] = parsed.url;
   if (parsed.query) routedArgs['query'] = parsed.query;
 
+  // Forward LLM BYOK params so extract/read handlers can use them
+  if (args['llmProvider']) routedArgs['llmProvider'] = args['llmProvider'];
+  if (args['llmApiKey']) routedArgs['llmApiKey'] = args['llmApiKey'];
+  if (args['llmModel']) routedArgs['llmModel'] = args['llmModel'];
+  if (args['llmBaseUrl']) routedArgs['llmBaseUrl'] = args['llmBaseUrl'];
+
   switch (parsed.intent) {
     case 'read':    return handleRead(routedArgs, ctx);
     case 'see':     return handleSee(routedArgs, ctx);

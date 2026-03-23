@@ -36,6 +36,7 @@ export const handleExtract: McpHandler = async (args, _ctx?) => {
   const llmApiKey = args['llmApiKey'] as string | undefined;
   const llmProvider = args['llmProvider'] as LLMProvider | undefined;
   const llmModel = args['llmModel'] as string | undefined;
+  const llmBaseUrl = args['llmBaseUrl'] as string | undefined;
   const prompt = args['prompt'] as string | undefined;
 
   // LLM-based extraction: when llmApiKey (and optionally llmProvider) are provided
@@ -52,6 +53,7 @@ export const handleExtract: McpHandler = async (args, _ctx?) => {
       llmApiKey,
       llmProvider: llmProvider || 'openai',
       llmModel,
+      baseUrl: llmBaseUrl,
     });
 
     return textResult(safeStringify({

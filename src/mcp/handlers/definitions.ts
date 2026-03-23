@@ -29,6 +29,23 @@ export const toolDefinitions: Tool[] = [
           type: 'string',
           description: 'Plain English description of what you want to do with the web.',
         },
+        llmProvider: {
+          type: 'string',
+          enum: ['openai', 'anthropic', 'google'],
+          description: 'LLM provider for schema extraction (BYOK). Pass when asking for structured data extraction.',
+        },
+        llmApiKey: {
+          type: 'string',
+          description: 'Your LLM API key (BYOK). Pass when asking for structured data extraction with llmProvider.',
+        },
+        llmModel: {
+          type: 'string',
+          description: 'LLM model name (optional). Defaults: gpt-4o-mini (OpenAI), claude-haiku-4-5 (Anthropic), gemini-2.0-flash (Google).',
+        },
+        llmBaseUrl: {
+          type: 'string',
+          description: 'Custom OpenAI-compatible API base URL. Use for OpenRouter, Glama, or self-hosted models.',
+        },
       },
       required: ['task'],
     },
@@ -201,6 +218,23 @@ export const toolDefinitions: Tool[] = [
           enum: ['json', 'markdown'],
           description: 'Output format (default: json)',
           default: 'json',
+        },
+        llmProvider: {
+          type: 'string',
+          enum: ['openai', 'anthropic', 'google'],
+          description: 'LLM provider for schema extraction (BYOK). Required when using custom schema.',
+        },
+        llmApiKey: {
+          type: 'string',
+          description: 'Your LLM API key (BYOK). Required when using custom schema with llmProvider.',
+        },
+        llmModel: {
+          type: 'string',
+          description: 'LLM model name (optional). Defaults: gpt-4o-mini (OpenAI), claude-haiku-4-5 (Anthropic), gemini-2.0-flash (Google).',
+        },
+        llmBaseUrl: {
+          type: 'string',
+          description: 'Custom OpenAI-compatible API base URL. Use for OpenRouter, Glama, or self-hosted models.',
         },
       },
       required: ['url'],
