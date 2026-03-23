@@ -5,248 +5,61 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/webpeel/webpeel/actions/workflows/ci.yml"><img src="https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/v/webpeel.svg?style=flat-square" alt="npm version"></a>
-  <a href="https://pypi.org/project/webpeel/"><img src="https://img.shields.io/pypi/v/webpeel.svg?style=flat-square" alt="PyPI version"></a>
+  <a href="https://www.npmjs.com/package/webpeel"><img src="https://img.shields.io/npm/dm/webpeel.svg?style=flat-square" alt="npm downloads"></a>
+  <a href="https://github.com/webpeel/webpeel/stargazers"><img src="https://img.shields.io/github/stars/webpeel/webpeel?style=flat-square" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-WebPeel%20SDK-blue.svg?style=flat-square" alt="License"></a>
-  <a href="https://webpeel.dev/status"><img src="https://img.shields.io/badge/status-operational-brightgreen.svg?style=flat-square" alt="Status"></a>
+  <a href="https://github.com/webpeel/webpeel/actions/workflows/ci.yml"><img src="https://github.com/webpeel/webpeel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
 <p align="center">
-  <strong>The web data API for AI agents.</strong><br>
-  Fetch, search, extract, and understand any webpage — with one API call.
-</p>
-
-<p align="center">
-  <a href="https://webpeel.dev/docs">Docs</a> ·
-  <a href="https://app.webpeel.dev">Dashboard</a> ·
-  <a href="https://webpeel.dev/docs/api">API Reference</a> ·
-  <a href="https://discord.gg/webpeel">Discord</a> ·
-  <a href="https://webpeel.dev/status">Status</a>
+  <strong>The web data platform for AI agents — fetch, search, crawl, extract, monitor, screenshot, and research any URL.</strong>
 </p>
 
 ---
 
-## Get Started
-
-### Install
+## Quick Start
 
 ```bash
-# Node.js / TypeScript
-npm install webpeel
-
-# Python
-pip install webpeel
-
-# No install — use directly
-npx webpeel "https://example.com"
-```
-
-### Usage
-
-**TypeScript**
-```typescript
-import { WebPeel } from 'webpeel';
-
-const wp = new WebPeel({ apiKey: process.env.WEBPEEL_API_KEY });
-const result = await wp.fetch('https://news.ycombinator.com');
-console.log(result.markdown); // Clean, structured content
-```
-
-**Python**
-```python
-from webpeel import WebPeel
-
-wp = WebPeel(api_key=os.environ["WEBPEEL_API_KEY"])
-result = wp.fetch("https://news.ycombinator.com")
-print(result.markdown)  # Clean, structured content
-```
-
-**curl**
-```bash
-curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
-  -H "Authorization: Bearer $WEBPEEL_API_KEY"
+npx webpeel "https://example.com"        # Clean markdown
+npx webpeel search "AI trends 2025"       # Web search
+npx webpeel crawl docs.example.com        # Crawl entire site
 ```
 
 [Get your free API key →](https://app.webpeel.dev/signup) · No credit card required · 500 requests/week free
 
 ---
 
-## What It Does
+## Why WebPeel
 
-| | Capability | Result |
-|---|---|---|
-| 🌐 | **Fetch** | Any URL → clean markdown or JSON. Handles JavaScript, bot detection, and dynamic content automatically |
-| 🔍 | **Search** | Web search with structured results — titles, URLs, snippets, and optional full-page content |
-| 📊 | **Extract** | Pull structured data using JSON Schema. Products, pricing, contacts, tables — any pattern |
-| 🕷️ | **Crawl** | Map and scrape entire websites with one API call. Follows links, respects robots.txt |
-| 🤖 | **MCP** | 7 tools natively available in Claude, Cursor, VS Code, Windsurf, and any MCP-compatible agent |
-| 📸 | **Screenshot** | Full-page or viewport screenshots in PNG/JPEG |
-| 🎬 | **YouTube** | Video transcripts with timestamps — no YouTube API key required |
-| 👁️ | **Monitor** | Watch pages for changes and receive webhook notifications |
+- **65–98% token savings** — domain-specific extractors strip boilerplate, ads, and nav before content reaches your agent
+- **29 domain extractors** — purpose-built parsers for Reddit, Wikipedia, GitHub, Hacker News, YouTube, ArXiv, Amazon, and 22 more
+- **Zero-config Cloudflare bypass** — 4-layer escalation stack handles TLS fingerprinting, edge proxying, and cache fallback automatically
 
 ---
 
-## Anti-Bot Bypass Stack
+## Features
 
-WebPeel uses a 4-layer escalation chain to bypass bot protection — all built in-house, no paid proxy services required:
-
-```
-1. PeelTLS      — Chrome TLS fingerprint spoofing (in-process Go binary)  ~85% of sites
-2. CF Worker    — Cloudflare edge network proxy (different IP reputation)  +5%
-3. Google Cache — Cached page copy if available                            +2%
-4. Search       — Extract from search engine snippets (last resort)        last resort
-```
-
-**For e-commerce sites**, WebPeel uses official APIs before attempting HTML scraping:
-- **Best Buy** — Free Products API (50K queries/day). Set `BESTBUY_API_KEY` env var.
-- **Walmart** — Frontend API (may be blocked; falls through gracefully)
-- **Reddit, GitHub, HN, Wikipedia, YouTube, ArXiv** — Official APIs, always fast
-
-**Self-hosted CF Worker** (100K requests/day free):
-```bash
-cd worker && npx wrangler deploy
-# Then set WEBPEEL_CF_WORKER_URL and WEBPEEL_CF_WORKER_TOKEN env vars
-```
+| Feature | Command / API |
+|---------|---------------|
+| Fetch any URL | `webpeel "url"` |
+| Web search | `webpeel search "query"` |
+| Crawl sites | `webpeel crawl "url" --max-pages 50` |
+| Screenshots | `webpeel screenshot "url"` |
+| Monitor changes | `webpeel monitor "url" --interval 300` |
+| Browser actions | `--action 'click:.btn,wait:2000'` |
+| YouTube transcripts | auto-detected |
+| PDF extraction | auto-detected |
+| MCP server | `webpeel mcp` |
+| Schema extraction | `POST /v1/fetch` with `extract.schema` |
+| Research agent | `POST /v1/agent` |
+| Smart search | `POST /v1/search/smart` |
 
 ---
 
-## Benchmarks
+## MCP Integration
 
-Independent testing across 500 URLs including e-commerce, news, SaaS, and social platforms.
-
-| Metric | **WebPeel** | Firecrawl | Crawl4AI | Jina Reader |
-|--------|:-----------:|:---------:|:--------:|:-----------:|
-| Success rate (protected sites) | **97.6%** | 71% | 58% | 49% |
-| Median response time | **380ms** | 890ms | 1,240ms | 520ms |
-| Content quality score¹ | **0.91** | 0.74 | 0.69 | 0.72 |
-| Price per 1,000 requests | **$0.80** | $5.33 | self-host | $1.00 |
-
-¹ Content quality = signal-to-noise ratio (relevant content vs boilerplate), scored 0–1.
-
-> Methodology: Tested Feb 2026. Protected sites = Cloudflare/bot-protected pages. Quality scored by GPT-4o on content relevance and completeness. [Full methodology →](https://webpeel.dev/benchmarks)
-
----
-
-## Pricing
-
-| Plan | Price | Requests | Features |
-|------|-------|----------|----------|
-| **Free** | $0/mo | 500/week | Fetch, search, extract, crawl |
-| **Pro** | $9/mo | 1,250/week | Everything + protected site access |
-| **Max** | $29/mo | 6,250/week | Everything + priority queue |
-| **Enterprise** | Custom | Unlimited | SLA, dedicated infra, custom domains |
-
-All plans include: full API access, TypeScript + Python SDKs, MCP server, CLI.  
-[See full pricing →](https://webpeel.dev/pricing)
-
----
-
-## SDK
-
-### TypeScript / Node.js
-
-```typescript
-import { WebPeel } from 'webpeel';
-
-const wp = new WebPeel({ apiKey: process.env.WEBPEEL_API_KEY });
-
-// Fetch a page
-const page = await wp.fetch('https://stripe.com/pricing', {
-  format: 'markdown',  // 'markdown' | 'html' | 'text' | 'json'
-});
-
-// Search the web
-const results = await wp.search('best vector databases 2025', {
-  limit: 5,
-  fetchContent: true,  // Optionally fetch full content for each result
-});
-
-// Extract structured data
-const pricing = await wp.extract('https://stripe.com/pricing', {
-  schema: {
-    type: 'object',
-    properties: {
-      plans: {
-        type: 'array',
-        items: { type: 'object', properties: {
-          name: { type: 'string' },
-          price: { type: 'string' },
-          features: { type: 'array', items: { type: 'string' } }
-        }}
-      }
-    }
-  }
-});
-
-// Crawl a site
-const crawl = await wp.crawl('https://docs.example.com', {
-  maxPages: 50,
-  maxDepth: 3,
-  outputFormat: 'markdown',
-});
-for await (const page of crawl) {
-  console.log(page.url, page.markdown);
-}
-
-// Screenshot
-const shot = await wp.screenshot('https://webpeel.dev', { fullPage: true });
-fs.writeFileSync('screenshot.png', shot.image, 'base64');
-```
-
-[Full TypeScript reference →](https://webpeel.dev/docs/sdk/typescript)
-
-### Python
-
-```python
-from webpeel import WebPeel
-import os
-
-wp = WebPeel(api_key=os.environ["WEBPEEL_API_KEY"])
-
-# Fetch a page
-page = wp.fetch("https://stripe.com/pricing", format="markdown")
-print(page.markdown)
-
-# Search
-results = wp.search("best vector databases 2025", limit=5)
-for r in results:
-    print(r.title, r.url)
-
-# Extract structured data
-pricing = wp.extract("https://stripe.com/pricing", schema={
-    "type": "object",
-    "properties": {
-        "plans": {
-            "type": "array",
-            "items": { "type": "object", "properties": {
-                "name": { "type": "string" },
-                "price": { "type": "string" }
-            }}
-        }
-    }
-})
-
-# Async client
-from webpeel import AsyncWebPeel
-import asyncio
-
-async def main():
-    wp = AsyncWebPeel(api_key=os.environ["WEBPEEL_API_KEY"])
-    results = await asyncio.gather(
-        wp.fetch("https://site1.com"),
-        wp.fetch("https://site2.com"),
-        wp.fetch("https://site3.com"),
-    )
-
-asyncio.run(main())
-```
-
-[Full Python reference →](https://webpeel.dev/docs/sdk/python)
-
-### MCP — For AI Agents
-
-Give Claude, Cursor, or any MCP-compatible agent the ability to browse the web.
+Give Claude, Cursor, or any MCP-compatible agent the ability to browse the web in one config change.
 
 **Claude Desktop** (`~/.claude/claude_desktop_config.json`):
 ```json
@@ -278,96 +91,93 @@ Give Claude, Cursor, or any MCP-compatible agent the ability to browse the web.
 }
 ```
 
-Available MCP tools:
-- `webpeel` — general fetch and extract
-- `webpeel_read` — fetch and read page content
-- `webpeel_see` — screenshot and visual analysis
-- `webpeel_find` — web search
-- `webpeel_extract` — structured data extraction
-- `webpeel_monitor` — watch URLs for changes
-- `webpeel_act` — interact with dynamic pages
+Available MCP tools: `webpeel_read`, `webpeel_find`, `webpeel_see`, `webpeel_extract`, `webpeel_monitor`, `webpeel_act`, `webpeel_crawl`
 
-[![Install in Claude Desktop](https://img.shields.io/badge/Install-Claude%20Desktop-5B3FFF?style=for-the-badge&logo=anthropic)](https://mcp.so/install/webpeel?for=claude)
-[![Install in VS Code](https://img.shields.io/badge/Install-VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode)](https://mcp.so/install/webpeel?for=vscode)
-
-[MCP setup guide →](https://webpeel.dev/docs/mcp)
-
-### CLI
-
-```bash
-# Install globally
-npm install -g webpeel
-
-# Fetch a page (outputs clean markdown)
-webpeel "https://news.ycombinator.com"
-
-# Search the web
-webpeel search "typescript orm comparison 2025"
-
-# Extract structured data with a JSON schema
-webpeel "https://stripe.com/pricing" --extract-schema pricing-schema.json
-
-# Crawl a site
-webpeel crawl "https://docs.example.com" --max-pages 100
-
-# Screenshot
-webpeel screenshot "https://webpeel.dev" --full-page --output screenshot.png
-
-# YouTube transcript
-webpeel "https://youtube.com/watch?v=dQw4w9WgXcQ" --json
-
-# Ask a question about a page
-webpeel ask "https://openai.com/pricing" "How much does GPT-4o cost per million tokens?"
-
-# Output as JSON
-webpeel "https://example.com" --json
-```
+[Full MCP setup guide →](https://webpeel.dev/docs/mcp)
 
 ---
 
-## API Reference
-
-Base URL: `https://api.webpeel.dev/v1`
+## API Example
 
 ```bash
-# Fetch
-GET /fetch?url=<url>&format=markdown
-
-# Search
-GET /search?q=<query>&limit=10
-
-# Extract
-POST /extract
-{ "url": "...", "schema": { ... } }
-
-# Crawl
-POST /crawl
-{ "url": "...", "maxPages": 50, "maxDepth": 3 }
-
-# Screenshot
-GET /screenshot?url=<url>&fullPage=true
-
-# YouTube transcript
-GET /youtube?url=<youtube_url>
+# Fetch any page — returns clean markdown + metadata
+curl "https://api.webpeel.dev/v1/fetch?url=https://stripe.com/pricing" \
+  -H "Authorization: Bearer $WEBPEEL_API_KEY"
 ```
 
-All endpoints require `Authorization: Bearer wp_YOUR_KEY`.
+```json
+{
+  "url": "https://stripe.com/pricing",
+  "markdown": "# Stripe Pricing\n\n**Integrated per-transaction fees**...",
+  "metadata": {
+    "title": "Pricing & Fees | Stripe",
+    "tokens": 420,
+    "tokensOriginal": 8200,
+    "savingsPct": 94.9
+  }
+}
+```
 
 [Full API reference →](https://webpeel.dev/docs/api)
+
+---
+
+## Token Efficiency
+
+WebPeel's 29 domain-specific extractors strip navigation, ads, sidebars, and boilerplate before sending content to your agent.
+
+| Site type | Raw HTML tokens | WebPeel tokens | Savings |
+|-----------|:--------------:|:--------------:|:-------:|
+| News article | 18,000 | 640 | **96%** |
+| Reddit thread | 24,000 | 890 | **96%** |
+| Wikipedia page | 31,000 | 2,100 | **93%** |
+| GitHub README | 5,200 | 1,800 | **65%** |
+| E-commerce product | 14,000 | 310 | **98%** |
+
+Less context used = lower costs + faster inference + longer agent chains.
+
+---
+
+## Security
+
+WebPeel is built with security-first principles:
+
+- **Helmet.js headers** — HSTS, X-Frame-Options, nosniff, XSS protection on all responses
+- **Webhook signing** — HMAC-SHA256 signatures on all outbound webhooks
+- **Audit logging** — every API call logged with IP, key, and action
+- **GDPR compliant** — `DELETE /v1/account` for full data erasure
+- **SSH hardened** — Fail2Ban, MaxAuthTries, key-only auth on all infrastructure
+
+[Security policy →](https://webpeel.dev/security)
 
 ---
 
 ## Links
 
 - 📖 [Documentation](https://webpeel.dev/docs) — Guides, references, and examples
-- 🚀 [Dashboard](https://app.webpeel.dev) — Manage your API keys and usage
-- 🔌 [API Reference](https://webpeel.dev/docs/api) — Full endpoint documentation
-- 💬 [Discord](https://discord.gg/webpeel) — Community and support
-- 📊 [Status](https://webpeel.dev/status) — Uptime and incidents
 - 💰 [Pricing](https://webpeel.dev/pricing) — Plans and limits
-- 📈 [Benchmarks](https://webpeel.dev/benchmarks) — How we compare
+- 📝 [Blog](https://webpeel.dev/blog) — Tutorials, comparisons, and use cases
+- 📊 [Status](https://webpeel.dev/status) — Uptime and incidents
+- 🔒 [Security](https://webpeel.dev/security) — Security policy and disclosure
+- 📋 [SLA](https://webpeel.dev/sla) — Uptime commitments
 
 ---
+
+## Contributing
+
+Pull requests welcome! Please open an issue first to discuss major changes.
+
+1. Fork the repo
+2. Create your feature branch (`git checkout -b feat/my-feature`)
+3. Commit your changes (`git commit -m 'feat: add my feature'`)
+4. Push to the branch (`git push origin feat/my-feature`)
+5. Open a Pull Request
+
+---
+
+## License
+
+[WebPeel SDK License](LICENSE) — free for personal and commercial use with attribution. See LICENSE for full terms.
 
 <p align="center">
   <a href="https://app.webpeel.dev/signup">Get started free →</a>
