@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.webpeel/webpeel",
   "title": "WebPeel",
-  "description": "The web data platform for AI agents — fetch, search, crawl, extract, monitor, screenshot, and research any URL. 55+ domain extractors, 65-98% token savings.",
+  "description": "Web data API that just works. Pass any URL, get clean markdown — Cloudflare, JavaScript, CAPTCHAs handled automatically. 97.6% success rate across 500+ domains. 55+ built-in extractors for Amazon, Reddit, YouTube, Wikipedia, LinkedIn. 65-98% token savings. Zero config.",
   "version": "0.21.87",
   "websiteUrl": "https://webpeel.dev",
   "repository": {
@@ -17,7 +17,9 @@
       "transport": {
         "type": "stdio"
       },
-      "arguments": ["mcp"],
+      "arguments": [
+        "mcp"
+      ],
       "environmentVariables": [
         {
           "name": "WEBPEEL_API_KEY",
@@ -31,37 +33,65 @@
     {
       "name": "webpeel",
       "description": "Fetch any URL and return clean, AI-ready markdown. Auto-handles JS rendering, Cloudflare bypass, and anti-bot protection. 55+ domain extractors for structured data from Amazon, Reddit, YouTube, Wikipedia, and more.",
-      "annotations": { "title": "Fetch Web Page", "readOnlyHint": true, "openWorldHint": true }
+      "annotations": {
+        "title": "Fetch Web Page",
+        "readOnlyHint": true,
+        "openWorldHint": true
+      }
     },
     {
       "name": "webpeel_read",
       "description": "Reader mode — extract just the article content from any URL, stripping navigation, ads, and boilerplate. 65-98% token savings vs raw HTML.",
-      "annotations": { "title": "Read Article", "readOnlyHint": true, "openWorldHint": true }
+      "annotations": {
+        "title": "Read Article",
+        "readOnlyHint": true,
+        "openWorldHint": true
+      }
     },
     {
       "name": "webpeel_see",
       "description": "Take screenshots of any URL with device emulation (mobile, tablet, desktop). Full-page capture, visual diff comparison, and design analysis.",
-      "annotations": { "title": "Screenshot", "readOnlyHint": true, "openWorldHint": true }
+      "annotations": {
+        "title": "Screenshot",
+        "readOnlyHint": true,
+        "openWorldHint": true
+      }
     },
     {
       "name": "webpeel_find",
       "description": "Search the web, discover sitemaps, or crawl entire sites. Smart search with AI summaries for restaurants, products, flights, hotels. Returns structured results.",
-      "annotations": { "title": "Search & Crawl", "readOnlyHint": true, "openWorldHint": true }
+      "annotations": {
+        "title": "Search & Crawl",
+        "readOnlyHint": true,
+        "openWorldHint": true
+      }
     },
     {
       "name": "webpeel_extract",
       "description": "Extract structured JSON from any page using built-in schemas (product, article, recipe, job, event) or custom JSON schemas. No LLM required for built-in schemas.",
-      "annotations": { "title": "Extract Data", "readOnlyHint": true, "openWorldHint": true }
+      "annotations": {
+        "title": "Extract Data",
+        "readOnlyHint": true,
+        "openWorldHint": true
+      }
     },
     {
       "name": "webpeel_monitor",
       "description": "Track any web page for content changes. Returns diffs when content updates. Use CSS selectors to monitor specific sections (prices, availability, etc.).",
-      "annotations": { "title": "Monitor Changes", "readOnlyHint": true, "openWorldHint": true }
+      "annotations": {
+        "title": "Monitor Changes",
+        "readOnlyHint": true,
+        "openWorldHint": true
+      }
     },
     {
       "name": "webpeel_act",
       "description": "Interact with web pages — click buttons, fill forms, scroll, wait for elements, execute JavaScript. Use for login flows, dynamic content loading, and multi-step extraction.",
-      "annotations": { "title": "Browser Actions", "readOnlyHint": false, "openWorldHint": true }
+      "annotations": {
+        "title": "Browser Actions",
+        "readOnlyHint": false,
+        "openWorldHint": true
+      }
     }
   ]
 }
