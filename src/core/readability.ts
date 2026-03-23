@@ -17,6 +17,7 @@
 import * as cheerio from 'cheerio';
 import type { AnyNode, Element } from 'domhandler';
 import { rawHtmlToMarkdown } from './markdown.js';
+import { cleanConcatenatedTitle } from './metadata.js';
 
 // ─── Public interfaces ───────────────────────────────────────────────────────
 
@@ -189,7 +190,7 @@ function extractMeta($: cheerio.CheerioAPI): PageMeta {
     $('title').text() ||
     $('h1').first().text() ||
     '';
-  title = title.trim().replace(/\s+/g, ' ');
+  title = cleanConcatenatedTitle(title.trim().replace(/\s+/g, ' '));
 
   // Author
   let author: string | null =

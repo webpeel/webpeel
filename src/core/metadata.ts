@@ -6,6 +6,30 @@ import * as cheerio from 'cheerio';
 import type { PageMetadata } from '../types.js';
 
 /**
+ * Detect and fix concatenated titles where two titles are smashed together
+ * without a separator (e.g. "The Performance of Open Source SoftwareHigh Performance Networking in Chrome").
+ * Heuristic: split at lowercase→uppercase boundary if it looks like two distinct titles.
+ * Returns the longer (more specific) segment.
+ */
+export function cleanConcatenatedTitle(title: string): string {
+  if (!title) return title;
+  // Look for pattern: lowercase letter immediately followed by uppercase letter
+  // that isn't a normal camelCase word (e.g. "JavaScript" is fine, but
+  // "SoftwareHigh" is two words smashed together)
+  // We split on boundaries where a common word ending meets a new capitalized word
+  const match = title.match(/^(.+[a-z])([A-Z][a-z].+)$/);
+  if (match) {
+    const [, part1, part2] = match;
+    // Both parts should be reasonably long to be separate titles
+    if (part1.length > 10 && part2.length > 10) {
+      // Return the longer/more specific part (usually the second one is the page-specific title)
+      return part2.length >= part1.length ? part2 : part1;
+    }
+  }
+  return title;
+}
+
+/**
  * Extract page title using fallback chain:
  * og:title → twitter:title → title tag → h1
  */
@@ -20,7 +44,7 @@ function extractTitle($: cheerio.CheerioAPI): string {
 
   // Try title tag
   title = $('title').text();
-  if (title) return title.trim();
+  if (title) return cleanConcatenatedTitle(title.trim());
 
   // Fallback to first h1
   title = $('h1').first().text();

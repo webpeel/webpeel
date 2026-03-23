@@ -1,137 +1,611 @@
 {
   "info": {
     "name": "WebPeel API",
-    "description": "Web extraction API for AI agents. Fetch, search, crawl, screenshot, and research — one API call.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "description": "WebPeel — high-performance web scraping and data extraction API. Turn any website into clean, structured content (markdown, text, JSON, screenshots) with built-in bot detection bypass, JavaScript rendering, and smart token budgeting.\n\nGet a free API key at https://app.webpeel.dev\n\nFull docs: https://webpeel.dev/docs/api-reference",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "webpeel",
+    "version": "0.17.15"
   },
-  "variable": [
-    { "key": "base_url", "value": "https://api.webpeel.dev", "type": "string" },
-    { "key": "api_key", "value": "YOUR_API_KEY", "type": "string" }
-  ],
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{api_key}}", "type": "string" }]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_key}}",
+        "type": "string"
+      }
+    ]
   },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.webpeel.dev",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "wp_YOUR_KEY",
+      "type": "string"
+    }
+  ],
   "item": [
     {
       "name": "Fetch",
+      "description": "Fetch any URL and return clean, structured content.",
       "item": [
         {
-          "name": "GET Fetch URL",
+          "name": "Fetch URL (GET)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{base_url}}/v1/fetch?url=https://example.com&format=markdown", "host": ["{{base_url}}"], "path": ["v1", "fetch"], "query": [{ "key": "url", "value": "https://example.com" }, { "key": "format", "value": "markdown" }] },
-            "description": "Fetch and extract clean, AI-ready content from any URL."
-          }
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/fetch?url=https://example.com",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "fetch"],
+              "query": [
+                { "key": "url", "value": "https://example.com", "description": "URL to fetch (required)" },
+                { "key": "format", "value": "markdown", "description": "Output format: markdown, text, html", "disabled": true },
+                { "key": "render", "value": "false", "description": "Use headless browser for JS-heavy sites", "disabled": true },
+                { "key": "wait", "value": "2000", "description": "Wait ms after page load (with render=true)", "disabled": true },
+                { "key": "budget", "value": "4000", "description": "Smart token budget — distill to N tokens", "disabled": true },
+                { "key": "images", "value": "true", "description": "Include image URLs and alt text", "disabled": true },
+                { "key": "onlyMainContent", "value": "true", "description": "Strip boilerplate, return main content only", "disabled": true },
+                { "key": "readable", "value": "false", "description": "Reader mode — extract main article only", "disabled": true },
+                { "key": "stealth", "value": "false", "description": "Stealth mode for bot detection bypass", "disabled": true },
+                { "key": "screenshot", "value": "false", "description": "Also capture a screenshot (base64 PNG)", "disabled": true },
+                { "key": "question", "value": "", "description": "Ask a question about the content (BM25 scoring)", "disabled": true },
+                { "key": "noCache", "value": "false", "description": "Bypass cache, force fresh fetch", "disabled": true },
+                { "key": "location", "value": "US", "description": "ISO country code for geo-targeted content", "disabled": true },
+                { "key": "maxTokens", "value": "8000", "description": "Hard truncation token limit", "disabled": true }
+              ]
+            },
+            "description": "Fetch any URL and return clean content in markdown, text, or HTML format. Results are cached for 5 minutes by default."
+          },
+          "response": [
+            {
+              "name": "Successful fetch",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" },
+                { "key": "X-Cache", "value": "MISS" },
+                { "key": "X-Credits-Used", "value": "1" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://example.com\",\n    \"content\": \"# Example Domain\\n\\nThis domain is for use in illustrative examples...\",\n    \"title\": \"Example Domain\",\n    \"description\": \"Example Domain\",\n    \"method\": \"simple\",\n    \"tokens\": 42\n  },\n  \"metadata\": {\n    \"requestId\": \"req_abc123\",\n    \"creditsUsed\": 1,\n    \"processingTime\": 245\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "POST Fetch with Render",
+          "name": "Fetch URL (POST)",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{base_url}}/v1/fetch", "host": ["{{base_url}}"], "path": ["v1", "fetch"] },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"url\": \"https://example.com\",\n  \"render\": true,\n  \"format\": \"markdown\"\n}" },
-            "description": "Fetch with browser rendering for JS-heavy sites."
-          }
-        },
-        {
-          "name": "POST Fetch with LLM Extract",
-          "request": {
-            "method": "POST",
-            "url": { "raw": "{{base_url}}/v1/fetch", "host": ["{{base_url}}"], "path": ["v1", "fetch"] },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"url\": \"https://example.com/about\",\n  \"extract\": {\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"company\": { \"type\": \"string\" },\n        \"founded\": { \"type\": \"number\" }\n      }\n    }\n  },\n  \"llmProvider\": \"openai\",\n  \"llmApiKey\": \"sk-...\"\n}" },
-            "description": "Extract structured JSON using an LLM with your own API key (BYOK)."
-          }
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com\",\n  \"format\": \"markdown\",\n  \"render\": false,\n  \"budget\": 4000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/fetch",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "fetch"]
+            },
+            "description": "POST variant of /v1/fetch. Accepts a JSON body with all the same options plus extract, question, actions, etc."
+          },
+          "response": [
+            {
+              "name": "Successful fetch (POST)",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://example.com\",\n    \"content\": \"# Example Domain\\n\\nThis domain is for use in illustrative examples...\",\n    \"title\": \"Example Domain\",\n    \"method\": \"simple\",\n    \"tokens\": 42\n  },\n  \"metadata\": {\n    \"requestId\": \"req_def456\",\n    \"creditsUsed\": 1,\n    \"processingTime\": 198\n  }\n}"
+            }
+          ]
         }
       ]
     },
     {
       "name": "Search",
+      "description": "Search the web and get structured results.",
       "item": [
         {
-          "name": "GET Web Search",
+          "name": "Web Search (GET)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{base_url}}/v1/search?q=latest+AI+news&count=5", "host": ["{{base_url}}"], "path": ["v1", "search"], "query": [{ "key": "q", "value": "latest AI news" }, { "key": "count", "value": "5" }] },
-            "description": "Search the web. Free DuckDuckGo or Brave (BYOK)."
-          }
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/search?q=latest AI news&count=5",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "search"],
+              "query": [
+                { "key": "q", "value": "latest AI news", "description": "Search query (required)" },
+                { "key": "count", "value": "5", "description": "Number of results (1-10, default 5)" },
+                { "key": "sources", "value": "web", "description": "Data sources: web, news, images (comma-separated)", "disabled": true },
+                { "key": "provider", "value": "auto", "description": "Provider: auto, duckduckgo, brave, stealth", "disabled": true },
+                { "key": "scrapeResults", "value": "false", "description": "Fetch full content for each result", "disabled": true },
+                { "key": "categories", "value": "docs,github", "description": "Filter: github, pdf, docs, blog, news, video, social", "disabled": true },
+                { "key": "tbs", "value": "qdr:d", "description": "Time filter: qdr:d (day), qdr:w (week)", "disabled": true },
+                { "key": "country", "value": "US", "description": "ISO country code for geo results", "disabled": true }
+              ]
+            },
+            "description": "Search the web and return structured results with titles, URLs, and snippets. Cached 15 minutes."
+          },
+          "response": [
+            {
+              "name": "Search results",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"title\": \"Latest AI News - TechCrunch\",\n      \"url\": \"https://techcrunch.com/category/artificial-intelligence/\",\n      \"snippet\": \"The latest news about artificial intelligence...\"\n    },\n    {\n      \"title\": \"AI News Today\",\n      \"url\": \"https://www.artificialintelligence-news.com/\",\n      \"snippet\": \"Leading source for AI and ML news...\"\n    }\n  ],\n  \"metadata\": {\n    \"requestId\": \"req_search_001\",\n    \"creditsUsed\": 1,\n    \"processingTime\": 890,\n    \"provider\": \"duckduckgo\"\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "POST Smart Search",
+          "name": "Smart Search (POST)",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{base_url}}/v1/search/smart", "host": ["{{base_url}}"], "path": ["v1", "search", "smart"] },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"q\": \"best pizza in Manhattan\"\n}" },
-            "description": "AI-powered smart search with structured results, ratings, and prices."
-          }
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"best React component libraries 2025\",\n  \"mode\": \"research\",\n  \"maxResults\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/search/smart",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "search", "smart"]
+            },
+            "description": "Deep search with content fetching and analysis. Returns enriched results with full page content."
+          },
+          "response": [
+            {
+              "name": "Smart search results",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"query\": \"best React component libraries 2025\",\n    \"results\": [\n      {\n        \"title\": \"Top React UI Libraries\",\n        \"url\": \"https://example.com/react-libraries\",\n        \"content\": \"# Best React Component Libraries...\",\n        \"relevance\": 0.95\n      }\n    ],\n    \"totalResults\": 5\n  },\n  \"metadata\": {\n    \"requestId\": \"req_smart_001\",\n    \"creditsUsed\": 5,\n    \"processingTime\": 4200\n  }\n}"
+            }
+          ]
         }
       ]
     },
     {
       "name": "Screenshot",
+      "description": "Capture screenshots of any URL.",
       "item": [
         {
-          "name": "POST Screenshot",
+          "name": "Take Screenshot (POST)",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{base_url}}/v1/screenshot", "host": ["{{base_url}}"], "path": ["v1", "screenshot"] },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"url\": \"https://example.com\",\n  \"fullPage\": true,\n  \"width\": 1280,\n  \"format\": \"png\"\n}" },
-            "description": "Take a full-page screenshot with custom viewport."
-          }
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com\",\n  \"fullPage\": true,\n  \"width\": 1280,\n  \"height\": 720,\n  \"format\": \"png\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/screenshot",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "screenshot"]
+            },
+            "description": "Capture a screenshot of any URL. Returns a base64-encoded data URL image. Supports full-page capture, custom viewport, stealth mode, and page actions."
+          },
+          "response": [
+            {
+              "name": "Screenshot captured",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://example.com\",\n    \"screenshot\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...\",\n    \"metadata\": {\n      \"sourceURL\": \"https://example.com\",\n      \"format\": \"png\",\n      \"width\": 1280,\n      \"height\": 720,\n      \"fullPage\": true\n    }\n  },\n  \"metadata\": {\n    \"requestId\": \"req_ss_001\",\n    \"creditsUsed\": 1,\n    \"processingTime\": 3200\n  }\n}"
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Answer",
+      "name": "Ask",
+      "description": "LLM-free web Q&A using BM25 relevance scoring.",
       "item": [
         {
-          "name": "POST Answer with Citations",
+          "name": "Ask Question (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/ask?q=What is the price of Stripe?&sources=3",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "ask"],
+              "query": [
+                { "key": "q", "value": "What is the price of Stripe?", "description": "Question to answer (required)" },
+                { "key": "sources", "value": "3", "description": "Number of web sources to fetch (1-5, default 3)" }
+              ]
+            },
+            "description": "Search the web and answer a question using BM25 relevance scoring. No LLM API key required — 100% deterministic, always fast."
+          },
+          "response": [
+            {
+              "name": "Question answered",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"question\": \"What is the price of Stripe?\",\n  \"answer\": \"Stripe charges 2.9% + 30 cents per successful card charge.\",\n  \"confidence\": 0.91,\n  \"sources\": [\n    {\n      \"url\": \"https://stripe.com/pricing\",\n      \"title\": \"Stripe Pricing\",\n      \"snippet\": \"Pay as you go pricing for businesses of all sizes.\",\n      \"confidence\": 0.91\n    }\n  ],\n  \"method\": \"bm25\",\n  \"elapsed\": 1840\n}"
+            }
+          ]
+        },
+        {
+          "name": "Ask Question (POST)",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{base_url}}/v1/answer", "host": ["{{base_url}}"], "path": ["v1", "answer"] },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"question\": \"What is MCP and why does it matter for AI agents?\",\n  \"llmProvider\": \"openai\",\n  \"llmApiKey\": \"sk-...\",\n  \"maxSources\": 5\n}" },
-            "description": "Ask a question, search the web, get an LLM answer with inline [1][2] citations."
-          }
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"What is the Enterprise plan price?\",\n  \"url\": \"https://webpeel.dev/pricing\",\n  \"sources\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/ask",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "ask"]
+            },
+            "description": "POST variant. Optionally target a specific URL instead of searching the web."
+          },
+          "response": [
+            {
+              "name": "Targeted answer",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"question\": \"What is the Enterprise plan price?\",\n  \"answer\": \"Contact sales for Enterprise pricing.\",\n  \"confidence\": 0.85,\n  \"sources\": [\n    {\n      \"url\": \"https://webpeel.dev/pricing\",\n      \"title\": \"WebPeel Pricing\",\n      \"snippet\": \"Enterprise — custom limits, dedicated support.\",\n      \"confidence\": 0.85\n    }\n  ],\n  \"method\": \"bm25\",\n  \"elapsed\": 920\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Answer (Deprecated)",
+      "description": "LLM-powered Q&A (deprecated — use /v1/ask instead).",
+      "item": [
+        {
+          "name": "Answer Question (POST) [Deprecated]",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"What are the best practices for React performance?\",\n  \"llmProvider\": \"openai\",\n  \"llmApiKey\": \"sk-...\",\n  \"maxSources\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/answer",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "answer"]
+            },
+            "description": "⚠️ Deprecated — will be removed on 2026-06-01. Use POST /v1/ask instead (LLM-free, faster, no BYOK needed)."
+          },
+          "response": [
+            {
+              "name": "Answer generated",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" },
+                { "key": "X-Deprecated", "value": "true" },
+                { "key": "Sunset", "value": "2026-06-01" }
+              ],
+              "body": "{\n  \"answer\": \"Key React performance best practices include: using React.memo() for expensive components, useMemo/useCallback for stable references, code splitting with React.lazy(), and virtualizing long lists.\",\n  \"question\": \"What are the best practices for React performance?\",\n  \"sources\": [\n    {\n      \"url\": \"https://react.dev/learn\",\n      \"title\": \"React Documentation\"\n    }\n  ]\n}"
+            }
+          ]
         }
       ]
     },
     {
       "name": "Agent",
+      "description": "AI-powered web agent that can browse, extract, and complete tasks.",
       "item": [
         {
-          "name": "POST Research Agent",
+          "name": "Run Agent Task (POST)",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{base_url}}/v1/agent", "host": ["{{base_url}}"], "path": ["v1", "agent"] },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"prompt\": \"Compare the top 3 AI coding assistants in 2025\",\n  \"llmApiKey\": \"sk-...\",\n  \"depth\": \"thorough\",\n  \"maxSources\": 10\n}" },
-            "description": "Autonomous research agent — plans queries, fetches sources, synthesizes structured answers."
-          }
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task\": \"Find the pricing page on stripe.com and extract all plan names and prices\",\n  \"url\": \"https://stripe.com\",\n  \"maxSteps\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/agent",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "agent"]
+            },
+            "description": "Run an AI-powered web agent that can navigate pages, click elements, fill forms, and extract structured data. Requires an LLM API key (BYOK)."
+          },
+          "response": [
+            {
+              "name": "Agent completed",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"task\": \"Find the pricing page and extract plan names and prices\",\n    \"result\": \"Found 3 plans: Starter ($0/mo), Growth ($49/mo), Enterprise (custom)\",\n    \"steps\": [\n      {\n        \"action\": \"navigate\",\n        \"url\": \"https://stripe.com\",\n        \"status\": \"success\"\n      },\n      {\n        \"action\": \"click\",\n        \"selector\": \"a[href='/pricing']\",\n        \"status\": \"success\"\n      }\n    ],\n    \"totalSteps\": 2\n  }\n}"
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Account",
+      "name": "Usage",
+      "description": "Check your API usage and quota.",
       "item": [
         {
-          "name": "GET Usage",
+          "name": "Get Usage (GET)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{base_url}}/v1/usage", "host": ["{{base_url}}"], "path": ["v1", "usage"] },
-            "description": "Get current week usage, limits, and burst quota."
-          }
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/usage",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "usage"]
+            },
+            "description": "Get your current week's API usage, limits, burst usage, and extra usage balance."
+          },
+          "response": [
+            {
+              "name": "Usage stats",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"plan\": {\n      \"tier\": \"starter\",\n      \"weeklyLimit\": 500\n    },\n    \"usage\": {\n      \"week\": \"2026-W12\",\n      \"used\": 127,\n      \"remaining\": 373,\n      \"percentUsed\": 25\n    },\n    \"burst\": {\n      \"hourlyLimit\": 25,\n      \"used\": 3,\n      \"remaining\": 22\n    },\n    \"extra\": {\n      \"enabled\": false,\n      \"balance\": 0,\n      \"spent\": 0,\n      \"spendingLimit\": 50\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Extract",
+      "description": "Extract structured data from web pages using schemas.",
+      "item": [
+        {
+          "name": "Extract Data (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://news.ycombinator.com\",\n  \"schema\": {\n    \"type\": \"array\",\n    \"items\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"title\": { \"type\": \"string\" },\n        \"url\": { \"type\": \"string\" },\n        \"points\": { \"type\": \"number\" }\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/extract",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "extract"]
+            },
+            "description": "Extract structured JSON data from any web page using a JSON Schema definition. Uses LLM or pattern matching depending on complexity."
+          },
+          "response": [
+            {
+              "name": "Extracted data",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://news.ycombinator.com\",\n    \"extracted\": [\n      { \"title\": \"Show HN: WebPeel API\", \"url\": \"https://webpeel.dev\", \"points\": 142 },\n      { \"title\": \"Rust is eating the world\", \"url\": \"https://example.com/rust\", \"points\": 89 }\n    ]\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "DELETE Account (GDPR)",
+          "name": "Auto-Extract (POST)",
           "request": {
-            "method": "DELETE",
-            "url": { "raw": "{{base_url}}/v1/account", "host": ["{{base_url}}"], "path": ["v1", "account"] },
-            "description": "Delete your account and all associated data (GDPR compliance)."
-          }
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com/product-page\",\n  \"fields\": [\"name\", \"price\", \"description\", \"rating\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/extract/auto",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "extract", "auto"]
+            },
+            "description": "Automatically extract common fields (product info, contact details, etc.) without providing a schema."
+          },
+          "response": [
+            {
+              "name": "Auto-extracted data",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://example.com/product-page\",\n    \"extracted\": {\n      \"name\": \"Premium Widget\",\n      \"price\": \"$49.99\",\n      \"description\": \"A high-quality widget for all your needs.\",\n      \"rating\": 4.7\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Crawl",
+      "description": "Crawl entire websites and extract content from multiple pages.",
+      "item": [
+        {
+          "name": "Start Crawl (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://docs.example.com\",\n  \"maxPages\": 10,\n  \"format\": \"markdown\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/crawl",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "crawl"]
+            },
+            "description": "Start a crawl job. Returns a job ID to poll for results."
+          },
+          "response": [
+            {
+              "name": "Crawl started",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"crawl_abc123\",\n    \"status\": \"processing\",\n    \"url\": \"https://docs.example.com\",\n    \"maxPages\": 10\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Crawl Status (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/crawl/crawl_abc123",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "crawl", "crawl_abc123"]
+            },
+            "description": "Check the status of a crawl job and retrieve results."
+          },
+          "response": [
+            {
+              "name": "Crawl complete",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"crawl_abc123\",\n    \"status\": \"completed\",\n    \"pages\": [\n      {\n        \"url\": \"https://docs.example.com/\",\n        \"title\": \"Documentation Home\",\n        \"content\": \"# Welcome to our docs...\"\n      }\n    ],\n    \"totalPages\": 10\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Map",
+      "description": "Discover all pages on a website (sitemap).",
+      "item": [
+        {
+          "name": "Map Site (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/map?url=https://example.com&limit=100",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "map"],
+              "query": [
+                { "key": "url", "value": "https://example.com", "description": "Base URL to map" },
+                { "key": "limit", "value": "100", "description": "Max URLs to discover", "disabled": true }
+              ]
+            },
+            "description": "Discover all pages on a website by parsing sitemaps, robots.txt, and common URL patterns."
+          },
+          "response": [
+            {
+              "name": "Site mapped",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://example.com\",\n    \"urls\": [\n      \"https://example.com/\",\n      \"https://example.com/about\",\n      \"https://example.com/pricing\",\n      \"https://example.com/docs\"\n    ],\n    \"total\": 4\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints for account management.",
+      "item": [
+        {
+          "name": "Register (POST)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"your-secure-password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "register"]
+            },
+            "description": "Create a new account and get an API key. No authentication required."
+          },
+          "response": [
+            {
+              "name": "Registration successful",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"apiKey\": \"wp_abc123...\",\n  \"userId\": \"usr_def456\",\n  \"message\": \"Account created successfully. Save your API key — it won't be shown again.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login (POST)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"your-secure-password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "login"]
+            },
+            "description": "Log in and receive a JWT access token and refresh token."
+          },
+          "response": [
+            {
+              "name": "Login successful",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"success\": true,\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIs...\",\n  \"refreshToken\": \"rt_abc123...\",\n  \"expiresIn\": 3600\n}"
+            }
+          ]
         }
       ]
     }

@@ -913,19 +913,30 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
         }),
       ]);
 
-      ctx.readabilityResult = readResult;
-      ctx.content = readResult.content;
-      ctx.title = readResult.title || metaResult.meta.title || ctx.title;
-      ctx.metadata = {
-        ...metaResult.meta.metadata,
-        title: readResult.title || metaResult.meta.title,
-        ...(readResult.author ? { author: readResult.author } : {}),
-        ...(readResult.date ? { publishedDate: readResult.date } : {}),
-      };
-      ctx.links = metaResult.links;
-      ctx.linkCount = metaResult.links.length;
-      ctx.quality = readResult.content.length > 200 ? 0.95 : 0.5;
-      return;
+      // Quality check: if readability result is < 15% of the HTML body text, it likely failed
+      // (picked footnotes, sidebar, or wrong section as "main content" — e.g. aosabook.org)
+      const htmlTextLen = fetchResult.html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().length;
+      const readableLen = readResult.content?.length || 0;
+      const readabilityFailed = htmlTextLen > 2000 && readableLen > 0 && readableLen < htmlTextLen * 0.15;
+
+      if (readabilityFailed) {
+        log.debug(`Readability returned only ${Math.round(readableLen / htmlTextLen * 100)}% of content — falling through to standard extraction`);
+        // Don't return early — fall through to standard HTML pipeline below
+      } else {
+        ctx.readabilityResult = readResult;
+        ctx.content = readResult.content;
+        ctx.title = readResult.title || metaResult.meta.title || ctx.title;
+        ctx.metadata = {
+          ...metaResult.meta.metadata,
+          title: readResult.title || metaResult.meta.title,
+          ...(readResult.author ? { author: readResult.author } : {}),
+          ...(readResult.date ? { publishedDate: readResult.date } : {}),
+        };
+        ctx.links = metaResult.links;
+        ctx.linkCount = metaResult.links.length;
+        ctx.quality = readResult.content.length > 200 ? 0.95 : 0.5;
+        return;
+      }
     }
 
     // Standard HTML pipeline
@@ -1157,15 +1168,25 @@ export async function postProcess(ctx: PipelineContext): Promise<void> {
     ctx.timer.mark('readability');
     try {
       const readResult = extractReadableContent(fetchResult.html, fetchResult.url);
-      ctx.readabilityResult = readResult;
-      ctx.content = readResult.content;
-      ctx.metadata = {
-        ...ctx.metadata,
-        title: readResult.title || ctx.metadata?.title,
-        author: readResult.author || undefined,
-        publishedDate: readResult.date || undefined,
-      };
-      ctx.title = readResult.title || ctx.title;
+
+      // Quality check: if readability result is < 15% of full content, it likely failed
+      // (picked footnotes, sidebar, or wrong section as "main content" — e.g. aosabook.org)
+      const fullContentLen = ctx.content?.length || 0;
+      const readableLen = readResult.content?.length || 0;
+      if (fullContentLen > 0 && readableLen > 0 && readableLen < fullContentLen * 0.15) {
+        // Readability failed — keep the full content (already in ctx.content)
+        log.debug(`Readability returned only ${Math.round(readableLen / fullContentLen * 100)}% of content — using full extraction instead`);
+      } else {
+        ctx.readabilityResult = readResult;
+        ctx.content = readResult.content;
+        ctx.metadata = {
+          ...ctx.metadata,
+          title: readResult.title || ctx.metadata?.title,
+          author: readResult.author || undefined,
+          publishedDate: readResult.date || undefined,
+        };
+        ctx.title = readResult.title || ctx.title;
+      }
     } catch (readErr) {
       // Readability can crash on complex DOMs (e.g. Amazon) — gracefully fall back to standard content
       log.debug('Readability failed, using standard content:', (readErr as Error).message);
