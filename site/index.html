@@ -6525,11 +6525,16 @@
     line-height: 1.7 !important;
   }
 
-  /* 16a. REMOVE GLOW ORBS — distracting ambient glow effects */
+  /* 16a. REMOVE ALL HERO GLOW — orbs + background gradients */
   .hero-ambient-orb,
   .hero-card-bloom,
   .hero-terminal-glow {
     display: none !important;
+  }
+  .hero,
+  section.hero {
+    background: #050507 !important;
+    background-image: none !important;
   }
 
   /* 16. SECTION DIVIDERS — remove harsh borders, use bg alternation */
