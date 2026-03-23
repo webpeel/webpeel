@@ -1344,6 +1344,8 @@ const SHOPPING_DOMAINS: Array<{ pattern: string; name: string }> = [
   { pattern: 'lowes.com',              name: "Lowe's" },
   { pattern: 'ebay.com',               name: 'eBay' },
   { pattern: 'etsy.com',               name: 'Etsy' },
+  { pattern: 'tcgplayer.com',          name: 'TCGPlayer' },
+  { pattern: 'cardmarket.com',         name: 'Cardmarket' },
   { pattern: 'uline.com',              name: 'Uline' },
   { pattern: 'alibaba.com',            name: 'Alibaba' },
   { pattern: 'webstaurantstore.com',   name: 'WebstaurantStore' },
@@ -1444,11 +1446,25 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
   const { provider: searchProvider } = getBestSearchProvider();
   const isBulk = /\b(bulk|wholesale|1000|500|case|pallet|box of|pack of|carton)\b/i.test(intent.query);
   const isGrocery = intent.params.isGrocery === 'true' || /\b(grocery|milk|eggs|bread|butter|cheese|chicken|produce)\b/i.test(intent.query);
+  const isCollectible = /\b(pokemon|pokémon|magic\s*the\s*gathering|mtg|yu-?gi-?oh|trading\s*card|tcg|baseball\s*card|sports\s*card|collectible\s*card|figurine|funko|hot\s*wheels|lego\s*set|vintage\s*toy|action\s*figure|comic\s*book|vinyl\s*record|rare\s*coin|stamp\s*collection)\b/i.test(intent.query);
 
   let rawResults: WebSearchResult[];
   let redditResults: WebSearchResult[];
 
-  if (isGrocery) {
+  if (isCollectible) {
+    const [tcgSettled, ebaySettled, amazonSettled, redditSettled] = await Promise.allSettled([
+      searchProvider.searchWeb(`${keyword} price site:tcgplayer.com`, { count: 5 }),
+      searchProvider.searchWeb(`${keyword} price site:ebay.com sold`, { count: 5 }),
+      searchProvider.searchWeb(`${keyword} price site:amazon.com`, { count: 3 }),
+      searchProvider.searchWeb(`${keyword} cheapest reddit where to buy`, { count: 3 }),
+    ]);
+    rawResults = [
+      ...(tcgSettled.status === 'fulfilled' ? tcgSettled.value : []),
+      ...(ebaySettled.status === 'fulfilled' ? ebaySettled.value : []),
+      ...(amazonSettled.status === 'fulfilled' ? amazonSettled.value : []),
+    ];
+    redditResults = redditSettled.status === 'fulfilled' ? redditSettled.value : [];
+  } else if (isGrocery) {
     // Search grocery-specific sites
     const [instacartSettled, walmartGrocerySettled, freshSettled, redditGrocerySettled] = await Promise.allSettled([
       searchProvider.searchWeb(`${keyword} price site:instacart.com`, { count: 4 }),
@@ -1538,7 +1554,9 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
       ? listings.slice(0, 5).map(l => `${l.brand ? l.brand + ' ' : ''}${l.title}: ${l.price || 'N/A'} at ${l.store}${l.rating ? `, ${l.rating}★` : ''}${l.reviewCount ? ` (${l.reviewCount} reviews)` : ''}`).join(', ')
       : 'no specific listings found';
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
-    const aiPrompt = `${PROMPT_INJECTION_DEFENSE}You are a shopping advisor. The user wants: "${sanitizeSearchQuery(intent.query)}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention the brand name, specific model, price, and store. Be specific.' : 'Give general buying advice with specific brand and model recommendations based on Reddit.'} Max 200 words. Cite sources inline as [1], [2], [3].`;
+    const aiPrompt = isCollectible
+      ? `${PROMPT_INJECTION_DEFENSE}You are a collectibles price expert. The user wants: "${sanitizeSearchQuery(intent.query)}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'none'}. List the cheapest options with exact prices, condition (near mint/lightly played/etc), and which store. Be specific with dollar amounts. Max 200 words. Cite sources inline as [1], [2], [3].`
+      : `${PROMPT_INJECTION_DEFENSE}You are a shopping advisor. The user wants: "${sanitizeSearchQuery(intent.query)}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention the brand name, specific model, price, and store. Be specific.' : 'Give general buying advice with specific brand and model recommendations based on Reddit.'} Max 200 words. Cite sources inline as [1], [2], [3].`;
     const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 20000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
   }
