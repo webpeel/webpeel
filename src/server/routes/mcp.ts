@@ -18,6 +18,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -53,10 +55,49 @@ function safeStringify(obj: unknown): string {
 function createMcpServer(pool?: Pool | null, req?: Request): Server {
   const mcpServer = new Server(
     { name: 'webpeel', version: pkgVersion },
-    { capabilities: { tools: {} } },
+    { capabilities: { tools: {}, prompts: {} } },
   );
 
   mcpServer.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: toolDefinitions }));
+
+  // MCP Prompts — pre-built templates for common web data tasks
+  const mcpPrompts = [
+    {
+      name: 'research',
+      description: 'Research a topic by searching the web and synthesizing findings from multiple sources.',
+      arguments: [{ name: 'topic', description: 'Topic to research', required: true }],
+    },
+    {
+      name: 'extract-product',
+      description: 'Extract structured product data (name, price, rating, reviews) from any e-commerce URL.',
+      arguments: [{ name: 'url', description: 'Product page URL (Amazon, Best Buy, etc.)', required: true }],
+    },
+    {
+      name: 'monitor-price',
+      description: 'Set up price monitoring for a product page. Tracks changes and reports diffs.',
+      arguments: [{ name: 'url', description: 'Product URL to monitor', required: true }],
+    },
+    {
+      name: 'summarize',
+      description: 'Fetch a web page and provide a concise summary of its content.',
+      arguments: [{ name: 'url', description: 'URL to summarize', required: true }],
+    },
+  ];
+
+  mcpServer.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: mcpPrompts }));
+
+  mcpServer.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    const promptMap: Record<string, (a: Record<string, string>) => { messages: Array<{ role: string; content: { type: string; text: string } }> }> = {
+      'research': (a) => ({ messages: [{ role: 'user', content: { type: 'text', text: `Research "${a.topic}" using webpeel_find with depth="deep", then summarize the key findings with sources.` } }] }),
+      'extract-product': (a) => ({ messages: [{ role: 'user', content: { type: 'text', text: `Use webpeel_extract on ${a.url} with fields=['name','price','rating','reviews','availability'] and return the structured data.` } }] }),
+      'monitor-price': (a) => ({ messages: [{ role: 'user', content: { type: 'text', text: `Use webpeel_monitor on ${a.url} with selector=".price" to track price changes. Report the current price and set up monitoring.` } }] }),
+      'summarize': (a) => ({ messages: [{ role: 'user', content: { type: 'text', text: `Use webpeel_read on ${a.url} with budget=500 to get a concise version, then summarize the key points in 3-4 sentences.` } }] }),
+    };
+    const handler = promptMap[name];
+    if (!handler) throw new Error(`Prompt not found: ${name}`);
+    return handler((args || {}) as Record<string, string>);
+  });
 
   mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: rawArgs } = request.params;
