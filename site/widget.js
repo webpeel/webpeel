@@ -119,7 +119,7 @@
         : '';
       // Price level from AI summary (fuzzy match: "Da Andrea" matches "Da Andrea - Chelsea")
       var itemNameLower = (item.name || '').toLowerCase().trim();
-      var pl = priceLevels[itemNameLower] || item.priceLevel || '';
+      var pl = priceLevels[itemNameLower] || item.priceLevel || item.price || '';
       if (!pl) {
         for (var plKey in priceLevels) {
           if (itemNameLower.indexOf(plKey) === 0 || plKey.indexOf(itemNameLower) === 0) {
