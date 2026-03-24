@@ -1502,7 +1502,76 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
   }
 
   // Parse structured product listings from search results
-  const listings = rawResults
+  // DEEP SCRAPE: Visit top marketplace pages to extract real prices (collectibles only)
+  let uniqueListings: Array<{title: string; price: string; priceValue: number; url: string; source: string; condition?: string}> = [];
+  if (isCollectible) {
+    const scrapableUrls = rawResults
+      .filter(r => r.url && (
+        r.url.includes('tcgplayer.com') ||
+        r.url.includes('ebay.com') ||
+        r.url.includes('amazon.com') ||
+        r.url.includes('etsy.com') ||
+        r.url.includes('mercari.com')
+      ))
+      .slice(0, 4)
+      .map(r => r.url);
+
+    const deepResults = await Promise.allSettled(
+      scrapableUrls.map(url =>
+        peel(url, { render: false, timeout: 5000 })
+          .then(result => ({ url, content: result.content, title: result.title, tokens: result.tokens }))
+          .catch(() => null)
+      )
+    );
+
+    const deepListings: Array<{title: string; price: string; priceValue: number; url: string; source: string; condition?: string}> = [];
+
+    for (const settled of deepResults) {
+      if (settled.status !== 'fulfilled' || !settled.value) continue;
+      const { url, content: pageContent } = settled.value;
+      if (!pageContent) continue;
+
+      const sourceName = url.includes('tcgplayer') ? 'TCGPlayer'
+        : url.includes('ebay') ? 'eBay'
+        : url.includes('amazon') ? 'Amazon'
+        : url.includes('etsy') ? 'Etsy'
+        : url.includes('mercari') ? 'Mercari'
+        : new URL(url).hostname;
+
+      const lines = pageContent.split('\n');
+      for (const line of lines) {
+        const pm = line.match(/\$(\d{1,6}(?:\.\d{2})?)/);
+        if (!pm) continue;
+        const price = parseFloat(pm[1]);
+        if (price < 0.5 || price > 50000) continue;
+
+        const titleText = line.replace(/\$[\d,.]+/g, '').replace(/[|·\-–—]/g, ' ').trim().slice(0, 100);
+        if (titleText.length < 5) continue;
+
+        const conditionMatch = line.match(/\b(Near Mint|NM|Lightly Played|LP|Moderately Played|MP|Heavily Played|HP|Damaged|DMG|New|Used|Like New|Good|Very Good|Excellent)\b/i);
+
+        deepListings.push({
+          title: titleText,
+          price: '$' + price.toFixed(2),
+          priceValue: price,
+          url,
+          source: sourceName,
+          condition: conditionMatch ? conditionMatch[1] : undefined,
+        });
+      }
+    }
+
+    deepListings.sort((a, b) => a.priceValue - b.priceValue);
+    const seen = new Set<string>();
+    uniqueListings = deepListings.filter(l => {
+      const key = l.price + l.source;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 6);
+  }
+
+  let listings = rawResults
     .filter(r => r.url && getStoreInfo(r.url) !== null)
     .map(r => {
       const storeInfo = getStoreInfo(r.url)!;
@@ -1544,6 +1613,21 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
     })
     .slice(0, 10);
 
+  // Replace listings with deep-scraped results for collectibles (if any found)
+  if (isCollectible && uniqueListings.length > 0) {
+    listings = uniqueListings.map(l => ({
+      title: l.title,
+      brand: undefined,
+      price: l.price,
+      rating: undefined,
+      reviewCount: undefined,
+      url: l.url,
+      snippet: l.condition ? `Condition: ${l.condition}` : '',
+      store: l.source,
+      image: undefined,
+    }));
+  }
+
   const amazonUrl = addAffiliateTag(`https://www.amazon.com/s?k=${encodeURIComponent(keyword)}`);
   const content = listings.length > 0
     ? `# 🛍️ Products — ${keyword}\n\n${listings.map((l, i) =>
@@ -1558,8 +1642,11 @@ async function handleProductSearch(intent: SearchIntent): Promise<SmartSearchRes
       ? listings.slice(0, 5).map(l => `${l.brand ? l.brand + ' ' : ''}${l.title}: ${l.price || 'N/A'} at ${l.store}${l.rating ? `, ${l.rating}★` : ''}${l.reviewCount ? ` (${l.reviewCount} reviews)` : ''}`).join(', ')
       : 'no specific listings found';
     const redditSnippets = redditResults.slice(0, 2).map(r => `${r.title}: ${r.snippet || ''}`).join('\n');
+    const deepPriceInfo = uniqueListings.length > 0
+      ? '\n\nReal prices found:\n' + uniqueListings.slice(0, 5).map((l, i) => `${i + 1}. ${l.title} — ${l.price} on ${l.source}${l.condition ? ` (${l.condition})` : ''}`).join('\n')
+      : '';
     const aiPrompt = isCollectible
-      ? `${PROMPT_INJECTION_DEFENSE}You are a collectibles price expert. The user wants: "${sanitizeSearchQuery(intent.query)}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'none'}. List the cheapest options with exact prices, condition (near mint/lightly played/etc), and which store. Be specific with dollar amounts. Max 200 words. Cite sources inline as [1], [2], [3].`
+      ? `${PROMPT_INJECTION_DEFENSE}You are a collectibles price expert. The user wants: "${sanitizeSearchQuery(intent.query)}". Products found: ${productInfo}.${deepPriceInfo} Reddit says: ${redditSnippets || 'none'}. List the cheapest options with exact prices, condition (near mint/lightly played/etc), and which store. Be specific with dollar amounts. Max 200 words. Cite sources inline as [1], [2], [3].`
       : `${PROMPT_INJECTION_DEFENSE}You are a shopping advisor. The user wants: "${sanitizeSearchQuery(intent.query)}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention the brand name, specific model, price, and store. Be specific.' : 'Give general buying advice with specific brand and model recommendations based on Reddit.'} Max 200 words. Cite sources inline as [1], [2], [3].`;
     const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 5000, temperature: 0.4 });
     if (aiText && aiText.length > 20) answer = aiText;
