@@ -134,7 +134,14 @@ ${country ? `- **Country:** ${country}` : ''}
     }
   }
 
-  // --- Markets overview page or fallback: show major indices ---
+  // --- Markets overview page: show major indices for root / /markets paths only ---
+  // For unrecognized paths (e.g. /ideas, /screener, /profile) return null so
+  // the pipeline falls through to browser rendering instead of showing wrong data.
+  const isRootOrMarkets = path === '/' || path === '' || path.startsWith('/markets');
+  if (!ticker && !isRootOrMarkets) {
+    return null;
+  }
+
   try {
     // Fetch major indices + top stocks
     const scanBody = {

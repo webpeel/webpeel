@@ -2,37 +2,59 @@
 
 > Fetch, search, crawl, extract, monitor, screenshot, and research any URL. One API call. 65-98% token savings.
 
+## Quick Decision Tree
+
+Choose the right approach:
+- Static page → `webpeel <url>` (default, fastest)
+- JavaScript SPA (React, Vue, Next.js) → `webpeel <url> --render`
+- Bot-protected site (Cloudflare) → `webpeel <url> --stealth`
+- Infinite scroll / lazy content → `webpeel <url> --render --action 'scroll:bottom' --action 'wait:2000'`
+- Interact (click, type) → `webpeel <url> --render --action 'click:.btn' --action 'wait:1000'`
+- Screenshot → `webpeel screenshot <url>`
+- YouTube transcript → `webpeel <youtube-url>`
+- PDF → `webpeel <pdf-url>`
+- Structured data → `webpeel <url> --schema product --json`
+- Web search → `webpeel search "query"`
+- Monitor for changes → `webpeel watch <url>`
+
 ## Capabilities
 
-- **Fetch**: Extract clean markdown from any URL. Auto-handles JS rendering, Cloudflare, CAPTCHAs, and anti-bot protection.
-- **Search**: Web search with structured results and AI summaries. Smart search with intent detection for restaurants, products, flights, hotels.
-- **Crawl**: Crawl entire sites (up to 100 pages) with dedup and rate limiting. Returns all URLs or full content.
-- **Extract**: Schema-based structured data extraction (JSON schema → JSON output). Built-in schemas for product, article, recipe, job, event, and more.
-- **Monitor**: Track pages for changes. Returns diffs when content updates. CSS selector support for targeting specific sections.
-- **Screenshot**: Full-page screenshots with device emulation (mobile, tablet, desktop). Supports visual diff comparison.
-- **Research**: Autonomous research agent that plans queries, fetches multiple sources, synthesizes answers with citations.
-- **YouTube**: Full video transcripts with timestamps, 50+ languages supported.
-- **PDF**: Extract real text from PDFs — no OCR needed for text-based PDFs.
-- **Feed**: RSS/Atom feed discovery and parsing. Auto-discovers feeds from any URL.
-- **Act**: Browser automation — click buttons, fill forms, interact with dynamic pages, then extract content.
+- **Fetch**: Extract clean markdown from any URL. Auto-handles JS rendering, Cloudflare, CAPTCHAs.
+- **Search**: Web search with structured results. Smart search detects intent (restaurants, products, flights, hotels).
+- **Crawl**: Crawl sites up to 100 pages with dedup and rate limiting.
+- **Extract**: JSON schema extraction. Built-in schemas: product, article, recipe, job, event, contact, review, listing.
+- **Monitor**: Track pages for changes with diffs and CSS selector targeting.
+- **Screenshot**: Full-page screenshots with device emulation. Visual diff comparison.
+- **Research**: Autonomous research agent — plans queries, fetches sources, synthesizes with citations.
+- **YouTube**: Full transcripts with timestamps, 50+ languages.
+- **PDF**: Text extraction from PDFs.
+- **Act**: Browser automation — click, fill forms, scroll, interact, then extract.
+
+## Browser Actions (--action flag)
+
+For dynamic pages. Auto-enables browser rendering. Chain multiple:
+
+- `scroll:bottom` — scroll to bottom (infinite scroll)
+- `scroll:down:500` — scroll down 500px
+- `wait:2000` — wait 2 seconds
+- `click:.selector` — click an element
+- `type:#input:text` — type into a field
+- `waitFor:.selector` — wait for element to appear
+
+Example: `webpeel <url> --render --action 'scroll:bottom' --action 'wait:2000'`
 
 ## API Endpoints
 
-- GET /v1/fetch?url={url} — Fetch and extract content as markdown
-- POST /v1/fetch — Fetch with options (render, stealth, actions, extract schema)
-- GET /v1/search?q={query} — Web search with structured results
-- POST /v1/search/smart — AI-powered smart search with intent detection
-- POST /v1/screenshot — Take full-page screenshot (mobile/tablet/desktop)
-- POST /v1/answer — Q&A with citations (BYOK)
-- POST /v1/agent — Autonomous research agent (BYOK)
-- POST /v1/crawl — Crawl a site, returns all pages
-- POST /v1/extract — Schema-based structured data extraction
-- GET /v1/feed?url={url} — Discover and parse RSS/Atom feeds
-- POST /v1/monitor — Watch a URL for changes
+- `GET /v1/fetch?url={url}` — Fetch content as markdown
+- `POST /v1/fetch` — Fetch with options (render, stealth, actions, schema)
+- `GET /v1/search?q={query}` — Web search
+- `POST /v1/search/smart` — AI-powered smart search
+- `POST /v1/screenshot` — Screenshot (mobile/tablet/desktop)
+- `POST /v1/crawl` — Crawl a site
+- `POST /v1/extract` — Structured data extraction
+- `GET /v1/feed?url={url}` — RSS/Atom feeds
 
-## MCP Server
-
-WebPeel includes an MCP server for Claude, Cursor, VS Code, and other AI tools. Install once, use everywhere:
+## MCP Server (Claude, Cursor, VS Code)
 
 ```json
 {
@@ -46,67 +68,67 @@ WebPeel includes an MCP server for Claude, Cursor, VS Code, and other AI tools. 
 ```
 
 ### MCP Tools
-- **webpeel** — Smart natural-language web tool. Describe what you want in plain English.
-- **webpeel_read** — Fetch any URL as clean markdown. Handles web pages, YouTube transcripts, and PDFs.
-- **webpeel_see** — Take screenshots. Supports design analysis and visual diff comparison.
-- **webpeel_find** — Web search or site map discovery. Pass query= to search, url= to map a domain.
-- **webpeel_extract** — Extract structured JSON from any URL. Pass fields or a full JSON schema.
-- **webpeel_monitor** — Watch a URL for changes. Returns diffs on subsequent calls.
-- **webpeel_act** — Browser automation. Click, type, scroll, then extract content.
-
-## Token Efficiency
-
-WebPeel reduces web content by 65-98% compared to raw HTML, saving massive LLM costs:
-- BBC News: 98% reduction (100K → 2,050 tokens)
-- Wikipedia: 86% reduction
-- Python docs: 65% reduction
-- GitHub repos: 80%+ reduction
+- **webpeel** — Natural language web tool. Describe what you want.
+- **webpeel_read** — Fetch URL as markdown. Use render=true for SPAs, actions=[] for interaction.
+- **webpeel_see** — Screenshots with mobile/tablet/desktop viewports.
+- **webpeel_find** — Web search or sitemap discovery.
+- **webpeel_extract** — JSON extraction with schema or field names.
+- **webpeel_monitor** — Track pages for changes over time.
+- **webpeel_act** — Browser automation (click, type, scroll).
 
 ## 55+ Domain Extractors
 
-Structured data without browser rendering for major sites:
-Amazon, Reddit, GitHub, Wikipedia, YouTube, LinkedIn, arXiv, StackOverflow, npm, PyPI, Yelp, Google Maps, Best Buy, Walmart, Target, Etsy, Medium, Substack, IMDb, Rotten Tomatoes, Hacker News, Product Hunt, TechCrunch, and 30+ more.
+Instant structured data without browser rendering:
+Amazon, Reddit, GitHub, YouTube, Wikipedia, ESPN, Polymarket, Kalshi, TradingView,
+Hacker News, NPM, PyPI, Stack Overflow, Medium, Substack, IMDb, Yelp, Zillow,
+eBay, Walmart, Best Buy, and 30+ more.
+
+## Token Efficiency
+
+65-98% fewer tokens vs raw HTML:
+- BBC News: 98% (100K → 2,050 tokens)
+- Wikipedia: 86%
+- GitHub: 80%+
+
+## Authentication (Login-Protected Pages)
+
+WebPeel auto-detects auth walls. When detected, it returns `authRequired: true` and instructions.
+
+To access login-protected content:
+1. `webpeel profile create <site>` — opens browser, log in normally, press Ctrl+C
+2. `webpeel "<url>" --profile <site>` — fetches with saved cookies
+
+Profiles are saved in `~/.webpeel/profiles/` and reusable across sessions.
+
+## Troubleshooting
+
+- **Very little content?** → Site is likely a JavaScript SPA. Add `--render`.
+- **Still blocked?** → Add `--stealth` for anti-bot bypass.
+- **SPA not loading?** → Add `--action 'wait:3000'` for slow SPAs.
+- **Screenshot fails?** → Run: `npx playwright install chromium`
+- **Wrong content for sub-pages?** → Content may be client-side routed. Use `--render`.
+- **Auth wall detected?** → Run `webpeel profile create <site>`, log in, then use `--profile <site>`.
 
 ## Quick Start
 
 ```bash
-# Install
-npm install webpeel
-
-# Fetch any page
-npx webpeel "https://example.com"
-
-# With JS rendering (for SPAs, React apps)
-npx webpeel "https://example.com" --render
-
-# Screenshot
-npx webpeel "https://example.com" --screenshot
-
-# Search the web
-npx webpeel search "best AI frameworks 2024"
-
-# Extract structured data
-npx webpeel "https://amazon.com/dp/..." --schema product --json
-
-# API
-curl "https://api.webpeel.dev/v1/fetch?url=https://example.com" \
-  -H "Authorization: Bearer YOUR_KEY"
+npx webpeel "https://example.com"                     # Basic fetch
+npx webpeel "https://spa-site.com" --render            # JavaScript SPA
+npx webpeel "https://site.com" --stealth               # Bot-protected
+npx webpeel screenshot "https://example.com"           # Screenshot
+npx webpeel search "best AI frameworks"                # Search
+npx webpeel "https://amazon.com/dp/..." --schema product --json  # Structured
+npx webpeel guide                                      # Full AI usage guide
 ```
 
 ## Pricing
 
-Free tier: 2,000 fetches/month, no credit card required.
-
-- Free: 2,000 requests/month
-- Starter: $9/month — 10,000 requests
-- Pro: $49/month — 100,000 requests
-- Enterprise: Custom
+Free: 2,000 requests/month (no credit card) | Starter: $9/mo (10K) | Pro: $49/mo (100K) | Enterprise: Custom
 
 ## Links
 
-Docs: https://webpeel.dev/docs
-API Reference: https://webpeel.dev/docs/api-reference
-Dashboard: https://app.webpeel.dev
-GitHub: https://github.com/webpeel/webpeel
-npm: https://www.npmjs.com/package/webpeel
-PyPI: https://pypi.org/project/webpeel/
+- Docs: https://webpeel.dev/docs
+- API Reference: https://webpeel.dev/docs/api-reference
+- Dashboard: https://app.webpeel.dev
+- GitHub: https://github.com/webpeel/webpeel
+- npm: https://www.npmjs.com/package/webpeel

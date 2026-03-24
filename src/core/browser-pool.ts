@@ -9,9 +9,59 @@ type ChromiumType = typeof import('playwright').chromium;
 import { getRealisticUserAgent } from './user-agents.js';
 import { startDnsWarmup } from './dns-cache.js';
 import { closePool } from './http-fetch.js';
+import { existsSync } from 'fs';
+import { execSync } from 'child_process';
 
 // Re-export closePool so fetcher.ts can barrel it from this module.
 export { closePool };
+
+// ── Browser auto-install ──────────────────────────────────────────────────────
+
+/**
+ * Checks whether the Chromium binary bundled with our playwright alias exists.
+ * If missing, auto-installs it using `npx playwright install chromium` (which
+ * resolves to rebrowser-playwright because of the package.json alias).
+ *
+ * Call this once before the first browser launch so users get a helpful message
+ * instead of a confusing "Executable doesn't exist" stack trace.
+ */
+export async function ensureChromiumInstalled(): Promise<void> {
+  // Dynamically get the expected executable path from our playwright alias
+  let execPath: string;
+  try {
+    const pw = await import('playwright');
+    execPath = pw.chromium.executablePath();
+  } catch {
+    // If playwright itself can't be imported we'll let the launch error surface
+    return;
+  }
+
+  if (existsSync(execPath)) {
+    return; // Already installed — fast path
+  }
+
+  // Binary is missing — auto-install with visible feedback
+  console.error('\x1b[33m⚙️  Installing browser for first-time use (this takes ~30s)...\x1b[0m');
+  console.error('\x1b[90m   Running: npx playwright install chromium\x1b[0m');
+
+  try {
+    execSync('npx playwright install chromium', {
+      stdio: 'inherit',
+      // Resolve npx relative to this package so we always use the aliased
+      // rebrowser-playwright, not whatever the user has globally.
+      cwd: new URL('../../..', import.meta.url).pathname,
+    });
+    console.error('\x1b[32m✅  Browser installed successfully.\x1b[0m');
+  } catch (installErr) {
+    const msg = installErr instanceof Error ? installErr.message : String(installErr);
+    console.error(`\x1b[31m❌  Auto-install failed: ${msg}\x1b[0m`);
+    console.error('\x1b[31m   Please install the browser manually:\x1b[0m');
+    console.error('\x1b[36m   npx playwright install chromium\x1b[0m');
+    throw new Error(
+      'Chromium is not installed. Run: npx playwright install chromium'
+    );
+  }
+}
 
 // ── Playwright lazy loading ───────────────────────────────────────────────────
 
@@ -23,6 +73,7 @@ export let playwrightLoaded = false;
 
 async function getPlaywright(): Promise<ChromiumType> {
   if (!_chromium) {
+    await ensureChromiumInstalled();
     const pw = await import('playwright');
     _chromium = pw.chromium;
     playwrightLoaded = true;

@@ -154,8 +154,10 @@ export function startCacheWarmer(pool: pg.Pool | null, intervalMs = 120_000): vo
     log.info('Cache warm cycle starting');
 
     // Determine base URL
+    // RENDER_EXTERNAL_URL is legacy (Render is retired). On K8s, use PUBLIC_URL or localhost.
     const base =
-      process.env.RENDER_EXTERNAL_URL?.replace(/\/$/, '') ||
+      process.env.PUBLIC_URL?.replace(/\/$/, '') ||
+      process.env.API_BASE_URL?.replace(/\/$/, '') ||
       `http://localhost:${process.env.PORT || 3000}`;
 
     // Step 1: Fetch popular URLs (same logic as the endpoint)

@@ -344,6 +344,8 @@ export interface PeelResult {
   warning?: string;
   /** True when the site appears to be blocking bot access (Cloudflare, Akamai, PerimeterX, etc.) */
   blocked?: boolean;
+  /** True when the page requires authentication (login/signup wall detected). When true, use --profile <name> with a logged-in browser profile. */
+  authRequired?: boolean;
   /** Non-fatal warnings about content quality or extraction issues */
   warnings?: string[];
   /** True when server returned pre-rendered markdown directly (Content-Type: text/markdown) */

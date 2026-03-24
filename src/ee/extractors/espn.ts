@@ -45,8 +45,13 @@ function matchESPN(url: string): { sport: string; league: string; type: string; 
     }
   }
 
-  // Fallback: espn.com root or unknown path → NBA scoreboard
-  return { sport: 'basketball', league: 'nba', type: 'scoreboard' };
+  // Unknown path (e.g. /about, /fantasy, /watch) — return null so pipeline
+  // falls through to browser rendering instead of showing wrong sport data.
+  // Only the root path / is treated as NBA scoreboard.
+  if (path === '/' || path === '') {
+    return { sport: 'basketball', league: 'nba', type: 'scoreboard' };
+  }
+  return null;
 }
 
 /** Sport emoji mapping. */

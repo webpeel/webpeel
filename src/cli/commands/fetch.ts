@@ -812,7 +812,23 @@ export async function runFetch(url: string | undefined, options: any): Promise<v
           }
         }
         if (!options.silent && !options.json && result.tokens && result.tokens < 50 && !options.render) {
-          console.error(`\x1b[33m💡 Tip: Page returned very little content. Try --render for JavaScript-heavy sites or --stealth if blocked.\x1b[0m`);
+          console.error(`\x1b[33m💡 Tip: Very little content extracted. This may be a JavaScript-rendered page.\x1b[0m`);
+          console.error(`\x1b[33m   Try: webpeel "${url}" --render\x1b[0m`);
+          console.error(`\x1b[33m   For infinite scroll/SPAs: --action 'scroll:bottom' --action 'wait:2000'\x1b[0m`);
+          console.error(`\x1b[33m   Or use --stealth if the site blocks bots.\x1b[0m`);
+        }
+
+        // Auth wall detection hint
+        if (!options.json && (result as any).authRequired) {
+          let authHost = url;
+          try { authHost = new URL(url).hostname.replace('www.', ''); } catch { /* ignore */ }
+          console.error('');
+          console.error('\x1b[33m🔐 This page requires authentication.\x1b[0m');
+          console.error(`\x1b[36m   1. Create a login profile:  webpeel profile create ${authHost}\x1b[0m`);
+          console.error('\x1b[36m   2. Log in to the site in the browser that opens\x1b[0m');
+          console.error('\x1b[36m   3. Press Ctrl+C when done\x1b[0m');
+          console.error(`\x1b[36m   4. Re-run with:  webpeel "${url}" --profile ${authHost}\x1b[0m`);
+          console.error('');
         }
       }
 

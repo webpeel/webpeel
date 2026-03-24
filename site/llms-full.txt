@@ -128,6 +128,47 @@ webpeel mcp
   Starts MCP server for Claude/Cursor/VS Code
 ```
 
+## Browser Actions Reference
+
+Actions are passed via --action flag (CLI) or actions array (API).
+Each action is a string in format "type:argument".
+
+### Action Types:
+- scroll:bottom — Scroll to page bottom
+- scroll:top — Scroll to page top
+- scroll:down:N — Scroll down N pixels
+- scroll:up:N — Scroll up N pixels
+- scroll:X,Y — Scroll to coordinates
+- wait:N — Wait N milliseconds
+- click:SELECTOR — Click a CSS selector
+- type:SELECTOR:TEXT — Type text into element
+- waitFor:SELECTOR — Wait for selector to appear (10s timeout)
+- hover:SELECTOR — Hover over element
+
+### Common Patterns:
+# Load infinite scroll content
+--action 'scroll:bottom' --action 'wait:2000'
+
+# Click through pagination
+--action 'click:.next-page' --action 'wait:1000'
+
+# Fill and submit form
+--action 'type:#search:query' --action 'click:.submit' --action 'wait:2000'
+
+# Wait for SPA route change
+--action 'wait:3000'
+
+### API Usage:
+POST /v1/fetch
+{
+  "url": "https://example.com",
+  "render": true,
+  "actions": [
+    {"type": "scroll", "direction": "down", "amount": 5000},
+    {"type": "wait", "ms": 2000}
+  ]
+}
+
 ## 55+ Domain Extractors
 Automatic structured extraction for:
 Amazon, Reddit, YouTube, GitHub, Hacker News, Wikipedia, NPM, PyPI,
@@ -146,3 +187,27 @@ Booking.com, and more.
 - captcha (anti-bot bypass): $0.02/request
 
 Method is returned in X-Method header and response body.
+
+## Troubleshooting for AI Agents
+
+### Content is sparse or wrong
+1. Try --render for JavaScript-heavy sites
+2. Try --stealth if the site blocks bots
+3. Try --action 'wait:3000' if the SPA loads slowly
+4. Try --skip-domain-api to bypass our extractor and get raw page content
+5. Check if the URL has client-side routing (e.g. /profile/user on an SPA)
+
+### Screenshot fails
+1. Run: npx playwright install chromium
+2. The browser binary auto-installs on first use, but may fail in restricted environments
+3. Use the API instead: POST /v1/screenshot
+
+### Domain extractor returns wrong page
+1. Our extractors handle specific URL patterns. Unknown paths fall through to browser rendering.
+2. If you get homepage data for a sub-page URL, add --render to force browser rendering.
+3. Use --skip-domain-api to always bypass the extractor.
+
+### Rate limiting
+- Free tier: 2,000 requests/month
+- API returns 429 with Retry-After header when rate limited
+- Use --no-cache to bypass cache, but this counts toward limits

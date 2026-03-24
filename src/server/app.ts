@@ -577,6 +577,42 @@ export function startServer(config: ServerConfig = {}): void {
 
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
+
+  // Catch unhandled promise rejections (e.g. Playwright/rebrowser-patches
+  // throwing when a browser session closes mid-operation).
+  // Without this handler Node.js crashes the entire process.
+  process.on('unhandledRejection', (reason, promise) => {
+    const msg = reason instanceof Error ? reason.message : String(reason);
+    // Playwright/CDP session-closed errors are expected during high load — log but don't crash
+    if (
+      msg.includes('cdpSession.send') ||
+      msg.includes('Target page, context or browser has been closed') ||
+      msg.includes('Protocol error') ||
+      msg.includes('session closed') ||
+      msg.includes('Target closed')
+    ) {
+      console.warn('[warn] Suppressed Playwright session-closed rejection:', msg.slice(0, 120));
+      return;
+    }
+    // Unknown rejections — log but still don't crash (pods are expensive to restart)
+    console.error('[error] Unhandled promise rejection:', reason, 'promise:', promise);
+  });
+
+  process.on('uncaughtException', (err) => {
+    const msg = err.message || String(err);
+    if (
+      msg.includes('cdpSession.send') ||
+      msg.includes('Target page, context or browser has been closed') ||
+      msg.includes('Protocol error') ||
+      msg.includes('session closed')
+    ) {
+      console.warn('[warn] Suppressed Playwright uncaughtException:', msg.slice(0, 120));
+      return;
+    }
+    console.error('[error] Uncaught exception:', err);
+    // For genuinely unknown errors, exit so K8s can restart cleanly
+    process.exit(1);
+  });
 }
 
 // Start server if run directly

@@ -14,7 +14,11 @@ export const toolDefinitions: Tool[] = [
       "Describe what you want in plain English. " +
       "Examples: 'read https://stripe.com/pricing', 'screenshot bbc.com on mobile', " +
       "'search for best AI frameworks 2024', 'extract product prices from amazon.com/dp/...', " +
-      "'watch stripe.com/pricing for price changes', 'get YouTube transcript from youtu.be/...'",
+      "'watch stripe.com/pricing for price changes', 'get YouTube transcript from youtu.be/...'. " +
+      "For JavaScript-heavy SPAs (React, Vue, Next.js, Polymarket, Airbnb, etc.), mention 'render' or 'use browser' in your task. " +
+      "For infinite scroll or lazy-loaded content, say 'scroll to bottom'. " +
+      "For bot-protected sites (Cloudflare), say 'stealth mode'. " +
+      "If you get sparse or empty content, retry and mention 'render' — the site likely requires JavaScript.",
     annotations: {
       title: 'WebPeel Smart Web Tool',
       readOnlyHint: true,
@@ -56,7 +60,12 @@ export const toolDefinitions: Tool[] = [
       'Fetch any URL and return clean, LLM-optimized markdown. 65-98% fewer tokens than raw HTML. ' +
       'Automatically handles: web pages, YouTube transcripts (with timestamps), PDFs, ' +
       'JS-rendered SPAs, Cloudflare-protected sites, and 55+ domain-specific extractors (Amazon, Reddit, GitHub, etc.). ' +
-      'Use render=true for JavaScript-heavy sites. Use question= for instant Q&A (no LLM needed). ' +
+      'IMPORTANT: Use render=true for ANY JavaScript-heavy site (React, Vue, Angular, Svelte, Next.js, SPAs). ' +
+      'Known SPAs that need render=true: Polymarket, Airbnb, Booking.com, Expedia, Indeed, Zillow, Google, and more. ' +
+      'If content is sparse or empty, ALWAYS retry with render=true before concluding the page has no content. ' +
+      'Use actions= to interact with the page before extraction (scroll, click, type, wait). ' +
+      'Use stealth=true for Cloudflare-protected or bot-blocked sites (auto-enables render). ' +
+      'Use question= for instant Q&A (no LLM needed). ' +
       'Use summary=true for a short summary. Use budget=N to distill to N tokens.',
     annotations: {
       title: 'Read Web Page',
@@ -96,6 +105,24 @@ export const toolDefinitions: Tool[] = [
         readable: {
           type: 'boolean',
           description: 'Reader mode — extract only article content',
+          default: false,
+        },
+        actions: {
+          type: 'array',
+          description:
+            'Browser actions to perform before extracting content. Requires render=true (auto-enabled). ' +
+            'Each action is a string: "scroll:bottom" (infinite scroll), "wait:2000" (wait 2s), ' +
+            '"click:.selector" (click element), "type:#input:text" (type into field), ' +
+            '"waitFor:.selector" (wait for element), "hover:.element" (hover), ' +
+            '"scroll:down:500" (scroll 500px), "scroll:0,1500" (scroll to coords). ' +
+            'Chain multiple actions: ["scroll:bottom", "wait:2000"] to load lazy content.',
+          items: { type: 'string' },
+        },
+        stealth: {
+          type: 'boolean',
+          description:
+            'Stealth mode for bot-protected sites (Cloudflare, fingerprinting, rate limiting). ' +
+            'Use when render=true still returns a challenge page or access denied. Auto-enables render.',
           default: false,
         },
       },

@@ -32,8 +32,17 @@ export async function polymarketExtractor(_html: string, url: string): Promise<D
     return d.slice(0, 10);
   };
 
-  // --- Specific event page: /event/<slug> ---
+  // Only handle paths we explicitly support. Return null for unknown paths
+  // (e.g. /profile/<username>, /leaderboard, etc.) so the pipeline falls
+  // through to browser rendering instead of showing wrong homepage data.
+  const isRootOrMarkets = path === '/' || path === '' || path === '/markets' || path.startsWith('/markets?');
   const eventMatch = path.match(/^\/event\/([^/?#]+)/);
+
+  if (!isRootOrMarkets && !eventMatch) {
+    return null;
+  }
+
+  // --- Specific event page: /event/<slug> ---
   if (eventMatch) {
     const slug = eventMatch[1];
     try {
@@ -105,6 +114,7 @@ ${marketsMd || '*No active markets found.*'}
   }
 
   // --- Main page or /markets: show top markets by 24h volume ---
+  // (Only reached for / and /markets — unknown paths already returned null above)
   try {
     const markets = await fetchJson(
       'https://gamma-api.polymarket.com/markets?closed=false&limit=20&order=volume24hr&ascending=false'

@@ -53,6 +53,21 @@ export const handleRead: McpHandler = async (args, _ctx?) => {
     timeout<never>(60000, 'MCP read'),
   ]) as PeelResult;
 
+  // Auth wall detection — return a helpful message with instructions
+  if (result.authRequired) {
+    let authHost = url;
+    try { authHost = new URL(url).hostname.replace('www.', ''); } catch { /* ignore */ }
+    return textResult(
+      `🔐 Authentication Required\n\n` +
+      `This page is behind a login wall and cannot be accessed without authentication.\n\n` +
+      `To access this content:\n` +
+      `1. Ask the user to run: webpeel profile create ${authHost}\n` +
+      `2. They'll log in via a browser that opens\n` +
+      `3. Then fetch with: webpeel_read with url="${url}" and profile="${authHost}"\n\n` +
+      `Partial content (if any):\n${result.content?.slice(0, 500) || '(none)'}`,
+    );
+  }
+
   const out: Record<string, unknown> = {
     url: result.url || url,
     title: result.title || '',

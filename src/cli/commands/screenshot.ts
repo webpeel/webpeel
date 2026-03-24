@@ -130,7 +130,15 @@ export function registerScreenshotCommands(program: Command): void {
         }
 
         if (error instanceof Error) {
-          console.error(`\nError: ${error.message}`);
+          const msg = error.message;
+          // Detect missing browser binary and give an actionable error
+          if (msg.includes("Executable doesn't exist") || msg.includes('browserType.launch') || msg.includes('Chromium is not installed')) {
+            console.error('\n\x1b[31m❌  Browser not installed.\x1b[0m');
+            console.error('\x1b[36m   Run: npx playwright install chromium\x1b[0m');
+            console.error('\x1b[36m   Then retry your screenshot command.\x1b[0m');
+          } else {
+            console.error(`\nError: ${msg}`);
+          }
         } else {
           console.error('\nError: Unknown error occurred');
         }

@@ -43,6 +43,7 @@ import type { ChangeResult } from './change-tracking.js';
 import type { DesignAnalysis } from './design-analysis.js';
 import { createLogger } from './logger.js';
 import type { SafeBrowsingResult } from './safe-browsing.js';
+import { detectAuthWall } from './auth-detection.js';
 
 const log = createLogger('pipeline');
 
@@ -152,6 +153,8 @@ export interface PipelineContext {
   fastPath?: boolean;
   /** Non-fatal warnings accumulated during the pipeline run */
   warnings: string[];
+  /** True when an auth wall was detected on this page */
+  authRequired?: boolean;
   /** Raw HTML size in characters (measured from fetched content before any conversion) */
   rawHtmlSize?: number;
   /** Safe Browsing check result (set early in pipeline, before fetch) */
@@ -351,6 +354,9 @@ export function normalizeOptions(ctx: PipelineContext): void {
       'www.glassdoor.com',
       // Real estate
       'www.zillow.com',
+      // Prediction markets (extractor handles specific paths; browser render for unknown paths)
+      'polymarket.com',
+      'www.polymarket.com',
       // Our own dashboard
       'app.webpeel.dev',
     ]);
@@ -584,7 +590,8 @@ export async function fetchContent(ctx: PipelineContext): Promise<void> {
     });
   } catch (fetchError) {
     // If fetch failed but we have a domain extractor, try it as fallback
-    if (hasDomainExtractor(ctx.url)) {
+    // Respect noDomainApi flag even in error fallback path
+    if (hasDomainExtractor(ctx.url) && !ctx.options.noDomainApi) {
       try {
         const ddResult = await runDomainExtract('', ctx.url);
         if (ddResult && ddResult.cleanContent.length > 50) {
@@ -1165,6 +1172,30 @@ export async function parseContent(ctx: PipelineContext): Promise<void> {
     const found = ctx.content.match(urlRegex) || [];
     ctx.links = [...new Set(found)];
     ctx.quality = 1.0;
+  }
+
+  // --- Auth wall detection ---
+  // Run after content extraction. Only check when content is sparse OR quality is low,
+  // and we're not already in a blocked state, and we have HTML to analyze.
+  if (
+    ctx.fetchResult?.html &&
+    !(ctx.metadata as any)?.blocked &&
+    !ctx.authRequired &&
+    (ctx.content.length < 800 || (ctx.quality ?? 1) < 0.3)
+  ) {
+    const authCheck = detectAuthWall(
+      ctx.fetchResult.html,
+      ctx.url,
+      ctx.fetchResult.statusCode ?? ctx.fetchResult.status,
+    );
+    if (authCheck.isAuthWall) {
+      ctx.authRequired = true;
+      const host = (() => { try { return new URL(ctx.url).hostname.replace('www.', ''); } catch { return ctx.url; } })();
+      ctx.warnings.push(
+        `Authentication required. This page is behind a login wall. ` +
+        `Use a browser profile: webpeel profile create ${host} && webpeel "${ctx.url}" --profile ${host}`,
+      );
+    }
   }
 }
 
@@ -1757,6 +1788,7 @@ export function buildResult(ctx: PipelineContext): PeelResult {
     freshness,
     ...(warning !== undefined ? { warning } : {}),
     ...(ctx.metadata && (ctx.metadata as any).blocked ? { blocked: true } : {}),
+    ...(ctx.authRequired ? { authRequired: true } : {}),
     ...(ctx.prunedPercent !== undefined ? { prunedPercent: ctx.prunedPercent } : {}),
     ...(ctx.domainData !== undefined ? { domainData: ctx.domainData } : {}),
     ...(ctx.readabilityResult !== undefined ? { readability: ctx.readabilityResult } : {}),

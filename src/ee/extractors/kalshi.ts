@@ -25,8 +25,16 @@ export async function kalshiExtractor(_html: string, url: string): Promise<Domai
     return `$${n.toFixed(0)}`;
   };
 
-  // --- Specific market/event page: /markets/<ticker> or /events/<ticker> ---
+  // Only handle paths we explicitly support. Return null for unknown paths
+  // (e.g. /help, /about, /portfolio) so the pipeline falls through to browser rendering.
+  const isRootOrMarkets = path === '/' || path === '' || path === '/markets' || path.startsWith('/markets?');
   const tickerMatch = path.match(/^\/(?:markets|events)\/([^/?#]+)/);
+
+  if (!isRootOrMarkets && !tickerMatch) {
+    return null;
+  }
+
+  // --- Specific market/event page: /markets/<ticker> or /events/<ticker> ---
   if (tickerMatch) {
     const ticker = tickerMatch[1].toUpperCase();
     try {
