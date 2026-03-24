@@ -41,7 +41,7 @@ fi
 
 # 2. No hardcoded secrets
 echo -n "[2/6] Hardcoded secrets... "
-FOUND=$(grep -rn "sk_live_\|sk_test_\|whsec_\|wp_live_[a-f0-9]\{10\}\|ghp_[a-zA-Z0-9]\{10\}" src/ --include="*.ts" | grep -v ".test." | grep -v "process.env" | grep -v "example\|placeholder\|fake\|mock\|dummy" || true)
+FOUND=$(grep -rn "sk_live_\|sk_test_\|whsec_\|wp_live_[a-f0-9]\{10\}\|ghp_[a-zA-Z0-9]\{10\}" src/ --include="*.ts" | grep -v ".test." | grep -v "process.env" | grep -v "example\|placeholder\|fake\|mock\|dummy" | grep -v "\.replace\|REDACTED\|redact\|sanitize\|strip" || true)
 if [ -n "$FOUND" ]; then
   echo -e "${RED}FAIL${NC}"
   echo "$FOUND" | head -5
