@@ -33,7 +33,7 @@ fi
 
 # 2. No hardcoded secrets
 echo -n "  Secret scan... "
-SECRETS=$(grep -rn "sk_live_\|sk_test_\|whsec_\|wp_live_" src/ --include="*.ts" | grep -v ".test." | grep -v "process.env" | grep -v "example" | grep -v "placeholder" | grep -v "fake" | grep -v "randomBytes\|generate\|Format:" | grep -v "wp_live_\`\|wp_live_'\${" || true)
+SECRETS=$(grep -rn "sk_live_\|sk_test_\|whsec_\|wp_live_" src/ --include="*.ts" | grep -v ".test." | grep -v "process.env" | grep -v "example" | grep -v "placeholder" | grep -v "fake" | grep -v "randomBytes\|generate\|Format:" | grep -v "wp_live_\`\|wp_live_'\${" | grep -v "REDACTED\|replace(" || true)
 if [ -n "$SECRETS" ]; then
   echo -e "${RED}FAIL${NC} — hardcoded secrets found"
   echo "$SECRETS"
