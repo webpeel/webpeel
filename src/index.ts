@@ -131,6 +131,8 @@ export { checkThreatFeeds, type ThreatFeedResult } from './core/threat-feeds.js'
 export { detectLanguageFromUrl, buildAcceptLanguageHeader } from './core/language-detect.js';
 export { localSearch, type LocalSearchOptions, type LocalSearchResult, type LocalSearchResponse } from './core/local-search.js';
 export { getBusinessIntel, type BusinessIntel } from './core/business-intel.js';
+export { CircuitBreaker, browserCircuitBreaker, type CircuitState } from './core/circuit-breaker.js';
+export { checkMemoryPressure } from './core/browser-pool.js';
 
 /**
  * Fetch and extract content from a URL

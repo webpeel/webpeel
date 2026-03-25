@@ -306,6 +306,27 @@ export async function applyStealthScripts(page: Page, languages?: string[]): Pro
   `);
 }
 
+// ── Memory pressure guard ─────────────────────────────────────────────────────
+
+const MEMORY_LIMIT_MB = 768; // Leave ~256MB headroom from 1024MB pod limit
+
+/**
+ * Check current process memory usage against the pod limit.
+ * Returns { ok: true } when safe to launch a new browser context.
+ * Returns { ok: false } when memory is too high — caller should skip browser rendering.
+ */
+export function checkMemoryPressure(): { ok: boolean; rss: number; heapUsed: number; limit: number } {
+  const mem = process.memoryUsage();
+  const rssMB = Math.round(mem.rss / 1024 / 1024);
+  const heapMB = Math.round(mem.heapUsed / 1024 / 1024);
+  return {
+    ok: rssMB < MEMORY_LIMIT_MB,
+    rss: rssMB,
+    heapUsed: heapMB,
+    limit: MEMORY_LIMIT_MB,
+  };
+}
+
 // ── Page pool constants & state ───────────────────────────────────────────────
 
 export const MAX_CONCURRENT_PAGES = 5;
@@ -430,6 +451,37 @@ export async function getBrowser(): Promise<Browser> {
       if (process.env.DEBUG) console.debug('[webpeel]', 'shared browser health check failed, recreating:', e instanceof Error ? e.message : e);
       sharedBrowser = null;
     }
+  }
+
+  // Memory guard: check pressure before launching a new browser instance
+  const memPressure = checkMemoryPressure();
+  if (!memPressure.ok) {
+    // High memory — attempt to free existing resources first
+    console.warn(
+      `[webpeel] Memory pressure detected (${memPressure.rss}MB RSS / ${memPressure.limit}MB limit). Cleaning up browser resources before launch.`,
+    );
+
+    // Close pooled pages to free memory
+    const pagesToClose = Array.from(pooledPages);
+    pooledPages.clear();
+    idlePagePool.length = 0;
+    pagePoolFillPromise = null;
+    await Promise.all(pagesToClose.map((page) => page.close().catch(() => {})));
+
+    // Close shared browser if it exists
+    if (sharedBrowser) {
+      await sharedBrowser.close().catch(() => {});
+      sharedBrowser = null;
+    }
+
+    // Re-check after cleanup
+    const memAfterCleanup = checkMemoryPressure();
+    if (!memAfterCleanup.ok) {
+      throw new Error(
+        `[webpeel] Memory still too high after cleanup (${memAfterCleanup.rss}MB / ${memAfterCleanup.limit}MB). Skipping browser rendering to avoid OOM.`,
+      );
+    }
+    console.log(`[webpeel] Memory freed: ${memPressure.rss}MB → ${memAfterCleanup.rss}MB. Proceeding with browser launch.`);
   }
 
   pooledPages.clear();

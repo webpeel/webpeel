@@ -12,7 +12,11 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { fetchCache, searchCache } from '../../core/fetch-cache.js';
+import { browserCircuitBreaker } from '../../core/circuit-breaker.js';
 import type pg from 'pg';
+
+// Memory threshold for readiness degradation (90% of 1GB pod limit)
+const MEMORY_READY_LIMIT_MB = 900;
 
 const startTime = Date.now();
 
@@ -40,12 +44,20 @@ export function createHealthRouter(pool?: pg.Pool | null): Router {
     const uptime = Math.floor((Date.now() - startTime) / 1000);
     const fetchStats = fetchCache.stats();
     const searchStats = searchCache.stats();
+    const mem = process.memoryUsage();
 
     res.json({
       status: 'healthy',
       version,
       uptime,
       timestamp: new Date().toISOString(),
+      memory: {
+        rss: Math.round(mem.rss / 1024 / 1024),
+        heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+        heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+        external: Math.round(mem.external / 1024 / 1024),
+      },
+      browser: browserCircuitBreaker.getState(),
       cache: {
         fetch: {
           size: fetchStats.size,
@@ -65,8 +77,18 @@ export function createHealthRouter(pool?: pg.Pool | null): Router {
   // Checks: database connectivity + queue (job table) reachability
   // ------------------------------------------------------------------
   router.get('/ready', async (_req: Request, res: Response) => {
-    const checks: Record<string, { ok: boolean; latencyMs?: number; error?: string }> = {};
+    const checks: Record<string, { ok: boolean; latencyMs?: number; error?: string; rss?: number }> = {};
     let allOk = true;
+
+    // --- Memory pressure check ---
+    const mem = process.memoryUsage();
+    const rssMB = Math.round(mem.rss / 1024 / 1024);
+    if (rssMB > MEMORY_READY_LIMIT_MB) {
+      checks.memory = { ok: false, rss: rssMB, error: `RSS ${rssMB}MB exceeds limit ${MEMORY_READY_LIMIT_MB}MB — pod under memory pressure` };
+      allOk = false;
+    } else {
+      checks.memory = { ok: true, rss: rssMB };
+    }
 
     // --- Database check ---
     if (pool) {

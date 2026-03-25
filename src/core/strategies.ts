@@ -13,6 +13,7 @@ import { resolveAndCache } from './dns-cache.js';
 import { BlockedError, NetworkError } from '../types.js';
 import { getWebshareProxyUrl } from './proxy-config.js';
 import { detectChallenge } from './challenge-detection.js';
+import { browserCircuitBreaker } from './circuit-breaker.js';
 import {
   getStrategyHooks,
   type StrategyResult,
@@ -405,6 +406,11 @@ async function fetchWithBrowserStrategy(
     languages,
   } = options;
 
+  // Check circuit breaker before attempting any browser launch
+  if (!browserCircuitBreaker.canExecute()) {
+    throw new Error('Browser circuit breaker OPEN — Chromium unavailable, using HTTP fallback');
+  }
+
   try {
     const result = await browserFetch(url, {
       userAgent,
@@ -433,12 +439,28 @@ async function fetchWithBrowserStrategy(
       languages,
     });
 
+    browserCircuitBreaker.recordSuccess();
     return {
       ...result,
       method: effectiveStealth ? 'stealth' : 'browser',
     };
   } catch (error) {
     if (isAbortError(error)) throw error;
+
+    // Trip the circuit breaker on infrastructure errors (not page-level errors)
+    const errMsg = (error as Error).message || '';
+    const isInfraError =
+      errMsg.includes('ERR_TUNNEL') ||
+      errMsg.includes('ECONNREFUSED') ||
+      errMsg.includes('browser has been closed') ||
+      errMsg.includes('Target closed') ||
+      errMsg.includes('Protocol error') ||
+      errMsg.includes('Session closed') ||
+      errMsg.includes('Browser.close') ||
+      errMsg.includes('crashed');
+    if (isInfraError) {
+      browserCircuitBreaker.recordFailure(error as Error);
+    }
 
     // If browser gets blocked, try stealth as fallback (unless already stealth)
     if (!effectiveStealth && error instanceof BlockedError) {
