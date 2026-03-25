@@ -463,7 +463,7 @@ async function fetchWithBrowserStrategy(
     }
 
     // If browser gets blocked, try stealth as fallback (unless already stealth)
-    if (!effectiveStealth && error instanceof BlockedError) {
+    if (!effectiveStealth && error instanceof BlockedError && browserCircuitBreaker.canExecute()) {
       const result = await browserFetch(url, {
         userAgent,
         waitMs,
@@ -491,7 +491,8 @@ async function fetchWithBrowserStrategy(
     // If Cloudflare detected, retry with extra wait time
     if (
       error instanceof NetworkError &&
-      error.message.toLowerCase().includes('cloudflare')
+      error.message.toLowerCase().includes('cloudflare') &&
+      browserCircuitBreaker.canExecute()
     ) {
       const result = await browserFetch(url, {
         userAgent,
@@ -517,7 +518,7 @@ async function fetchWithBrowserStrategy(
     }
 
     // If network error (HTTP/2 protocol, connection refused, etc.), try stealth as fallback
-    if (!effectiveStealth && error instanceof NetworkError) {
+    if (!effectiveStealth && error instanceof NetworkError && browserCircuitBreaker.canExecute()) {
       try {
         const result = await browserFetch(url, {
           userAgent,
