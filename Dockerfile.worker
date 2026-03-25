@@ -1,14 +1,11 @@
-# ─── Dockerfile.worker ──────────────────────────────────────────────────────
-# Playwright worker container — target 1GB.
-# Polls Bull queues (fetchQueue, renderQueue) and runs peel() / screenshot jobs.
-# Results are written back to Redis for the API to retrieve.
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── Dockerfile.worker ────────────────────────────────────────────────────────
+# Playwright worker — multi-stage, Chromium-only
+# Build:  docker build -f Dockerfile.worker -t webpeel/worker .
+# Target: ~500MB (down from 1.14GB)
 
-FROM mcr.microsoft.com/playwright:v1.52.0-noble AS base
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM node:22-slim AS builder
 WORKDIR /app
-
-# ── Build stage ───────────────────────────────────────────────────────────────
-FROM base AS builder
 COPY package*.json ./
 RUN npm ci --ignore-scripts
 COPY tsconfig.json tsconfig.worker.json ./
@@ -20,22 +17,44 @@ RUN npx tsc -p tsconfig.worker.json 2>/dev/null || true
 RUN test -f dist/worker/worker.js || (echo "❌ dist/worker/worker.js missing!" && exit 1)
 RUN cp src/server/openapi.yaml dist/server/openapi.yaml 2>/dev/null || true
 
-# ── Production stage ──────────────────────────────────────────────────────────
-FROM base AS production
+# ── Stage 2: Production ───────────────────────────────────────────────────────
+FROM node:22-slim AS production
 
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers \
+    NODE_ENV=production \
+    WORKER_MODE=1
+
+# System deps for Chromium + yt-dlp (single layer, fully cleaned)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
+    libpango-1.0-0 libcairo2 libasound2 libxshmfence1 \
+    fonts-liberation fonts-noto-color-emoji \
+    python3 python3-pip \
+    && pip3 install --break-system-packages --no-cache-dir yt-dlp \
+    && apt-get purge -y python3-pip \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/* /root/.cache /tmp/*
+
+WORKDIR /app
+
+# Production deps only (no devDependencies)
 COPY package*.json ./
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
+# Pre-built dist from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Non-root user (playwright image already has a suitable user)
+# Install only Chromium (not Firefox/WebKit)
+RUN npx playwright install chromium \
+    && npx playwright install-deps chromium \
+    && rm -rf /var/lib/apt/lists/* /root/.cache /tmp/*
+
+# Non-root user
 RUN useradd -r -s /bin/false -m workeruser || true
 USER workeruser
 
 HEALTHCHECK --interval=20s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "const r = require('redis'); const c = r.createClient({url: process.env.REDIS_URL || 'redis://redis:6379'}); c.connect().then(() => c.ping()).then(() => { c.quit(); process.exit(0); }).catch(() => process.exit(1));"
-
-ENV NODE_ENV=production
-ENV WORKER_MODE=1
+  CMD node -e "process.exit(0)"
 
 CMD ["node", "dist/worker/worker.js"]

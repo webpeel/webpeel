@@ -1,47 +1,55 @@
 # syntax=docker/dockerfile:1
-# WebPeel API Server — Built from source (no npm CDN dependency)
+# WebPeel API Server — Multi-stage build for minimal production image
 # Build:  docker build -f Dockerfile.api -t webpeel/api .
 # Run:    docker run -p 3000:3000 -e DATABASE_URL=... webpeel/api
+# Target: ~400MB (down from 936MB)
 
-FROM node:22-slim
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM node:22-slim AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build
 
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
+# ── Stage 2: Production ───────────────────────────────────────────────────────
+FROM node:22-slim AS production
+
 LABEL org.opencontainers.image.description="WebPeel API Server" \
       org.opencontainers.image.source="https://github.com/webpeel/webpeel"
 
-# Shared Playwright browser path
-ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers \
+    NODE_ENV=production
 
-# Install system deps needed by Chromium
+# System deps for Chromium + yt-dlp (single layer, fully cleaned)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
     libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
     libpango-1.0-0 libcairo2 libasound2 libxshmfence1 \
     fonts-liberation fonts-noto-color-emoji curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install yt-dlp for YouTube transcript extraction
-RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip && \
-    pip3 install --break-system-packages yt-dlp && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    python3 python3-pip \
+    && pip3 install --break-system-packages --no-cache-dir yt-dlp \
+    && apt-get purge -y python3-pip \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/* /root/.cache /tmp/*
 
 WORKDIR /app
 
-# Copy package files first (layer cache: only re-installs if deps change)
+# Production deps only (no devDependencies)
 COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
-# Install dependencies from source (not from npm registry)
-RUN npm ci --omit=dev
+# Pre-built dist from builder stage
+COPY --from=builder /app/dist ./dist
 
-# Copy pre-built dist (TypeScript already compiled locally / in CI)
-COPY dist ./dist
+# Copy openapi.yaml into dist where app.ts expects it
+COPY src/server/openapi.yaml dist/server/openapi.yaml
 
-# Install Playwright browser
+# Install Playwright Chromium only (not Firefox/WebKit)
 RUN npx playwright install chromium \
-    && apt-get update \
     && npx playwright install-deps chromium \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /root/.cache /tmp/*
 
 # Non-root user
 RUN groupadd -r webpeel && useradd -r -g webpeel webpeel \
