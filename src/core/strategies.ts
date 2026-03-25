@@ -460,11 +460,15 @@ async function fetchWithBrowserStrategy(
       errMsg.includes('Browser.close') ||
       errMsg.includes('crashed');
     if (isInfraError) {
-      browserCircuitBreaker.recordFailure(error as Error);
       // ERR_TUNNEL specifically means proxy is dead (402 bandwidth, connection refused)
-      // Disable proxy for 5 minutes so subsequent requests go direct instead of failing
+      // Disable proxy for 5 minutes so subsequent requests go direct instead of failing.
+      // Don't trip the circuit breaker for proxy-only failures — the browser itself is fine,
+      // it just needs to run without a proxy.
       if (errMsg.includes('ERR_TUNNEL')) {
         markProxyExhausted('ERR_TUNNEL_CONNECTION_FAILED — proxy bandwidth likely exhausted');
+        // Don't count this as a browser infrastructure failure
+      } else {
+        browserCircuitBreaker.recordFailure(error as Error);
       }
     }
 
