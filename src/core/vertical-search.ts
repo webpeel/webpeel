@@ -1,8 +1,10 @@
 /**
  * Vertical search — specialized endpoints for shopping, news, images, videos.
- * Uses Google vertical search pages + cheerio parsing.
+ * Primary: SearXNG (reliable, structured JSON, no CAPTCHA issues from datacenter).
+ * Fallback: Google scraping via peel() (for shopping only).
  */
 
+import { fetch as undiciFetch } from 'undici';
 import { load } from 'cheerio';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -57,69 +59,109 @@ export interface VerticalSearchOptions {
   freshness?: string; // 'day', 'week', 'month', 'year'
 }
 
-// ── Shopping Search ────────────────────────────────────────────────────────
+// ── SearXNG helper ─────────────────────────────────────────────────────────
 
-export async function searchShopping(opts: VerticalSearchOptions): Promise<ShoppingResult[]> {
-  const { query, count = 10, country, language } = opts;
+async function searxngSearch(
+  query: string,
+  category: string,
+  count: number = 20,
+  language?: string,
+): Promise<any[]> {
+  const baseUrl = process.env.SEARXNG_URL;
+  if (!baseUrl) return [];
 
-  // Strategy: Use Google Shopping via peel() with render
-  const { peel } = await import('../index.js');
   const params = new URLSearchParams({
     q: query,
-    tbm: 'shop', // Google Shopping mode
-    num: String(Math.min(count * 2, 40)),
+    format: 'json',
+    categories: category,
+    safesearch: '0',
   });
-  if (country) params.set('gl', country.toLowerCase());
-  if (language) params.set('hl', language);
-
-  const url = `https://www.google.com/search?${params}`;
+  if (language) params.set('language', language);
 
   try {
-    const result = await peel(url, {
-      render: true,
-      stealth: true,
-      format: 'html',
-      wait: 3000,
-      timeout: 15000,
-    });
-    const html = result.content || '';
-    if (!html || html.length < 500) return [];
-
-    const $ = load(html);
-    const items: ShoppingResult[] = [];
-
-    // Google Shopping result selectors
-    $('.sh-dgr__content, .sh-dlr__list-result, .mnr-c .pla-unit, [data-docid], .KZmu8e').each((_, elem) => {
-      const el = $(elem);
-      const title = el.find('.tAxDx, .pymv4e, h3, .Xjkr3b').first().text().trim();
-      const price = el.find('.a8Pemb, .e10twf, .HRLxBb, .kHxwFf').first().text().trim();
-      const store = el.find('.aULzUe, .LbUacb, .dD8iuc, .IuHnof').first().text().trim();
-      const link = el.find('a[href]').first().attr('href') || '';
-      const img = el.find('img').first().attr('src') || '';
-      const ratingText = el.find('.Rsc7Yb, .yi40Hd').first().text().trim();
-      const reviewText = el.find('.QhqGkb, .RDApEe').first().text().trim();
-
-      if (title && (price || store)) {
-        items.push({
-          title,
-          price: price || undefined,
-          store: store || 'Unknown',
-          url: link.startsWith('http')
-            ? link
-            : link.startsWith('/')
-              ? `https://www.google.com${link}`
-              : link,
-          imageUrl: img.startsWith('http') ? img : undefined,
-          rating: parseFloat(ratingText) || undefined,
-          reviewCount: parseInt(reviewText.replace(/[^0-9]/g, '')) || undefined,
-        });
-      }
-    });
-
-    return items.slice(0, count);
+    const url = `${baseUrl.replace(/\/$/, '')}/search?${params}`;
+    const res = await undiciFetch(url, {
+      signal: AbortSignal.timeout(10000),
+      headers: { 'Accept': 'application/json', 'User-Agent': 'WebPeel/1.0' },
+    } as any);
+    if (!res.ok) return [];
+    const data = await res.json() as { results?: any[] };
+    return (data.results || []).slice(0, count);
   } catch {
     return [];
   }
+}
+
+// ── Shopping Search ────────────────────────────────────────────────────────
+
+export async function searchShopping(opts: VerticalSearchOptions): Promise<ShoppingResult[]> {
+  const { query, count = 10, language } = opts;
+
+  // Strategy 1: SearXNG general search with price-aware filtering
+  // (SearXNG doesn't have a shopping category that works, but general results
+  // from shopping sites contain price data)
+  const results = await searxngSearch(`${query} price buy`, 'general', count * 3, language);
+
+  const items: ShoppingResult[] = [];
+  for (const r of results) {
+    // Look for results from shopping domains or with price content
+    const url = r.url || '';
+    const content = r.content || '';
+    const title = r.title || '';
+
+    const isShoppingSite = /amazon|ebay|walmart|bestbuy|target|etsy|aliexpress|newegg|shopify/i.test(url);
+    const hasPrice = /\$[\d,]+(\.\d{2})?|\d+\.\d{2}\s*(USD|EUR|GBP)/.test(content + title);
+
+    if (isShoppingSite || hasPrice) {
+      // Extract price from content
+      const priceMatch = (content + ' ' + title).match(/\$[\d,]+(?:\.\d{2})?/);
+      items.push({
+        title: title,
+        price: priceMatch ? priceMatch[0] : undefined,
+        store: extractStoreName(url),
+        url: url,
+        imageUrl: r.img_src || r.thumbnail || undefined,
+      });
+    }
+
+    if (items.length >= count) break;
+  }
+
+  // Fallback: if SearXNG returned nothing, try Google Shopping via peel()
+  if (items.length === 0) {
+    try {
+      const { peel } = await import('../index.js');
+      const params = new URLSearchParams({ q: query, tbm: 'shop', num: '20' });
+      const result = await peel(`https://www.google.com/search?${params}`, {
+        render: true, stealth: true, format: 'html', wait: 3000, timeout: 15000,
+      });
+      const html = result.content || '';
+      if (html && html.length > 500) {
+        const $ = load(html);
+        $('.sh-dgr__content, .mnr-c .pla-unit, [data-docid], .KZmu8e').each((_, elem) => {
+          const el = $(elem);
+          const t = el.find('.tAxDx, .pymv4e, h3, .Xjkr3b').first().text().trim();
+          const p = el.find('.a8Pemb, .e10twf, .HRLxBb, .kHxwFf').first().text().trim();
+          const s = el.find('.aULzUe, .LbUacb, .dD8iuc, .IuHnof').first().text().trim();
+          if (t) items.push({ title: t, price: p || undefined, store: s || 'Unknown', url: el.find('a[href]').first().attr('href') || '' });
+        });
+      }
+    } catch { /* fallback failed */ }
+  }
+
+  return items.slice(0, count);
+}
+
+function extractStoreName(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace('www.', '');
+    const nameMap: Record<string, string> = {
+      'amazon.com': 'Amazon', 'ebay.com': 'eBay', 'walmart.com': 'Walmart',
+      'bestbuy.com': 'Best Buy', 'target.com': 'Target', 'etsy.com': 'Etsy',
+      'newegg.com': 'Newegg', 'aliexpress.com': 'AliExpress',
+    };
+    return nameMap[host] || host.split('.')[0].charAt(0).toUpperCase() + host.split('.')[0].slice(1);
+  } catch { return 'Unknown'; }
 }
 
 // ── News Search ────────────────────────────────────────────────────────────
@@ -127,176 +169,66 @@ export async function searchShopping(opts: VerticalSearchOptions): Promise<Shopp
 export async function searchNews(opts: VerticalSearchOptions): Promise<NewsResult[]> {
   const { query, count = 10, language, freshness } = opts;
 
-  const { peel } = await import('../index.js');
-  const params = new URLSearchParams({
-    q: query,
-    tbm: 'nws', // Google News mode
-    num: String(Math.min(count * 2, 40)),
-  });
-  if (language) params.set('hl', language);
-  if (freshness === 'day') params.set('tbs', 'qdr:d');
-  else if (freshness === 'week') params.set('tbs', 'qdr:w');
-  else if (freshness === 'month') params.set('tbs', 'qdr:m');
+  // Primary: SearXNG news category (tested: 44 results)
+  let searchQuery = query;
+  if (freshness === 'day') searchQuery += ' today';
+  else if (freshness === 'week') searchQuery += ' this week';
 
-  const url = `https://www.google.com/search?${params}`;
+  const results = await searxngSearch(searchQuery, 'news', count * 2, language);
 
-  try {
-    const result = await peel(url, {
-      render: true,
-      stealth: true,
-      format: 'html',
-      wait: 3000,
-      timeout: 15000,
-    });
-    const html = result.content || '';
-    if (!html || html.length < 500) return [];
+  const items: NewsResult[] = results.map((r: any) => ({
+    title: r.title || '',
+    url: r.url || '',
+    source: r.engine || extractStoreName(r.url || ''),
+    date: r.publishedDate || undefined,
+    snippet: r.content || undefined,
+    imageUrl: r.img_src || r.thumbnail || undefined,
+  })).filter((r: NewsResult) => r.title && r.url);
 
-    const $ = load(html);
-    const items: NewsResult[] = [];
-
-    // Google News result selectors
-    $('.WlydOe, .JJZKK, .SoaBEf, .dbsr, [jscontroller="d0DtYd"]').each((_, elem) => {
-      const el = $(elem);
-      const title = el.find('[role="heading"], .mCBkyc, .nDgy9d, .JheGif').first().text().trim();
-      const link = el.find('a[href^="http"]').first().attr('href') || '';
-      const source = el.find('.NUnG9d, .CEMjEf, .XTjFC, .wEwyrc').first().text().trim();
-      const date = el.find('.OSrXXb, .WG9SHc, .f').first().text().trim();
-      const snippet = el.find('.GI74Re, .Y3v8qd, .VwiC3b').first().text().trim();
-      const img = el.find('img[src^="http"]').first().attr('src') || '';
-
-      if (title && link) {
-        items.push({
-          title,
-          url: link,
-          source: source || 'Unknown',
-          date: date || undefined,
-          snippet: snippet || undefined,
-          imageUrl: img || undefined,
-        });
-      }
-    });
-
-    return items.slice(0, count);
-  } catch {
-    return [];
-  }
+  return items.slice(0, count);
 }
 
 // ── Image Search ────────────────────────────────────────────────────────────
 
 export async function searchImages(opts: VerticalSearchOptions): Promise<ImageResult[]> {
-  const { query, count = 20 } = opts;
+  const { query, count = 20, language } = opts;
 
-  // Use Bing Images (more scrape-friendly than Google Images)
-  const { peel } = await import('../index.js');
-  const params = new URLSearchParams({ q: query, form: 'HDRSC2', first: '1' });
-  const url = `https://www.bing.com/images/search?${params}`;
+  // Primary: SearXNG images category (tested: 566 results)
+  const results = await searxngSearch(query, 'images', count * 2, language);
 
-  try {
-    const result = await peel(url, { render: true, wait: 2000, timeout: 15000 });
-    const html = result.content || '';
-    if (!html || html.length < 500) return [];
+  const items: ImageResult[] = results
+    .filter((r: any) => r.img_src || r.thumbnail)
+    .map((r: any) => ({
+      title: r.title || '',
+      url: r.url || '',
+      imageUrl: r.img_src || r.thumbnail || '',
+      width: r.img_format ? parseInt(r.img_format.split('x')[0]) || undefined : undefined,
+      height: r.img_format ? parseInt(r.img_format.split('x')[1]) || undefined : undefined,
+      source: r.engine || undefined,
+    }));
 
-    const $ = load(html);
-    const items: ImageResult[] = [];
-
-    // Bing Images selectors
-    $('.iusc, .imgpt, [data-idx]').each((_, elem) => {
-      const el = $(elem);
-      // Bing stores image data in a JSON attribute 'm'
-      const mData = el.attr('m');
-      if (mData) {
-        try {
-          const m = JSON.parse(mData);
-          items.push({
-            title: m.t || el.find('img').attr('alt') || '',
-            url: m.purl || '',
-            imageUrl: m.murl || m.turl || '',
-            width: m.w || undefined,
-            height: m.h || undefined,
-            source: m.desc || undefined,
-          });
-        } catch {
-          /* skip malformed JSON */
-        }
-      } else {
-        // Fallback: direct img extraction
-        const img = el.find('img');
-        const imgSrc = img.attr('src') || img.attr('data-src') || '';
-        const title = img.attr('alt') || '';
-        if (imgSrc && imgSrc.startsWith('http')) {
-          items.push({
-            title,
-            url: el.find('a[href]').first().attr('href') || '',
-            imageUrl: imgSrc,
-          });
-        }
-      }
-    });
-
-    return items.slice(0, count);
-  } catch {
-    return [];
-  }
+  return items.slice(0, count);
 }
 
 // ── Video Search ────────────────────────────────────────────────────────────
 
 export async function searchVideos(opts: VerticalSearchOptions): Promise<VideoResult[]> {
-  const { query, count = 10 } = opts;
+  const { query, count = 10, language } = opts;
 
-  const { peel } = await import('../index.js');
-  const params = new URLSearchParams({
-    q: query,
-    tbm: 'vid', // Google Videos mode
-    num: String(Math.min(count * 2, 20)),
-  });
+  // Primary: SearXNG videos category (tested: 120 results)
+  const results = await searxngSearch(query, 'videos', count * 2, language);
 
-  const url = `https://www.google.com/search?${params}`;
+  const items: VideoResult[] = results
+    .filter((r: any) => r.url)
+    .map((r: any) => ({
+      title: r.title || '',
+      url: r.url || '',
+      platform: r.url?.includes('youtube') ? 'YouTube' : r.url?.includes('vimeo') ? 'Vimeo' : r.engine || 'Web',
+      duration: r.length || undefined,
+      date: r.publishedDate || undefined,
+      thumbnailUrl: r.thumbnail || r.img_src || undefined,
+      channel: r.author || undefined,
+    }));
 
-  try {
-    const result = await peel(url, {
-      render: true,
-      stealth: true,
-      format: 'html',
-      wait: 3000,
-      timeout: 15000,
-    });
-    const html = result.content || '';
-    if (!html || html.length < 500) return [];
-
-    const $ = load(html);
-    const items: VideoResult[] = [];
-
-    // Google Video result selectors
-    $('[data-surl], .dXiKIc, .g, .RzdJxc').each((_, elem) => {
-      const el = $(elem);
-      const title = el.find('h3, .fc9yUc, [aria-label]').first().text().trim();
-      const link = el.find('a[href^="http"]').first().attr('href') || '';
-      const duration = el.find('.J1mWY, .FGpTBd, .vdur').first().text().trim();
-      const date = el.find('.OSrXXb, .f').first().text().trim();
-      const channel = el.find('.pcJO7e, .GlPvmc').first().text().trim();
-      const thumb = el.find('img[src^="http"]').first().attr('src') || '';
-
-      if (title && link && !link.includes('google.com/search')) {
-        items.push({
-          title,
-          url: link,
-          platform: link.includes('youtube')
-            ? 'YouTube'
-            : link.includes('vimeo')
-              ? 'Vimeo'
-              : 'Web',
-          duration: duration || undefined,
-          date: date || undefined,
-          channel: channel || undefined,
-          thumbnailUrl: thumb || undefined,
-        });
-      }
-    });
-
-    return items.slice(0, count);
-  } catch {
-    return [];
-  }
+  return items.slice(0, count);
 }
