@@ -90,28 +90,44 @@ export class PostgresAuthStore implements AuthStore {
    * Safe to call on every startup — all statements use IF NOT EXISTS / IF EXISTS.
    */
   private async ensureSchema(): Promise<void> {
-    await this.pool.query(`
-      ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS scope VARCHAR(20) NOT NULL DEFAULT 'full';
-    `);
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS shared_reads (
-        id VARCHAR(12) PRIMARY KEY,
-        url TEXT NOT NULL,
-        title TEXT,
-        content TEXT NOT NULL,
-        tokens INTEGER,
-        created_by TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '30 days',
-        view_count INTEGER DEFAULT 0
-      );
-    `);
-    await this.pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_shared_reads_url ON shared_reads(url);
-    `);
-    await this.pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_shared_reads_created_by ON shared_reads(created_by);
-    `);
+    // ── Auto-fix schema mismatches on startup ──────────────────────────────
+    // These run as idempotent ALTER/CREATE IF NOT EXISTS so they're safe to
+    // run every boot. Prevents "column X does not exist" crashes after migrations.
+    const fixes = [
+      // api_keys
+      `ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS scope VARCHAR(20) NOT NULL DEFAULT 'full'`,
+      // weekly_usage
+      `ALTER TABLE weekly_usage ADD COLUMN IF NOT EXISTS rollover_credits INTEGER DEFAULT 0`,
+      // burst_usage
+      `DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='burst_usage' AND column_name='hour') THEN ALTER TABLE burst_usage RENAME COLUMN hour TO hour_bucket; END IF; END $$`,
+      `ALTER TABLE burst_usage ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now()`,
+      // usage_logs
+      `ALTER TABLE usage_logs ADD COLUMN IF NOT EXISTS processing_time_ms INTEGER`,
+      // oauth_accounts — ensure provider_id exists (not provider_account_id)
+      `DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='oauth_accounts' AND column_name='provider_account_id') THEN ALTER TABLE oauth_accounts RENAME COLUMN provider_account_id TO provider_id; END IF; END $$`,
+      // refresh_tokens — token_hash should be nullable (code uses id as JWT identifier)
+      `ALTER TABLE refresh_tokens ALTER COLUMN token_hash DROP NOT NULL`,
+      // users — ensure name/avatar columns exist
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`,
+      // shared_reads
+      `CREATE TABLE IF NOT EXISTS shared_reads (
+        id VARCHAR(12) PRIMARY KEY, url TEXT NOT NULL, title TEXT, content TEXT NOT NULL,
+        tokens INTEGER, created_by TEXT, created_at TIMESTAMPTZ DEFAULT NOW(),
+        expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '30 days', view_count INTEGER DEFAULT 0
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_shared_reads_url ON shared_reads(url)`,
+      `CREATE INDEX IF NOT EXISTS idx_shared_reads_created_by ON shared_reads(created_by)`,
+    ];
+
+    for (const sql of fixes) {
+      try {
+        await this.pool.query(sql);
+      } catch (err) {
+        // Log but don't crash — individual fixes may fail on older schemas
+        console.warn('[webpeel] Schema fix warning:', (err as Error).message?.slice(0, 100));
+      }
+    }
   }
 
   /**
