@@ -12,8 +12,17 @@
  */
 
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import type { Pool as PgPool } from 'pg';
 
+// ── Resend (primary — sends from noreply@webpeel.dev) ─────────────────────
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
+}
+
+// ── Nodemailer (fallback — Gmail SMTP) ────────────────────────────────────
 function createTransport() {
   const host = process.env.EMAIL_SMTP_HOST;
   const user = process.env.EMAIL_SMTP_USER;
@@ -31,6 +40,53 @@ function createTransport() {
   });
 }
 
+/**
+ * Send an email via Resend (primary) or Nodemailer (fallback).
+ * Returns true if sent successfully.
+ */
+async function sendEmail(options: { to: string; subject: string; html: string }): Promise<boolean> {
+  const fromAddress = process.env.EMAIL_FROM || 'noreply@webpeel.dev';
+  const fromName = 'WebPeel';
+
+  // Try Resend first (proper From address, no Gmail override)
+  const resend = getResend();
+  if (resend) {
+    try {
+      await resend.emails.send({
+        from: `${fromName} <${fromAddress}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      });
+      console.log(`[email] Sent via Resend to: ${options.to}`);
+      return true;
+    } catch (err) {
+      console.warn('[email] Resend failed, trying Nodemailer fallback:', (err as Error).message);
+    }
+  }
+
+  // Fallback to Nodemailer/SMTP
+  const transport = createTransport();
+  if (transport) {
+    try {
+      const smtpFrom = process.env.EMAIL_SMTP_USER || fromAddress;
+      await transport.sendMail({
+        from: `${fromName} <${smtpFrom}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      });
+      console.log(`[email] Sent via SMTP to: ${options.to}`);
+      return true;
+    } catch (err) {
+      console.error('[email] SMTP send failed:', (err as Error).message);
+    }
+  }
+
+  console.warn('[email] No email provider configured (set RESEND_API_KEY or EMAIL_SMTP_*)');
+  return false;
+}
+
 export interface UsageAlertEmailParams {
   toEmail: string;
   userName?: string;
@@ -41,27 +97,12 @@ export interface UsageAlertEmailParams {
 }
 
 export async function sendUsageAlertEmail(params: UsageAlertEmailParams): Promise<boolean> {
-  const transport = createTransport();
-  if (!transport) {
-    console.warn('[email] SMTP not configured. Set EMAIL_SMTP_HOST, EMAIL_SMTP_USER, EMAIL_SMTP_PASS to enable email alerts.');
-    return false;
-  }
-
-  const from = process.env.EMAIL_FROM || process.env.EMAIL_SMTP_USER;
   const html = buildUsageAlertHtml(params);
-
-  try {
-    await transport.sendMail({
-      from: `WebPeel <${from}>`,
-      to: params.toEmail,
-      subject: `WebPeel: You've used ${params.usagePercent}% of your weekly API limit`,
-      html,
-    });
-    return true;
-  } catch (err) {
-    console.error('[email] Failed to send usage alert:', err);
-    return false;
-  }
+  return sendEmail({
+    to: params.toEmail,
+    subject: `WebPeel: You've used ${params.usagePercent}% of your weekly API limit`,
+    html,
+  });
 }
 
 function buildUsageAlertHtml(params: UsageAlertEmailParams): string {
@@ -223,20 +264,9 @@ export async function checkAndSendDualAlert(
  * Send password reset email with a secure reset link.
  */
 export async function sendPasswordResetEmail(toEmail: string, resetUrl: string): Promise<boolean> {
-  const transport = createTransport();
-  if (!transport) {
-    console.warn('[email] SMTP not configured. Password reset email not sent to:', toEmail);
-    console.warn('[email] Reset URL:', resetUrl); // Log so admin can manually share
-    return false;
-  }
-
-  const from = process.env.EMAIL_FROM || process.env.EMAIL_SMTP_USER;
-
-  try {
-    await transport.sendMail({
-      from: `WebPeel <${from}>`,
-      to: toEmail,
-      subject: 'Reset your WebPeel password',
+  const result = await sendEmail({
+    to: toEmail,
+    subject: 'Reset your WebPeel password',
       html: `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f6f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
@@ -309,11 +339,10 @@ export async function sendPasswordResetEmail(toEmail: string, resetUrl: string):
 </td></tr>
 </table>
 </body></html>`,
-    });
-    console.log('[email] Password reset email sent to:', toEmail);
-    return true;
-  } catch (err) {
-    console.error('[email] Failed to send password reset email:', err);
-    return false;
+  });
+  if (!result) {
+    console.warn('[email] Password reset email not sent to:', toEmail);
+    console.warn('[email] Reset URL:', resetUrl);
   }
+  return result;
 }
