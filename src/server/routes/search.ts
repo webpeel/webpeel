@@ -16,6 +16,13 @@ import {
   type SearchProviderId,
   type WebSearchResult,
 } from '../../core/search-provider.js';
+import { BaiduSearchProvider, YandexSearchProvider } from '../../core/search-engines.js';
+import {
+  searchShopping,
+  searchNews as searchNewsVertical,
+  searchImages as searchImagesVertical,
+  searchVideos,
+} from '../../core/vertical-search.js';
 import type { GoogleSerpResult } from '../../core/google-serp-parser.js';
 import { getSourceCredibility } from '../../core/source-credibility.js';
 import { checkAndSendDualAlert } from '../email-service.js';
@@ -95,7 +102,7 @@ export function createSearchRouter(authStore: AuthStore): Router {
 
       // --- Search provider (new: BYOK Brave support) ---
       const providerParam = (req.query.provider as string || '').toLowerCase() || 'auto';
-      const validProviders: SearchProviderId[] = ['duckduckgo', 'brave', 'stealth', 'google'];
+      const validProviders: SearchProviderId[] = ['duckduckgo', 'brave', 'stealth', 'google', 'baidu', 'yandex'];
       const providerId: SearchProviderId | 'auto' = validProviders.includes(providerParam as SearchProviderId)
         ? (providerParam as SearchProviderId)
         : providerParam === 'auto' ? 'auto' : 'duckduckgo';
@@ -237,6 +244,12 @@ export function createSearchRouter(authStore: AuthStore): Router {
           const best = getBestSearchProvider();
           searchProvider = best.provider;
           effectiveApiKey = searchApiKey || best.apiKey;
+        } else if (providerId === 'baidu') {
+          searchProvider = new BaiduSearchProvider();
+          effectiveApiKey = undefined;
+        } else if (providerId === 'yandex') {
+          searchProvider = new YandexSearchProvider();
+          effectiveApiKey = undefined;
         } else {
           searchProvider = getSearchProvider(providerId);
           effectiveApiKey = searchApiKey || undefined;
@@ -567,6 +580,145 @@ export function createSearchRouter(authStore: AuthStore): Router {
         },
         requestId: req.requestId,
       });
+    }
+  });
+
+  // ── GET /v1/search/shopping ──────────────────────────────────────────────
+  router.get('/v1/search/shopping', async (req: Request, res: Response) => {
+    const authId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+    if (!authId) {
+      res.status(401).json({ success: false, error: { type: 'authentication_required', message: 'API key required.' } });
+      return;
+    }
+    const { q, count, country, language } = req.query;
+    if (!q || typeof q !== 'string') {
+      res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing required "q" parameter.' } });
+      return;
+    }
+    const resultCount = count ? Math.min(Math.max(parseInt(count as string, 10) || 10, 1), 40) : 10;
+    const startTime = Date.now();
+    try {
+      const results = await searchShopping({
+        query: q,
+        count: resultCount,
+        country: country as string | undefined,
+        language: language as string | undefined,
+      });
+      const elapsed = Date.now() - startTime;
+      const pgStore = authStore as any;
+      if (req.auth?.keyInfo?.key && typeof pgStore.trackUsage === 'function') {
+        await pgStore.trackUsage(req.auth.keyInfo.key, 'search').catch(() => {});
+      }
+      res.setHeader('X-Credits-Used', '1');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.json({ success: true, data: { results, query: q, count: results.length, elapsed } });
+    } catch (err) {
+      console.error('[search/shopping] error:', err);
+      res.status(500).json({ success: false, error: { type: 'search_failed', message: 'Shopping search failed.' } });
+    }
+  });
+
+  // ── GET /v1/search/news ──────────────────────────────────────────────────
+  router.get('/v1/search/news', async (req: Request, res: Response) => {
+    const authId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+    if (!authId) {
+      res.status(401).json({ success: false, error: { type: 'authentication_required', message: 'API key required.' } });
+      return;
+    }
+    const { q, count, language, freshness } = req.query;
+    if (!q || typeof q !== 'string') {
+      res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing required "q" parameter.' } });
+      return;
+    }
+    const resultCount = count ? Math.min(Math.max(parseInt(count as string, 10) || 10, 1), 40) : 10;
+    const startTime = Date.now();
+    try {
+      const results = await searchNewsVertical({
+        query: q,
+        count: resultCount,
+        language: language as string | undefined,
+        freshness: freshness as string | undefined,
+      });
+      const elapsed = Date.now() - startTime;
+      const pgStore = authStore as any;
+      if (req.auth?.keyInfo?.key && typeof pgStore.trackUsage === 'function') {
+        await pgStore.trackUsage(req.auth.keyInfo.key, 'search').catch(() => {});
+      }
+      res.setHeader('X-Credits-Used', '1');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.json({ success: true, data: { results, query: q, count: results.length, elapsed } });
+    } catch (err) {
+      console.error('[search/news] error:', err);
+      res.status(500).json({ success: false, error: { type: 'search_failed', message: 'News search failed.' } });
+    }
+  });
+
+  // ── GET /v1/search/images ────────────────────────────────────────────────
+  router.get('/v1/search/images', async (req: Request, res: Response) => {
+    const authId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+    if (!authId) {
+      res.status(401).json({ success: false, error: { type: 'authentication_required', message: 'API key required.' } });
+      return;
+    }
+    const { q, count, country, language } = req.query;
+    if (!q || typeof q !== 'string') {
+      res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing required "q" parameter.' } });
+      return;
+    }
+    const resultCount = count ? Math.min(Math.max(parseInt(count as string, 10) || 20, 1), 50) : 20;
+    const startTime = Date.now();
+    try {
+      const results = await searchImagesVertical({
+        query: q,
+        count: resultCount,
+        country: country as string | undefined,
+        language: language as string | undefined,
+      });
+      const elapsed = Date.now() - startTime;
+      const pgStore = authStore as any;
+      if (req.auth?.keyInfo?.key && typeof pgStore.trackUsage === 'function') {
+        await pgStore.trackUsage(req.auth.keyInfo.key, 'search').catch(() => {});
+      }
+      res.setHeader('X-Credits-Used', '1');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.json({ success: true, data: { results, query: q, count: results.length, elapsed } });
+    } catch (err) {
+      console.error('[search/images] error:', err);
+      res.status(500).json({ success: false, error: { type: 'search_failed', message: 'Image search failed.' } });
+    }
+  });
+
+  // ── GET /v1/search/videos ────────────────────────────────────────────────
+  router.get('/v1/search/videos', async (req: Request, res: Response) => {
+    const authId = req.auth?.keyInfo?.accountId || (req as any).user?.userId;
+    if (!authId) {
+      res.status(401).json({ success: false, error: { type: 'authentication_required', message: 'API key required.' } });
+      return;
+    }
+    const { q, count, language } = req.query;
+    if (!q || typeof q !== 'string') {
+      res.status(400).json({ success: false, error: { type: 'invalid_request', message: 'Missing required "q" parameter.' } });
+      return;
+    }
+    const resultCount = count ? Math.min(Math.max(parseInt(count as string, 10) || 10, 1), 20) : 10;
+    const startTime = Date.now();
+    try {
+      const results = await searchVideos({
+        query: q,
+        count: resultCount,
+        language: language as string | undefined,
+      });
+      const elapsed = Date.now() - startTime;
+      const pgStore = authStore as any;
+      if (req.auth?.keyInfo?.key && typeof pgStore.trackUsage === 'function') {
+        await pgStore.trackUsage(req.auth.keyInfo.key, 'search').catch(() => {});
+      }
+      res.setHeader('X-Credits-Used', '1');
+      res.setHeader('X-Processing-Time', elapsed.toString());
+      res.json({ success: true, data: { results, query: q, count: results.length, elapsed } });
+    } catch (err) {
+      console.error('[search/videos] error:', err);
+      res.status(500).json({ success: false, error: { type: 'search_failed', message: 'Video search failed.' } });
     }
   });
 

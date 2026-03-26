@@ -22,7 +22,7 @@ import { searchViaSearXNG } from './searxng-provider.js';
 
 const log = createLogger('search');
 
-export type SearchProviderId = 'duckduckgo' | 'brave' | 'stealth' | 'google';
+export type SearchProviderId = 'duckduckgo' | 'brave' | 'stealth' | 'google' | 'baidu' | 'yandex';
 
 export interface WebSearchResult {
   title: string;
@@ -1725,6 +1725,9 @@ export function getSearchProvider(id: SearchProviderId | undefined): SearchProvi
   if (id === 'brave') return new BraveSearchProvider();
   if (id === 'stealth') return new StealthSearchProvider();
   if (id === 'google') return new GoogleSearchProvider();
+  // 'baidu' and 'yandex' are handled by BaiduSearchProvider / YandexSearchProvider
+  // from './search-engines.js'. They cannot be imported here (circular dependency).
+  // Use search-engines.ts directly for these providers.
 
   // Exhaustive fallback (should be unreachable due to typing)
   return new DuckDuckGoProvider();

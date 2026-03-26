@@ -43,6 +43,7 @@ export {
   type WebSearchResult,
   type WebSearchOptions,
 } from './core/search-provider.js';
+export { BaiduSearchProvider, YandexSearchProvider } from './core/search-engines.js';
 export {
   answerQuestion,
   type AnswerRequest,
@@ -134,6 +135,8 @@ export { localSearch, type LocalSearchOptions, type LocalSearchResult, type Loca
 export { getBusinessIntel, type BusinessIntel } from './core/business-intel.js';
 export { CircuitBreaker, browserCircuitBreaker, type CircuitState } from './core/circuit-breaker.js';
 export { checkMemoryPressure } from './core/browser-pool.js';
+export { searchShopping, searchNews, searchImages, searchVideos } from './core/vertical-search.js';
+export type { ShoppingResult, NewsResult, ImageResult, VideoResult, VerticalSearchOptions } from './core/vertical-search.js';
 
 /**
  * Fetch and extract content from a URL
