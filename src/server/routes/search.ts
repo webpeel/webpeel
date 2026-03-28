@@ -182,9 +182,30 @@ export function createSearchRouter(authStore: AuthStore): Router {
       // --- Search provider (new: BYOK Brave support) ---
       const providerParam = (req.query.provider as string || '').toLowerCase() || 'auto';
       const validProviders: SearchProviderId[] = ['duckduckgo', 'brave', 'stealth', 'google', 'baidu', 'yandex', 'naver', 'yahoo_japan'];
-      const providerId: SearchProviderId | 'auto' = validProviders.includes(providerParam as SearchProviderId)
+      let providerId: SearchProviderId | 'auto' = validProviders.includes(providerParam as SearchProviderId)
         ? (providerParam as SearchProviderId)
         : providerParam === 'auto' ? 'auto' : 'duckduckgo';
+
+      // --- Auto-geo-routing: when provider=auto, detect language/region and pick best engine ---
+      const acceptLang = (req.headers['accept-language'] || '').toLowerCase();
+      const langParam = ((req.query.language as string) || '').toLowerCase();
+      let geoRoutedProvider: string | null = null;
+
+      if (providerId === 'auto') {
+        if (langParam.startsWith('zh') || acceptLang.startsWith('zh')) {
+          providerId = 'baidu';
+          geoRoutedProvider = 'baidu';
+        } else if (langParam.startsWith('ja') || acceptLang.startsWith('ja')) {
+          providerId = 'yahoo_japan';
+          geoRoutedProvider = 'yahoo_japan';
+        } else if (langParam.startsWith('ko') || acceptLang.startsWith('ko')) {
+          providerId = 'naver';
+          geoRoutedProvider = 'naver';
+        } else if (langParam.startsWith('ru') || acceptLang.startsWith('ru')) {
+          providerId = 'yandex';
+          geoRoutedProvider = 'yandex';
+        }
+      }
 
       // API key: query param, header, or empty
       const searchApiKey =
@@ -755,6 +776,9 @@ export function createSearchRouter(authStore: AuthStore): Router {
       res.setHeader('X-Processing-Time', elapsed.toString());
       res.setHeader('X-Fetch-Type', 'search');
       res.setHeader('Cache-Control', 'no-store');  // Never cache search results — they must be fresh
+      if (geoRoutedProvider) {
+        res.setHeader('X-Geo-Provider', geoRoutedProvider);
+      }
 
       res.json({
         success: true,

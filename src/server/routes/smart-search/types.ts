@@ -2,6 +2,8 @@ export interface SearchIntent {
   type: 'cars' | 'flights' | 'hotels' | 'rental' | 'restaurants' | 'products' | 'general';
   query: string;
   params: Record<string, string>;
+  /** Suggested domain sources for this intent — hints for result boosting, not filtering */
+  suggestedDomains?: string[];
 }
 
 export interface SmartSearchResult {
@@ -21,4 +23,10 @@ export interface SmartSearchResult {
   sources?: Array<{ title: string; url: string; domain: string }>;
   timing?: { searchMs: number; peelMs: number; llmMs: number };
   mapUrl?: string;
+  safety?: {
+    verified: boolean;
+    promptInjectionsBlocked: number;
+    maliciousPatternsStripped: number;
+    sourcesChecked: number;
+  };
 }

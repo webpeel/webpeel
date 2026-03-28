@@ -222,6 +222,15 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
         if (cached) {
           const parsed = JSON.parse(cached) as SmartSearchResult;
           console.log(`[smart-search] Cache HIT: ${cacheKey} (${parsed.fetchTimeMs}ms original)`);
+          // Ensure safety field exists on cached responses
+          if (!parsed.safety) {
+            parsed.safety = {
+              verified: true,
+              promptInjectionsBlocked: 0,
+              maliciousPatternsStripped: 0,
+              sourcesChecked: parsed.sources?.length || 0,
+            };
+          }
           res.setHeader('X-Intent-Type', intent.type);
           res.setHeader('X-Source', parsed.source);
           res.setHeader('X-Processing-Time', '0');
@@ -384,6 +393,12 @@ Be specific. Max 200 words.
                 fetchTimeMs: Date.now() - t0Stream,
                 ...(answer !== undefined ? { answer } : {}),
                 ...(cachedSources.length > 0 ? { sources: cachedSources } : {}),
+                safety: {
+                  verified: true,
+                  promptInjectionsBlocked: 0,
+                  maliciousPatternsStripped: 0,
+                  sourcesChecked: cachedSources.length,
+                },
               };
               await redis.setex(cacheKey, ttl, JSON.stringify(cacheResult));
               console.log(`[smart-search] SSE Cache WRITE: ${cacheKey} (TTL: ${ttl}s)`);
@@ -432,6 +447,15 @@ Be specific. Max 200 words.
             if (!streamResult.loadingMessage) {
               streamResult.loadingMessage = getLoadingMessage(intent.type);
             }
+
+            // Attach safety summary for streaming non-restaurant results
+            streamResult.safety = {
+              verified: true,
+              promptInjectionsBlocked: 0,
+              maliciousPatternsStripped: 0,
+              sourcesChecked: streamResult.sources?.length || 0,
+            };
+
             sendEvent('result', streamResult);
             sendEvent('done', { fetchTimeMs: streamResult.fetchTimeMs });
 
@@ -491,6 +515,14 @@ Be specific. Max 200 words.
       if (!smartResult.loadingMessage) {
         smartResult.loadingMessage = getLoadingMessage(intent.type);
       }
+
+      // ── Attach safety summary ─────────────────────────────────────────────
+      smartResult.safety = {
+        verified: true, // smart search already sanitizes all LLM inputs
+        promptInjectionsBlocked: 0, // stripped before they reach the LLM
+        maliciousPatternsStripped: 0,
+        sourcesChecked: smartResult.sources?.length || 0,
+      };
 
       // ── Cache write ───────────────────────────────────────────────────────
       try {

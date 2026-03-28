@@ -4,6 +4,7 @@ import {
   type WebSearchResult,
 } from '../../../../core/search-provider.js';
 import { getSourceCredibility } from '../../../../core/source-credibility.js';
+import { splitIntoBlocks, scoreBM25 } from '../../../../core/bm25-filter.js';
 import type { SmartSearchResult } from '../types.js';
 import { callLLMQuick, sanitizeSearchQuery, PROMPT_INJECTION_DEFENSE } from '../llm.js';
 
@@ -175,12 +176,12 @@ export async function handleGeneralSearch(query: string): Promise<SmartSearchRes
     })
     .map((r, i) => ({ ...r, rank: i + 1 })) as any[];
 
-  // Enrich top 5 results — 6s timeout so LLM has more to work with
+  // Enrich top 8 results — BM25 highlights keep token budget tight
   const tPeel = Date.now();
-  const top5 = results.slice(0, 5);
-  console.log(`[smart-search] handleGeneralSearch: enriching ${top5.length} pages via peel`);
+  const topResults = results.slice(0, 8);
+  console.log(`[smart-search] handleGeneralSearch: enriching ${topResults.length} pages via peel`);
   const enriched = await Promise.allSettled(
-    top5.map(async (r) => {
+    topResults.map(async (r) => {
       try {
         const peeled = await peel(r.url, { timeout: 4000, maxTokens: 2000 });
         return {
@@ -366,22 +367,46 @@ export async function handleGeneralSearch(query: string): Promise<SmartSearchRes
   // Only call LLM if at least one page was successfully peeled
   if (anyPeelSucceeded) {
     try {
-      // Build numbered source content for the LLM
+      // Build numbered source content for the LLM using BM25 highlights
+      // Extract only query-relevant passages instead of raw truncation
+      const queryTerms = query.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(t => t.length > 1);
       const sourceContent = enriched
         .map((s, i) => {
           if (s.status !== 'fulfilled' || !(s.value as any).content) return null;
           const v = s.value as any;
           // Include structured data if available
           const structuredInfo = v.structured ? `\nKey data: ${JSON.stringify(v.structured).substring(0, 300)}` : '';
-          return `[${i + 1}] ${v.title}\nURL: ${v.url}${structuredInfo}\n\n${v.content?.substring(0, 1500) || ''}`;
+
+          // Use BM25 to extract only the most relevant passages (800 chars max)
+          let highlight = '';
+          if (v.content) {
+            const blocks = splitIntoBlocks(v.content);
+            const scores = scoreBM25(blocks, queryTerms);
+            // Pair blocks with scores and sort by relevance
+            const scored = blocks.map((b: { raw: string; index: number }, idx: number) => ({ raw: b.raw, score: scores[idx] }));
+            scored.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
+            // Take top blocks until 800 chars total
+            let charBudget = 800;
+            const topPassages: string[] = [];
+            for (const block of scored) {
+              if (charBudget <= 0) break;
+              if (block.score <= 0 && topPassages.length > 0) break; // skip zero-score blocks if we have content
+              const text = block.raw.substring(0, charBudget);
+              topPassages.push(text);
+              charBudget -= text.length;
+            }
+            highlight = topPassages.join('\n\n');
+          }
+
+          return `[${i + 1}] ${v.title}\nURL: ${v.url}${structuredInfo}\n\n${highlight}`;
         })
         .filter(Boolean)
         .join('\n\n---\n\n');
 
       const systemPrompt = `${PROMPT_INJECTION_DEFENSE}Answer the query using these sources. Be specific with names, numbers, dates, and prices. Bold key facts. Cite sources inline as [1], [2], [3] etc. At the end, list Sources with their URLs. If sources disagree, note the difference.${isEquipmentRental ? ' IMPORTANT: Include specific rental prices/rates per day or week if available in the sources. Mention the cheapest option.' : ''}${isServiceBusiness ? ' IMPORTANT: Include business hours, phone numbers, and whether they are open now.' : ''}${isGasStation ? ' IMPORTANT: Include gas prices per gallon if available. Mention the cheapest station, its address, and current price. Sort by price.' : ''}${isTravelBooking ? ' IMPORTANT: List specific prices per person for different cruise lines/options. Format as a comparison: cruise line, ship name, duration, departure port, price. Sort cheapest first. Include dates if available.' : ''} Max 200 words.`;
 
-      // Truncate source content to 1500 chars total for better quality answers
-      const truncatedSources = sourceContent.substring(0, 1500);
+      // BM25 highlights are already lean (~800 chars/source) — allow more total for 8 sources
+      const truncatedSources = sourceContent.substring(0, 4000);
       const userMessage = `Query: ${sanitizeSearchQuery(query)}\n\nSources:\n${truncatedSources}`;
 
       const tLlm = Date.now();

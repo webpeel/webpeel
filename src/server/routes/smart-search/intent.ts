@@ -23,6 +23,38 @@ const METRO_ZIPS: Record<string, string> = {
   'raleigh': '27601', 'salt lake city': '84101',
 };
 
+/**
+ * Enrich a 'general' intent with suggested domain sources based on query content.
+ * These are hints for result boosting, not filtering.
+ */
+function addDomainSuggestions(intent: SearchIntent): SearchIntent {
+  if (intent.type !== 'general') return intent;
+  const q = intent.query;
+
+  // Financial queries
+  if (/\b(invest|stock|etf|bond|portfolio|dividend|earnings|Q[1-4]|quarterly|S&P|nasdaq|dow|crypto|bitcoin)\b/i.test(q)) {
+    intent.suggestedDomains = ['reuters.com', 'bloomberg.com', 'wsj.com', 'ft.com', 'finance.yahoo.com', 'seekingalpha.com', 'reddit.com/r/investing'];
+  }
+  // Medical/health queries
+  else if (/\b(health|medical|symptom|disease|treatment|medicine|doctor|hospital|drug|vaccine|diagnosis)\b/i.test(q)) {
+    intent.suggestedDomains = ['mayoclinic.org', 'webmd.com', 'nih.gov', 'cdc.gov', 'pubmed.ncbi.nlm.nih.gov', 'who.int'];
+  }
+  // Academic/research queries
+  else if (/\b(research|study|paper|academic|journal|thesis|peer.review|citation|scholar)\b/i.test(q)) {
+    intent.suggestedDomains = ['scholar.google.com', 'arxiv.org', 'pubmed.ncbi.nlm.nih.gov', 'jstor.org', 'researchgate.net'];
+  }
+  // Legal queries
+  else if (/\b(law|legal|court|attorney|lawyer|regulation|statute|precedent|case law)\b/i.test(q)) {
+    intent.suggestedDomains = ['law.cornell.edu', 'findlaw.com', 'justia.com', 'supremecourt.gov'];
+  }
+  // Tech/programming queries
+  else if (/\b(programming|code|developer|api|framework|library|npm|python|javascript|typescript|react|node)\b/i.test(q)) {
+    intent.suggestedDomains = ['stackoverflow.com', 'github.com', 'developer.mozilla.org', 'docs.python.org', 'npmjs.com'];
+  }
+
+  return intent;
+}
+
 export function detectSearchIntent(query: string): SearchIntent {
   const q = query.toLowerCase();
   const VEHICLE_WORDS = /\b(car|cars|vehicle|suv|sedan|truck|honda|toyota|tesla|bmw|ford|chevy|chevrolet|nissan|hyundai|kia|mazda|subaru|lexus|audi|mercedes|volkswagen|jeep|dodge|ram|buick|cadillac|gmc|chrysler|acura|infiniti|volvo|porsche|mini|fiat|mitsubishi)\b/;
@@ -67,22 +99,22 @@ export function detectSearchIntent(query: string): SearchIntent {
     return { type: 'restaurants', query: q, params: { location } };
   }
   if (/\b(compare|vs\.?|versus|which is better|difference between)\b/.test(q)) {
-    return { type: 'general', query: q, params: {} };
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
   }
   if (/\b(grocery|groceries|milk|eggs|bread|butter|cheese|chicken|beef|pork|fruit|vegetables|cereal|rice|pasta|snack|drink|soda|juice|water|organic|produce)\b/.test(q) && /\b(price|cheap|cheapest|buy|cost|near|where|compare)\b/.test(q)) {
     return { type: 'products', query: q, params: { isGrocery: 'true' } };
   }
   if ((/\b(near me|near\s+\w+|open now|open today|open on|what time|is .* open|hours|closest|nearest)\b/.test(q)) && (/\b(buy|where|store|shop)\b/.test(q) || /\b(near|close to|around)\b/.test(q))) {
-    return { type: 'general', query: q, params: {} };
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
   }
   if (/\b(plumber|electrician|mechanic|dentist|doctor|lawyer|accountant|therapist|tutor|cleaner|locksmith|handyman|contractor|vet|veterinarian|salon|barber|spa|gym|daycare|moving|storage)\b/.test(q) && /\b(near|in|around|open|best|cheap|emergency|24.hour)\b/.test(q)) {
-    return { type: 'general', query: q, params: {} };
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
   }
   if (/\b(cruise|vacation|resort|all.inclusive|getaway|tour|excursion|safari|honeymoon|spring break|summer trip|ski trip)\b/.test(q) && /\b(cheap|cheapest|price|deal|book|ticket|package|to|in)\b/.test(q)) {
-    return { type: 'general', query: q, params: {} };
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
   }
   if (/\b(disneyland|disney world|disney cruise|universal studios|six flags|legoland|seaworld|knott|cedar point|theme park|amusement park|water park)\b/.test(q) && /\b(ticket|tickets|pass|price|cheap|deal|cheapest)\b/.test(q)) {
-    return { type: 'general', query: q, params: {} };
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
   }
   if (
     (/\b(buy|shop|shopping|purchase|order|cheap|cheapest|best price|under \$|price|deal|discount|sale)\b/.test(q) && !/\b(near|near me|close to|around|open|store|where)\b/.test(q)) ||
@@ -90,7 +122,7 @@ export function detectSearchIntent(query: string): SearchIntent {
   ) {
     return { type: 'products', query: q, params: {} };
   }
-  return { type: 'general', query: q, params: {} };
+  return addDomainSuggestions({ type: 'general', query: q, params: {} });
 }
 
 export async function classifyIntentWithLLM(query: string): Promise<SearchIntent['type']> {
