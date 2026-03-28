@@ -156,30 +156,54 @@ export async function handleRestaurantSearch(intent: SearchIntent, requestLangua
   if (redditData?.thread) sources.push({ title: redditData.thread.title, url: redditData.thread.url, domain: 'reddit.com' });
   if (youtubeData?.videos[0]) sources.push({ title: youtubeData.videos[0].title, url: youtubeData.videos[0].url, domain: 'youtube.com' });
 
-  // ── AI Synthesis via Qwen/Ollama (optional) ───────────────────────────
-  // Build a Yelp-only summary first (fast, doesn't wait for Reddit)
-  // then enrich with Reddit/YouTube if they arrived
+  // ── AI Synthesis (uses Groq/OpenAI/Glama/Ollama — callLLMQuick picks best) ──
+  // Uses whichever data source returned results: Google Places OR Yelp
+  // NOTE: K8s OLLAMA_URL is port 11435 but Ollama runs on 11434 — fix in K8s secrets
   let answer: string | undefined;
-  const ollamaUrl = process.env.OLLAMA_URL;
 
-  if (ollamaUrl && yelpData && yelpData.businesses.length > 0) {
+  // Build restaurant lines from whichever source has data
+  const hasGoogleData = googlePlacesData && googlePlacesData.results?.length > 0;
+  const hasYelpData = yelpData && yelpData.businesses?.length > 0;
+
+  if (hasGoogleData || hasYelpData) {
     try {
-      const yelpLines = yelpData.businesses.slice(0, 3).map((b: any, i: number) => {
-        const openStatus = b.isClosed ? 'PERMANENTLY CLOSED' : (b.isOpenNow ? 'OPEN NOW' : 'Closed right now');
-        const txns = b.transactions?.length > 0 ? `Available: ${b.transactions.join(', ')}` : '';
-        const googleInfo = b.googleRating ? ` | Google: ⭐${b.googleRating} (${b.googleReviewCount} reviews)` : '';
-        return `[${i+1}] ${b.name} ⭐${b.rating} (${b.reviewCount?.toLocaleString()} reviews) ${b.price || ''} — ${b.address}
+      let restaurantLines: string;
+      let citations: string;
+
+      if (hasGoogleData) {
+        // Format Google Places results for LLM
+        const priceLevelStr = (lvl?: number) => lvl !== undefined ? '$'.repeat(Math.max(1, lvl)) : '';
+        restaurantLines = googlePlacesData!.results.slice(0, 3).map((b: any, i: number) => {
+          const openStatus = b.isOpen === true ? 'OPEN NOW' : (b.isOpen === false ? 'Closed right now' : 'hours unknown');
+          const hours = b.hours?.length > 0 ? b.hours[0] : 'not available';
+          const price = b.priceLevel !== undefined ? priceLevelStr(b.priceLevel) : '';
+          return `[${i+1}] ${b.name} ⭐${b.rating || '?'} (${(b.reviewCount || 0).toLocaleString()} reviews) ${price} — ${b.address || ''}
+   ${openStatus} | Today: ${hours} | Categories: ${b.categories || b.types?.join(', ') || ''}
+   URL: ${b.googleMapsUrl || 'google.com/maps'}`;
+        }).join('\n');
+        citations = googlePlacesData!.results.slice(0, 3).map((b: any, i: number) =>
+          `[${i+1}] ${b.googleMapsUrl || 'google.com/maps'}`
+        ).join('\n');
+      } else {
+        // Format Yelp results for LLM
+        restaurantLines = yelpData!.businesses.slice(0, 3).map((b: any, i: number) => {
+          const openStatus = b.isClosed ? 'PERMANENTLY CLOSED' : (b.isOpenNow ? 'OPEN NOW' : 'Closed right now');
+          const txns = b.transactions?.length > 0 ? `Available: ${b.transactions.join(', ')}` : '';
+          const googleInfo = b.googleRating ? ` | Google: ⭐${b.googleRating} (${b.googleReviewCount} reviews)` : '';
+          return `[${i+1}] ${b.name} ⭐${b.rating} (${b.reviewCount?.toLocaleString()} reviews) ${b.price || ''} — ${b.address}
    ${openStatus} | Today: ${b.todayHours || 'hours not available'} | ${txns} | Categories: ${b.categories || ''}${googleInfo}
    URL: ${b.url || ''}`;
-      }).join('\n');
-      const yelpCitations = yelpData.businesses.slice(0, 3).map((b: any, i: number) => `[${i+1}] ${b.url || 'yelp.com'}`).join('\n');
+        }).join('\n');
+        citations = yelpData!.businesses.slice(0, 3).map((b: any, i: number) => `[${i+1}] ${b.url || 'yelp.com'}`).join('\n');
+      }
+
       const redditHint = redditData?.otherThreads?.slice(0,2).map((t: any) => t.title).join('; ') || '';
       const systemPrompt = `${PROMPT_INJECTION_DEFENSE}Recommend top 3 restaurants. For each: name with inline citation [1][2][3], why it's good, open/closed status, hours.
 Cite sources inline using [1], [2], [3] notation matching the numbered sources. At the end, list Sources with their URLs.
 Be specific. Max 200 words.
 `;
-      const userMessage = `Query: ${sanitizeSearchQuery(intent.query)}\n\nTop restaurants:\n${yelpLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}\n\nSources:\n${yelpCitations}`;
-      const text = await callLLMQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 5000, temperature: 0.3 });
+      const userMessage = `Query: ${sanitizeSearchQuery(intent.query)}\n\nTop restaurants:\n${restaurantLines}${redditHint ? '\n\nReddit mentions: ' + redditHint : ''}\n\nSources:\n${citations}`;
+      const text = await callLLMQuick(`${systemPrompt}\n\n${userMessage}`, { maxTokens: 250, timeoutMs: 8000, temperature: 0.3 });
       if (text) answer = text;
     } catch (err) {
       console.warn('[restaurant-search] LLM synthesis failed (graceful fallback):', (err as Error).message);
