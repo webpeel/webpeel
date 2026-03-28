@@ -217,7 +217,7 @@ export async function handleProductSearch(intent: SearchIntent): Promise<SmartSe
     const aiPrompt = isCollectible
       ? `${PROMPT_INJECTION_DEFENSE}You are a collectibles price expert. The user wants: "${sanitizeSearchQuery(intent.query)}". Products found: ${productInfo}.${deepPriceInfo} Reddit says: ${redditSnippets || 'none'}. List the cheapest options with exact prices, condition (near mint/lightly played/etc), and which store. Be specific with dollar amounts. Max 200 words. Cite sources inline as [1], [2], [3].`
       : `${PROMPT_INJECTION_DEFENSE}You are a shopping advisor. The user wants: "${sanitizeSearchQuery(intent.query)}". Products found: ${productInfo}. Reddit says: ${redditSnippets || 'no reviews'}. ${listings.length > 0 ? 'Recommend the best value option. Mention the brand name, specific model, price, and store. Be specific.' : 'Give general buying advice with specific brand and model recommendations based on Reddit.'} Max 200 words. Cite sources inline as [1], [2], [3].`;
-    const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 5000, temperature: 0.4 });
+    const aiText = await callLLMQuick(aiPrompt, { maxTokens: 250, timeoutMs: 8000, temperature: 0.3 });
     if (aiText && aiText.length > 20) answer = aiText;
   } catch (err) {
     console.warn('[product-search] LLM synthesis failed (graceful fallback):', (err as Error).message);

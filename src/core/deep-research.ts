@@ -1086,8 +1086,12 @@ export async function runDeepResearch(req: DeepResearchRequest): Promise<DeepRes
           seenUrls.delete(normalizeUrl(s.result.url));
         }
       }
-      // Re-score without the discarded sources
-      lastQualityScore = scoreResearchQuality(allSources, question, gapResult);
+      // Re-score without the discarded sources and use as the authoritative score
+      const reScored = scoreResearchQuality(allSources, question, gapResult);
+      lastQualityScore = reScored;
+      qualityResult.score = reScored.score;
+      qualityResult.breakdown = reScored.breakdown;
+      qualityResult.suggestions = reScored.suggestions;
     }
 
     // Early termination: score >= 85 AND hasEnoughInfo → stop
