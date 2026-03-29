@@ -327,12 +327,27 @@
     // Render history on page load
     renderHistory();
 
+    var activeSearchId = 0;
+    var activeSearchController = null;
+
+    function isActiveSearch(searchId) {
+      return searchId === activeSearchId;
+    }
+
+    function abortActiveSearch() {
+      if (activeSearchController) {
+        try { activeSearchController.abort(); } catch (e) {}
+        activeSearchController = null;
+      }
+    }
+
     // Example button click handlers (safe, no inline onclick with data)
     container.querySelectorAll('.wp-example-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var query = btn.getAttribute('data-query');
-        document.getElementById('wp-search-input').value = query;
-        document.getElementById('wp-search-form').dispatchEvent(new Event('submit'));
+        var input = document.getElementById('wp-search-input');
+        if (input) input.value = query;
+        submitSearch(query);
       });
     });
 
@@ -530,6 +545,7 @@ var rawAnswer = smart.answer;
         var i = 0;
         return new Promise(function(resolve) {
           function next() {
+            if (!isActiveSearch(searchId)) { resolve(); return; }
             if (i >= words.length) { resolve(); return; }
             textEl.textContent += (i > 0 ? ' ' : '') + words[i];
             i++;
@@ -621,15 +637,15 @@ var rawAnswer = smart.answer;
       }
 
       // Render the full final HTML
+      if (!isActiveSearch(searchId)) return 'stale';
       var finalHTML = renderFinalHTML(finalSmart, collectedAnswer, elapsed);
       resultsDiv.innerHTML = finalHTML;
 
       return 'ok';
     }
 
-    document.getElementById('wp-search-form').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      var query = document.getElementById('wp-search-input').value.trim();
+    async function submitSearch(rawQuery) {
+      var query = String(rawQuery || '').trim();
       if (!query) return;
 
       var count = getSearchCount();
@@ -640,18 +656,29 @@ var rawAnswer = smart.answer;
         return;
       }
 
+      abortActiveSearch();
+      activeSearchId += 1;
+      var searchId = activeSearchId;
+      activeSearchController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var signal = activeSearchController ? activeSearchController.signal : undefined;
+
       incrementSearchCount();
       addToHistory(query);
       renderHistory();
+
       var resultsDiv = document.getElementById('wp-results');
+      if (!resultsDiv) return;
       resultsDiv.style.display = 'block';
+      document.getElementById('wp-signup-wall').style.display = 'none';
+      document.getElementById('wp-examples').style.display = 'flex';
 
       var startTime = Date.now();
 
       // ── SSE streaming path (modern browsers) ────────────────────────────
       if (typeof ReadableStream !== 'undefined') {
         try {
-          var streamStatus = await doSSESearch(query, resultsDiv, startTime);
+          var streamStatus = await doSSESearch(query, resultsDiv, startTime, signal, searchId);
+          if (streamStatus === 'stale') return;
           if (streamStatus === '429') {
             localStorage.setItem(SEARCH_COUNT_KEY, String(MAX_FREE_SEARCHES));
             document.getElementById('wp-results').style.display = 'none';
@@ -660,9 +687,12 @@ var rawAnswer = smart.answer;
           }
           return;
         } catch (streamErr) {
+          if (streamErr && (streamErr.name === 'AbortError' || !isActiveSearch(searchId))) return;
           // SSE failed — fall through to non-streaming path
         }
       }
+
+      if (!isActiveSearch(searchId)) return;
 
       // ── Non-streaming fallback ───────────────────────────────────────────
       resultsDiv.innerHTML = '\
@@ -677,6 +707,7 @@ var rawAnswer = smart.answer;
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ q: query }),
+          signal: signal,
         });
 
         if (!res.ok) {
@@ -690,16 +721,27 @@ var rawAnswer = smart.answer;
           throw new Error('HTTP ' + res.status);
         }
 
+        if (!isActiveSearch(searchId)) return;
         var data = await res.json();
+        if (!isActiveSearch(searchId)) return;
         var smart = data.data || data;
         var elapsed = Date.now() - startTime;
 
         resultsDiv.innerHTML = renderFinalHTML(smart, smart.answer || '', elapsed);
       } catch (err) {
+        if (err && (err.name === 'AbortError' || !isActiveSearch(searchId))) return;
         resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#f87171;font-size:13px;font-family:inherit;">'
           + 'Search failed. <a href="' + SIGNUP_URL + '" style="color:#818CF8;">Try the full app →</a>'
           + '</div>';
+      } finally {
+        if (isActiveSearch(searchId)) activeSearchController = null;
       }
+    }
+
+    document.getElementById('wp-search-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var input = document.getElementById('wp-search-input');
+      submitSearch(input ? input.value : '');
     });
   }
 
