@@ -565,8 +565,9 @@ async function main() {
   }
 
   if (filtered.length === 0) {
-    console.log(`${c.yellow}No test cases match category "${categoryFilter}"${c.reset}`);
-    process.exit(0);
+    console.log(`${c.red}No test cases match category "${categoryFilter}"${c.reset}`);
+    console.log(`${c.dim}Available categories: ${[...new Set(testCases.map(t => t.category))].join(', ')}, critical${c.reset}`);
+    process.exit(1);
   }
 
   console.log(`${c.bold}Running ${filtered.length} tests...${c.reset}\n`);
