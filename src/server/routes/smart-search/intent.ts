@@ -28,7 +28,6 @@ const METRO_ZIPS: Record<string, string> = {
  * These are hints for result boosting, not filtering.
  */
 function addDomainSuggestions(intent: SearchIntent): SearchIntent {
-  if (intent.type !== 'general') return intent;
   const q = intent.query;
 
   // Financial queries
@@ -97,6 +96,20 @@ export function detectSearchIntent(query: string): SearchIntent {
     const locMatch = q.match(/\b(?:in|near|around)\s+(.+?)(?:\s+(?:under|below|for|with|that|which).*)?$/i);
     const location = locMatch ? locMatch[1].trim() : '';
     return { type: 'restaurants', query: q, params: { location } };
+  }
+  // ── Domain-specific intent (financial, medical, academic, legal, tech) ──
+  // Must come BEFORE generic products check so "bitcoin price" → general+financial domains, not products
+  if (/\b(invest|stock|etf|bond|portfolio|dividend|earnings|Q[1-4]|quarterly|S&P|nasdaq|dow|crypto|bitcoin|ethereum|forex|treasury|yield|inflation|fed|interest rate|market cap|IPO|SEC)\b/i.test(q)) {
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
+  }
+  if (/\b(health|medical|symptom|disease|treatment|medicine|doctor|hospital|drug|vaccine|diagnosis)\b/i.test(q) && !/\b(near|in|around|open|best|cheap|emergency)\b/.test(q)) {
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
+  }
+  if (/\b(research|study|paper|academic|journal|thesis|peer.review|citation|scholar)\b/i.test(q)) {
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
+  }
+  if (/\b(law|legal|statute|regulation|court|ruling|amendment|constitutional|attorney|litigation)\b/i.test(q) && !/\b(near|in|around|best|cheap)\b/.test(q)) {
+    return addDomainSuggestions({ type: 'general', query: q, params: {} });
   }
   if (/\b(compare|vs\.?|versus|which is better|difference between)\b/.test(q)) {
     return addDomainSuggestions({ type: 'general', query: q, params: {} });

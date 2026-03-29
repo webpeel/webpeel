@@ -29,4 +29,6 @@ export interface SmartSearchResult {
     maliciousPatternsStripped: number;
     sourcesChecked: number;
   };
+  /** Suggested authoritative domains for this query (financial → reuters, etc.) */
+  suggestedDomains?: string[];
 }

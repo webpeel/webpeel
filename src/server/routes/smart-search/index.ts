@@ -231,6 +231,10 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
               sourcesChecked: parsed.sources?.length || 0,
             };
           }
+          // Attach suggestedDomains from intent
+          if (intent.suggestedDomains?.length) {
+            parsed.suggestedDomains = intent.suggestedDomains;
+          }
           res.setHeader('X-Intent-Type', intent.type);
           res.setHeader('X-Source', parsed.source);
           res.setHeader('X-Processing-Time', '0');
@@ -399,6 +403,7 @@ Be specific. Max 200 words.
                   maliciousPatternsStripped: 0,
                   sourcesChecked: cachedSources.length,
                 },
+                ...(intent.suggestedDomains?.length ? { suggestedDomains: intent.suggestedDomains } : {}),
               };
               await redis.setex(cacheKey, ttl, JSON.stringify(cacheResult));
               console.log(`[smart-search] SSE Cache WRITE: ${cacheKey} (TTL: ${ttl}s)`);
@@ -455,6 +460,10 @@ Be specific. Max 200 words.
               maliciousPatternsStripped: 0,
               sourcesChecked: streamResult.sources?.length || 0,
             };
+            // Attach suggestedDomains from intent
+            if (intent.suggestedDomains?.length) {
+              streamResult.suggestedDomains = intent.suggestedDomains;
+            }
 
             sendEvent('result', streamResult);
             sendEvent('done', { fetchTimeMs: streamResult.fetchTimeMs });
@@ -523,6 +532,10 @@ Be specific. Max 200 words.
         maliciousPatternsStripped: 0,
         sourcesChecked: smartResult.sources?.length || 0,
       };
+      // Attach suggestedDomains from intent
+      if (intent.suggestedDomains?.length) {
+        smartResult.suggestedDomains = intent.suggestedDomains;
+      }
 
       // ── Cache write ───────────────────────────────────────────────────────
       try {
