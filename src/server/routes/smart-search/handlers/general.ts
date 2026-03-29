@@ -249,7 +249,11 @@ export async function handleGeneralSearch(query: string): Promise<SmartSearchRes
   }
 
   const { provider: searchProvider } = getBestSearchProvider();
-  const rawResults: WebSearchResult[] = await searchProvider.searchWeb(query, { count: 10 });
+  // Transit queries already do focused booking-site searches below.
+  // Skip the broad generic web search here so we don't burn 20s+ before the useful path starts.
+  const rawResults: WebSearchResult[] = isTransitBooking
+    ? []
+    : await searchProvider.searchWeb(query, { count: 10 });
   const searchMs = Date.now() - t0;
 
   const getDomain = (url: string) => {
@@ -277,7 +281,7 @@ export async function handleGeneralSearch(query: string): Promise<SmartSearchRes
 
   // Enrich top 8 results — BM25 highlights keep token budget tight
   const tPeel = Date.now();
-  const topResults = results.slice(0, 8);
+  const topResults = isTransitBooking ? [] : results.slice(0, 8);
   console.log(`[smart-search] handleGeneralSearch: enriching ${topResults.length} pages via peel`);
   const enriched = await Promise.allSettled(
     topResults.map(async (r) => {
