@@ -4,8 +4,12 @@
 
 FROM node:22-slim
 
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 # Install Playwright system deps + Chromium for browser rendering
-RUN npx --yes playwright install --with-deps chromium
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && npx --yes playwright install --with-deps chromium
 
 WORKDIR /app
 

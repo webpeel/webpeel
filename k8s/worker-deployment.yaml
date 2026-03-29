@@ -22,6 +22,8 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
+        - name: NODE_EXTRA_CA_CERTS
+          value: "/etc/ssl/certs/ca-certificates.crt"
         - name: WORKER_MODE
           value: "1"
         - name: REDIS_URL
