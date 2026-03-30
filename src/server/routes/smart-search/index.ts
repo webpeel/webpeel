@@ -95,27 +95,19 @@ function getLoadingMessage(type: string): string {
 
 // ─── Router ────────────────────────────────────────────────────────────────
 
-// Log LLM provider at startup
+// Log LLM provider at startup (uses unified config from core)
 {
-  let _llmProvider: string;
-  let _llmModel: string;
-  if (process.env.OPENAI_API_KEY) {
-    _llmProvider = 'openai';
-    _llmModel = process.env.LLM_MODEL || 'gpt-4o-mini';
-  } else if (process.env.GLAMA_API_KEY) {
-    _llmProvider = 'glama';
-    _llmModel = process.env.LLM_MODEL || 'google-vertex/gemini-2.5-flash';
-  } else if (process.env.OPENROUTER_API_KEY) {
-    _llmProvider = 'openrouter';
-    _llmModel = process.env.LLM_MODEL || 'google/gemini-2.0-flash-exp:free';
-  } else if (process.env.OLLAMA_URL) {
-    _llmProvider = 'ollama';
-    _llmModel = process.env.OLLAMA_MODEL || 'qwen3:1.7b';
-  } else {
-    _llmProvider = 'none';
-    _llmModel = 'n/a';
-  }
-  console.log(`[smart-search] LLM provider: ${_llmProvider} (${_llmModel})`);
+  // Dynamic import to avoid top-level await issues
+  import('../../../core/llm-provider.js').then(({ getQuickLLMConfig }) => {
+    const cfg = getQuickLLMConfig();
+    const _llmProvider = cfg?.provider ?? 'none';
+    const _llmModel = cfg?.model ?? 'n/a';
+    const _baseUrl = (cfg as any)?.baseUrl;
+    const suffix = _baseUrl ? ` via ${_baseUrl}` : '';
+    console.log(`[smart-search] LLM provider: ${_llmProvider} (${_llmModel}${suffix})`);
+  }).catch(() => {
+    console.log('[smart-search] LLM provider: none (config load failed)');
+  });
 }
 
 export function createSmartSearchRouter(authStore: AuthStore): Router {

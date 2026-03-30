@@ -1,12 +1,14 @@
 /**
- * Unified LLM Provider Abstraction for Deep Research
+ * Unified LLM Provider Abstraction
  *
- * Supports 5 providers:
+ * Supports 7 providers:
  *   1. Cloudflare Workers AI (free default, with daily neuron cap)
- *   2. OpenAI (BYOK)
+ *   2. OpenAI (BYOK — also handles any OpenAI-compatible endpoint via baseUrl)
  *   3. Anthropic (BYOK)
  *   4. Google Gemini (BYOK)
  *   5. Ollama (local, OpenAI-compatible)
+ *   6. Cerebras (fast inference)
+ *   7. Any OpenAI-compatible gateway (Glama, OpenRouter, etc.) via provider='openai' + baseUrl
  */
 
 export type DeepResearchLLMProvider = 'cloudflare' | 'openai' | 'anthropic' | 'google' | 'ollama' | 'cerebras';
@@ -17,6 +19,16 @@ export interface LLMConfig {
   model?: string;
   /** For Ollama: base endpoint URL. Default: http://localhost:11434 */
   endpoint?: string;
+  /**
+   * Base URL for OpenAI-compatible APIs (Glama, OpenRouter, custom deployments).
+   * Only used when provider='openai'. Default: https://api.openai.com/v1
+   *
+   * Examples:
+   *   - 'https://glama.ai/api/gateway/openai/v1'
+   *   - 'https://openrouter.ai/api/v1'
+   *   - 'https://api.openai.com/v1'  (default)
+   */
+  baseUrl?: string;
 }
 
 export interface LLMMessage {
@@ -290,7 +302,9 @@ async function callOpenAI(
   const model = config.model || defaultModel('openai');
   const { messages, stream, onChunk, signal, maxTokens = 4096, temperature = 0.2 } = options;
 
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+  const base = (config.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+
+  const resp = await fetch(`${base}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -726,16 +740,27 @@ export async function callLLM(
 /**
  * Get the default LLM config based on available environment variables.
  *
- * Priority order: Anthropic → OpenAI → Google → Cerebras → Cloudflare (free tier fallback).
- * If no BYOK key and no Cloudflare credentials are configured, returns a cloudflare config
- * that will throw a clear error when callLLM is invoked (CLOUDFLARE_ACCOUNT_ID missing).
+ * Priority order (high-quality models first):
+ *   Anthropic → OpenAI → Google → Cerebras → Glama → OpenRouter
+ *   → Ollama → Cloudflare (free tier fallback).
+ *
+ * Glama/OpenRouter/custom OPENAI_BASE_URL are routed through the 'openai'
+ * provider with a custom `baseUrl`, so any OpenAI-compatible gateway works.
+ *
+ * If no BYOK key and no Cloudflare credentials are configured, returns a
+ * cloudflare config that will throw a clear error when callLLM is invoked.
  */
 export function getDefaultLLMConfig(): LLMConfig {
   if (process.env.ANTHROPIC_API_KEY) {
     return { provider: 'anthropic', apiKey: process.env.ANTHROPIC_API_KEY };
   }
   if (process.env.OPENAI_API_KEY) {
-    return { provider: 'openai', apiKey: process.env.OPENAI_API_KEY };
+    return {
+      provider: 'openai',
+      apiKey: process.env.OPENAI_API_KEY,
+      // Honor OPENAI_BASE_URL for Azure / custom deployments
+      ...(process.env.OPENAI_BASE_URL ? { baseUrl: process.env.OPENAI_BASE_URL } : {}),
+    };
   }
   if (process.env.GOOGLE_API_KEY) {
     return { provider: 'google', apiKey: process.env.GOOGLE_API_KEY };
@@ -743,8 +768,92 @@ export function getDefaultLLMConfig(): LLMConfig {
   if (process.env.CEREBRAS_API_KEY) {
     return { provider: 'cerebras', apiKey: process.env.CEREBRAS_API_KEY };
   }
+  // Glama (OpenAI-compatible gateway)
+  if (process.env.GLAMA_API_KEY) {
+    return {
+      provider: 'openai',
+      apiKey: process.env.GLAMA_API_KEY,
+      baseUrl: 'https://glama.ai/api/gateway/openai/v1',
+      model: process.env.LLM_MODEL || 'google-vertex/gemini-2.5-flash',
+    };
+  }
+  // OpenRouter (OpenAI-compatible gateway)
+  if (process.env.OPENROUTER_API_KEY) {
+    return {
+      provider: 'openai',
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseUrl: 'https://openrouter.ai/api/v1',
+      model: process.env.LLM_MODEL || 'google/gemini-2.0-flash-exp:free',
+    };
+  }
+  // Ollama (local)
+  if (process.env.OLLAMA_URL) {
+    return {
+      provider: 'ollama',
+      endpoint: process.env.OLLAMA_URL,
+      apiKey: process.env.OLLAMA_SECRET,
+      model: process.env.OLLAMA_MODEL,
+    };
+  }
   // Default: Cloudflare free tier (requires CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN at call time)
   return { provider: 'cloudflare' };
+}
+
+/**
+ * Get a fast/cheap LLM config suitable for quick classification & synthesis.
+ * Same priority as getDefaultLLMConfig but selects smaller models by default.
+ *
+ * Designed to replace ad-hoc provider detection in server routes.
+ * Returns null if no provider is configured.
+ */
+export function getQuickLLMConfig(): LLMConfig | null {
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      provider: 'openai',
+      apiKey: process.env.OPENAI_API_KEY,
+      model: process.env.LLM_MODEL || 'gpt-4o-mini',
+      ...(process.env.OPENAI_BASE_URL ? { baseUrl: process.env.OPENAI_BASE_URL } : {}),
+    };
+  }
+  if (process.env.GLAMA_API_KEY) {
+    return {
+      provider: 'openai',
+      apiKey: process.env.GLAMA_API_KEY,
+      baseUrl: 'https://glama.ai/api/gateway/openai/v1',
+      model: process.env.LLM_MODEL || 'google-vertex/gemini-2.5-flash',
+    };
+  }
+  if (process.env.OPENROUTER_API_KEY) {
+    return {
+      provider: 'openai',
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseUrl: 'https://openrouter.ai/api/v1',
+      model: process.env.LLM_MODEL || 'google/gemini-2.0-flash-exp:free',
+    };
+  }
+  if (process.env.OLLAMA_URL) {
+    return {
+      provider: 'ollama',
+      endpoint: process.env.OLLAMA_URL,
+      apiKey: process.env.OLLAMA_SECRET,
+      model: process.env.OLLAMA_MODEL || 'qwen3:1.7b',
+    };
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    return {
+      provider: 'anthropic',
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      model: 'claude-3-5-haiku-latest',
+    };
+  }
+  if (process.env.GOOGLE_API_KEY) {
+    return { provider: 'google', apiKey: process.env.GOOGLE_API_KEY, model: 'gemini-1.5-flash' };
+  }
+  if (process.env.CEREBRAS_API_KEY) {
+    return { provider: 'cerebras', apiKey: process.env.CEREBRAS_API_KEY };
+  }
+  // No provider available — callers should handle null gracefully
+  return null;
 }
 
 /** Type guard: check if a thrown value is a FreeTierLimitError */

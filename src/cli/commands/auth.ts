@@ -6,7 +6,7 @@ import type { Command } from 'commander';
 import { handleLogin, handleLogout, handleUsage, loadConfig, saveConfig } from '../../cli-auth.js';
 import { clearCache, cacheStats } from '../../cache.js';
 import { loginToProfile } from '../../core/profiles.js';
-import { cliVersion } from '../utils.js';
+// cliVersion moved to doctor.ts
 
 export function registerAuthCommands(program: Command): void {
 
@@ -171,96 +171,7 @@ export function registerAuthCommands(program: Command): void {
       }
     });
 
-  // ── doctor command ────────────────────────────────────────────────────────
-  program
-    .command('doctor')
-    .description('Diagnose WebPeel installation (API key, connectivity, fetch test)')
-    .action(async () => {
-      const cfg = loadConfig();
-      const apiKey = cfg.apiKey || process.env.WEBPEEL_API_KEY;
-      const apiUrl = process.env.WEBPEEL_API_URL || 'https://api.webpeel.dev';
-
-      console.log('WebPeel Doctor\n');
-      console.log(`Version:    ${cliVersion}`);
-      console.log(`API URL:    ${apiUrl}`);
-      console.log(`API Key:    ${apiKey ? apiKey.slice(0, 12) + '...' : '❌ Not configured'}`);
-
-      if (!apiKey) {
-        console.log('\n❌ No API key. Run: webpeel auth <your-key>');
-        console.log('   Get a free key at: https://app.webpeel.dev/keys');
-        process.exit(1);
-      }
-
-      // Check API connectivity
-      console.log('\nChecking API connectivity...');
-      try {
-        const healthRes = await fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(10000) });
-        const health = await healthRes.json() as any;
-        console.log(`API Health:  ✅ ${health.status || 'ok'} (uptime: ${Math.round((health.uptime || 0) / 60)}min)`);
-      } catch (err: any) {
-        console.log(`API Health:  ❌ Cannot reach ${apiUrl} (${err.message})`);
-      }
-
-      // Check API key validity
-      console.log('Checking API key...');
-      try {
-        const usageRes = await fetch(`${apiUrl}/v1/usage`, {
-          headers: { Authorization: `Bearer ${apiKey}` },
-          signal: AbortSignal.timeout(10000),
-        });
-        if (usageRes.ok) {
-          const usage = await usageRes.json() as any;
-          const plan = usage?.tier || (typeof usage?.plan === 'string' ? usage?.plan : usage?.plan?.tier) || 'free';
-          const used = usage?.used ?? usage?.totalRequests ?? usage?.weekly?.used ?? 0;
-          const limit = usage?.limit ?? usage?.weeklyLimit ?? usage?.weekly?.limit ?? 500;
-          console.log(`API Key:     ✅ Valid (${plan} plan, ${used}/${limit} used this week)`);
-        } else if (usageRes.status === 401) {
-          console.log('API Key:     ❌ Invalid or expired. Run: webpeel auth <new-key>');
-        } else {
-          console.log(`API Key:     ⚠️  Unexpected response (${usageRes.status})`);
-        }
-      } catch (err: any) {
-        console.log(`API Key:     ❌ Check failed (${err.message})`);
-      }
-
-      // Quick fetch test
-      console.log('Testing fetch...');
-      try {
-        const testRes = await fetch(`${apiUrl}/v1/fetch?url=https://example.com`, {
-          headers: { Authorization: `Bearer ${apiKey}` },
-          signal: AbortSignal.timeout(15000),
-        });
-        if (testRes.ok) {
-          const data = await testRes.json() as any;
-          console.log(`Fetch Test:  ✅ OK (${data.tokenCount || data.tokens || '?'} tokens, ${data.fetchTimeMs || data.elapsed || '?'}ms)`);
-        } else {
-          console.log(`Fetch Test:  ❌ Failed (${testRes.status})`);
-        }
-      } catch (err: any) {
-        console.log(`Fetch Test:  ❌ Failed (${err.message})`);
-      }
-
-      // Check YouTube
-      console.log('Testing YouTube...');
-      try {
-        const ytRes = await fetch(`${apiUrl}/v1/fetch?url=${encodeURIComponent('https://www.youtube.com/watch?v=dQw4w9WgXcQ')}`, {
-          headers: { Authorization: `Bearer ${apiKey}` },
-          signal: AbortSignal.timeout(15000),
-        });
-        if (ytRes.ok) {
-          const data = await ytRes.json() as any;
-          const hasContent = (data.content || '').length > 100;
-          console.log(`YouTube:     ${hasContent ? '✅' : '⚠️'} ${hasContent ? `Content extracted (${data.tokenCount || data.tokens || '?'} tokens)` : 'Content limited'}`);
-        } else {
-          console.log(`YouTube:     ⚠️  Response ${ytRes.status}`);
-        }
-      } catch (err: any) {
-        console.log(`YouTube:     ⚠️  ${err.message}`);
-      }
-
-      console.log('\n✅ WebPeel is ready to use!');
-      console.log('   Try: webpeel "https://news.ycombinator.com" --json');
-    });
+  // ── doctor command — moved to cli/commands/doctor.ts ────────────────────
 
   // ── login command ─────────────────────────────────────────────────────────
   // Two modes:

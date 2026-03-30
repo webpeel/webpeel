@@ -286,7 +286,10 @@ export async function handleGeneralSearch(query: string): Promise<SmartSearchRes
   const enriched = await Promise.allSettled(
     topResults.map(async (r) => {
       try {
-        const peeled = await peel(r.url, { timeout: 4000, maxTokens: 2000 });
+        // Use lite mode + noEscalate for speed: skip pruning, quality scoring,
+        // metadata extraction, and browser escalation.  We only need a rough
+        // markdown body for BM25 snippet extraction + LLM synthesis.
+        const peeled = await peel(r.url, { timeout: 4000, maxTokens: 2000, lite: true, noEscalate: true });
         return {
           url: r.url,
           content: peeled.content?.substring(0, 2000),

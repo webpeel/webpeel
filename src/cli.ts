@@ -46,6 +46,9 @@ import { registerScreenshotCommands } from './cli/commands/screenshot.js';
 import { registerJobsCommands } from './cli/commands/jobs.js';
 import { registerMonitorCommands } from './cli/commands/monitor.js';
 import { registerGuideCommand } from './cli/commands/guide.js';
+import { registerDoctorCommand } from './cli/commands/doctor.js';
+import { registerSetupCommand } from './cli/commands/setup.js';
+import { registerSkillCommand } from './cli/commands/skill.js';
 
 // ── Early silent/log-level detection (must happen before any async module code) ──
 // Set WEBPEEL_LOG_LEVEL early so logger checks see it when async IIFEs fire.
@@ -92,7 +95,11 @@ program.configureHelp({
 void checkForUpdates();
 
 // ── Register all command groups ───────────────────────────────────────────────
-registerFetchCommands(program);
+// Doctor, setup, and other subcommands must register BEFORE fetch,
+// because fetch registers a catch-all `[url]` default argument.
+registerDoctorCommand(program);
+registerSetupCommand(program);
+registerSkillCommand(program);
 registerSearchCommands(program);
 registerInteractCommands(program);
 registerAuthCommands(program);
@@ -100,6 +107,7 @@ registerScreenshotCommands(program);
 registerJobsCommands(program);
 registerMonitorCommands(program);
 registerGuideCommand(program);
+registerFetchCommands(program);
 
 // ── Parse ─────────────────────────────────────────────────────────────────────
 program.parse();

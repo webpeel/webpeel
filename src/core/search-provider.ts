@@ -406,6 +406,38 @@ export class StealthSearchProvider implements SearchProvider {
   readonly id: SearchProviderId = 'stealth';
   readonly requiresApiKey = false;
 
+  /**
+   * Short-TTL in-memory cache for search results.
+   * Key: normalised "query::count", Value: { results, ts }.
+   * Entries expire after SEARCH_CACHE_TTL_MS.  Avoids redundant browser scrapes
+   * when the same query is issued within a short window (e.g. transit outbound +
+   * general enrichment both searching similar terms).
+   */
+  private static readonly SEARCH_CACHE_TTL_MS = 90_000; // 90 seconds
+  private static readonly SEARCH_CACHE_MAX = 50;
+  private static searchCache = new Map<string, { results: WebSearchResult[]; ts: number }>();
+
+  private getCachedSearch(query: string, count: number): WebSearchResult[] | null {
+    const key = `${query.toLowerCase().trim()}::${count}`;
+    const entry = StealthSearchProvider.searchCache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.ts > StealthSearchProvider.SEARCH_CACHE_TTL_MS) {
+      StealthSearchProvider.searchCache.delete(key);
+      return null;
+    }
+    return entry.results;
+  }
+
+  private setCachedSearch(query: string, count: number, results: WebSearchResult[]): void {
+    const key = `${query.toLowerCase().trim()}::${count}`;
+    // Evict oldest entries if cache is full
+    if (StealthSearchProvider.searchCache.size >= StealthSearchProvider.SEARCH_CACHE_MAX) {
+      const oldest = StealthSearchProvider.searchCache.keys().next().value;
+      if (oldest) StealthSearchProvider.searchCache.delete(oldest);
+    }
+    StealthSearchProvider.searchCache.set(key, { results, ts: Date.now() });
+  }
+
   /** Validate and normalize a URL; returns null if invalid/non-http or a DDG ad URL */
   private validateUrl(rawUrl: string): string | null {
     try {
@@ -455,7 +487,10 @@ export class StealthSearchProvider implements SearchProvider {
         ),
       ]);
 
-      await page.waitForTimeout(3000);
+      // Wait for result selectors instead of a fixed 3s delay.
+      // The selector wait resolves as soon as content is painted; the 3s
+      // timeout is a safety net (same overall worst-case as before).
+      await page.waitForSelector('.result', { timeout: 3000 }).catch(() => {});
       const html = await page.content();
       if (!html) return [];
 
@@ -532,7 +567,8 @@ export class StealthSearchProvider implements SearchProvider {
         ),
       ]);
 
-      await page.waitForTimeout(2000);
+      // Wait for Bing result containers instead of a fixed 2s delay.
+      await page.waitForSelector('li.b_algo', { timeout: 2000 }).catch(() => {});
       const html = await page.content();
       if (!html) return [];
 
@@ -620,7 +656,8 @@ export class StealthSearchProvider implements SearchProvider {
         ),
       ]);
 
-      await page.waitForTimeout(2000);
+      // Wait for any of Ecosia's result container selectors instead of a fixed 2s delay.
+      await page.waitForSelector('article.result, .result, [data-test-id="result"]', { timeout: 2000 }).catch(() => {});
       const html = await page.content();
       if (!html) return [];
 
@@ -672,6 +709,13 @@ export class StealthSearchProvider implements SearchProvider {
   async searchWeb(query: string, options: WebSearchOptions): Promise<WebSearchResult[]> {
     const { count } = options;
 
+    // Check in-memory short-TTL cache first
+    const cached = this.getCachedSearch(query, count);
+    if (cached) {
+      log.info(`Stealth search cache HIT for "${query.substring(0, 40)}…" (${cached.length} results)`);
+      return cached;
+    }
+
     // Launch all three engines in parallel; ignore individual engine failures
     const [ddgOutcome, bingOutcome, ecosiaOutcome] = await Promise.allSettled([
       this.scrapeDDG(query, count, options),
@@ -700,7 +744,14 @@ export class StealthSearchProvider implements SearchProvider {
     // Relevance filtering: remove completely off-topic results, score the rest
     const filtered = filterRelevantResults(deduped, query);
     // Respect the original count limit after filtering
-    return filtered.slice(0, count);
+    const finalResults = filtered.slice(0, count);
+
+    // Store in short-TTL cache
+    if (finalResults.length > 0) {
+      this.setCachedSearch(query, count, finalResults);
+    }
+
+    return finalResults;
   }
 }
 
