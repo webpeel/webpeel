@@ -95,6 +95,10 @@ curl "https://api.webpeel.dev/v1/fetch?url=https://stripe.com/pricing" \
 
 ---
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/webpeel-webpeel).
+
 ## Why WebPeel
 
 ### 🧠 55+ Domain Extractors — Not Just HTML-to-Markdown
