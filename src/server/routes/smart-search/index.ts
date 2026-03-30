@@ -133,12 +133,12 @@ export function createSmartSearchRouter(authStore: AuthStore): Router {
             // Set 24-hour expiry on first request
             await redis.expire(anonKey, 86400);
           }
-          if (count > 10) {
+          if (count > 5) {
             res.status(429).json({
               success: false,
               error: {
                 type: 'anonymous_limit_exceeded',
-                message: 'Free search limit reached (3/day). Sign up for unlimited searches.',
+                message: 'Free search limit reached (5/day). Sign up for unlimited searches.',
                 signupUrl: 'https://app.webpeel.dev/signup',
               },
               requestId: req.requestId,

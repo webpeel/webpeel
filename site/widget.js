@@ -3,7 +3,7 @@
 
   const API_URL = 'https://api.webpeel.dev';
   const SIGNUP_URL = 'https://app.webpeel.dev/signup';
-  const MAX_FREE_SEARCHES = 20;
+  const MAX_FREE_SEARCHES = 5;
   const SEARCH_COUNT_KEY = 'wp_search_count';
   const HISTORY_KEY = 'wp_search_history';
 
@@ -346,7 +346,7 @@
         <div id="wp-signup-wall" style="display: none; text-align: center; padding: 40px 20px;\
              background: rgba(129,140,248,0.05); border: 1px solid rgba(129,140,248,0.2);\
              border-radius: 16px; margin-top: 20px;">\
-          <h3 style="color: #e4e4e7; font-size: 20px; margin: 0 0 8px; font-family: inherit;">You\'ve used your 20 free searches</h3>\
+          <h3 style="color: #e4e4e7; font-size: 20px; margin: 0 0 8px; font-family: inherit;">You\'ve used your 5 free searches</h3>\
           <p style="color: #a1a1aa; font-size: 14px; margin: 0 0 20px; font-family: inherit;">Sign up for free to get 500 searches/week + AI summaries</p>\
           <a href="' + SIGNUP_URL + '"\
             style="display: inline-block; padding: 12px 32px; background: #818CF8; color: white;\
@@ -473,8 +473,7 @@
       // ── AI Summary card ──────────────────────────────────────────────────
       var resolvedAnswer = answerText || smart.answer || '';
       if (resolvedAnswer) {
-        var safeAnswer = resolvedAnswer
-var rawAnswer = smart.answer;
+        var rawAnswer = resolvedAnswer;
         // Extract source URLs from Sources: section before stripping it
         var citationUrls = {};
         var sourcesMatch = rawAnswer.match(/Sources?:\s*\n([\s\S]*?)$/i);
@@ -582,7 +581,7 @@ var rawAnswer = smart.answer;
     }
 
     // ─── SSE streaming search ────────────────────────────────────────────────
-    async function doSSESearch(query, resultsDiv, startTime) {
+    async function doSSESearch(query, resultsDiv, startTime, signal, searchId) {
       // Show streaming skeleton immediately
       resultsDiv.innerHTML = '<style>'
         + '@keyframes wp-spin{to{transform:rotate(360deg)}}'
@@ -607,6 +606,7 @@ var rawAnswer = smart.answer;
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
         body: JSON.stringify({ q: query, stream: true }),
+        signal: signal,
       });
 
       if (!res.ok) {
@@ -614,6 +614,7 @@ var rawAnswer = smart.answer;
         throw new Error('HTTP ' + res.status);
       }
 
+      if (!res.body) throw new Error('Missing SSE response body');
       var reader = res.body.getReader();
       var decoder = new TextDecoder();
       var buffer = '';
