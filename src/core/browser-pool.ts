@@ -308,7 +308,7 @@ export async function applyStealthScripts(page: Page, languages?: string[]): Pro
 
 // ── Memory pressure guard ─────────────────────────────────────────────────────
 
-const MEMORY_LIMIT_MB = 768; // Leave ~256MB headroom from 1024MB pod limit
+const MEMORY_LIMIT_MB = parseInt(process.env.MEMORY_LIMIT_MB || '768', 10); // Env-tunable guardrail for production pods
 
 /**
  * Check current process memory usage against the pod limit.
@@ -329,8 +329,8 @@ export function checkMemoryPressure(): { ok: boolean; rss: number; heapUsed: num
 
 // ── Page pool constants & state ───────────────────────────────────────────────
 
-export const MAX_CONCURRENT_PAGES = 5;
-export const PAGE_POOL_SIZE = 3;
+export const MAX_CONCURRENT_PAGES = parseInt(process.env.MAX_CONCURRENT_PAGES || '5', 10);
+export const PAGE_POOL_SIZE = parseInt(process.env.PAGE_POOL_SIZE || '3', 10);
 
 let sharedBrowser: Browser | null = null;
 let sharedStealthBrowser: Browser | null = null;

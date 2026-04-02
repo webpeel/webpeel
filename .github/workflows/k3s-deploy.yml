@@ -145,6 +145,24 @@ jobs:
             kubectl set image deployment/api api=ghcr.io/webpeel/api:${VERSION} -n ${NS}
             kubectl set image deployment/worker worker=ghcr.io/webpeel/worker:${VERSION} -n ${NS}
 
+            # Production memory/concurrency guardrails
+            # Keep these here until the K8s manifests are fully reconciled with live state.
+            kubectl scale deployment/api --replicas=2 -n ${NS}
+            kubectl scale deployment/worker --replicas=2 -n ${NS}
+            kubectl set env deployment/api \
+              MEMORY_LIMIT_MB=640 \
+              MAX_CONCURRENT_PAGES=2 \
+              PAGE_POOL_SIZE=1 \
+              SMART_SEARCH_ENRICH_LIMIT=6 \
+              SMART_SEARCH_ENRICH_CONCURRENCY=3 \
+              -n ${NS}
+            kubectl set env deployment/worker \
+              WORKER_CONCURRENCY=1 \
+              MEMORY_LIMIT_MB=384 \
+              MAX_CONCURRENT_PAGES=1 \
+              PAGE_POOL_SIZE=0 \
+              -n ${NS}
+
             # Rolling restart
             kubectl rollout restart deployment/api -n ${NS}
             kubectl rollout restart deployment/worker -n ${NS}

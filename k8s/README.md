@@ -13,7 +13,7 @@
                       ┌─────────────────────────────┐
                       │     K3s on Hetzner CPX31    │
                       │                             │
-                   ┌──┤  API (3 replicas) :3000     │
+                   ┌──┤  API (2 replicas) :3000     │
 Internet → :3000   │  │  Worker (2 replicas)        │
                    └──┤  Redis (1 replica) :6379    │
                       │                             │
@@ -22,6 +22,18 @@ Internet → :3000   │  │  Worker (2 replicas)        │
                       │  Research worker :3001      │
                       └─────────────────────────────┘
 ```
+
+## Source of truth (important)
+
+The static manifests in `k8s/` are **bootstrap defaults**, not the complete live source of truth.
+The deploy workflow currently also patches live production settings (image tags, replica counts,
+and memory/concurrency guardrails) during rollout.
+
+If you change production capacity or browser guardrails, update **both**:
+1. the relevant runtime code defaults
+2. `.github/workflows/k3s-deploy.yml`
+
+Otherwise repo state and live cluster state drift apart, which makes incidents harder to debug.
 
 ## Manifests
 

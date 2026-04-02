@@ -286,15 +286,32 @@ export async function handleGeneralSearch(query: string): Promise<SmartSearchRes
     })
     .map((r, i) => ({ ...r, rank: i + 1 })) as any[];
 
-  // Enrich top 8 results — BM25 highlights keep token budget tight
+  // Enrich only a bounded number of results, with bounded concurrency.
+  // Smart-search runs inside API pods, so parallel peel fanout directly affects memory pressure.
   const tPeel = Date.now();
-  const topResults = isTransitBooking ? [] : results.slice(0, 8);
-  console.log(`[smart-search] handleGeneralSearch: enriching ${topResults.length} pages via peel`);
+  const enrichLimit = parseInt(process.env.SMART_SEARCH_ENRICH_LIMIT || '6', 10);
+  const enrichConcurrency = parseInt(process.env.SMART_SEARCH_ENRICH_CONCURRENCY || '3', 10);
+  const topResults = isTransitBooking ? [] : results.slice(0, enrichLimit);
+  console.log(`[smart-search] handleGeneralSearch: enriching ${topResults.length} pages via peel (concurrency ${enrichConcurrency})`);
+
+  async function pLimited<T>(tasks: (() => Promise<T>)[], n: number): Promise<T[]> {
+    const out: T[] = new Array(tasks.length);
+    let cursor = 0;
+    async function worker(): Promise<void> {
+      while (cursor < tasks.length) {
+        const idx = cursor++;
+        out[idx] = await tasks[idx]();
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(n, tasks.length) }, () => worker()));
+    return out;
+  }
+
   const enriched = await Promise.allSettled(
-    topResults.map(async (r) => {
+    await pLimited(topResults.map((r) => async () => {
       try {
         // Use lite mode + noEscalate for speed: skip pruning, quality scoring,
-        // metadata extraction, and browser escalation.  We only need a rough
+        // metadata extraction, and browser escalation. We only need a rough
         // markdown body for BM25 snippet extraction + LLM synthesis.
         const peeled = await peel(r.url, { timeout: 4000, maxTokens: 2000, lite: true, noEscalate: true });
         return {
@@ -308,7 +325,7 @@ export async function handleGeneralSearch(query: string): Promise<SmartSearchRes
       } catch {
         return { url: r.url, content: null, title: r.title, fetchTimeMs: 0, metadata: undefined, structured: undefined };
       }
-    })
+    }), enrichConcurrency)
   );
   const peelMs = Date.now() - tPeel;
 

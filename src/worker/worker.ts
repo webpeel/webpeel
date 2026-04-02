@@ -169,7 +169,9 @@ async function processJob(job: Bull.Job<FetchJobPayload>): Promise<void> {
 
 // ─── Start workers ───────────────────────────────────────────────────────────
 
-const concurrency = parseInt(process.env.WORKER_CONCURRENCY || '3', 10);
+// Default to conservative concurrency in production. Browser/render jobs are memory-heavy,
+// and we run multiple worker replicas on an 8GB node.
+const concurrency = parseInt(process.env.WORKER_CONCURRENCY || '1', 10);
 
 const fetchQueue = getFetchQueue();
 const renderQueue = getRenderQueue();
